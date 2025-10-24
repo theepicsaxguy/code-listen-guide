@@ -1,38 +1,31 @@
-"""
-Integration points for the Microsoft Agent Framework audiobook workflow.
+import json
+from typing import Any
 
-This module exposes thin async helpers that the FastAPI routes can call to
-start or resume the multi-stage audiobook generation process.
-"""
+from opentelemetry import trace
 
+from backend.tools.db_tools import get_job_by_id, load_approved_outline
 from backend.workflows.audiobook_workflow import AudiobookWorkflow
+
+tracer = trace.get_tracer(__name__)
 
 
 async def start_audiobook_workflow(job_id: str, repo_url: str, depth_tier: str) -> None:
-    """
-    Kick off the audiobook workflow for a job.
-
-    TODO:
-    1. Instantiate the chat client (Azure OpenAI or Anthropic)
-    2. Create AudiobookWorkflow with checkpoint store
-    3. Execute the workflow asynchronously
-    4. Persist initial workflow status in the database
-    5. Emit OpenTelemetry span for workflow start
-    """
-
-    raise NotImplementedError
+    with tracer.start_as_current_span("start_audiobook_workflow", attributes={"job_id": job_id}):
+        workflow = AudiobookWorkflow(job_id=job_id, repo_url=repo_url, depth_tier=depth_tier)
+        await workflow.execute()
 
 
 async def resume_audiobook_workflow(job_id: str) -> None:
-    """
-    Resume a paused or failed workflow from its latest checkpoint.
-
-    TODO:
-    1. Load checkpoint metadata from PostgreSQL
-    2. Rehydrate AudiobookWorkflow from saved state
-    3. Call resume() on the workflow instance
-    4. Update job status and progress indicators
-    5. Emit OpenTelemetry span for workflow resume
-    """
-
-    raise NotImplementedError
+    with tracer.start_as_current_span("resume_audiobook_workflow", attributes={"job_id": job_id}):
+        job = get_job_by_id(job_id)
+        if job is None:
+            return
+        workflow = AudiobookWorkflow(job_id=job_id, repo_url=job.repo_url, depth_tier=job.depth_tier)
+        outline_record = load_approved_outline(job_id)
+        if outline_record is None:
+            await workflow.execute()
+            return
+        outline_payload: Any = outline_record.outline_data
+        if isinstance(outline_payload, str):
+            outline_payload = json.loads(outline_payload)
+        await workflow.continue_after_approval(outline_payload)

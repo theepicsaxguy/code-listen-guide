@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     # Database
     database_url: str = Field(..., env="DATABASE_URL")
     checkpoint_database_url: str = Field(..., env="CHECKPOINT_DATABASE_URL")
+    azure_openai_api_version: str = Field(default="2024-10-21", env="AZURE_OPENAI_API_VERSION")
 
     # LLM Providers
     azure_openai_endpoint: str = Field(..., env="AZURE_OPENAI_ENDPOINT")
@@ -64,6 +65,7 @@ class Settings(BaseSettings):
     # Observability
     sentry_dsn: Optional[str] = Field(None, env="SENTRY_DSN")
     otel_exporter_otlp_endpoint: Optional[str] = Field(None, env="OTEL_EXPORTER_OTLP_ENDPOINT")
+    service_name: str = Field(default="cba-backend", env="OTEL_SERVICE_NAME")
 
     # Rate Limiting
     rate_limit_per_minute: int = Field(default=60, env="RATE_LIMIT_PER_MINUTE")
