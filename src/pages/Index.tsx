@@ -14,6 +14,9 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold">Codebase Audiobook</h1>
           <div className="flex gap-4">
+            <Button variant="ghost" onClick={() => navigate('/why-we-exist')}>
+              Why we exist
+            </Button>
             <Button variant="ghost" onClick={() => navigate('/auth')}>Login</Button>
             <Button onClick={() => navigate('/auth')}>Get Started</Button>
           </div>
