@@ -1,0 +1,143 @@
+// API Client for Backend Communication
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+
+class ApiClient {
+  private baseUrl: string;
+  private token: string | null = null;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+    this.token = localStorage.getItem('auth_token');
+  }
+
+  setToken(token: string | null) {
+    this.token = token;
+    if (token) {
+      localStorage.setItem('auth_token', token);
+    } else {
+      localStorage.removeItem('auth_token');
+    }
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Request failed' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  // Auth endpoints
+  async register(email: string, password: string, name: string) {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name }),
+    });
+  }
+
+  async login(email: string, password: string) {
+    const response = await this.request<{ token: string; user: any }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    this.setToken(response.token);
+    return response;
+  }
+
+  async logout() {
+    await this.request('/auth/logout', { method: 'POST' });
+    this.setToken(null);
+  }
+
+  async getMe() {
+    return this.request('/auth/me');
+  }
+
+  // Job endpoints
+  async createJob(data: {
+    repo_url: string;
+    depth_tier: string;
+    git_ref?: string;
+  }) {
+    return this.request<{ job_id: string; estimated_cost: number; estimated_time: number }>('/jobs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getJobs(params?: { status?: string; limit?: number; page?: number }) {
+    const query = new URLSearchParams(params as any).toString();
+    return this.request<{ jobs: any[]; total: number; page: number }>(`/jobs${query ? `?${query}` : ''}`);
+  }
+
+  async getJob(jobId: string) {
+    return this.request<any>(`/jobs/${jobId}`);
+  }
+
+  async deleteJob(jobId: string) {
+    return this.request(`/jobs/${jobId}`, { method: 'DELETE' });
+  }
+
+  // Outline endpoints
+  async generateOutline(jobId: string, data: { repo_url: string; depth_tier: string }) {
+    return this.request(`/jobs/${jobId}/outline`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateOutline(jobId: string, outlineId: string, data: any) {
+    return this.request(`/jobs/${jobId}/outline/${outlineId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async approveOutline(jobId: string, outlineId: string) {
+    return this.request(`/jobs/${jobId}/outline/${outlineId}/approve`, {
+      method: 'POST',
+    });
+  }
+
+  // Payment endpoints
+  async createPaymentIntent(jobId: string, amount: number) {
+    return this.request('/payments/create-intent', {
+      method: 'POST',
+      body: JSON.stringify({ job_id: jobId, amount_cents: amount }),
+    });
+  }
+
+  async getPaymentHistory() {
+    return this.request('/payments/history');
+  }
+
+  // Player endpoints (public)
+  async getPlayerData(jobId: string) {
+    return this.request(`/player/${jobId}`);
+  }
+
+  async getDownloadUrl(jobId: string, deliverableType: string) {
+    return this.request(`/jobs/${jobId}/download/${deliverableType}`);
+  }
+}
+
+export const apiClient = new ApiClient(API_BASE_URL);
