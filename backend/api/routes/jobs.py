@@ -1,7 +1,7 @@
 """Job routes for creating and managing audiobook generation jobs."""
 
-from typing import Optional
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session

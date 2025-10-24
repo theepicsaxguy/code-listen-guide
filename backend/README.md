@@ -166,6 +166,18 @@ backend/
 - `GET /api/v1/player/{job_id}` - Get audiobook player data
 - `GET /api/v1/player/{job_id}/download/{type}` - Download deliverable
 
+## Workflow Lifecycle
+
+Audiobook generation jobs move through several coordinated stages once a user starts a workflow:
+
+1. **Analysis** – the Repository Analyzer agent clones the target repository, enumerates its files, and constructs a lightweight code map. Job status is set to `running` with stage `analysis`.
+2. **Outline** – the Outline Generator agent converts the analysis into a chapter outline. The outline JSON is stored and the job transitions to `waiting_approval` while the system notifies connected clients over WebSocket.
+3. **Scripting** – after approval, dedicated Script Writer agents work concurrently (one per chapter) and persist scripts as they complete. Progress events report chapter counts.
+4. **Audio** – the Audio Producer agent batch-synthesizes narration files and uploads them to storage, storing URLs for each chapter.
+5. **Post-processing** – the Post Processor agent stitches the audio, publishes deliverables, and marks the job `completed`.
+
+Checkpoint records in PostgreSQL allow any stage to resume without repeating prior work. Clients can subscribe to the job channel to receive the JSON events emitted during each stage.
+
 ## Processing Pipeline
 
 The audiobook generation uses a Microsoft Agent Framework workflow graph:
