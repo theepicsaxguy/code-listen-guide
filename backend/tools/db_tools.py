@@ -25,7 +25,13 @@ def _normalize_repo(repo_url: str) -> Dict[str, str]:
     return {"name": repo_name, "owner": repo_owner}
 
 
-def create_job_record(db: Session, user_id: UUID, repo_url: str, depth_tier: str, git_ref: Optional[str]) -> Job:
+def create_job_record(
+    db: Session,
+    user_id: UUID,
+    repo_url: str,
+    depth_tier: str,
+    git_ref: Optional[str],
+) -> Job:
     meta = _normalize_repo(repo_url)
     job = Job(
         user_id=user_id,
@@ -81,6 +87,8 @@ def persist_outline(job_id: str, outline_payload: str) -> None:
         except json.JSONDecodeError:
             parsed = {"raw": outline_payload}
         outline.outline_data = parsed
+        outline.user_approved = False
+        outline.approved_at = None
         db.commit()
 
 
@@ -111,6 +119,10 @@ def save_chapter_script(job_id: str, chapter_number: int, script: str) -> bool:
 
 def persist_audio_parts(job_id: str, audio_urls: List[str]) -> None:
     with _session() as db:
+        db.query(Deliverable).filter(
+            Deliverable.job_id == job_id,
+            Deliverable.file_type == "chapter_audio",
+        ).delete(synchronize_session=False)
         for index, url in enumerate(audio_urls, start=1):
             chapter = (
                 db.query(Chapter)
@@ -119,7 +131,8 @@ def persist_audio_parts(job_id: str, audio_urls: List[str]) -> None:
             )
             if chapter:
                 chapter.audio_url = url
-                chapter.status = "synthesizing"
+                chapter.status = "completed"
+                chapter.completed_at = datetime.utcnow()
         for url in audio_urls:
             deliverable = Deliverable(job_id=job_id, file_type="chapter_audio", file_url=url)
             db.add(deliverable)
