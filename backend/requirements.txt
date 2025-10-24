@@ -3,7 +3,7 @@ uvicorn[standard]==0.32.0
 python-multipart==0.0.18
 sqlalchemy==2.0.35
 alembic==1.13.3
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.11
 asyncpg==0.30.0
 agent-framework==1.0.0b251016
 azure-identity==1.18.0
