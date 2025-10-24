@@ -20,7 +20,7 @@ pydantic[email]==2.9.2
 pydantic-settings==2.6.0
 openai==1.54.4
 elevenlabs==1.11.0
-stripe==11.1.1
+stripe==13.0.1
 boto3==1.35.56
 tree-sitter==0.23.2
 tree-sitter-python==0.23.5
