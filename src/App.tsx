@@ -12,6 +12,7 @@ import JobDetails from "./pages/JobDetails";
 import OutlinePreview from "./pages/OutlinePreview";
 import Player from "./pages/Player";
 import NotFound from "./pages/NotFound";
+import WhyWeExist from "./pages/WhyWeExist";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/why-we-exist" element={<WhyWeExist />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/submit" element={<Submit />} />
