@@ -126,7 +126,7 @@ async def health_check():
 
     TODO:
     - Check database connection
-    - Check Redis connection
+    - Check checkpoint database connection
     - Check external API connectivity
     - Return health status
     """
@@ -135,7 +135,7 @@ async def health_check():
         "version": "0.1.0",
         # TODO: Add more health checks
         # "database": "connected",
-        # "redis": "connected",
+        # "checkpoint_store": "connected",
     }
 
 

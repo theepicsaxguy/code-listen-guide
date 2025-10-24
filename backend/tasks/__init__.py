@@ -1,3 +1,3 @@
 """
-Celery background tasks for asynchronous processing.
+Workflow orchestration helpers for the Microsoft Agent Framework runtime.
 """

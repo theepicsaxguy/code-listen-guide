@@ -13,7 +13,7 @@ TODO: Implementation steps:
 """
 
 from pydantic_settings import BaseSettings
-from pydantic import Field, validator
+from pydantic import Field
 from typing import Optional
 from functools import lru_cache
 
@@ -31,9 +31,12 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = Field(..., env="DATABASE_URL")
-    redis_url: str = Field(..., env="REDIS_URL")
+    checkpoint_database_url: str = Field(..., env="CHECKPOINT_DATABASE_URL")
 
-    # API Keys
+    # LLM Providers
+    azure_openai_endpoint: str = Field(..., env="AZURE_OPENAI_ENDPOINT")
+    azure_openai_api_key: str = Field(..., env="AZURE_OPENAI_API_KEY")
+    azure_openai_deployment_name: str = Field(..., env="AZURE_OPENAI_DEPLOYMENT_NAME")
     anthropic_api_key: str = Field(..., env="ANTHROPIC_API_KEY")
     openai_api_key: Optional[str] = Field(None, env="OPENAI_API_KEY")
     elevenlabs_api_key: Optional[str] = Field(None, env="ELEVENLABS_API_KEY")
@@ -58,12 +61,9 @@ class Settings(BaseSettings):
     frontend_url: str = Field(..., env="FRONTEND_URL")
     environment: str = Field(default="development", env="ENVIRONMENT")
 
-    # Monitoring
+    # Observability
     sentry_dsn: Optional[str] = Field(None, env="SENTRY_DSN")
-
-    # Celery
-    celery_broker_url: str = Field(..., env="CELERY_BROKER_URL")
-    celery_result_backend: str = Field(..., env="CELERY_RESULT_BACKEND")
+    otel_exporter_otlp_endpoint: Optional[str] = Field(None, env="OTEL_EXPORTER_OTLP_ENDPOINT")
 
     # Rate Limiting
     rate_limit_per_minute: int = Field(default=60, env="RATE_LIMIT_PER_MINUTE")
@@ -76,12 +76,6 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = False
 
-    # TODO: Add validators
-    # @validator("database_url")
-    # def validate_database_url(cls, v):
-    #     # Ensure it's a valid PostgreSQL URL
-    #     pass
-
 
 @lru_cache()
 def get_settings() -> Settings:
@@ -93,4 +87,5 @@ def get_settings() -> Settings:
     - Log configuration warnings
     - Validate configuration on startup
     """
+
     return Settings()

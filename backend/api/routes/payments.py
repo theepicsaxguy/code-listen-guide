@@ -66,7 +66,7 @@ async def stripe_webhook(
        - payment_intent.failed: Mark payment as failed
        - charge.refunded: Handle refund
     4. Update payment status in database
-    5. Trigger Celery job on successful payment
+    5. Trigger Microsoft Agent Framework workflow on successful payment
     6. Return 200 OK
     """
     # TODO: Implement

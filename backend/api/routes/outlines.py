@@ -87,7 +87,7 @@ async def approve_outline(
     4. Create Stripe payment intent
     5. Save payment record
     6. Return client_secret for frontend
-    7. After payment succeeds (webhook), trigger Celery job
+    7. After payment succeeds (webhook), trigger Microsoft Agent Framework workflow
     """
     # TODO: Implement
     pass
