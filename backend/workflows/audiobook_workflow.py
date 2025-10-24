@@ -1,56 +1,123 @@
-"""
-Audiobook workflow scaffold implemented with Microsoft Agent Framework concepts.
-
-This module will coordinate repository analysis, outline creation, script writing,
-audio synthesis, and post-processing through dedicated agents with checkpointing.
-"""
-
-from dataclasses import dataclass
 from typing import Any, Dict, List
 
+from agent_framework import AgentExecutor, ConcurrentBuilder, SequentialBuilder, WorkflowBuilder
+from agent_framework.messages import AssistantMessage, UserMessage
 
-@dataclass
+from backend.agents.analyzer_agent import analyzer_agent
+from backend.agents.audio_agent import audio_agent
+from backend.agents.outline_agent import outline_agent
+from backend.agents.postprocess_agent import postprocess_agent
+from backend.agents.script_agent import script_agent
+from backend.api.events import emit_job_event
+from backend.config import get_settings
+from backend.tools.db_tools import mark_job_status, persist_audio_parts, persist_outline
+from backend.utils.checkpointing import PostgresCheckpointStorage
+
+settings = get_settings()
+
+
 class AudiobookWorkflow:
-    """
-    Coordinates the multi-agent audiobook generation process.
-
-    TODO:
-    1. Wire RepositoryAnalyzer, OutlineGenerator, ScriptWriter, AudioProducer, PostProcessor
-    2. Configure PostgreSQL-backed checkpoint store and OpenTelemetry tracing
-    3. Support human-in-the-loop outline approvals before script generation
-    4. Execute script and audio stages concurrently with batching for cost control
-    5. Surface progress updates and deliverables back to the API layer
-    """
-
-    chat_client: Any
-    job_id: str
-    repo_url: str
-    depth_tier: str
+    def __init__(self, job_id: str, repo_url: str, depth_tier: str):
+        self.job_id = job_id
+        self.repo_url = repo_url
+        self.depth_tier = depth_tier
+        self.checkpoints = PostgresCheckpointStorage(workflow_id=job_id)
 
     async def execute(self) -> Dict[str, Any]:
-        """Run the complete workflow from scratch."""
+        mark_job_status(self.job_id, "running", "analysis")
+        analyzer = await analyzer_agent(settings)
+        outliner = await outline_agent(settings)
+        start_executor = (
+            SequentialBuilder()
+            .participants([AgentExecutor(analyzer), AgentExecutor(outliner)])
+            .build()
+        )
+        workflow = (
+            WorkflowBuilder()
+            .set_start_executor(start_executor)
+            .with_checkpointing(self.checkpoints)
+            .build()
+        )
+        messages = [
+            UserMessage(content=f"Analyze the repository at {self.repo_url} and respond with JSON."),
+            UserMessage(content=f"Generate a {self.depth_tier} outline from the analysis and respond with JSON."),
+        ]
+        outline_message: AssistantMessage | None = None
+        async for event in workflow.run_streaming(messages):
+            if hasattr(event, "message") and isinstance(event.message, AssistantMessage):
+                outline_message = event.message
+                emit_job_event(self.job_id, {"stage": "outline", "message": event.message.content})
+        outline_text = outline_message.content if outline_message else "{}"
+        persist_outline(self.job_id, outline_text)
+        emit_job_event(self.job_id, {"stage": "approval_wait"})
+        mark_job_status(self.job_id, "waiting_approval", "outline")
+        return {"outline": outline_text}
 
-        raise NotImplementedError
-
-    async def resume(self, checkpoint: Dict[str, Any]) -> Dict[str, Any]:
-        """Resume the workflow from a checkpoint payload."""
-
-        raise NotImplementedError
-
-    @classmethod
-    def from_checkpoint(cls, checkpoint: Dict[str, Any], chat_client: Any) -> "AudiobookWorkflow":
-        """Rehydrate a workflow instance using persisted state."""
-
-        raise NotImplementedError
-
-
-async def load_checkpoint(job_id: str) -> Dict[str, Any]:
-    """Fetch the most recent checkpoint for a job from storage."""
-
-    raise NotImplementedError
-
-
-async def list_checkpoints(job_id: str) -> List[Dict[str, Any]]:
-    """List checkpoints for observability and debugging."""
-
-    raise NotImplementedError
+    async def continue_after_approval(self, approved_outline: Dict[str, Any]) -> Dict[str, Any]:
+        chapters = approved_outline.get("chapters", [])
+        mark_job_status(self.job_id, "running", "scripting")
+        script_agents = [await script_agent(settings, chapter) for chapter in chapters]
+        script_executors = [AgentExecutor(agent) for agent in script_agents]
+        scripts_flow = ConcurrentBuilder().participants(script_executors).build()
+        scripts_workflow = (
+            WorkflowBuilder()
+            .set_start_executor(scripts_flow)
+            .with_checkpointing(self.checkpoints)
+            .build()
+        )
+        scripts: List[str] = []
+        async for event in scripts_workflow.run_streaming(
+            [UserMessage(content=f"Write the narration for chapter {chapter.get('number')}.") for chapter in chapters]
+        ):
+            if hasattr(event, "message") and isinstance(event.message, AssistantMessage):
+                scripts.append(event.message.content)
+                emit_job_event(
+                    self.job_id,
+                    {
+                        "stage": "scripts",
+                        "completed": len(scripts),
+                        "total": len(chapters),
+                    },
+                )
+        mark_job_status(self.job_id, "running", "audio")
+        audio_urls: List[str] = []
+        audio_agent_instance = await audio_agent(settings)
+        audio_executor = AgentExecutor(audio_agent_instance)
+        batch_size = 5
+        for index in range(0, len(scripts), batch_size):
+            batch = scripts[index : index + batch_size]
+            audio_workflow = (
+                WorkflowBuilder()
+                .set_start_executor(audio_executor)
+                .with_checkpointing(self.checkpoints)
+                .build()
+            )
+            async for event in audio_workflow.run_streaming([UserMessage(content=text) for text in batch]):
+                if hasattr(event, "message") and isinstance(event.message, AssistantMessage):
+                    audio_urls.append(event.message.content)
+                    emit_job_event(
+                        self.job_id,
+                        {
+                            "stage": "audio",
+                            "completed": len(audio_urls),
+                            "total": len(scripts),
+                        },
+                    )
+        persist_audio_parts(self.job_id, audio_urls)
+        post_agent = await postprocess_agent(settings)
+        post_workflow = (
+            WorkflowBuilder()
+            .set_start_executor(AgentExecutor(post_agent))
+            .with_checkpointing(self.checkpoints)
+            .build()
+        )
+        final_payload: str | None = None
+        async for event in post_workflow.run_streaming([
+            UserMessage(content="Create the final audiobook bundle and return JSON metadata."),
+        ]):
+            if hasattr(event, "message") and isinstance(event.message, AssistantMessage):
+                final_payload = event.message.content
+                emit_job_event(self.job_id, {"stage": "postprocess"})
+        mark_job_status(self.job_id, "completed", "done")
+        emit_job_event(self.job_id, {"stage": "done"})
+        return {"deliverables": final_payload, "chapters": len(chapters)}

@@ -1,27 +1,18 @@
-"""
-Payment routes for Stripe integration.
+"""Payment routes for Stripe integration."""
 
-TODO: Implementation steps:
-1. Implement POST /payments/create-intent endpoint
-2. Implement POST /payments/webhook for Stripe webhooks
-3. Implement GET /payments/history endpoint
-4. Add Stripe signature verification
-5. Handle different webhook events
-6. Trigger job processing on payment success
-7. Handle payment failures and refunds
-"""
-
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Header, status
 from sqlalchemy.orm import Session
 import stripe
-from typing import Optional
+import uuid
 
-from backend.api.schemas.payment import PaymentIntentCreate, PaymentIntentResponse, PaymentHistoryResponse
-from backend.db.session import get_db
-from backend.models.user import User
+from backend.api.schemas.payment import PaymentHistoryResponse, PaymentIntentCreate, PaymentIntentResponse
 from backend.api.dependencies import get_current_user
-from backend.services.payment import StripeService
 from backend.config import get_settings
+from backend.db.session import get_db
+from backend.models.job import Job
+from backend.models.user import User
+from backend.services.payment import StripeService
+from backend.tasks.audiobook_tasks import start_audiobook_workflow
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 settings = get_settings()
@@ -34,43 +25,44 @@ async def create_payment_intent(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Create a Stripe payment intent.
-
-    TODO:
-    1. Fetch job by ID
-    2. Check user owns this job
-    3. Calculate amount if not provided
-    4. Create Stripe payment intent
-    5. Create payment record in database
-    6. Return client_secret for Stripe Elements
-    """
-    # TODO: Implement
-    pass
+    """Create a Stripe payment intent for the given job."""
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
 
 
 @router.post("/webhook")
 async def stripe_webhook(
     request: Request,
+    background: BackgroundTasks,
     stripe_signature: str = Header(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """
-    Handle Stripe webhook events.
+    """Process Stripe webhook events and trigger workflows when payments succeed."""
+    payload = await request.body()
+    try:
+        event = stripe.Webhook.construct_event(
+            payload=payload,
+            sig_header=stripe_signature,
+            secret=settings.stripe_webhook_secret,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid payload") from exc
+    except stripe.error.SignatureVerificationError as exc:
+        raise HTTPException(status_code=400, detail="Invalid signature") from exc
 
-    TODO:
-    1. Verify webhook signature
-    2. Parse event data
-    3. Handle different event types:
-       - payment_intent.succeeded: Mark payment as succeeded, trigger job
-       - payment_intent.failed: Mark payment as failed
-       - charge.refunded: Handle refund
-    4. Update payment status in database
-    5. Trigger Microsoft Agent Framework workflow on successful payment
-    6. Return 200 OK
-    """
-    # TODO: Implement
-    pass
+    if event.get("type") == "payment_intent.succeeded":
+        data = event.get("data", {}).get("object", {})
+        metadata = data.get("metadata", {})
+        job_id = metadata.get("job_id")
+        if job_id:
+            try:
+                job_uuid = uuid.UUID(job_id)
+            except ValueError:
+                job_uuid = None
+            if job_uuid:
+                job = db.query(Job).filter(Job.id == job_uuid).first()
+                if job:
+                    background.add_task(start_audiobook_workflow, job_id, job.repo_url, job.depth_tier)
+    return {"received": True}
 
 
 @router.get("/history", response_model=PaymentHistoryResponse)
@@ -78,13 +70,5 @@ async def get_payment_history(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Get user's payment history.
-
-    TODO:
-    1. Query payments for current user
-    2. Order by created_at DESC
-    3. Return payment list
-    """
-    # TODO: Implement
-    pass
+    """Return the current user's payment history."""
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")

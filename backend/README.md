@@ -19,51 +19,61 @@ The backend handles:
 ```
 backend/
 ├── api/                    # API routes and schemas
-│   ├── routes/            # HTTP endpoint handlers
-│   │   ├── auth.py       # Authentication routes
-│   │   ├── jobs.py       # Job management routes
-│   │   ├── outlines.py   # Outline generation routes
-│   │   ├── payments.py   # Payment processing routes
-│   │   └── player.py     # Public player routes
-│   └── schemas/          # Pydantic request/response models
-│       ├── user.py
-│       ├── job.py
-│       ├── chapter.py
-│       ├── outline.py
-│       └── payment.py
-├── services/              # Business logic services
-│   ├── repository_analyzer.py  # Code analysis with tree-sitter
-│   ├── outline_generator.py    # Claude-powered outline generation
-│   ├── script_generator.py     # Claude-powered script generation
-│   ├── audio_synthesizer.py    # TTS audio generation
-│   ├── post_processor.py       # Final deliverable creation
-│   ├── storage.py              # S3 file operations
-│   └── payment.py              # Stripe integration
+│   ├── events.py         # WebSocket event bridge
+│   ├── routes/           # HTTP endpoint handlers
+│   │   ├── auth.py
+│   │   ├── jobs.py
+│   │   ├── outlines.py
+│   │   ├── payments.py
+│   │   └── player.py
+│   ├── schemas/          # Pydantic request/response models
+│   │   ├── chapter.py
+│   │   ├── job.py
+│   │   ├── outline.py
+│   │   ├── payment.py
+│   │   └── user.py
+│   └── ws.py             # Broadcast helper
 ├── agents/               # Microsoft Agent Framework agent factories
-│   └── __init__.py
-├── workflows/            # Workflow orchestration scaffolding
 │   ├── __init__.py
-│   └── audiobook_workflow.py
-├── tasks/                 # Agent Framework workflow entry points
-│   └── audiobook_tasks.py # Audiobook generation pipeline
-├── models/                # SQLAlchemy database models
-│   ├── user.py
-│   ├── job.py
+│   ├── analyzer_agent.py
+│   ├── audio_agent.py
+│   ├── outline_agent.py
+│   ├── postprocess_agent.py
+│   └── script_agent.py
+├── db/
+│   ├── migrations/
+│   │   ├── __init__.py
+│   │   └── versions/
+│   │       └── 20241025_add_workflow_checkpoints.py
+│   └── session.py
+├── models/
 │   ├── chapter.py
+│   ├── deliverable.py
+│   ├── job.py
 │   ├── outline.py
 │   ├── payment.py
-│   ├── deliverable.py
-│   └── usage_log.py
-├── db/                    # Database configuration
-│   ├── session.py        # SQLAlchemy session management
-│   └── migrations/       # Alembic migrations
-├── utils/                 # Utility functions
-│   ├── auth.py           # JWT and password utilities
-│   └── validators.py     # Input validation
-├── main.py               # FastAPI application entry point
-├── config.py             # Configuration management
-├── requirements.txt      # Python dependencies
-└── .env.example          # Environment variables template
+│   ├── usage_log.py
+│   ├── user.py
+│   └── workflow_checkpoint.py
+├── tasks/
+│   └── audiobook_tasks.py
+├── tools/                 # Helper functions exposed as agent tools
+│   ├── __init__.py
+│   ├── audio_tools.py
+│   ├── code_parser_tools.py
+│   ├── db_tools.py
+│   ├── git_tools.py
+│   └── storage_tools.py
+├── utils/
+│   ├── auth.py
+│   ├── checkpointing.py
+│   └── validators.py
+├── workflows/
+│   └── audiobook_workflow.py
+├── config.py
+├── main.py
+├── requirements.txt
+└── .env.example
 ```
 
 ## Setup Instructions
@@ -73,7 +83,7 @@ backend/
 - Python 3.11+
 - PostgreSQL 15+
 - FFmpeg (for audio processing)
-- Azure CLI (for local Azure OpenAI authentication)
+- Azure Active Directory application with `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET` configured for Azure OpenAI
 
 ### Installation
 
@@ -119,10 +129,8 @@ backend/
    uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-2. **Launch the Microsoft Agent Framework workflow runner** (placeholder):
-   ```bash
-   # TODO: provide runner command once workflow wiring is complete
-   ```
+2. **Kick off a workflow**:
+   Create a job, then call `POST /api/v1/jobs/{job_id}/start`. The backend schedules the Microsoft Agent Framework workflow in a FastAPI background task, streams progress over WebSockets, and persists checkpoints in PostgreSQL.
 
 **Access the API:**
 - API: http://localhost:8000
@@ -142,6 +150,7 @@ backend/
 - `GET /api/v1/jobs` - List user's jobs
 - `GET /api/v1/jobs/{job_id}` - Get job details
 - `DELETE /api/v1/jobs/{job_id}` - Delete job
+- `POST /api/v1/jobs/{job_id}/start` - Start or resume workflow execution
 
 ### Outlines
 - `POST /api/v1/jobs/{job_id}/outline` - Generate chapter outline
@@ -183,20 +192,20 @@ The audiobook generation uses a Microsoft Agent Framework workflow graph:
    - Upload chapter files to S3 and capture metadata
 
 6. **Post-Processing** (`PostProcessor` agent)
-   - Merge chapter audio, create cover art, and metadata
-   - Prepare deliverables bundle for the player experience
+   - Merge chapter audio, create metadata, and push final deliverables to storage
+   - Emit completion events so the UI can update in real time
 
 ## Environment Variables
 
 See `.env.example` for required environment variables:
 
 - **Database**: `DATABASE_URL`, `CHECKPOINT_DATABASE_URL`
-- **Azure OpenAI**: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT_NAME`
+- **Azure OpenAI**: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT_NAME`, `AZURE_OPENAI_API_VERSION`
 - **Other LLM/TTS Providers**: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `ELEVENLABS_API_KEY`
 - **Stripe**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`
 - **AWS**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`, `S3_REGION`
 - **Auth**: `JWT_SECRET`, `CLERK_SECRET_KEY`
-- **Observability**: `SENTRY_DSN`, `OTEL_EXPORTER_OTLP_ENDPOINT`
+- **Observability**: `SENTRY_DSN`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`
 
 ## Development
 
