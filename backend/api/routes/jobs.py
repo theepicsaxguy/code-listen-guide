@@ -10,11 +10,11 @@ TODO: Implementation steps:
 6. Add rate limiting per user
 7. Validate repository URLs
 8. Check user credits/subscription
-9. Trigger Celery task on job creation
+9. Trigger Microsoft Agent Framework workflow on approval
 10. Add WebSocket support for real-time progress
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 import uuid
@@ -24,7 +24,7 @@ from backend.db.session import get_db
 from backend.models.job import Job
 from backend.models.user import User
 from backend.api.dependencies import get_current_user
-from backend.tasks.audiobook_tasks import process_audiobook_job
+from backend.tasks.audiobook_tasks import start_audiobook_workflow
 
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
@@ -44,11 +44,11 @@ async def create_job(
     3. Check user has available credits/subscription
     4. Estimate cost and duration based on depth_tier
     5. Create job in database
-    6. DO NOT trigger Celery task yet (wait for outline approval)
+    6. Defer Agent Framework workflow start until outline approval
     7. Return job with estimate
     """
-    # TODO: Implement
-    pass
+
+    raise NotImplementedError
 
 
 @router.get("", response_model=JobListResponse)
@@ -69,8 +69,8 @@ async def list_jobs(
     4. Apply pagination
     5. Return jobs with total count
     """
-    # TODO: Implement
-    pass
+
+    raise NotImplementedError
 
 
 @router.get("/{job_id}", response_model=JobResponse)
@@ -88,8 +88,8 @@ async def get_job(
     3. Include chapters and deliverables
     4. Return job data
     """
-    # TODO: Implement
-    pass
+
+    raise NotImplementedError
 
 
 @router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -104,13 +104,13 @@ async def delete_job(
     TODO:
     1. Fetch job by ID
     2. Check user owns this job
-    3. Cancel Celery task if running
+    3. Cancel running workflow via Agent Framework checkpoint resume
     4. Delete S3 files
     5. Delete job from database (cascades to chapters, deliverables)
     6. Return success
     """
-    # TODO: Implement
-    pass
+
+    raise NotImplementedError
 
 
 @router.post("/estimate", response_model=JobEstimate)
@@ -129,5 +129,5 @@ async def estimate_job_cost(
     4. Calculate estimated duration
     5. Return estimate
     """
-    # TODO: Implement
-    pass
+
+    raise NotImplementedError

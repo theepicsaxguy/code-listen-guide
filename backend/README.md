@@ -11,7 +11,7 @@ The backend handles:
 - Narration script generation using Claude
 - Text-to-speech audio synthesis
 - Payment processing with Stripe
-- Background job processing with Celery
+- Workflow orchestration with Microsoft Agent Framework
 - File storage with AWS S3
 
 ## Project Structure
@@ -39,7 +39,12 @@ backend/
 │   ├── post_processor.py       # Final deliverable creation
 │   ├── storage.py              # S3 file operations
 │   └── payment.py              # Stripe integration
-├── tasks/                 # Celery background tasks
+├── agents/               # Microsoft Agent Framework agent factories
+│   └── __init__.py
+├── workflows/            # Workflow orchestration scaffolding
+│   ├── __init__.py
+│   └── audiobook_workflow.py
+├── tasks/                 # Agent Framework workflow entry points
 │   └── audiobook_tasks.py # Audiobook generation pipeline
 ├── models/                # SQLAlchemy database models
 │   ├── user.py
@@ -67,8 +72,8 @@ backend/
 
 - Python 3.11+
 - PostgreSQL 15+
-- Redis 7+
 - FFmpeg (for audio processing)
+- Azure CLI (for local Azure OpenAI authentication)
 
 ### Installation
 
@@ -105,11 +110,6 @@ backend/
    alembic upgrade head
    ```
 
-7. **Start Redis**:
-   ```bash
-   redis-server
-   ```
-
 ### Running the Application
 
 **Development mode:**
@@ -119,21 +119,15 @@ backend/
    uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-2. **Start Celery worker** (in separate terminal):
+2. **Launch the Microsoft Agent Framework workflow runner** (placeholder):
    ```bash
-   celery -A backend.tasks.audiobook_tasks worker --loglevel=info
-   ```
-
-3. **Start Celery Flower** (optional monitoring):
-   ```bash
-   celery -A backend.tasks.audiobook_tasks flower
+   # TODO: provide runner command once workflow wiring is complete
    ```
 
 **Access the API:**
 - API: http://localhost:8000
 - Documentation: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
-- Flower (Celery monitoring): http://localhost:5555
 
 ## API Endpoints
 
@@ -165,41 +159,44 @@ backend/
 
 ## Processing Pipeline
 
-The audiobook generation follows this pipeline:
+The audiobook generation uses a Microsoft Agent Framework workflow graph:
 
-1. **Repository Analysis** (`analyze_repository` task)
-   - Clone repository
+1. **Repository Analysis** (`RepositoryAnalyzer` agent)
+   - Clone the repository
    - Parse code with tree-sitter
-   - Extract classes, functions, dependencies
+   - Produce dependency and complexity summaries
 
-2. **Outline Generation** (`generate_outline` task)
-   - Use Claude to create chapter structure
-   - User can review and modify outline
+2. **Outline Generation** (`OutlineGenerator` agent)
+   - Draft chapter plan based on analysis depth tier
+   - Capture estimated durations and learning objectives
 
-3. **Script Generation** (`generate_all_scripts` task)
-   - Generate narration scripts for each chapter (parallel)
-   - Use Claude with code context
+3. **Human Approval** (`HumanApproval` handoff)
+   - Present outline for user review
+   - Pause the workflow until approval or change request
 
-4. **Audio Synthesis** (`synthesize_all_audio` task)
-   - Convert scripts to speech with TTS (parallel)
-   - Upload audio files to S3
+4. **Script Generation** (`ScriptWriter` agent team)
+   - Generate narration scripts in parallel batches
+   - Persist scripts and token usage per chapter
 
-5. **Post-Processing** (`post_process_deliverables` task)
-   - Combine chapters into full audiobook
-   - Generate cover image
-   - Create metadata files
-   - Upload all deliverables
+5. **Audio Synthesis** (`AudioProducer` agent team)
+   - Convert scripts to audio while streaming progress
+   - Upload chapter files to S3 and capture metadata
+
+6. **Post-Processing** (`PostProcessor` agent)
+   - Merge chapter audio, create cover art, and metadata
+   - Prepare deliverables bundle for the player experience
 
 ## Environment Variables
 
 See `.env.example` for required environment variables:
 
-- **Database**: `DATABASE_URL`, `REDIS_URL`
-- **API Keys**: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `ELEVENLABS_API_KEY`
-- **Stripe**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
-- **AWS**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`
-- **Auth**: `JWT_SECRET`
-- **Monitoring**: `SENTRY_DSN`
+- **Database**: `DATABASE_URL`, `CHECKPOINT_DATABASE_URL`
+- **Azure OpenAI**: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT_NAME`
+- **Other LLM/TTS Providers**: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `ELEVENLABS_API_KEY`
+- **Stripe**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`
+- **AWS**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`, `S3_REGION`
+- **Auth**: `JWT_SECRET`, `CLERK_SECRET_KEY`
+- **Observability**: `SENTRY_DSN`, `OTEL_EXPORTER_OTLP_ENDPOINT`
 
 ## Development
 
@@ -251,7 +248,7 @@ Major remaining work:
 - [ ] Implement all service methods
 - [ ] Implement all API route handlers
 - [ ] Set up Alembic database migrations
-- [ ] Implement Celery task logic
+- [ ] Implement Microsoft Agent Framework workflow logic
 - [ ] Add comprehensive error handling
 - [ ] Add unit tests
 - [ ] Add integration tests
