@@ -81,7 +81,7 @@ backend/
 ### Prerequisites
 
 - Python 3.11+
-- PostgreSQL 15+
+- PostgreSQL 15+ (required for production; local development defaults to SQLite)
 - FFmpeg (for audio processing)
 - Azure Active Directory application with `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET` configured for Azure OpenAI
 
@@ -110,10 +110,12 @@ backend/
    # Edit .env with your actual credentials
    ```
 
-5. **Set up PostgreSQL database**:
-   ```bash
-   createdb audiobook
-   ```
+5. **Set up the database**:
+   - With PostgreSQL:
+     ```bash
+     createdb audiobook
+     ```
+   - With the default SQLite database no action is required; the API will create the `backend_dev.db` file on startup.
 
 6. **Run database migrations** (TODO: Set up Alembic):
    ```bash

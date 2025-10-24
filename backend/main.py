@@ -5,14 +5,23 @@ from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 import logging
 
-from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+try:
+    from opentelemetry import trace
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+except ImportError:
+    trace = None
+    OTLPSpanExporter = None
+    FastAPIInstrumentor = None
+    Resource = None
+    TracerProvider = None
+    BatchSpanProcessor = None
 
 from backend.config import get_settings
+from backend.db.session import init_db
 from backend.utils.checkpointing import PostgresCheckpointStorage
 
 settings = get_settings()
@@ -24,6 +33,10 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up...")
+    try:
+        init_db()
+    except Exception as exc:
+        logger.warning("Database initialization skipped: %s", exc)
     yield
     logger.info("Shutting down...")
 
@@ -37,13 +50,15 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-resource = Resource.create({"service.name": settings.service_name})
-provider = TracerProvider(resource=resource)
-trace.set_tracer_provider(provider)
-if settings.otel_exporter_otlp_endpoint:
-    exporter = OTLPSpanExporter(endpoint=settings.otel_exporter_otlp_endpoint)
-    provider.add_span_processor(BatchSpanProcessor(exporter))
-FastAPIInstrumentor.instrument_app(app, tracer_provider=provider)
+if trace and Resource and TracerProvider:
+    resource = Resource.create({"service.name": settings.service_name})
+    provider = TracerProvider(resource=resource)
+    trace.set_tracer_provider(provider)
+    if settings.otel_exporter_otlp_endpoint and OTLPSpanExporter and BatchSpanProcessor:
+        exporter = OTLPSpanExporter(endpoint=settings.otel_exporter_otlp_endpoint)
+        provider.add_span_processor(BatchSpanProcessor(exporter))
+    if FastAPIInstrumentor:
+        FastAPIInstrumentor.instrument_app(app, tracer_provider=provider)
 
 cors_origins = ["http://localhost:5173", "http://localhost:3000"]
 if settings.frontend_url not in cors_origins:

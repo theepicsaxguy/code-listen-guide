@@ -1,7 +1,25 @@
 import uuid
 from typing import Any, Dict, List, Optional
 
-from agent_framework import CheckpointStorage
+try:
+    from agent_framework import CheckpointStorage
+except ImportError:
+    class CheckpointStorage:
+        async def save_checkpoint(self, step_id: str, state: Dict[str, Any]) -> str:
+            raise RuntimeError("agent-framework package is required for checkpointing")
+
+        async def load_checkpoint(self, checkpoint_id: str) -> Optional[Dict[str, Any]]:
+            raise RuntimeError("agent-framework package is required for checkpointing")
+
+        async def list_checkpoints(self) -> List[Dict[str, Any]]:
+            raise RuntimeError("agent-framework package is required for checkpointing")
+
+        async def list_checkpoint_ids(self) -> List[str]:
+            raise RuntimeError("agent-framework package is required for checkpointing")
+
+        async def delete_checkpoint(self, checkpoint_id: str) -> bool:
+            raise RuntimeError("agent-framework package is required for checkpointing")
+
 from sqlalchemy.orm import Session
 
 from backend.db.session import SessionLocal
