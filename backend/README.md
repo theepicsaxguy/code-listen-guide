@@ -156,6 +156,12 @@ alembic -c backend/alembic.ini downgrade 20241010_initial_schema
 - Documentation: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
+### Repository cloning safeguards
+
+The analyzer only clones repositories from hosts and organizations that you explicitly allow. By default the backend accepts Git URLs from `github.com` that belong to the `codebase-audiobooks` or `user` organizations. Override the defaults with comma-separated lists via `CBA_GIT_ALLOWED_HOSTS` and `CBA_GIT_ALLOWED_ORGS` when you deploy to additional GitHub orgs.
+
+Every clone runs in an isolated temporary directory. The helper sets `GIT_TERMINAL_PROMPT=0`, enforces a shallow clone, and cleans up the sandbox automatically if cloning fails. Set `CBA_GIT_CLONE_TIMEOUT_SECONDS` and `CBA_GIT_CLONE_SIZE_MB` to tighten or relax the time and size limits for repositories before the analyzer starts reading files.
+
 ## API Endpoints
 
 ### Authentication
