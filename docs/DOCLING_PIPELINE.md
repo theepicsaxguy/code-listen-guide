@@ -339,6 +339,14 @@ The Docling pipeline integrates with the audiobook generation workflow as follow
 3. **Entry Points**: Narration can start from identified entry points
 4. **Complexity Awareness**: Adjust narration depth based on complexity tags
 
+### Event payloads during audiobook generation
+
+Each workflow stage streams `ChatMessage` objects that wrap `TextContent` blocks. The
+runtime forwards the resolved `.text` from those messages through `emit_job_event`,
+so downstream listeners receive plain strings for outline previews, chapter script
+progress, audio URLs, and the final bundle metadata. This keeps the event contract
+stable even as agents emit richer content internally.
+
 ## Troubleshooting
 
 ### Common Issues

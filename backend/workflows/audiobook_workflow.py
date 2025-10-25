@@ -2,11 +2,13 @@ from typing import Any, Dict, List
 
 from agent_framework import (
     AgentExecutor,
+    ChatMessage,
     ConcurrentBuilder,
+    Role,
     SequentialBuilder,
+    TextContent,
     WorkflowBuilder,
 )
-from agent_framework.messages import AssistantMessage, UserMessage
 
 from backend.agents.analyzer_agent import analyzer_agent
 from backend.agents.audio_agent import audio_agent
@@ -44,23 +46,34 @@ class AudiobookWorkflow:
             .build()
         )
         messages = [
-            UserMessage(
-                content=f"Analyze the repository at {self.repo_url} and respond with JSON."
+            ChatMessage(
+                role=Role.USER,
+                contents=[
+                    TextContent(
+                        text=f"Analyze the repository at {self.repo_url} and respond with JSON."
+                    )
+                ],
             ),
-            UserMessage(
-                content=f"Generate a {self.depth_tier} outline from the analysis and respond with JSON."
+            ChatMessage(
+                role=Role.USER,
+                contents=[
+                    TextContent(
+                        text=(
+                            f"Generate a {self.depth_tier} outline from the analysis and respond with JSON."
+                        )
+                    )
+                ],
             ),
         ]
-        outline_message: AssistantMessage | None = None
+        outline_message: ChatMessage | None = None
         async for event in workflow.run_streaming(messages):
-            if hasattr(event, "message") and isinstance(
-                event.message, AssistantMessage
-            ):
+            if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                 outline_message = event.message
                 emit_job_event(
-                    self.job_id, {"stage": "outline", "message": event.message.content}
+                    self.job_id,
+                    {"stage": "outline", "message": event.message.text or ""},
                 )
-        outline_text = outline_message.content if outline_message else "{}"
+        outline_text = outline_message.text if outline_message else "{}"
         persist_outline(self.job_id, outline_text)
         emit_job_event(self.job_id, {"stage": "approval_wait"})
         mark_job_status(self.job_id, "waiting_approval", "outline")
@@ -83,16 +96,21 @@ class AudiobookWorkflow:
         scripts: List[str] = []
         async for event in scripts_workflow.run_streaming(
             [
-                UserMessage(
-                    content=f"Write the narration for chapter {chapter.get('number')}."
+                ChatMessage(
+                    role=Role.USER,
+                    contents=[
+                        TextContent(
+                            text=(
+                                f"Write the narration for chapter {chapter.get('number')}."
+                            )
+                        )
+                    ],
                 )
                 for chapter in chapters
             ]
         ):
-            if hasattr(event, "message") and isinstance(
-                event.message, AssistantMessage
-            ):
-                scripts.append(event.message.content)
+            if hasattr(event, "message") and isinstance(event.message, ChatMessage):
+                scripts.append(event.message.text or "")
                 emit_job_event(
                     self.job_id,
                     {
@@ -115,12 +133,16 @@ class AudiobookWorkflow:
                 .build()
             )
             async for event in audio_workflow.run_streaming(
-                [UserMessage(content=text) for text in batch]
+                [
+                    ChatMessage(
+                        role=Role.USER,
+                        contents=[TextContent(text=text)],
+                    )
+                    for text in batch
+                ]
             ):
-                if hasattr(event, "message") and isinstance(
-                    event.message, AssistantMessage
-                ):
-                    audio_urls.append(event.message.content)
+                if hasattr(event, "message") and isinstance(event.message, ChatMessage):
+                    audio_urls.append(event.message.text or "")
                     emit_job_event(
                         self.job_id,
                         {
@@ -140,16 +162,25 @@ class AudiobookWorkflow:
         final_payload: str | None = None
         async for event in post_workflow.run_streaming(
             [
-                UserMessage(
-                    content="Create the final audiobook bundle and return JSON metadata."
+                ChatMessage(
+                    role=Role.USER,
+                    contents=[
+                        TextContent(
+                            text=(
+                                "Create the final audiobook bundle and return JSON metadata."
+                            )
+                        )
+                    ],
                 ),
             ]
         ):
-            if hasattr(event, "message") and isinstance(
-                event.message, AssistantMessage
-            ):
-                final_payload = event.message.content
+            if hasattr(event, "message") and isinstance(event.message, ChatMessage):
+                final_payload = event.message.text or ""
                 emit_job_event(self.job_id, {"stage": "postprocess"})
         mark_job_status(self.job_id, "completed", "done")
         emit_job_event(self.job_id, {"stage": "done"})
         return {"deliverables": final_payload, "chapters": len(chapters)}
+
+    def cancel(self) -> None:
+        mark_job_status(self.job_id, "cancelled", "cancelled")
+        emit_job_event(self.job_id, {"stage": "cancelled"})

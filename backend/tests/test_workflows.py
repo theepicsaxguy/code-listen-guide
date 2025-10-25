@@ -12,6 +12,8 @@ import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from types import SimpleNamespace
 
+from agent_framework import ChatMessage, Role, TextContent
+
 
 @pytest.mark.workflows
 @pytest.mark.unit
@@ -45,6 +47,95 @@ class TestAudiobookWorkflow:
         assert workflow.job_id == "test-job"
 
     @pytest.mark.asyncio
+    async def test_execute_emits_outline_event_payload(self, monkeypatch):
+        """Execute workflow and capture emitted outline payload."""
+        from backend.workflows import audiobook_workflow as workflow_module
+
+        class FakeWorkflowRunner:
+            def __init__(self, events):
+                self._events = events
+                self.messages = None
+
+            async def run_streaming(self, messages):
+                self.messages = messages
+                for event in self._events:
+                    yield event
+
+        class FakeWorkflowBuilder:
+            streams: list[list] = []
+            runners: list[FakeWorkflowRunner] = []
+
+            def __init__(self):
+                pass
+
+            def set_start_executor(self, _executor):
+                return self
+
+            def with_checkpointing(self, _checkpoints):
+                return self
+
+            def build(self):
+                events = self.streams.pop(0) if self.streams else []
+                runner = FakeWorkflowRunner(events)
+                self.runners.append(runner)
+                return runner
+
+        class FakeSequentialBuilder:
+            def participants(self, _participants):
+                return self
+
+            def build(self):
+                return "sequential"
+
+        outline_text = "{\"chapters\": []}"
+        outline_events = [
+            SimpleNamespace(
+                message=ChatMessage(
+                    role=Role.ASSISTANT,
+                    contents=[TextContent(text=outline_text)],
+                )
+            )
+        ]
+
+        FakeWorkflowBuilder.streams = [outline_events]
+        FakeWorkflowBuilder.runners = []
+
+        monkeypatch.setattr(workflow_module, "WorkflowBuilder", FakeWorkflowBuilder)
+        monkeypatch.setattr(workflow_module, "SequentialBuilder", FakeSequentialBuilder)
+        monkeypatch.setattr(workflow_module, "AgentExecutor", lambda agent: agent)
+        monkeypatch.setattr(workflow_module, "analyzer_agent", AsyncMock(return_value=object()))
+        monkeypatch.setattr(workflow_module, "outline_agent", AsyncMock(return_value=object()))
+        monkeypatch.setattr(workflow_module, "emit_job_event", MagicMock())
+        monkeypatch.setattr(workflow_module, "mark_job_status", MagicMock())
+        monkeypatch.setattr(workflow_module, "persist_outline", MagicMock())
+
+        class FakeCheckpointStorage:
+            def __init__(self, workflow_id: str):
+                self.workflow_id = workflow_id
+
+        monkeypatch.setattr(
+            workflow_module, "PostgresCheckpointStorage", FakeCheckpointStorage
+        )
+
+        workflow = workflow_module.AudiobookWorkflow(
+            job_id="job-42",
+            repo_url="https://example.com/repo.git",
+            depth_tier="survey",
+        )
+
+        result = await workflow.execute()
+
+        assert result == {"outline": outline_text}
+        workflow_module.persist_outline.assert_called_once_with("job-42", outline_text)
+        workflow_module.emit_job_event.assert_any_call(
+            "job-42", {"stage": "outline", "message": outline_text}
+        )
+        runner = FakeWorkflowBuilder.runners[0]
+        assert runner.messages is not None
+        assert all(isinstance(message, ChatMessage) for message in runner.messages)
+        assert all(message.role == Role.USER for message in runner.messages)
+
+    @pytest.mark.asyncio
     async def test_workflow_execute_full_pipeline(self, mock_workflow):
         """Test executing complete workflow."""
         from backend.workflows.audiobook_workflow import AudiobookWorkflow
@@ -60,6 +151,135 @@ class TestAudiobookWorkflow:
 
             assert result is not None
             assert "status" in result or "job_id" in result
+
+    @pytest.mark.asyncio
+    async def test_continue_after_approval_emits_stage_payloads(self, monkeypatch):
+        """Resume workflow and ensure streaming stages emit payloads."""
+        from backend.workflows import audiobook_workflow as workflow_module
+
+        class FakeWorkflowRunner:
+            def __init__(self, events):
+                self._events = events
+                self.messages = None
+
+            async def run_streaming(self, messages):
+                self.messages = messages
+                for event in self._events:
+                    yield event
+
+        class FakeWorkflowBuilder:
+            streams: list[list] = []
+            runners: list[FakeWorkflowRunner] = []
+
+            def __init__(self):
+                pass
+
+            def set_start_executor(self, _executor):
+                return self
+
+            def with_checkpointing(self, _checkpoints):
+                return self
+
+            def build(self):
+                events = self.streams.pop(0) if self.streams else []
+                runner = FakeWorkflowRunner(events)
+                self.runners.append(runner)
+                return runner
+
+        class FakeConcurrentBuilder:
+            def participants(self, _participants):
+                return self
+
+            def build(self):
+                return "concurrent"
+
+        script_texts = ["Chapter one script", "Chapter two script"]
+        audio_urls = ["https://audio.local/1.mp3", "https://audio.local/2.mp3"]
+        final_payload = "{\"bundle\": true}"
+
+        script_events = [
+            SimpleNamespace(
+                message=ChatMessage(
+                    role=Role.ASSISTANT,
+                    contents=[TextContent(text=text)],
+                )
+            )
+            for text in script_texts
+        ]
+        audio_events = [
+            SimpleNamespace(
+                message=ChatMessage(
+                    role=Role.ASSISTANT,
+                    contents=[TextContent(text=url)],
+                )
+            )
+            for url in audio_urls
+        ]
+        post_events = [
+            SimpleNamespace(
+                message=ChatMessage(
+                    role=Role.ASSISTANT,
+                    contents=[TextContent(text=final_payload)],
+                )
+            )
+        ]
+
+        FakeWorkflowBuilder.streams = [script_events, audio_events, post_events]
+        FakeWorkflowBuilder.runners = []
+
+        monkeypatch.setattr(workflow_module, "WorkflowBuilder", FakeWorkflowBuilder)
+        monkeypatch.setattr(workflow_module, "ConcurrentBuilder", FakeConcurrentBuilder)
+        monkeypatch.setattr(workflow_module, "AgentExecutor", lambda agent: agent)
+        monkeypatch.setattr(
+            workflow_module,
+            "script_agent",
+            AsyncMock(side_effect=[object(), object()]),
+        )
+        monkeypatch.setattr(workflow_module, "audio_agent", AsyncMock(return_value=object()))
+        monkeypatch.setattr(
+            workflow_module, "postprocess_agent", AsyncMock(return_value=object())
+        )
+        monkeypatch.setattr(workflow_module, "emit_job_event", MagicMock())
+        monkeypatch.setattr(workflow_module, "mark_job_status", MagicMock())
+        monkeypatch.setattr(workflow_module, "persist_audio_parts", MagicMock())
+
+        class FakeCheckpointStorage:
+            def __init__(self, workflow_id: str):
+                self.workflow_id = workflow_id
+
+        monkeypatch.setattr(
+            workflow_module, "PostgresCheckpointStorage", FakeCheckpointStorage
+        )
+
+        workflow = workflow_module.AudiobookWorkflow(
+            job_id="job-77",
+            repo_url="https://example.com/repo.git",
+            depth_tier="deep",
+        )
+
+        result = await workflow.continue_after_approval(
+            {"chapters": [{"number": 1}, {"number": 2}]}
+        )
+
+        assert result == {"deliverables": final_payload, "chapters": 2}
+        workflow_module.persist_audio_parts.assert_called_once_with(
+            "job-77", audio_urls
+        )
+        workflow_module.emit_job_event.assert_any_call(
+            "job-77", {"stage": "scripts", "completed": 1, "total": 2}
+        )
+        workflow_module.emit_job_event.assert_any_call(
+            "job-77", {"stage": "scripts", "completed": 2, "total": 2}
+        )
+        workflow_module.emit_job_event.assert_any_call(
+            "job-77", {"stage": "audio", "completed": 1, "total": 2}
+        )
+        workflow_module.emit_job_event.assert_any_call(
+            "job-77", {"stage": "audio", "completed": 2, "total": 2}
+        )
+        workflow_module.emit_job_event.assert_any_call(
+            "job-77", {"stage": "postprocess"}
+        )
 
     @pytest.mark.asyncio
     async def test_workflow_stages_execute_in_order(self):
