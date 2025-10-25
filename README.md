@@ -64,6 +64,18 @@ Recent hardening efforts added:
 
 Run `./serve-production.sh` from the repository root when you want the production build in one command. The script compiles the frontend, starts the FastAPI server with multiple workers, and serves the built assets through `vite preview`. Override defaults by exporting `BACKEND_PORT`, `FRONTEND_PORT`, or `UVICORN_WORKERS` before launching.
 
+### Docker image
+
+Build a single container that serves the API and compiled frontend together:
+
+```bash
+docker build -t codebase-audiobook .
+docker run --rm -p 8000:8000 codebase-audiobook
+```
+
+The container exposes port 8000. Visiting `http://localhost:8000` loads the frontend, and `/api/v1/*` requests hit the FastAPI
+service on the same origin.
+
 The FastAPI service exposes REST and WebSocket endpoints for managing jobs, running the audiobook workflow, and streaming status updates. It leans on PostgreSQL for persistence, Stripe for payments, OpenAI for reasoning, and AWS S3 for audio storage.
 
 ## Development workflow
