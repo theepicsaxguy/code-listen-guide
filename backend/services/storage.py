@@ -53,7 +53,9 @@ class S3Storage:
             raise FileNotFoundError(local_path)
 
         detected_type, _ = mimetypes.guess_type(str(local_path))
-        resolved_content_type = content_type or detected_type or "application/octet-stream"
+        resolved_content_type = (
+            content_type or detected_type or "application/octet-stream"
+        )
         resolved_acl = acl or self.default_acl
 
         def _upload() -> None:
@@ -86,7 +88,9 @@ class S3Storage:
         try:
             return await asyncio.to_thread(_generate)
         except ClientError as exc:
-            logger.error("Failed to generate presigned URL", exc_info=exc, extra={"key": s3_key})
+            logger.error(
+                "Failed to generate presigned URL", exc_info=exc, extra={"key": s3_key}
+            )
             raise
 
     async def delete_file(self, s3_key: str) -> None:
@@ -96,7 +100,9 @@ class S3Storage:
         try:
             await asyncio.to_thread(_delete)
         except ClientError as exc:
-            logger.error("Failed to delete S3 object", exc_info=exc, extra={"key": s3_key})
+            logger.error(
+                "Failed to delete S3 object", exc_info=exc, extra={"key": s3_key}
+            )
             raise
 
     async def list_files(self, prefix: str) -> list[str]:

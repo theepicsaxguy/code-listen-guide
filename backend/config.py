@@ -10,7 +10,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Runtime configuration with sensible defaults for local development."""
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", case_sensitive=False, extra="ignore"
+    )
 
     database_url: str = Field(default="sqlite:///./backend_dev.db")
     checkpoint_database_url: str = Field(default="sqlite:///./backend_dev.db")

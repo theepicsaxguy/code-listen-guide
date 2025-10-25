@@ -28,7 +28,10 @@ def upload_to_s3(local_path: str, s3_key: str) -> str:
         from botocore.exceptions import ClientError, NoCredentialsError
 
         # Check if AWS credentials are configured
-        if not settings.aws_access_key_id or settings.aws_access_key_id == "aws-access-key":
+        if (
+            not settings.aws_access_key_id
+            or settings.aws_access_key_id == "aws-access-key"
+        ):
             logger.warning("AWS credentials not configured - returning placeholder URL")
             bucket = settings.s3_bucket_name
             region = settings.s3_region
@@ -51,7 +54,9 @@ def upload_to_s3(local_path: str, s3_key: str) -> str:
             ".txt": "text/plain",
             ".zip": "application/zip",
         }
-        content_type = content_type_map.get(path.suffix.lower(), "application/octet-stream")
+        content_type = content_type_map.get(
+            path.suffix.lower(), "application/octet-stream"
+        )
 
         # Upload file
         extra_args = {"ContentType": content_type, "ACL": "public-read"}

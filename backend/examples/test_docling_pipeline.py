@@ -23,8 +23,7 @@ from pathlib import Path
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -65,43 +64,47 @@ async def test_docling_pipeline(repo_url: str, git_ref: str = "main"):
         logger.info(f"Analysis Mode: {result['analysis_mode']}")
 
         # Structure info
-        structure = result['structure']
+        structure = result["structure"]
         logger.info(f"\nRepository Structure:")
         logger.info(f"  Total files: {structure['file_count']}")
-        logger.info(f"  Total size: {structure['total_size_bytes'] / 1024 / 1024:.2f} MB")
+        logger.info(
+            f"  Total size: {structure['total_size_bytes'] / 1024 / 1024:.2f} MB"
+        )
         logger.info(f"  Languages detected: {', '.join(structure['languages'])}")
 
         # Parsed data info
-        parsed = result['parsed']
-        if 'summary' in parsed:
-            summary = parsed['summary']
+        parsed = result["parsed"]
+        if "summary" in parsed:
+            summary = parsed["summary"]
             logger.info(f"\nParsing Results:")
             logger.info(f"  Successfully parsed: {summary['successfully_parsed']}")
             logger.info(f"  Failed to parse: {summary['failed_to_parse']}")
             logger.info(f"  Success rate: {summary['parse_success_rate']:.1f}%")
 
         # Entry points
-        if 'entry_points' in parsed and parsed['entry_points']:
+        if "entry_points" in parsed and parsed["entry_points"]:
             logger.info(f"\nEntry Points Detected:")
-            for entry in parsed['entry_points'][:5]:  # Show first 5
+            for entry in parsed["entry_points"][:5]:  # Show first 5
                 logger.info(f"  - {entry}")
 
         # Sample tagged files
-        if 'files' in parsed and parsed['files']:
+        if "files" in parsed and parsed["files"]:
             logger.info(f"\nSample Parsed Files (first 5):")
-            for file_data in parsed['files'][:5]:
-                if 'error' not in file_data:
+            for file_data in parsed["files"][:5]:
+                if "error" not in file_data:
                     logger.info(f"\n  File: {file_data['file_path']}")
                     logger.info(f"    Type: {file_data.get('content_type', 'unknown')}")
 
-                    if 'tags' in file_data:
-                        tags = file_data['tags']
+                    if "tags" in file_data:
+                        tags = file_data["tags"]
                         logger.info(f"    Language: {tags.get('language', [])}")
                         logger.info(f"    Framework: {tags.get('framework', [])}")
                         logger.info(f"    Purpose: {tags.get('purpose', 'unknown')}")
-                        logger.info(f"    Complexity: {tags.get('complexity', 'unknown')}")
+                        logger.info(
+                            f"    Complexity: {tags.get('complexity', 'unknown')}"
+                        )
 
-                    if 'code_blocks' in file_data:
+                    if "code_blocks" in file_data:
                         logger.info(f"    Code blocks: {len(file_data['code_blocks'])}")
 
         # Save detailed results to JSON
@@ -152,16 +155,16 @@ async def test_local_directory(directory_path: str):
         logger.info("PIPELINE RESULTS")
         logger.info("=" * 80)
 
-        summary = result['summary']
+        summary = result["summary"]
         logger.info(f"\nProcessing Summary:")
         logger.info(f"  Total files: {summary['total_files']}")
         logger.info(f"  Successfully parsed: {summary['successfully_parsed']}")
         logger.info(f"  Failed: {summary['failed_to_parse']}")
         logger.info(f"  Success rate: {summary['parse_success_rate']:.1f}%")
 
-        if result.get('entry_points'):
+        if result.get("entry_points"):
             logger.info(f"\nEntry Points:")
-            for entry in result['entry_points']:
+            for entry in result["entry_points"]:
                 logger.info(f"  - {entry}")
 
         # Save results

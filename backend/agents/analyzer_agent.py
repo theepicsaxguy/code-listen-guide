@@ -13,11 +13,15 @@ def _ai_clone_repo(url: Annotated[str, Field(description="Git repository URL")])
     return clone_repository(url)
 
 
-def _ai_list_files(path: Annotated[str, Field(description="Path to cloned repository")]) -> List[str]:
+def _ai_list_files(
+    path: Annotated[str, Field(description="Path to cloned repository")],
+) -> List[str]:
     return list_repository_files(path)
 
 
-def _ai_build_code_map(path: Annotated[str, Field(description="Path to cloned repository")]) -> Dict[str, Any]:
+def _ai_build_code_map(
+    path: Annotated[str, Field(description="Path to cloned repository")],
+) -> Dict[str, Any]:
     return build_code_map(path)
 
 

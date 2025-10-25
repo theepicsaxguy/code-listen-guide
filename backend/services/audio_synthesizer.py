@@ -24,10 +24,7 @@ class AudioSynthesizer:
         self.provider = provider
 
     async def synthesize_chapter(
-        self,
-        script: str,
-        output_path: Path,
-        voice_id: str = "alloy"
+        self, script: str, output_path: Path, voice_id: str = "alloy"
     ) -> Tuple[Path, int]:
         """Convert script to audio (deprecated). Use backend/agents/audio_agent.py instead."""
         raise NotImplementedError("Use backend/agents/audio_agent.py instead")

@@ -5,7 +5,16 @@ All fields are defined and the model is ready to use.
 Relationships and helper methods are commented out - uncomment when needed.
 """
 
-from sqlalchemy import Column, String, Integer, DateTime, DECIMAL, Text, BigInteger, ForeignKey
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    DateTime,
+    DECIMAL,
+    Text,
+    BigInteger,
+    ForeignKey,
+)
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func

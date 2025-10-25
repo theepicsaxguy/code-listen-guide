@@ -38,7 +38,9 @@ def test_start_audiobook_workflow_executes(monkeypatch):
     workflow.execute = AsyncMock()
     monkeypatch.setattr(audiobook_tasks, "_create_workflow", lambda **kwargs: workflow)
 
-    audiobook_tasks.start_audiobook_workflow("job-1", "https://example.com/repo.git", "standard")
+    audiobook_tasks.start_audiobook_workflow(
+        "job-1", "https://example.com/repo.git", "standard"
+    )
 
     workflow.execute.assert_awaited_once()
 
@@ -51,7 +53,9 @@ def test_resume_workflow_without_outline_runs_execute(monkeypatch):
     monkeypatch.setattr(
         audiobook_tasks,
         "_get_job",
-        lambda job_id: SimpleNamespace(id=job_id, repo_url="https://example.com/repo.git", depth_tier="survey"),
+        lambda job_id: SimpleNamespace(
+            id=job_id, repo_url="https://example.com/repo.git", depth_tier="survey"
+        ),
     )
     monkeypatch.setattr(audiobook_tasks, "_load_outline", lambda job_id: None)
 
@@ -63,7 +67,7 @@ def test_resume_workflow_without_outline_runs_execute(monkeypatch):
 
 @pytest.mark.parametrize(
     "outline_payload",
-    ["{\"chapters\": []}", {"chapters": []}],
+    ['{"chapters": []}', {"chapters": []}],
 )
 def test_resume_workflow_with_outline_runs_continue(monkeypatch, outline_payload):
     workflow = MagicMock()
@@ -73,7 +77,9 @@ def test_resume_workflow_with_outline_runs_continue(monkeypatch, outline_payload
     monkeypatch.setattr(
         audiobook_tasks,
         "_get_job",
-        lambda job_id: SimpleNamespace(id=job_id, repo_url="https://example.com/repo.git", depth_tier="survey"),
+        lambda job_id: SimpleNamespace(
+            id=job_id, repo_url="https://example.com/repo.git", depth_tier="survey"
+        ),
     )
     monkeypatch.setattr(
         audiobook_tasks,

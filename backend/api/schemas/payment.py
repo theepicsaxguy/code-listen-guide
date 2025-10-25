@@ -22,12 +22,14 @@ class PaymentIntentCreate(BaseModel):
     - Add amount calculation based on job
     - Add currency selection
     """
+
     job_id: uuid.UUID
     amount_cents: Optional[int] = None  # Auto-calculated if not provided
 
 
 class PaymentIntentResponse(BaseModel):
     """Schema for payment intent response."""
+
     payment_intent_id: str
     client_secret: str
     amount_cents: int
@@ -42,6 +44,7 @@ class PaymentResponse(BaseModel):
     - Add all Stripe metadata
     - Include payment method details
     """
+
     id: uuid.UUID
     user_id: uuid.UUID
     job_id: uuid.UUID
@@ -59,6 +62,7 @@ class PaymentResponse(BaseModel):
 
 class PaymentHistoryResponse(BaseModel):
     """Schema for payment history list."""
+
     payments: list[PaymentResponse]
     total: int
 
@@ -71,5 +75,6 @@ class StripeWebhookEvent(BaseModel):
     - Add signature verification
     - Handle different event types
     """
+
     type: str
     data: dict

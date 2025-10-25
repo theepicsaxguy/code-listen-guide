@@ -37,15 +37,14 @@ sys.modules.setdefault("opentelemetry", opentelemetry_module)
 # Database Fixtures
 # ============================================================================
 
+
 @pytest.fixture(scope="session")
 def test_db_engine():
     """Create a test database engine using SQLite in-memory."""
     from backend.models import Base
 
     engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        echo=False
+        "sqlite:///:memory:", connect_args={"check_same_thread": False}, echo=False
     )
 
     # Create all tables
@@ -62,9 +61,7 @@ def test_db_engine():
 def test_db(test_db_engine) -> Generator[Session, None, None]:
     """Create a test database session for each test."""
     TestingSessionLocal = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=test_db_engine
+        autocommit=False, autoflush=False, bind=test_db_engine
     )
 
     session = TestingSessionLocal()
@@ -94,6 +91,7 @@ def override_get_db(test_db):
 # API Client Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def test_client(override_get_db):
     """Create a test client for the FastAPI application."""
@@ -112,16 +110,19 @@ def test_client(override_get_db):
 # Mock External Service Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def mock_azure_openai_client():
     """Mock Azure OpenAI client."""
     client = MagicMock()
     client.chat = MagicMock()
     client.chat.completions = MagicMock()
-    client.chat.completions.create = AsyncMock(return_value=MagicMock(
-        choices=[MagicMock(message=MagicMock(content="Test response"))],
-        usage=MagicMock(total_tokens=100, prompt_tokens=50, completion_tokens=50)
-    ))
+    client.chat.completions.create = AsyncMock(
+        return_value=MagicMock(
+            choices=[MagicMock(message=MagicMock(content="Test response"))],
+            usage=MagicMock(total_tokens=100, prompt_tokens=50, completion_tokens=50),
+        )
+    )
     return client
 
 
@@ -130,10 +131,12 @@ def mock_anthropic_client():
     """Mock Anthropic Claude client."""
     client = MagicMock()
     client.messages = MagicMock()
-    client.messages.create = AsyncMock(return_value=MagicMock(
-        content=[MagicMock(text="Test Claude response")],
-        usage=MagicMock(input_tokens=50, output_tokens=50)
-    ))
+    client.messages.create = AsyncMock(
+        return_value=MagicMock(
+            content=[MagicMock(text="Test Claude response")],
+            usage=MagicMock(input_tokens=50, output_tokens=50),
+        )
+    )
     return client
 
 
@@ -144,18 +147,22 @@ def mock_stripe_client():
 
     # Mock PaymentIntent
     client.PaymentIntent = MagicMock()
-    client.PaymentIntent.create = MagicMock(return_value=MagicMock(
-        id="pi_test_123",
-        client_secret="pi_test_123_secret",
-        status="requires_payment_method"
-    ))
+    client.PaymentIntent.create = MagicMock(
+        return_value=MagicMock(
+            id="pi_test_123",
+            client_secret="pi_test_123_secret",
+            status="requires_payment_method",
+        )
+    )
 
     # Mock Webhook
     client.Webhook = MagicMock()
-    client.Webhook.construct_event = MagicMock(return_value={
-        "type": "payment_intent.succeeded",
-        "data": {"object": {"id": "pi_test_123"}}
-    })
+    client.Webhook.construct_event = MagicMock(
+        return_value={
+            "type": "payment_intent.succeeded",
+            "data": {"object": {"id": "pi_test_123"}},
+        }
+    )
 
     return client
 
@@ -195,6 +202,7 @@ def mock_git_repo():
 # Test Data Factories
 # ============================================================================
 
+
 @pytest.fixture
 def sample_user_data() -> Dict[str, Any]:
     """Sample user data for testing."""
@@ -203,7 +211,7 @@ def sample_user_data() -> Dict[str, Any]:
         "name": "Test User",
         "hashed_password": "hashed_password_123",
         "subscription_tier": "free",
-        "credits_remaining": 0
+        "credits_remaining": 0,
     }
 
 
@@ -218,7 +226,7 @@ def sample_job_data() -> Dict[str, Any]:
         "depth_tier": "standard",
         "status": "pending",
         "progress_percentage": 0.0,
-        "price_paid_cents": 4900
+        "price_paid_cents": 4900,
     }
 
 
@@ -234,7 +242,7 @@ def sample_outline_data() -> Dict[str, Any]:
                 "files_covered": ["README.md", "main.py"],
                 "topics_covered": ["architecture", "setup"],
                 "estimated_duration_minutes": 15,
-                "learning_objectives": ["Understand project structure"]
+                "learning_objectives": ["Understand project structure"],
             },
             {
                 "number": 2,
@@ -243,11 +251,11 @@ def sample_outline_data() -> Dict[str, Any]:
                 "files_covered": ["core/engine.py", "core/utils.py"],
                 "topics_covered": ["core logic", "utilities"],
                 "estimated_duration_minutes": 25,
-                "learning_objectives": ["Learn core patterns"]
-            }
+                "learning_objectives": ["Learn core patterns"],
+            },
         ],
         "total_estimated_duration_minutes": 40,
-        "total_chapters": 2
+        "total_chapters": 2,
     }
 
 
@@ -263,7 +271,7 @@ def sample_chapter_data() -> Dict[str, Any]:
         "status": "pending",
         "script_text": None,
         "audio_url": None,
-        "audio_duration_seconds": None
+        "audio_duration_seconds": None,
     }
 
 
@@ -279,7 +287,7 @@ def sample_analysis_result() -> Dict[str, Any]:
             "file_count": 42,
             "total_size_bytes": 1024000,
             "languages": ["Python", "JavaScript"],
-            "frameworks": ["FastAPI", "React"]
+            "frameworks": ["FastAPI", "React"],
         },
         "parsed": {
             "files": [],
@@ -287,11 +295,11 @@ def sample_analysis_result() -> Dict[str, Any]:
                 "total_files": 42,
                 "successfully_parsed": 40,
                 "failed_to_parse": 2,
-                "parse_success_rate": 95.2
+                "parse_success_rate": 95.2,
             },
             "entry_points": ["main.py", "app.py"],
-            "dependency_graph": {}
-        }
+            "dependency_graph": {},
+        },
     }
 
 
@@ -299,14 +307,16 @@ def sample_analysis_result() -> Dict[str, Any]:
 # Agent Framework Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def mock_agent():
     """Mock Microsoft Agent Framework Agent."""
     agent = MagicMock()
-    agent.run = AsyncMock(return_value=MagicMock(
-        result="Agent execution result",
-        usage=MagicMock(total_tokens=100)
-    ))
+    agent.run = AsyncMock(
+        return_value=MagicMock(
+            result="Agent execution result", usage=MagicMock(total_tokens=100)
+        )
+    )
     return agent
 
 
@@ -314,20 +324,19 @@ def mock_agent():
 def mock_workflow():
     """Mock audiobook workflow."""
     workflow = MagicMock()
-    workflow.execute = AsyncMock(return_value={
-        "status": "completed",
-        "job_id": "test-job-1"
-    })
-    workflow.continue_after_approval = AsyncMock(return_value={
-        "status": "completed",
-        "job_id": "test-job-1"
-    })
+    workflow.execute = AsyncMock(
+        return_value={"status": "completed", "job_id": "test-job-1"}
+    )
+    workflow.continue_after_approval = AsyncMock(
+        return_value={"status": "completed", "job_id": "test-job-1"}
+    )
     return workflow
 
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 @pytest.fixture
 def create_user(test_db):
@@ -340,7 +349,7 @@ def create_user(test_db):
             "name": "Test User",
             "hashed_password": "hashed_password",
             "subscription_tier": "free",
-            "credits_remaining": 0
+            "credits_remaining": 0,
         }
         user_data.update(kwargs)
 
@@ -370,7 +379,7 @@ def create_job(test_db, create_user):
             "git_ref": "main",
             "depth_tier": "standard",
             "status": "pending",
-            "price_paid_cents": 4900
+            "price_paid_cents": 4900,
         }
         job_data.update(kwargs)
 
@@ -386,6 +395,7 @@ def create_job(test_db, create_user):
 # ============================================================================
 # Event Loop Configuration
 # ============================================================================
+
 
 @pytest.fixture(scope="session")
 def event_loop():

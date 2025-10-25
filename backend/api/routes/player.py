@@ -23,13 +23,14 @@ settings = get_settings()
 
 @router.get("/{job_id}")
 async def get_audiobook_player_data(
-    job_id: uuid.UUID,
-    db: Session = Depends(get_db)
+    job_id: uuid.UUID, db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Return job metadata, chapter list, and deliverable manifest."""
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
+        )
 
     chapters = (
         db.query(Chapter)
@@ -58,7 +59,11 @@ async def get_audiobook_player_data(
                 "id": str(deliverable.id),
                 "file_type": deliverable.file_type,
                 "file_url": deliverable.file_url,
-                "created_at": deliverable.created_at.isoformat() if isinstance(deliverable.created_at, datetime) else None,
+                "created_at": (
+                    deliverable.created_at.isoformat()
+                    if isinstance(deliverable.created_at, datetime)
+                    else None
+                ),
             }
             for deliverable in deliverables
         ],
@@ -67,9 +72,7 @@ async def get_audiobook_player_data(
 
 @router.get("/{job_id}/download/{deliverable_type}")
 async def download_deliverable(
-    job_id: uuid.UUID,
-    deliverable_type: str,
-    db: Session = Depends(get_db)
+    job_id: uuid.UUID, deliverable_type: str, db: Session = Depends(get_db)
 ) -> Dict[str, str]:
     """Return a signed URL for downloading the requested deliverable."""
     deliverable = (
@@ -79,7 +82,9 @@ async def download_deliverable(
         .first()
     )
     if not deliverable:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deliverable not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Deliverable not found"
+        )
 
     parsed = urlparse(deliverable.file_url)
     if parsed.scheme.startswith("http") and parsed.netloc and parsed.path:

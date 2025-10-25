@@ -11,10 +11,10 @@ import sys
 
 # Mock docling before import
 docling_mock = MagicMock()
-sys.modules['docling'] = docling_mock
-sys.modules['docling.document_converter'] = MagicMock()
-sys.modules['docling.datamodel.base_models'] = MagicMock()
-sys.modules['docling.datamodel.pipeline_options'] = MagicMock()
+sys.modules["docling"] = docling_mock
+sys.modules["docling.document_converter"] = MagicMock()
+sys.modules["docling.datamodel.base_models"] = MagicMock()
+sys.modules["docling.datamodel.pipeline_options"] = MagicMock()
 
 from backend.services.docling_pipeline import DoclingPipeline, ContentType, TagCategory
 
@@ -44,26 +44,31 @@ class TestDoclingPipeline:
     @pytest.fixture
     def pipeline(self, mock_docling_converter):
         """Create a DoclingPipeline instance with mocked converter."""
-        with patch('backend.services.docling_pipeline.HAS_DOCLING', True):
-            with patch('backend.services.docling_pipeline.DocumentConverter', return_value=mock_docling_converter):
+        with patch("backend.services.docling_pipeline.HAS_DOCLING", True):
+            with patch(
+                "backend.services.docling_pipeline.DocumentConverter",
+                return_value=mock_docling_converter,
+            ):
                 pipeline = DoclingPipeline(
-                    enable_code_enrichment=True,
-                    enable_formula_enrichment=False
+                    enable_code_enrichment=True, enable_formula_enrichment=False
                 )
                 pipeline.converter = mock_docling_converter
                 return pipeline
 
     def test_init_with_docling_available(self, mock_docling_converter):
         """Test initialization when Docling is available."""
-        with patch('backend.services.docling_pipeline.HAS_DOCLING', True):
-            with patch('backend.services.docling_pipeline.DocumentConverter', return_value=mock_docling_converter):
+        with patch("backend.services.docling_pipeline.HAS_DOCLING", True):
+            with patch(
+                "backend.services.docling_pipeline.DocumentConverter",
+                return_value=mock_docling_converter,
+            ):
                 pipeline = DoclingPipeline()
                 assert pipeline.enable_code_enrichment is True
                 assert pipeline.enable_formula_enrichment is False
 
     def test_init_without_docling_raises_error(self):
         """Test initialization fails when Docling is not available."""
-        with patch('backend.services.docling_pipeline.HAS_DOCLING', False):
+        with patch("backend.services.docling_pipeline.HAS_DOCLING", False):
             with pytest.raises(RuntimeError, match="Docling is not installed"):
                 DoclingPipeline()
 
@@ -75,14 +80,28 @@ class TestDoclingPipeline:
 
     def test_detect_content_type_documentation(self, pipeline):
         """Test content type detection for documentation files."""
-        assert pipeline._detect_content_type(Path("README.md")) == ContentType.DOCUMENTATION
-        assert pipeline._detect_content_type(Path("docs.rst")) == ContentType.DOCUMENTATION
+        assert (
+            pipeline._detect_content_type(Path("README.md"))
+            == ContentType.DOCUMENTATION
+        )
+        assert (
+            pipeline._detect_content_type(Path("docs.rst")) == ContentType.DOCUMENTATION
+        )
 
     def test_detect_content_type_configuration(self, pipeline):
         """Test content type detection for configuration files."""
-        assert pipeline._detect_content_type(Path("config.json")) == ContentType.CONFIGURATION
-        assert pipeline._detect_content_type(Path("settings.yaml")) == ContentType.CONFIGURATION
-        assert pipeline._detect_content_type(Path("Dockerfile")) == ContentType.CONFIGURATION
+        assert (
+            pipeline._detect_content_type(Path("config.json"))
+            == ContentType.CONFIGURATION
+        )
+        assert (
+            pipeline._detect_content_type(Path("settings.yaml"))
+            == ContentType.CONFIGURATION
+        )
+        assert (
+            pipeline._detect_content_type(Path("Dockerfile"))
+            == ContentType.CONFIGURATION
+        )
 
     @pytest.mark.asyncio
     async def test_parse_file_success(self, pipeline, tmp_path):
@@ -108,10 +127,7 @@ class TestDoclingPipeline:
     @pytest.mark.asyncio
     async def test_clean_content_removes_excessive_whitespace(self, pipeline):
         """Test content cleaning removes excessive whitespace."""
-        parsed_data = {
-            "content": "line1\n\n\n\n\nline2",
-            "metadata": {}
-        }
+        parsed_data = {"content": "line1\n\n\n\n\nline2", "metadata": {}}
 
         cleaned = await pipeline.clean_content(parsed_data)
 
@@ -124,10 +140,7 @@ class TestDoclingPipeline:
         # Create content that looks minified (very long lines)
         minified_content = "a" * 300 + "\n" + "b" * 300 + "\n" + "c" * 300
 
-        parsed_data = {
-            "content": minified_content,
-            "metadata": {}
-        }
+        parsed_data = {"content": minified_content, "metadata": {}}
 
         cleaned = await pipeline.clean_content(parsed_data)
 
@@ -136,10 +149,7 @@ class TestDoclingPipeline:
     @pytest.mark.asyncio
     async def test_tag_content_detects_language(self, pipeline):
         """Test language detection in tagging."""
-        cleaned_data = {
-            "file_path": "test.py",
-            "content": "import os\nprint('hello')"
-        }
+        cleaned_data = {"file_path": "test.py", "content": "import os\nprint('hello')"}
 
         tagged = await pipeline.tag_content(cleaned_data)
 
@@ -152,7 +162,7 @@ class TestDoclingPipeline:
         """Test framework detection in tagging."""
         cleaned_data = {
             "file_path": "app.py",
-            "content": "from fastapi import FastAPI\napp = FastAPI()"
+            "content": "from fastapi import FastAPI\napp = FastAPI()",
         }
 
         tagged = await pipeline.tag_content(cleaned_data)
@@ -164,18 +174,12 @@ class TestDoclingPipeline:
     async def test_tag_content_assesses_complexity(self, pipeline):
         """Test complexity assessment."""
         # Short file - low complexity
-        short_data = {
-            "file_path": "short.py",
-            "content": "print('hello')\n" * 10
-        }
+        short_data = {"file_path": "short.py", "content": "print('hello')\n" * 10}
         tagged_short = await pipeline.tag_content(short_data)
         assert tagged_short["tags"][TagCategory.COMPLEXITY] == "low"
 
         # Long file - high complexity
-        long_data = {
-            "file_path": "long.py",
-            "content": "print('hello')\n" * 250
-        }
+        long_data = {"file_path": "long.py", "content": "print('hello')\n" * 250}
         tagged_long = await pipeline.tag_content(long_data)
         assert tagged_long["tags"][TagCategory.COMPLEXITY] == "high"
 
@@ -184,15 +188,12 @@ class TestDoclingPipeline:
         """Test purpose classification."""
         test_file_data = {
             "file_path": "test_module.py",
-            "content": "def test_something(): pass"
+            "content": "def test_something(): pass",
         }
         tagged = await pipeline.tag_content(test_file_data)
         assert tagged["tags"][TagCategory.PURPOSE] == "test"
 
-        config_file_data = {
-            "file_path": "config.yaml",
-            "content": "key: value"
-        }
+        config_file_data = {"file_path": "config.yaml", "content": "key: value"}
         tagged_config = await pipeline.tag_content(config_file_data)
         assert tagged_config["tags"][TagCategory.PURPOSE] == "configuration"
 
@@ -201,32 +202,30 @@ class TestDoclingPipeline:
         repo_path = Path("/repo")
 
         # Should exclude node_modules
-        assert pipeline._should_exclude(
-            Path("/repo/node_modules/package/file.js"),
-            repo_path,
-            ["node_modules", ".git"]
-        ) is True
+        assert (
+            pipeline._should_exclude(
+                Path("/repo/node_modules/package/file.js"),
+                repo_path,
+                ["node_modules", ".git"],
+            )
+            is True
+        )
 
         # Should not exclude regular files
-        assert pipeline._should_exclude(
-            Path("/repo/src/main.py"),
-            repo_path,
-            ["node_modules", ".git"]
-        ) is False
+        assert (
+            pipeline._should_exclude(
+                Path("/repo/src/main.py"), repo_path, ["node_modules", ".git"]
+            )
+            is False
+        )
 
     def test_should_include_patterns(self, pipeline):
         """Test file inclusion logic."""
         # Should include Python files
-        assert pipeline._should_include(
-            Path("test.py"),
-            ["*.py", "*.js"]
-        ) is True
+        assert pipeline._should_include(Path("test.py"), ["*.py", "*.js"]) is True
 
         # Should not include excluded types
-        assert pipeline._should_include(
-            Path("test.exe"),
-            ["*.py", "*.js"]
-        ) is False
+        assert pipeline._should_include(Path("test.exe"), ["*.py", "*.js"]) is False
 
     def test_detect_language_mapping(self, pipeline):
         """Test language detection for various file extensions."""
@@ -275,10 +274,12 @@ class TestDoclingPipeline:
         assert pipeline._classify_visibility(Path("_internal.py"), "") == "private"
 
         # Public file with exports
-        assert pipeline._classify_visibility(
-            Path("api.py"),
-            "export function doSomething()"
-        ) == "public"
+        assert (
+            pipeline._classify_visibility(
+                Path("api.py"), "export function doSomething()"
+            )
+            == "public"
+        )
 
         # Internal file
         assert pipeline._classify_visibility(Path("utils.py"), "") == "internal"

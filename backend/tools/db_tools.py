@@ -50,11 +50,7 @@ def create_job_record(
 
 
 def get_job_record(db: Session, job_id: UUID, user_id: UUID) -> Optional[Job]:
-    return (
-        db.query(Job)
-        .filter(Job.id == job_id, Job.user_id == user_id)
-        .first()
-    )
+    return db.query(Job).filter(Job.id == job_id, Job.user_id == user_id).first()
 
 
 def get_job_by_id(job_id: str) -> Optional[Job]:
@@ -109,7 +105,11 @@ def save_chapter_script(job_id: str, chapter_number: int, script: str) -> bool:
             .first()
         )
         if chapter is None:
-            chapter = Chapter(job_id=job_id, chapter_number=chapter_number, title=f"Chapter {chapter_number}")
+            chapter = Chapter(
+                job_id=job_id,
+                chapter_number=chapter_number,
+                title=f"Chapter {chapter_number}",
+            )
             db.add(chapter)
         chapter.script_text = script
         chapter.status = "scripting"
@@ -134,7 +134,9 @@ def persist_audio_parts(job_id: str, audio_urls: List[str]) -> None:
                 chapter.status = "completed"
                 chapter.completed_at = datetime.utcnow()
         for url in audio_urls:
-            deliverable = Deliverable(job_id=job_id, file_type="chapter_audio", file_url=url)
+            deliverable = Deliverable(
+                job_id=job_id, file_type="chapter_audio", file_url=url
+            )
             db.add(deliverable)
         db.commit()
 

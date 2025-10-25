@@ -23,6 +23,7 @@ try:
     from docling.document_converter import DocumentConverter, PdfFormatOption
     from docling.datamodel.base_models import InputFormat
     from docling.datamodel.pipeline_options import PdfPipelineOptions
+
     HAS_DOCLING = True
 except ImportError:
     HAS_DOCLING = False
@@ -31,6 +32,7 @@ except ImportError:
 
 class ContentType(str, Enum):
     """Types of content that can be parsed."""
+
     CODE = "code"
     DOCUMENTATION = "documentation"
     CONFIGURATION = "configuration"
@@ -40,6 +42,7 @@ class ContentType(str, Enum):
 
 class TagCategory(str, Enum):
     """Categories for content tagging."""
+
     LANGUAGE = "language"
     FRAMEWORK = "framework"
     PATTERN = "pattern"
@@ -62,7 +65,7 @@ class DoclingPipeline:
         self,
         enable_code_enrichment: bool = True,
         enable_formula_enrichment: bool = False,
-        artifacts_path: Optional[str] = None
+        artifacts_path: Optional[str] = None,
     ):
         """
         Initialize Docling pipeline.
@@ -182,17 +185,40 @@ class DoclingPipeline:
         # Default patterns
         if include_patterns is None:
             include_patterns = [
-                "*.py", "*.js", "*.ts", "*.tsx", "*.jsx",
-                "*.md", "*.rst", "*.txt",
-                "*.json", "*.yaml", "*.yml", "*.toml",
-                "README*", "LICENSE*"
+                "*.py",
+                "*.js",
+                "*.ts",
+                "*.tsx",
+                "*.jsx",
+                "*.md",
+                "*.rst",
+                "*.txt",
+                "*.json",
+                "*.yaml",
+                "*.yml",
+                "*.toml",
+                "README*",
+                "LICENSE*",
             ]
 
         if exclude_patterns is None:
             exclude_patterns = [
-                ".git", "node_modules", "__pycache__", ".venv", "venv",
-                "dist", "build", ".next", "target", "bin", "obj",
-                "*.pyc", "*.pyo", "*.so", "*.dylib", "*.dll"
+                ".git",
+                "node_modules",
+                "__pycache__",
+                ".venv",
+                "venv",
+                "dist",
+                "build",
+                ".next",
+                "target",
+                "bin",
+                "obj",
+                "*.pyc",
+                "*.pyo",
+                "*.so",
+                "*.dylib",
+                "*.dll",
             ]
 
         parsed_files = []
@@ -285,8 +311,7 @@ class DoclingPipeline:
         # Clean code blocks
         if "code_blocks" in cleaned:
             cleaned["code_blocks"] = [
-                self._clean_code_block(block)
-                for block in cleaned["code_blocks"]
+                self._clean_code_block(block) for block in cleaned["code_blocks"]
             ]
 
         return cleaned
@@ -359,7 +384,9 @@ class DoclingPipeline:
 
         # Step 1: Parse
         logger.info("Step 1/3: Parsing codebase...")
-        parsed = await self.parse_codebase(repo_path, include_patterns, exclude_patterns)
+        parsed = await self.parse_codebase(
+            repo_path, include_patterns, exclude_patterns
+        )
 
         # Step 2: Clean each file
         logger.info("Step 2/3: Cleaning content...")
@@ -401,8 +428,21 @@ class DoclingPipeline:
 
         # Code files
         code_extensions = {
-            ".py", ".js", ".ts", ".tsx", ".jsx", ".java", ".go",
-            ".rs", ".c", ".cpp", ".h", ".hpp", ".cs", ".rb", ".php"
+            ".py",
+            ".js",
+            ".ts",
+            ".tsx",
+            ".jsx",
+            ".java",
+            ".go",
+            ".rs",
+            ".c",
+            ".cpp",
+            ".h",
+            ".hpp",
+            ".cs",
+            ".rb",
+            ".php",
         }
         if suffix in code_extensions:
             return ContentType.CODE
@@ -440,10 +480,12 @@ class DoclingPipeline:
         # Iterate through document items and find code blocks
         for item in doc.main_text.items:
             if hasattr(item, "code_language"):
-                code_blocks.append({
-                    "language": getattr(item, "code_language", "unknown"),
-                    "content": item.text,
-                })
+                code_blocks.append(
+                    {
+                        "language": getattr(item, "code_language", "unknown"),
+                        "content": item.text,
+                    }
+                )
         return code_blocks
 
     def _extract_tables(self, doc) -> List[Dict[str, Any]]:
@@ -451,10 +493,12 @@ class DoclingPipeline:
         tables = []
         for item in doc.main_text.items:
             if item.__class__.__name__ == "TableItem":
-                tables.append({
-                    "rows": getattr(item, "num_rows", 0),
-                    "cols": getattr(item, "num_cols", 0),
-                })
+                tables.append(
+                    {
+                        "rows": getattr(item, "num_rows", 0),
+                        "cols": getattr(item, "num_cols", 0),
+                    }
+                )
         return tables
 
     def _extract_images(self, doc) -> List[Dict[str, Any]]:
@@ -462,9 +506,11 @@ class DoclingPipeline:
         images = []
         for item in doc.main_text.items:
             if item.__class__.__name__ == "PictureItem":
-                images.append({
-                    "caption": getattr(item, "caption", ""),
-                })
+                images.append(
+                    {
+                        "caption": getattr(item, "caption", ""),
+                    }
+                )
         return images
 
     def _extract_formulas(self, doc) -> List[str]:
@@ -496,7 +542,9 @@ class DoclingPipeline:
                 return True
         return False
 
-    def _build_dependency_graph(self, files: List[Dict[str, Any]]) -> Dict[str, List[str]]:
+    def _build_dependency_graph(
+        self, files: List[Dict[str, Any]]
+    ) -> Dict[str, List[str]]:
         """
         Build dependency graph from parsed files.
 
@@ -526,6 +574,7 @@ class DoclingPipeline:
     def _normalize_whitespace(self, content: str) -> str:
         """Normalize whitespace in content."""
         import re
+
         # Replace multiple spaces with single space (except at line start)
         lines = content.split("\n")
         normalized = [re.sub(r"(?<!^)  +", " ", line) for line in lines]
@@ -534,6 +583,7 @@ class DoclingPipeline:
     def _remove_excessive_blank_lines(self, content: str) -> str:
         """Remove excessive blank lines (more than 2 consecutive)."""
         import re
+
         return re.sub(r"\n{4,}", "\n\n\n", content)
 
     def _is_likely_minified(self, content: str) -> bool:

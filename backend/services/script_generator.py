@@ -39,17 +39,26 @@ async def _run_script_agent(prompt: str, chapter_data: Dict[str, Any]) -> str:
     return getattr(response, "text", None) or getattr(response, "result", "")
 
 
-async def generate_script(chapter_data: Dict[str, Any], code_context: Dict[str, Any], job_id: str) -> str:
+async def generate_script(
+    chapter_data: Dict[str, Any], code_context: Dict[str, Any], job_id: str
+) -> str:
     prompt = _build_prompt(chapter_data, code_context)
     try:
         script_text = await _run_script_agent(prompt, chapter_data)
         if script_text.strip():
             return script_text
-        logger.info("Script agent returned empty response", extra={"job_id": job_id, "chapter": chapter_data.get("number")})
+        logger.info(
+            "Script agent returned empty response",
+            extra={"job_id": job_id, "chapter": chapter_data.get("number")},
+        )
     except Exception as exc:
         logger.warning(
             "Script agent failed; returning fallback script",
-            extra={"job_id": job_id, "chapter": chapter_data.get("number"), "error": str(exc)},
+            extra={
+                "job_id": job_id,
+                "chapter": chapter_data.get("number"),
+                "error": str(exc),
+            },
         )
     title = chapter_data.get("title") or "Chapter"
     return (

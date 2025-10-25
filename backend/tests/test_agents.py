@@ -32,9 +32,9 @@ class TestAnalyzerAgent:
         agent = await create_analyzer_agent(mock_chat_client)
 
         assert agent is not None
-        assert hasattr(agent, 'name')
+        assert hasattr(agent, "name")
         # Agent should have appropriate instructions
-        assert hasattr(agent, 'instructions') or hasattr(agent, 'system_message')
+        assert hasattr(agent, "instructions") or hasattr(agent, "system_message")
 
     @pytest.mark.asyncio
     async def test_analyzer_agent_has_tools(self, mock_chat_client):
@@ -44,7 +44,7 @@ class TestAnalyzerAgent:
         agent = await create_analyzer_agent(mock_chat_client)
 
         # Should have tools for git operations and code parsing
-        assert hasattr(agent, 'tools')
+        assert hasattr(agent, "tools")
 
 
 @pytest.mark.agents
@@ -66,7 +66,7 @@ class TestOutlineAgent:
         agent = await create_outline_agent(mock_chat_client)
 
         assert agent is not None
-        assert hasattr(agent, 'name')
+        assert hasattr(agent, "name")
 
     @pytest.mark.asyncio
     async def test_outline_agent_configuration(self, mock_chat_client):
@@ -76,7 +76,7 @@ class TestOutlineAgent:
         agent = await create_outline_agent(mock_chat_client)
 
         # Should have instructions for creating chapter outlines
-        assert hasattr(agent, 'instructions') or hasattr(agent, 'system_message')
+        assert hasattr(agent, "instructions") or hasattr(agent, "system_message")
 
 
 @pytest.mark.agents
@@ -98,7 +98,7 @@ class TestScriptAgent:
         agent = await create_script_agent(mock_chat_client)
 
         assert agent is not None
-        assert hasattr(agent, 'name')
+        assert hasattr(agent, "name")
 
     @pytest.mark.asyncio
     async def test_script_agent_for_chapter(self, mock_chat_client):
@@ -108,7 +108,7 @@ class TestScriptAgent:
         chapter_data = {
             "number": 1,
             "title": "Introduction",
-            "files_covered": ["main.py"]
+            "files_covered": ["main.py"],
         }
 
         agent = await create_script_agent(mock_chat_client, chapter_data=chapter_data)
@@ -135,7 +135,7 @@ class TestAudioAgent:
         agent = await create_audio_agent(mock_chat_client)
 
         assert agent is not None
-        assert hasattr(agent, 'name')
+        assert hasattr(agent, "name")
 
     @pytest.mark.asyncio
     async def test_audio_agent_has_tts_tools(self, mock_chat_client):
@@ -145,7 +145,7 @@ class TestAudioAgent:
         agent = await create_audio_agent(mock_chat_client)
 
         # Should have tools for audio synthesis
-        assert hasattr(agent, 'tools')
+        assert hasattr(agent, "tools")
 
 
 @pytest.mark.agents
@@ -167,7 +167,7 @@ class TestPostProcessAgent:
         agent = await create_postprocess_agent(mock_chat_client)
 
         assert agent is not None
-        assert hasattr(agent, 'name')
+        assert hasattr(agent, "name")
 
     @pytest.mark.asyncio
     async def test_postprocess_agent_configuration(self, mock_chat_client):
@@ -177,7 +177,7 @@ class TestPostProcessAgent:
         agent = await create_postprocess_agent(mock_chat_client)
 
         # Should have tools for audio processing and storage
-        assert hasattr(agent, 'tools')
+        assert hasattr(agent, "tools")
 
 
 @pytest.mark.agents
@@ -191,10 +191,12 @@ class TestAgentWorkflow:
         client = MagicMock()
         client.chat = MagicMock()
         client.chat.completions = MagicMock()
-        client.chat.completions.create = AsyncMock(return_value=MagicMock(
-            choices=[MagicMock(message=MagicMock(content="Test response"))],
-            usage=MagicMock(total_tokens=100)
-        ))
+        client.chat.completions.create = AsyncMock(
+            return_value=MagicMock(
+                choices=[MagicMock(message=MagicMock(content="Test response"))],
+                usage=MagicMock(total_tokens=100),
+            )
+        )
         return client
 
     @pytest.mark.skip(reason="Requires full agent framework setup")
