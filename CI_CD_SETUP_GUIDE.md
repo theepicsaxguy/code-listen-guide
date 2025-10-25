@@ -139,7 +139,6 @@ jobs:
           pytest -m "integration and slow" -v
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           # Add other secrets as needed
 
       - name: Notify on failure
@@ -214,7 +213,6 @@ Add these secrets to your GitHub repository settings:
 
 ### For Integration Tests (Optional)
 - `ANTHROPIC_API_KEY` - Claude API key for outline/script generation tests
-- `AZURE_OPENAI_API_KEY` - Azure OpenAI key for agent tests
 - `STRIPE_SECRET_KEY` - Stripe test key for payment tests
 - `AWS_ACCESS_KEY_ID` - AWS key for S3 storage tests
 - `AWS_SECRET_ACCESS_KEY` - AWS secret for S3 storage tests
