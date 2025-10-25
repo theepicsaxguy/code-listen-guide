@@ -65,8 +65,9 @@ The FastAPI service exposes REST and WebSocket endpoints for managing jobs, runn
 
 ### Testing
 - Frontend: `npm run lint` keeps TypeScript and hooks tidy.
-- Backend: from `backend/`, run `pytest` once the virtual environment is active. (CI installs `pytest` and `pytest-asyncio` automatically.)
-- Full CI: GitHub Actions builds the frontend with Node.js 20 and runs the backend test suite on Python 3.11 for every pull request.
+- Backend: from `backend/`, run the marker-driven suites with `pytest -m <marker>` once the virtual environment is active. The CI runner installs the full `backend/requirements.txt`, so every job mirrors local development.
+- Full CI: GitHub Actions builds the frontend with Node.js 22 and runs backend unit, workflow, service, agent, API, model, and integration suites on Python 3.11 and 3.12, publishing coverage to Codecov when configured.
+- Scheduled checks: nightly integration runs and an always-on code-quality workflow catch slow or lint-related regressions without blocking day-to-day development.
 
 ## Roadmap highlights
 
