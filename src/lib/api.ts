@@ -1,6 +1,12 @@
 // API Client for Backend Communication
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const resolvedApiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined'
+    ? `${window.location.origin}/api/v1`
+    : 'http://localhost:8000/api/v1');
+
+const API_BASE_URL = resolvedApiBaseUrl.replace(/\/$/, '');
 
 class ApiClient {
   private baseUrl: string;

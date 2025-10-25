@@ -1,7 +1,11 @@
-from fastapi import FastAPI, Request, status
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
 from contextlib import asynccontextmanager
 import logging
 
@@ -32,6 +36,17 @@ from backend.db.session import init_db
 from backend.utils.checkpointing import PostgresCheckpointStorage
 
 settings = get_settings()
+frontend_dist_path = (Path(__file__).resolve().parent / "frontend_dist").resolve()
+frontend_dist_exists = frontend_dist_path.exists()
+
+
+def get_frontend_file(relative_path: str) -> Path:
+    candidate = (frontend_dist_path / relative_path).resolve()
+    if not candidate.is_relative_to(frontend_dist_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if not candidate.exists() or not candidate.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return candidate
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -94,6 +109,11 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+if frontend_dist_exists:
+    assets_dir = frontend_dist_path / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
 
 if trace and Resource and TracerProvider:
     resource = Resource.create({"service.name": settings.service_name})
@@ -186,13 +206,33 @@ async def health_check():
 # Root endpoint
 @app.get("/")
 async def root():
-    """Root endpoint with API information."""
+    if frontend_dist_exists:
+        index_file = get_frontend_file("index.html")
+        return FileResponse(index_file)
     return {
         "message": "Codebase Audiobook API",
         "version": "0.1.0",
         "docs": "/docs",
         "health": "/health",
     }
+
+
+if frontend_dist_exists:
+    restricted_paths = {"docs", "redoc", "openapi.json", "health"}
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_frontend(full_path: str):
+        if not full_path:
+            index_file = get_frontend_file("index.html")
+            return FileResponse(index_file)
+        if full_path.startswith("api/") or full_path in restricted_paths:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        try:
+            asset = get_frontend_file(full_path)
+            return FileResponse(asset)
+        except HTTPException:
+            index_file = get_frontend_file("index.html")
+            return FileResponse(index_file)
 
 
 @app.middleware("http")
