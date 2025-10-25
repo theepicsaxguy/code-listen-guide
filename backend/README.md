@@ -83,6 +83,7 @@ backend/
 - Python 3.11+
 - PostgreSQL 15+ (required for production; local development defaults to SQLite)
 - FFmpeg (for audio processing)
+- libxml2-dev and libxslt1-dev (required to build the `lxml` dependency used by Docling)
 - Azure Active Directory application with `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET` configured for Azure OpenAI
 
 ### Installation
