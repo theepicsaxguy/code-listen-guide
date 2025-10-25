@@ -405,13 +405,15 @@ class TestWorkflowCheckpointModel:
     def test_create_checkpoint(self, test_db, create_job):
         """Test creating workflow checkpoint."""
         from backend.models.workflow_checkpoint import WorkflowCheckpoint
+        import uuid
 
         job = create_job()
 
         checkpoint = WorkflowCheckpoint(
-            job_id=job.id,
-            stage="outline_generation",
-            checkpoint_data={"analysis": "complete"},
+            id=str(uuid.uuid4()),
+            workflow_id=str(job.id),
+            step_id="outline_generation",
+            state={"analysis": "complete"},
         )
 
         test_db.add(checkpoint)
@@ -419,11 +421,15 @@ class TestWorkflowCheckpointModel:
         test_db.refresh(checkpoint)
 
         assert checkpoint.id is not None
-        assert checkpoint.stage == "outline_generation"
+        assert checkpoint.workflow_id == str(job.id)
+        assert checkpoint.step_id == "outline_generation"
+        assert checkpoint.state == {"analysis": "complete"}
+        assert checkpoint.created_at is not None
 
     def test_multiple_checkpoints_per_job(self, test_db, create_job):
         """Test job can have multiple checkpoints."""
         from backend.models.workflow_checkpoint import WorkflowCheckpoint
+        import uuid
 
         job = create_job()
 
@@ -431,16 +437,24 @@ class TestWorkflowCheckpointModel:
 
         for stage in stages:
             checkpoint = WorkflowCheckpoint(
-                job_id=job.id, stage=stage, checkpoint_data={"stage": stage}
+                id=str(uuid.uuid4()),
+                workflow_id=str(job.id),
+                step_id=stage,
+                state={"stage": stage},
             )
             test_db.add(checkpoint)
 
         test_db.commit()
 
-        # Query checkpoints
-        checkpoints = test_db.query(WorkflowCheckpoint).filter_by(job_id=job.id).all()
+        checkpoints = (
+            test_db.query(WorkflowCheckpoint)
+            .filter_by(workflow_id=str(job.id))
+            .order_by(WorkflowCheckpoint.created_at.asc())
+            .all()
+        )
 
         assert len(checkpoints) == 5
+        assert [cp.step_id for cp in checkpoints] == stages
 
 
 @pytest.mark.models
