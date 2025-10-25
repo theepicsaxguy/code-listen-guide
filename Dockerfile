@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 ARG PYTHON_VERSION=3.14-slim
-ARG NODE_VERSION=20-bookworm-slim
+ARG NODE_VERSION=22-bookworm-slim
 ARG VITE_API_BASE_URL=/api/v1
 
 FROM node:${NODE_VERSION} AS frontend-build
