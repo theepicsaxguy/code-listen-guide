@@ -1,101 +1,151 @@
-"""
-Payment service for Stripe integration.
+"""Stripe payment helpers used by the API and workflows."""
 
-This service handles Stripe payment processing for audiobook generation jobs.
-Implementation pending: Requires Stripe API keys and webhook configuration.
-"""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 import stripe
-from typing import Dict
+
+from backend.config import get_settings
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PaymentIntentResult:
+    id: str
+    client_secret: str
+    amount: int
+    currency: str
+    status: str
+    raw: Any
 
 
 class StripeService:
-    """
-    Handles Stripe payment operations.
+    """Asynchronous wrapper around Stripe SDK operations."""
 
-    Implementation Note: Requires Stripe API key and webhook secret configuration.
-    Used by backend/api/routes/payments.py for payment processing.
-    """
-
-    def __init__(self, api_key: str, webhook_secret: str):
-        """
-        Initialize Stripe service.
-
-        Args:
-            api_key: Stripe secret API key
-            webhook_secret: Stripe webhook signing secret
-        """
+    def __init__(self, api_key: str, webhook_secret: str) -> None:
         stripe.api_key = api_key
         self.webhook_secret = webhook_secret
 
     async def create_payment_intent(
         self,
+        *,
         amount_cents: int,
         currency: str = "usd",
-        customer_id: str = None,
-        metadata: Dict = None
-    ) -> Dict:
-        """
-        Create Stripe payment intent.
+        customer_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> PaymentIntentResult:
+        payload: Dict[str, Any] = {
+            "amount": amount_cents,
+            "currency": currency,
+            "automatic_payment_methods": {"enabled": True},
+        }
+        if customer_id:
+            payload["customer"] = customer_id
+        if metadata:
+            payload["metadata"] = metadata
 
-        Args:
-            amount_cents: Payment amount in cents
-            currency: Currency code (default: USD)
-            customer_id: Optional Stripe customer ID
-            metadata: Optional metadata dict
+        async def _create() -> Any:
+            return stripe.PaymentIntent.create(**payload)
 
-        Returns:
-            Payment intent details including client_secret
-        """
-        raise NotImplementedError("Implement using stripe.PaymentIntent.create()")
+        intent = await asyncio.to_thread(_create)
+        return PaymentIntentResult(
+            id=getattr(intent, "id", intent["id"]),
+            client_secret=getattr(intent, "client_secret", intent["client_secret"]),
+            amount=getattr(intent, "amount", intent["amount"]),
+            currency=getattr(intent, "currency", intent["currency"]),
+            status=getattr(intent, "status", intent["status"]),
+            raw=intent,
+        )
 
-    def verify_webhook_signature(
-        self,
-        payload: bytes,
-        sig_header: str
-    ) -> Dict:
-        """
-        Verify Stripe webhook signature.
+    def verify_webhook_signature(self, payload: bytes, sig_header: str) -> Dict[str, Any]:
+        return stripe.Webhook.construct_event(
+            payload=payload,
+            sig_header=sig_header,
+            secret=self.webhook_secret,
+        )
 
-        Args:
-            payload: Raw request body bytes
-            sig_header: Stripe-Signature header value
+    async def create_customer(self, *, email: str, name: Optional[str] = None) -> str:
+        async def _create() -> Any:
+            return stripe.Customer.create(email=email, name=name)
 
-        Returns:
-            Verified event data
-
-        Raises:
-            stripe.error.SignatureVerificationError: If signature is invalid
-        """
-        raise NotImplementedError("Implement using stripe.Webhook.construct_event()")
-
-    async def create_customer(
-        self,
-        email: str,
-        name: str = None
-    ) -> str:
-        """
-        Create Stripe customer.
-
-        Args:
-            email: Customer email address
-            name: Optional customer name
-
-        Returns:
-            Stripe customer ID
-        """
-        raise NotImplementedError("Implement using stripe.Customer.create()")
+        customer = await asyncio.to_thread(_create)
+        return getattr(customer, "id", customer["id"])
 
     async def process_refund(
         self,
+        *,
         payment_intent_id: str,
-        amount_cents: int = None
-    ):
-        """
-        Process refund for payment.
+        amount_cents: Optional[int] = None,
+        reason: Optional[str] = None,
+    ) -> Any:
+        payload: Dict[str, Any] = {"payment_intent": payment_intent_id}
+        if amount_cents:
+            payload["amount"] = amount_cents
+        if reason:
+            payload["reason"] = reason
 
-        Args:
-            payment_intent_id: Stripe payment intent ID
-            amount_cents: Optional partial refund amount (full refund if None)
-        """
-        raise NotImplementedError("Implement using stripe.Refund.create()")
+        async def _refund() -> Any:
+            return stripe.Refund.create(**payload)
+
+        return await asyncio.to_thread(_refund)
+
+
+_stripe_service: Optional[StripeService] = None
+
+
+def get_stripe_service() -> StripeService:
+    global _stripe_service
+    if _stripe_service is None:
+        settings = get_settings()
+        _stripe_service = StripeService(
+            api_key=settings.stripe_secret_key,
+            webhook_secret=settings.stripe_webhook_secret,
+        )
+    return _stripe_service
+
+
+async def create_payment_intent(
+    *,
+    job_id: str,
+    amount_cents: int,
+    user_email: str,
+    customer_id: Optional[str] = None,
+    currency: str = "usd",
+) -> PaymentIntentResult:
+    service = get_stripe_service()
+    metadata = {"job_id": job_id, "user_email": user_email}
+    logger.info("Creating Stripe payment intent", extra={"job_id": job_id, "amount": amount_cents})
+    return await service.create_payment_intent(
+        amount_cents=amount_cents,
+        currency=currency,
+        customer_id=customer_id,
+        metadata=metadata,
+    )
+
+
+async def handle_payment_webhook(*, payload: bytes | Dict[str, Any], signature: str) -> Dict[str, Any]:
+    service = get_stripe_service()
+    raw_payload = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+    event = service.verify_webhook_signature(raw_payload, signature)
+    logger.info("Processed Stripe webhook", extra={"type": event.get("type")})
+    return event
+
+
+async def process_refund(
+    *,
+    payment_intent_id: str,
+    amount_cents: Optional[int] = None,
+    reason: Optional[str] = None,
+) -> Any:
+    service = get_stripe_service()
+    return await service.process_refund(
+        payment_intent_id=payment_intent_id,
+        amount_cents=amount_cents,
+        reason=reason,
+    )

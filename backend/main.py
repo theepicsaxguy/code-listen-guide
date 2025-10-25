@@ -20,6 +20,8 @@ except ImportError:
     TracerProvider = None
     BatchSpanProcessor = None
 
+from backend.api.routes import auth, jobs, outlines, payments, player
+from backend.api.ws import router as ws_router
 from backend.config import get_settings
 from backend.db.session import init_db
 from backend.utils.checkpointing import PostgresCheckpointStorage
@@ -71,6 +73,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth.router)
+app.include_router(jobs.router)
+app.include_router(outlines.router)
+app.include_router(payments.router)
+app.include_router(player.router)
+app.include_router(ws_router)
 
 
 @app.exception_handler(RequestValidationError)
