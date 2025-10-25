@@ -72,7 +72,7 @@ class Job(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Metadata (flexible JSON field)
-    metadata = Column(JSONB, default={})
+    metadata_json = Column("metadata", JSONB, default={})
 
     # Relationships (uncomment when other models are active)
     # user = relationship("User", back_populates="jobs")
