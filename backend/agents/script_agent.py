@@ -1,10 +1,10 @@
 from typing import Any, Dict
 
 from agent_framework import AIFunction, ChatAgent
-from agent_framework.azure import AzureOpenAIResponsesClient
-from azure.identity import DefaultAzureCredential
+from agent_framework.openai import OpenAIResponsesClient
 
 from backend.tools.db_tools import save_chapter_script
+from . import build_responses_client_options
 
 
 def _ai_save_script(job_id: str, chapter_number: int, script: str) -> bool:
@@ -27,11 +27,5 @@ async def create_script_agent(
 
 
 async def script_agent(settings: Any, chapter_ctx: Dict[str, Any]) -> Any:
-    credential = DefaultAzureCredential(exclude_cli_credential=True)
-    client = AzureOpenAIResponsesClient(
-        endpoint=settings.azure_openai_endpoint,
-        credential=credential,
-        deployment_name=settings.azure_openai_deployment_name,
-        api_version=settings.azure_openai_api_version,
-    )
+    client = OpenAIResponsesClient(**build_responses_client_options(settings))
     return await create_script_agent(client, chapter_ctx)

@@ -1,11 +1,11 @@
 from typing import Any
 
 from agent_framework import AIFunction, ChatAgent
-from agent_framework.azure import AzureOpenAIResponsesClient
-from azure.identity import DefaultAzureCredential
+from agent_framework.openai import OpenAIResponsesClient
 
 from backend.tools.audio_tools import synthesize_speech
 from backend.tools.storage_tools import upload_to_s3
+from . import build_responses_client_options
 
 
 def _ai_tts(text: str, voice: str = "alloy") -> str:
@@ -28,11 +28,5 @@ async def create_audio_agent(chat_client: Any) -> ChatAgent:
 
 
 async def audio_agent(settings: Any) -> Any:
-    credential = DefaultAzureCredential(exclude_cli_credential=True)
-    client = AzureOpenAIResponsesClient(
-        endpoint=settings.azure_openai_endpoint,
-        credential=credential,
-        deployment_name=settings.azure_openai_deployment_name,
-        api_version=settings.azure_openai_api_version,
-    )
+    client = OpenAIResponsesClient(**build_responses_client_options(settings))
     return await create_audio_agent(client)

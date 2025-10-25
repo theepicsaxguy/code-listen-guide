@@ -1,12 +1,12 @@
 from typing import Annotated, Any, Dict, List
 
 from agent_framework import AIFunction, ChatAgent
-from agent_framework.azure import AzureOpenAIResponsesClient
-from azure.identity import DefaultAzureCredential
+from agent_framework.openai import OpenAIResponsesClient
 from pydantic import Field
 
 from backend.tools.code_parser_tools import build_code_map
 from backend.tools.git_tools import clone_repository, list_repository_files
+from . import build_responses_client_options
 
 
 def _ai_clone_repo(url: Annotated[str, Field(description="Git repository URL")]) -> str:
@@ -42,11 +42,5 @@ async def create_analyzer_agent(chat_client: Any) -> ChatAgent:
 
 
 async def analyzer_agent(settings: Any) -> Any:
-    credential = DefaultAzureCredential(exclude_cli_credential=True)
-    client = AzureOpenAIResponsesClient(
-        endpoint=settings.azure_openai_endpoint,
-        credential=credential,
-        deployment_name=settings.azure_openai_deployment_name,
-        api_version=settings.azure_openai_api_version,
-    )
+    client = OpenAIResponsesClient(**build_responses_client_options(settings))
     return await create_analyzer_agent(client)

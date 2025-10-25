@@ -355,7 +355,7 @@ class TestUsageLogModel:
         job = create_job()
 
         log = UsageLog(
-            job_id=job.id, service_type="azure_openai", tokens_used=1000, cost_cents=25
+            job_id=job.id, service_type="openai_responses", tokens_used=1000, cost_cents=25
         )
 
         test_db.add(log)
@@ -372,7 +372,7 @@ class TestUsageLogModel:
         job = create_job()
 
         services = [
-            ("azure_openai", 1000, 25),
+            ("openai_responses", 1000, 25),
             ("anthropic", 1500, 30),
             ("openai_tts", 0, 100),
         ]

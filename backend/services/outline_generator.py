@@ -1,13 +1,12 @@
-"""Outline generation service backed by Microsoft Agent Framework agents."""
+"""Outline generation service backed by Agent Framework agents."""
 
 import json
 import logging
 from typing import Any, Dict
 
-from agent_framework.azure import AzureOpenAIResponsesClient
-from azure.identity import DefaultAzureCredential
+from agent_framework.openai import OpenAIResponsesClient
 
-from backend.agents import outline_agent
+from backend.agents import build_responses_client_options, outline_agent
 from backend.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -35,13 +34,7 @@ def _build_prompt(analysis_data: Dict[str, Any], depth_tier: str) -> str:
 
 async def _run_outline_agent(prompt: str) -> str:
     settings = get_settings()
-    credential = DefaultAzureCredential(exclude_cli_credential=True)
-    client = AzureOpenAIResponsesClient(
-        endpoint=settings.azure_openai_endpoint,
-        credential=credential,
-        deployment_name=settings.azure_openai_deployment_name,
-        api_version=settings.azure_openai_api_version,
-    )
+    client = OpenAIResponsesClient(**build_responses_client_options(settings))
     agent = await outline_agent.create_outline_agent(client)
     response = await agent.run(prompt)
     return getattr(response, "text", None) or getattr(response, "result", "")
