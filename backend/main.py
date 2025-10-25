@@ -20,9 +20,11 @@ except ImportError:
     TracerProvider = None
     BatchSpanProcessor = None
 
+from backend.api.routes import auth, jobs, outlines, payments, player
 from backend.config import get_settings
 from backend.db.session import init_db
 from backend.utils.checkpointing import PostgresCheckpointStorage
+from backend.utils.middleware import RateLimiterMiddleware, SecurityHeadersMiddleware
 
 settings = get_settings()
 
@@ -60,7 +62,7 @@ if trace and Resource and TracerProvider:
     if FastAPIInstrumentor:
         FastAPIInstrumentor.instrument_app(app, tracer_provider=provider)
 
-cors_origins = ["http://localhost:5173", "http://localhost:3000"]
+cors_origins = list(dict.fromkeys(settings.allowed_cors_origins))
 if settings.frontend_url not in cors_origins:
     cors_origins.append(settings.frontend_url)
 
@@ -68,9 +70,32 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    expose_headers=["Content-Disposition"],
+    max_age=600,
 )
+
+app.add_middleware(
+    SecurityHeadersMiddleware,
+    content_security_policy=settings.content_security_policy,
+    referrer_policy=settings.referrer_policy,
+    enable_hsts=settings.environment.lower() == "production",
+)
+
+app.add_middleware(
+    RateLimiterMiddleware,
+    max_requests=settings.rate_limit_per_minute,
+    window_seconds=60,
+)
+
+app.state.rate_limit_per_minute = settings.rate_limit_per_minute
+
+app.include_router(auth.router)
+app.include_router(jobs.router)
+app.include_router(outlines.router)
+app.include_router(payments.router)
+app.include_router(player.router)
 
 
 @app.exception_handler(RequestValidationError)

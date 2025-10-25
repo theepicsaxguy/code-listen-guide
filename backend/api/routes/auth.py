@@ -9,8 +9,8 @@ Provides endpoints for:
 - Logout (token invalidation placeholder)
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
@@ -28,6 +28,34 @@ from backend.utils.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from backend.utils.validators import validate_email_format, validate_password_strength
+
+
+async def _extract_login_credentials(request: Request) -> tuple[str, str]:
+    content_type = request.headers.get("content-type", "").lower()
+
+    if "application/json" in content_type:
+        try:
+            payload = await request.json()
+        except Exception as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON body") from exc
+        username = payload.get("email") or payload.get("username")
+        password = payload.get("password")
+    elif "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+        form = await request.form()
+        username = form.get("username") or form.get("email")
+        password = form.get("password")
+    else:
+        try:
+            payload = await request.json()
+        except Exception:
+            payload = {}
+        username = payload.get("email") or payload.get("username")
+        password = payload.get("password")
+
+    if not username or not password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing credentials")
+
+    return username, password
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -99,7 +127,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(request: Request, db: Session = Depends(get_db)):
     """
     Login user and return JWT tokens.
 
@@ -115,8 +143,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     Raises:
         HTTPException: 401 if credentials are invalid
     """
-    # Find user by email (username field in OAuth2 form)
-    user = db.query(User).filter(User.email == form_data.username).first()
+    username, password = await _extract_login_credentials(request)
+
+    user = db.query(User).filter(User.email == username).first()
 
     if not user:
         raise HTTPException(
@@ -126,7 +155,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         )
 
     # Verify password
-    if not verify_password(form_data.password, user.hashed_password):
+    if not verify_password(password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

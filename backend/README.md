@@ -168,6 +168,12 @@ backend/
 - `GET /api/v1/player/{job_id}` - Get audiobook player data
 - `GET /api/v1/player/{job_id}/download/{type}` - Download deliverable
 
+## Security defaults
+
+- CORS is locked to the configured frontend domain list. Adjust `ALLOWED_CORS_ORIGINS` in the settings if you need to expose the API to another site.
+- Security middleware adds a restrictive Content Security Policy, a `no-referrer` policy, `X-Frame-Options: DENY`, and HSTS when running in production.
+- Every client shares a configurable rate limit (`RATE_LIMIT_PER_MINUTE`) that guards against abuse and accidental infinite loops.
+
 ## Workflow Lifecycle
 
 Audiobook generation jobs move through several coordinated stages once a user starts a workflow:

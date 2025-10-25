@@ -91,3 +91,10 @@ The FastAPI service exposes REST and WebSocket endpoints for managing jobs, runn
 
 Open an issue before starting large changes so we can cross-check with the roadmap. For new features, update the relevant plan files or add a short proposal in `docs/` so future contributors know the reasoning. Pull requests must pass linting, frontend build, and backend tests before review.
 
+## Security and legal baseline
+
+- The API only accepts cross-origin requests from the frontend URL declared in configuration. Preflight requests and credentialed calls are allowed, but arbitrary origins are rejected.
+- Every response carries strict security headers including a locked-down Content Security Policy, a `no-referrer` policy, and modern anti-clickjacking guards. HTTPS deployments also advertise HSTS.
+- A lightweight rate limiter protects the service from bursts or accidental abuse. The default cap is configurable through `RATE_LIMIT_PER_MINUTE`.
+- Usage is governed by the [Terms of Service](TERMS.md) and [Privacy Policy](PRIVACY.md). The code and documentation are released under the [MIT License](LICENSE).
+

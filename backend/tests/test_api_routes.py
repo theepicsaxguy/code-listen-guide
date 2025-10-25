@@ -31,8 +31,10 @@ class TestAuthRoutes:
             }
         )
 
-        # May return 201 or 200 depending on implementation
-        assert response.status_code in [200, 201, 422]  # 422 if validation fails
+        assert response.status_code == 201
+        payload = response.json()
+        assert payload["email"] == "newuser@example.com"
+        assert payload["subscription_tier"] == "free"
 
     def test_register_duplicate_email(self, test_client, create_user):
         """Test registration with duplicate email fails."""
@@ -48,12 +50,10 @@ class TestAuthRoutes:
             }
         )
 
-        # Should fail with conflict or bad request
-        assert response.status_code in [400, 409, 422, 500]
+        assert response.status_code == 400
 
     def test_login_with_valid_credentials(self, test_client, create_user):
         """Test login with correct credentials."""
-        # Create user (would need to hash password properly)
         create_user(email="user@example.com")
 
         response = test_client.post(
@@ -64,8 +64,11 @@ class TestAuthRoutes:
             }
         )
 
-        # May succeed or fail depending on auth implementation
-        assert response.status_code in [200, 401, 422, 500]
+        assert response.status_code == 200
+        body = response.json()
+        assert body["token_type"] == "bearer"
+        assert body["access_token"]
+        assert body["refresh_token"]
 
     def test_login_with_invalid_credentials(self, test_client):
         """Test login with wrong credentials."""
@@ -77,8 +80,7 @@ class TestAuthRoutes:
             }
         )
 
-        # Should fail
-        assert response.status_code in [401, 404, 422, 500]
+        assert response.status_code == 401
 
     def test_get_current_user(self, test_client, create_user):
         """Test getting current user info."""
@@ -90,8 +92,20 @@ class TestAuthRoutes:
             headers={"Authorization": "Bearer fake_token"}
         )
 
-        # May fail without proper auth
-        assert response.status_code in [200, 401, 403, 422]
+        assert response.status_code == 401
+
+
+def test_rate_limit_returns_429(test_client):
+    original_limit = test_client.app.state.rate_limit_per_minute
+    test_client.app.state.rate_limit_per_minute = 2
+    try:
+        assert test_client.get("/health").status_code == 200
+        assert test_client.get("/health").status_code == 200
+        response = test_client.get("/health")
+        assert response.status_code == 429
+        assert response.json()["detail"] == "Rate limit exceeded"
+    finally:
+        test_client.app.state.rate_limit_per_minute = original_limit
 
 
 @pytest.mark.api

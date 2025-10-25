@@ -333,14 +333,15 @@ def mock_workflow():
 def create_user(test_db):
     """Factory fixture for creating test users."""
     from backend.models.user import User
+    from backend.utils.auth import get_password_hash
 
     def _create_user(**kwargs):
         user_data = {
             "email": "test@example.com",
             "name": "Test User",
-            "hashed_password": "hashed_password",
+            "hashed_password": get_password_hash("password123"),
             "subscription_tier": "free",
-            "credits_remaining": 0
+            "credits_remaining": 0,
         }
         user_data.update(kwargs)
 

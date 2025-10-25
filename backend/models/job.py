@@ -5,7 +5,7 @@ All fields are defined and the model is ready to use.
 Relationships and helper methods are commented out - uncomment when needed.
 """
 
-from sqlalchemy import Column, String, Integer, DateTime, DECIMAL, Text, BigInteger, ForeignKey
+from sqlalchemy import Column, String, Integer, DateTime, DECIMAL, Text, BigInteger, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -63,7 +63,7 @@ class Job(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Metadata (flexible JSON field)
-    metadata = Column(JSONB, default={})
+    job_metadata = Column("metadata", JSONB().with_variant(JSON(), "sqlite"), default=dict)
 
     # Relationships (uncomment when other models are active)
     # user = relationship("User", back_populates="jobs")

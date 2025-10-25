@@ -1,7 +1,7 @@
 """Application configuration helpers."""
 
 from functools import lru_cache
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -37,6 +37,12 @@ class Settings(BaseSettings):
 
     api_base_url: str = Field(default="http://localhost:8000")
     frontend_url: str = Field(default="http://localhost:5173")
+    allowed_cors_origins: List[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:5173",
+            "http://localhost:3000",
+        ]
+    )
     environment: str = Field(default="development")
 
     sentry_dsn: Optional[str] = Field(default=None)
@@ -44,6 +50,20 @@ class Settings(BaseSettings):
     service_name: str = Field(default="cba-backend")
 
     rate_limit_per_minute: int = Field(default=60)
+    content_security_policy: str = Field(
+        default=(
+            "default-src 'none'; "
+            "base-uri 'self'; "
+            "connect-src 'self'; "
+            "form-action 'self'; "
+            "img-src 'self' data:; "
+            "media-src 'self'; "
+            "script-src 'none'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "frame-ancestors 'none'"
+        )
+    )
+    referrer_policy: str = Field(default="no-referrer")
     max_repo_size_mb: int = Field(default=500)
     max_concurrent_jobs_per_user: int = Field(default=3)
 
