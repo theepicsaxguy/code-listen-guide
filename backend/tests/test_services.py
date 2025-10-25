@@ -5,7 +5,7 @@ Tests for:
 - Repository Analyzer Service
 - Outline Generator Service
 - Script Generator Service
-- Audio Synthesizer Service
+- Audio Tools
 - Post Processor Service
 - Storage Service
 - Payment Service
@@ -172,43 +172,60 @@ class TestScriptGenerator:
 
 @pytest.mark.services
 @pytest.mark.unit
-class TestAudioSynthesizer:
-    """Test Audio Synthesizer service."""
+class TestAudioTools:
+    """Test audio utility functions."""
 
-    @pytest.mark.asyncio
-    async def test_synthesize_audio_from_script(self, mock_elevenlabs_client):
-        """Test audio synthesis from script text."""
-        from backend.services.audio_synthesizer import synthesize_audio
+    def test_synthesize_speech_without_api_key(self, monkeypatch):
+        """Test placeholder generation when OpenAI key is absent."""
+        from backend.tools.audio_tools import synthesize_speech
 
-        with patch('backend.services.audio_synthesizer.get_settings') as mock_settings:
-            mock_settings.return_value.ELEVENLABS_API_KEY = "test-key"
+        class DummySettings:
+            openai_api_key = None
 
-            script_text = "This is a test narration script."
-
-            result = await synthesize_audio(
-                script_text=script_text,
-                chapter_number=1,
-                job_id="test-job"
-            )
-
-            # Should return audio file path or URL
-            assert result is not None
-
-    @pytest.mark.asyncio
-    async def test_synthesize_handles_long_scripts(self):
-        """Test audio synthesis splits long scripts into chunks."""
-        from backend.services.audio_synthesizer import synthesize_audio
-
-        # Create a very long script
-        long_script = "This is a sentence. " * 500
-
-        result = await synthesize_audio(
-            script_text=long_script,
-            chapter_number=1,
-            job_id="test-job"
+        monkeypatch.setattr(
+            "backend.tools.audio_tools.get_settings",
+            lambda: DummySettings()
         )
 
-        assert result is not None
+        path = synthesize_speech("This is a test narration script.")
+
+        assert Path(path).exists()
+        assert Path(path).suffix == ".mp3"
+        assert Path(path).read_bytes().startswith(b"This is a test")
+
+    def test_synthesize_speech_streams_audio(self, monkeypatch):
+        """Test streaming audio to a file when OpenAI returns data."""
+        from backend.tools.audio_tools import synthesize_speech
+
+        class DummySettings:
+            openai_api_key = "test-key"
+
+        class DummyResponse:
+            def stream_to_file(self, path):
+                Path(path).write_bytes(b"audio-bytes")
+
+        class DummySpeech:
+            def create(self, **kwargs):
+                return DummyResponse()
+
+        class DummyAudio:
+            def __init__(self):
+                self.speech = DummySpeech()
+
+        class DummyClient:
+            def __init__(self, api_key):
+                self.audio = DummyAudio()
+
+        monkeypatch.setattr(
+            "backend.tools.audio_tools.get_settings",
+            lambda: DummySettings()
+        )
+        monkeypatch.setattr("backend.tools.audio_tools.OpenAI", DummyClient)
+
+        path = synthesize_speech("Hello world.", voice="alloy")
+
+        assert Path(path).exists()
+        assert Path(path).read_bytes() == b"audio-bytes"
 
 
 @pytest.mark.services
