@@ -1,59 +1,83 @@
 """
 Repository analysis service for code structure extraction.
 
-TODO: Implementation steps:
-1. Implement clone_repository() using GitPython
-2. Implement analyze_structure() to walk directory tree
-3. Implement parse_codebase() using tree-sitter
-4. Add support for multiple languages (Python, JS, TS, Go, Java, C#)
-5. Extract classes, functions, imports, exports
-6. Build dependency graph
-7. Identify entry points and public APIs
-8. Add repository size validation
-9. Implement cleanup for temp directories
-10. Add error handling for private/inaccessible repos
+This service provides two analysis modes:
+1. Docling Pipeline (recommended): Advanced parsing with Docling
+2. Tree-sitter Parser (fallback): Basic parsing for unsupported files
+
+The Docling pipeline provides:
+- Rich document parsing (code, markdown, JSON, YAML)
+- Content cleaning and normalization
+- Semantic tagging and classification
+- Dependency graph generation
 """
 
+import logging
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional
 import shutil
 
-# TODO: Import tree-sitter when implementing
-# from tree_sitter import Language, Parser
-# import tree_sitter_python
-# import tree_sitter_javascript
-# import tree_sitter_typescript
+try:
+    from git import Repo
+    HAS_GIT = True
+except ImportError:
+    HAS_GIT = False
+
+try:
+    from backend.services.docling_pipeline import DoclingPipeline
+    HAS_DOCLING_PIPELINE = True
+except ImportError:
+    HAS_DOCLING_PIPELINE = False
+
+from backend.tools.code_parser_tools import build_code_map
+
+logger = logging.getLogger(__name__)
 
 
 class RepositoryAnalyzer:
     """
     Analyzes GitHub repositories to extract code structure.
 
-    TODO:
-    - Implement all methods with proper error handling
-    - Add support for detecting programming languages
-    - Implement AST parsing with tree-sitter
-    - Add dependency graph generation
-    - Optimize for large repositories
+    Supports two analysis modes:
+    1. Docling Pipeline (default): Advanced parsing with content cleaning and tagging
+    2. Tree-sitter (fallback): Basic AST parsing
     """
 
-    def __init__(self, repo_url: str, git_ref: str = "main"):
+    def __init__(
+        self,
+        repo_url: str,
+        git_ref: str = "main",
+        use_docling: bool = True,
+        max_repo_size_mb: int = 500,
+    ):
         """
         Initialize repository analyzer.
 
         Args:
             repo_url: GitHub repository URL
             git_ref: Git branch or tag to analyze
-
-        TODO:
-        - Validate repo_url format
-        - Parse owner and repo name
+            use_docling: Use Docling pipeline if available
+            max_repo_size_mb: Maximum repository size to analyze
         """
         self.repo_url = repo_url
         self.git_ref = git_ref
+        self.use_docling = use_docling and HAS_DOCLING_PIPELINE
+        self.max_repo_size_mb = max_repo_size_mb
         self.temp_dir: Optional[Path] = None
+
+        # Initialize Docling pipeline if requested
+        if self.use_docling:
+            try:
+                self.docling_pipeline = DoclingPipeline(
+                    enable_code_enrichment=True,
+                    enable_formula_enrichment=False,
+                )
+                logger.info("Initialized Docling pipeline for analysis")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Docling: {e}. Falling back to tree-sitter")
+                self.use_docling = False
 
     async def clone_repository(self) -> Path:
         """
@@ -62,62 +86,149 @@ class RepositoryAnalyzer:
         Returns:
             Path to cloned repository
 
-        TODO:
-        1. Create temporary directory
-        2. Run git clone with --depth=1 for speed
-        3. Checkout specified git_ref
-        4. Return path to cloned repo
-        5. Handle authentication for private repos
-        6. Add timeout to prevent hanging
+        Raises:
+            RuntimeError: If git is not available or clone fails
+            ValueError: If repository is too large
         """
-        # TODO: Implement
-        pass
+        if not HAS_GIT:
+            raise RuntimeError("GitPython not installed. Install with: pip install gitpython")
+
+        try:
+            # Create temporary directory
+            self.temp_dir = Path(tempfile.mkdtemp(prefix="repo_analysis_"))
+            logger.info(f"Cloning {self.repo_url} to {self.temp_dir}")
+
+            # Clone with depth=1 for speed (shallow clone)
+            repo = Repo.clone_from(
+                self.repo_url,
+                self.temp_dir,
+                branch=self.git_ref,
+                depth=1,
+            )
+
+            # Check repository size
+            repo_size_mb = self._get_directory_size(self.temp_dir) / (1024 * 1024)
+            if repo_size_mb > self.max_repo_size_mb:
+                raise ValueError(
+                    f"Repository size ({repo_size_mb:.1f}MB) exceeds "
+                    f"maximum allowed ({self.max_repo_size_mb}MB)"
+                )
+
+            logger.info(
+                f"Successfully cloned repository (size: {repo_size_mb:.1f}MB, "
+                f"commit: {repo.head.commit.hexsha[:8]})"
+            )
+
+            return self.temp_dir
+
+        except Exception as e:
+            logger.error(f"Failed to clone repository: {e}")
+            self.cleanup()
+            raise
 
     async def analyze_structure(self, repo_path: Path) -> Dict:
         """
         Analyze repository structure and collect metadata.
 
         Returns:
-            Dictionary with:
-            - files: List of all code files with metadata
-            - languages: Detected programming languages
-            - total_size_bytes: Total size of codebase
-            - file_count: Number of files
-            - directory_tree: Nested directory structure
-
-        TODO:
-        1. Walk through all files in repo
-        2. Detect programming language for each file
-        3. Calculate total size
-        4. Build directory tree structure
-        5. Identify configuration files
-        6. Exclude .git, node_modules, etc.
+            Dictionary with file listings, language detection, and statistics
         """
-        # TODO: Implement
-        pass
+        logger.info(f"Analyzing repository structure at {repo_path}")
+
+        files_metadata = []
+        languages = set()
+        total_size = 0
+        file_count = 0
+
+        for file_path in repo_path.rglob("*"):
+            if not file_path.is_file():
+                continue
+
+            # Skip ignored paths
+            if self._should_ignore(file_path):
+                continue
+
+            file_count += 1
+            file_size = file_path.stat().st_size
+            total_size += file_size
+
+            # Detect language
+            language = self._detect_language(file_path)
+            if language:
+                languages.add(language)
+
+            files_metadata.append({
+                "path": str(file_path.relative_to(repo_path)),
+                "size_bytes": file_size,
+                "language": language,
+            })
+
+        return {
+            "files": files_metadata,
+            "languages": list(languages),
+            "total_size_bytes": total_size,
+            "file_count": file_count,
+            "repository_path": str(repo_path),
+        }
 
     async def parse_codebase(self, repo_path: Path) -> Dict:
         """
-        Parse codebase using tree-sitter to extract code symbols.
+        Parse codebase to extract code structure.
+
+        Uses Docling pipeline if available, otherwise falls back to tree-sitter.
 
         Returns:
-            Dictionary with:
-            - classes: List of all class definitions
-            - functions: List of all function definitions
-            - imports: List of all imports
-            - exports: List of all exports
-
-        TODO:
-        1. Initialize tree-sitter parsers for detected languages
-        2. Parse each file to extract AST
-        3. Extract all classes with their methods
-        4. Extract all top-level functions
-        5. Extract all import statements
-        6. Extract all export statements
-        7. Build call graph (which functions call which)
+            Comprehensive analysis with parsed code, dependencies, and tags
         """
-        # TODO: Implement
-        pass
+        if self.use_docling:
+            logger.info("Parsing codebase with Docling pipeline")
+            return await self.docling_pipeline.process_pipeline(repo_path)
+        else:
+            logger.info("Parsing codebase with tree-sitter (fallback)")
+            return build_code_map(str(repo_path))
+
+    async def analyze_full(self) -> Dict:
+        """
+        Perform complete repository analysis: clone, analyze structure, and parse.
+
+        Returns:
+            Complete analysis data including:
+            - repository metadata
+            - file structure
+            - parsed code with tags
+            - dependency graph
+            - entry points
+        """
+        try:
+            # Clone repository
+            repo_path = await self.clone_repository()
+
+            # Analyze structure
+            structure = await self.analyze_structure(repo_path)
+
+            # Parse codebase
+            parsed = await self.parse_codebase(repo_path)
+
+            # Combine results
+            return {
+                "repository_url": self.repo_url,
+                "git_ref": self.git_ref,
+                "analysis_mode": "docling" if self.use_docling else "tree-sitter",
+                "structure": structure,
+                "parsed": parsed,
+            }
+
+        finally:
+            # Always cleanup
+            self.cleanup()
+
+    def _get_directory_size(self, path: Path) -> int:
+        """Calculate total size of directory in bytes."""
+        total = 0
+        for file_path in path.rglob("*"):
+            if file_path.is_file():
+                total += file_path.stat().st_size
+        return total
 
     def _should_ignore(self, path: Path) -> bool:
         """
