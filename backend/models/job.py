@@ -16,11 +16,8 @@ from sqlalchemy import (
     ForeignKey,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
-from datetime import datetime
-from typing import Optional
 
 from backend.db.session import Base
 
@@ -72,7 +69,7 @@ class Job(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Metadata (flexible JSON field)
-    metadata_json = Column("metadata", JSONB, default={})
+    metadata_json = Column(JSONB, default=dict)
 
     # Relationships (uncomment when other models are active)
     # user = relationship("User", back_populates="jobs")
