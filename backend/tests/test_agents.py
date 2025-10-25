@@ -22,6 +22,7 @@ class TestAnalyzerAgent:
     def mock_chat_client(self):
         """Create a mock chat client."""
         client = MagicMock()
+        client.create_agent.return_value = MagicMock()
         return client
 
     @pytest.mark.asyncio
@@ -62,21 +63,28 @@ class TestOutlineAgent:
     async def test_create_outline_agent(self, mock_chat_client):
         """Test outline agent creation."""
         from backend.agents.outline_agent import create_outline_agent
+        from backend.agents.schemas import OutlineAgentResponse
 
         agent = await create_outline_agent(mock_chat_client)
 
         assert agent is not None
         assert hasattr(agent, "name")
+        mock_chat_client.create_agent.assert_called_once()
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs["response_format"] is OutlineAgentResponse
 
     @pytest.mark.asyncio
     async def test_outline_agent_configuration(self, mock_chat_client):
         """Test outline agent has proper configuration."""
         from backend.agents.outline_agent import create_outline_agent
+        from backend.agents.schemas import OutlineAgentResponse
 
         agent = await create_outline_agent(mock_chat_client)
 
         # Should have instructions for creating chapter outlines
         assert hasattr(agent, "instructions") or hasattr(agent, "system_message")
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs["response_format"] is OutlineAgentResponse
 
 
 @pytest.mark.agents
@@ -88,22 +96,28 @@ class TestScriptAgent:
     def mock_chat_client(self):
         """Create a mock chat client."""
         client = MagicMock()
+        client.create_agent.return_value = MagicMock()
         return client
 
     @pytest.mark.asyncio
     async def test_create_script_agent(self, mock_chat_client):
         """Test script agent creation."""
         from backend.agents.script_agent import create_script_agent
+        from backend.agents.schemas import ScriptAgentResponse
 
         agent = await create_script_agent(mock_chat_client)
 
         assert agent is not None
         assert hasattr(agent, "name")
+        mock_chat_client.create_agent.assert_called_once()
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs["response_format"] is ScriptAgentResponse
 
     @pytest.mark.asyncio
     async def test_script_agent_for_chapter(self, mock_chat_client):
         """Test script agent can be configured for specific chapter."""
         from backend.agents.script_agent import create_script_agent
+        from backend.agents.schemas import ScriptAgentResponse
 
         chapter_data = {
             "number": 1,
@@ -114,6 +128,8 @@ class TestScriptAgent:
         agent = await create_script_agent(mock_chat_client, chapter_data=chapter_data)
 
         assert agent is not None
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs["response_format"] is ScriptAgentResponse
 
 
 @pytest.mark.agents
@@ -125,27 +141,35 @@ class TestAudioAgent:
     def mock_chat_client(self):
         """Create a mock chat client."""
         client = MagicMock()
+        client.create_agent.return_value = MagicMock()
         return client
 
     @pytest.mark.asyncio
     async def test_create_audio_agent(self, mock_chat_client):
         """Test audio agent creation."""
         from backend.agents.audio_agent import create_audio_agent
+        from backend.agents.schemas import AudioAgentResponse
 
         agent = await create_audio_agent(mock_chat_client)
 
         assert agent is not None
         assert hasattr(agent, "name")
+        mock_chat_client.create_agent.assert_called_once()
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs["response_format"] is AudioAgentResponse
 
     @pytest.mark.asyncio
     async def test_audio_agent_has_tts_tools(self, mock_chat_client):
         """Test that audio agent has TTS tools."""
         from backend.agents.audio_agent import create_audio_agent
+        from backend.agents.schemas import AudioAgentResponse
 
         agent = await create_audio_agent(mock_chat_client)
 
         # Should have tools for audio synthesis
         assert hasattr(agent, "tools")
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs["response_format"] is AudioAgentResponse
 
 
 @pytest.mark.agents

@@ -1,6 +1,5 @@
 from datetime import datetime
 import uuid
-from typing import Any, Dict
 
 from fastapi import (
     APIRouter,
@@ -56,15 +55,8 @@ async def generate_outline(
         depth_tier=job.depth_tier,
         job_id=str(job.id),
     )
-    normalized_payload: Dict[str, Any] = {
-        **outline_payload,
-        "depth_tier": job.depth_tier,
-    }
-    outline_record = persist_outline(
-        str(job.id),
-        normalized_payload,
-        db=db,
-    )
+    outline_model = outline_payload.model_copy(update={"depth_tier": job.depth_tier})
+    outline_record = persist_outline(str(job.id), outline_model, db=db)
     job.status = "waiting_approval"
     job.current_stage = "outline"
     db.commit()

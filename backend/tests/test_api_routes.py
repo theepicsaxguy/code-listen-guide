@@ -181,7 +181,9 @@ class TestOutlineRoutes:
         job = create_job(user=user)
 
         async def fake_generate_outline(**_kwargs):
-            return sample_outline_data
+            from backend.agents.schemas import OutlineAgentResponse
+
+            return OutlineAgentResponse.model_validate(sample_outline_data)
 
         monkeypatch.setattr(
             "backend.api.routes.outlines.run_outline_generator",

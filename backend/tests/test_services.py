@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from backend.agents.schemas import OutlineAgentResponse, ScriptAgentResponse
+
 
 @pytest.mark.unit
 class TestRateLimiterDependencies:
@@ -121,7 +123,15 @@ class TestOutlineGenerator:
                 mock_agent.get_new_thread = MagicMock(return_value=thread)
                 mock_agent.run = AsyncMock(
                     return_value=MagicMock(
-                        result='{"chapters": [], "total_chapters": 0}'
+                        result=OutlineAgentResponse(
+                            chapters=[
+                                {
+                                    "number": 1,
+                                    "title": "Intro",
+                                    "estimated_duration_minutes": 10,
+                                }
+                            ]
+                        )
                     )
                 )
                 mock_create.return_value = mock_agent
@@ -133,7 +143,8 @@ class TestOutlineGenerator:
                 )
 
                 # Should return outline structure
-                assert "chapters" in result or isinstance(result, dict)
+                assert isinstance(result, OutlineAgentResponse)
+                assert result.chapters[0].title == "Intro"
                 mock_agent.get_new_thread.assert_called_once()
                 mock_agent.run.assert_awaited_once()
                 _, kwargs = mock_agent.run.await_args
@@ -152,7 +163,7 @@ class TestOutlineGenerator:
             )
 
             # Result should be different based on tier
-            assert result is not None
+            assert isinstance(result, OutlineAgentResponse)
 
 
 @pytest.mark.services
@@ -178,7 +189,15 @@ class TestScriptGenerator:
                 mock_agent = AsyncMock()
                 thread = MagicMock()
                 mock_agent.get_new_thread = MagicMock(return_value=thread)
-                mock_agent.run = AsyncMock(return_value="script")
+                mock_agent.run = AsyncMock(
+                    return_value=MagicMock(
+                        result=ScriptAgentResponse(
+                            chapter_number=chapter_data.get("number"),
+                            chapter_title=chapter_data.get("title"),
+                            script="script",
+                        )
+                    )
+                )
                 mock_create.return_value = mock_agent
 
                 result = await generate_script(
@@ -187,8 +206,9 @@ class TestScriptGenerator:
                     job_id="test-job",
                 )
 
-        # Should return script text and use a dedicated thread
-        assert result is not None
+        # Should return script payload and use a dedicated thread
+        assert isinstance(result, ScriptAgentResponse)
+        assert result.script == "script"
         mock_agent.get_new_thread.assert_called_once()
         mock_agent.run.assert_awaited_once()
         _, kwargs = mock_agent.run.await_args
@@ -203,7 +223,8 @@ class TestScriptGenerator:
             chapter_data=sample_chapter_data, code_context={}, job_id="test-job"
         )
 
-        assert result is not None
+        assert isinstance(result, ScriptAgentResponse)
+        assert result.script
 
 
 @pytest.mark.services

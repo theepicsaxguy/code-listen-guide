@@ -7,6 +7,7 @@ from typing import Any, Dict
 from agent_framework.openai import OpenAIResponsesClient
 
 from backend.agents import build_responses_client_options, outline_agent
+from backend.agents.schemas import OutlineAgentResponse
 from backend.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -32,26 +33,30 @@ def _build_prompt(analysis_data: Dict[str, Any], depth_tier: str) -> str:
     )
 
 
-async def _run_outline_agent(prompt: str) -> str:
+async def _run_outline_agent(prompt: str) -> OutlineAgentResponse | None:
     settings = get_settings()
     client = OpenAIResponsesClient(**build_responses_client_options(settings))
     agent = await outline_agent.create_outline_agent(client)
     thread = agent.get_new_thread()
     response = await agent.run(prompt, thread=thread)
-    return getattr(response, "text", None) or getattr(response, "result", "")
+    if isinstance(response, OutlineAgentResponse):
+        return response
+    candidate = getattr(response, "result", None)
+    if isinstance(candidate, OutlineAgentResponse):
+        return candidate
+    if isinstance(candidate, dict):
+        return OutlineAgentResponse.model_validate(candidate)
+    text_candidate = getattr(response, "text", None)
+    if isinstance(text_candidate, str) and text_candidate.strip():
+        return OutlineAgentResponse(chapters=[], raw_outline=text_candidate.strip())
+    if isinstance(candidate, str) and candidate.strip():
+        return OutlineAgentResponse(chapters=[], raw_outline=candidate.strip())
+    return None
 
 
-def _parse_outline(raw_text: str) -> Dict[str, Any]:
-    try:
-        payload = json.loads(raw_text)
-        if isinstance(payload, dict) and "chapters" in payload:
-            return payload
-    except json.JSONDecodeError:
-        logger.warning("Agent returned non-JSON outline payload")
-    return {"chapters": [], "raw_outline": raw_text.strip()}
-
-
-def _fallback_outline(analysis_data: Dict[str, Any], depth_tier: str) -> Dict[str, Any]:
+def _fallback_outline(
+    analysis_data: Dict[str, Any], depth_tier: str
+) -> OutlineAgentResponse:
     repo_name = analysis_data.get("repo_name") or "Unknown Repository"
     primary_language = next(
         iter((analysis_data.get("languages") or {}).keys()), "the project"
@@ -77,24 +82,27 @@ def _fallback_outline(analysis_data: Dict[str, Any], depth_tier: str) -> Dict[st
             ],
         },
     ]
-    return {
-        "chapters": chapters,
-        "depth_tier": depth_tier,
-        "total_estimated_duration_minutes": sum(
-            chapter["estimated_duration_minutes"] for chapter in chapters
-        ),
-    }
+    total_minutes = sum(chapter["estimated_duration_minutes"] for chapter in chapters)
+    return OutlineAgentResponse(
+        chapters=chapters,
+        depth_tier=depth_tier,
+        total_estimated_duration_minutes=total_minutes,
+    )
 
 
 async def generate_outline(
     analysis_data: Dict[str, Any], depth_tier: str, job_id: str
-) -> Dict[str, Any]:
+) -> OutlineAgentResponse:
     prompt = _build_prompt(analysis_data, depth_tier)
     try:
-        raw_text = await _run_outline_agent(prompt)
-        parsed = _parse_outline(raw_text)
-        if parsed.get("chapters"):
-            return parsed
+        response = await _run_outline_agent(prompt)
+        if response and response.chapters:
+            return response
+        if response and response.raw_outline:
+            logger.info(
+                "Outline agent returned raw outline payload", extra={"job_id": job_id}
+            )
+            return response
         logger.info(
             "Outline agent returned empty result, falling back to template",
             extra={"job_id": job_id},

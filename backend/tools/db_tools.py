@@ -1,11 +1,12 @@
-import json
 import math
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from backend.agents.schemas import OutlineAgentResponse
 from backend.db.session import SessionLocal
 from backend.models.chapter import Chapter
 from backend.models.deliverable import Deliverable
@@ -74,7 +75,7 @@ def mark_job_status(job_id: str, status: str, stage: Optional[str]) -> None:
 
 def persist_outline(
     job_id: Union[str, UUID],
-    outline_payload: Union[str, Dict[str, Any]],
+    outline_payload: Union[str, Dict[str, Any], OutlineAgentResponse],
     db: Optional[Session] = None,
 ) -> Outline:
     owns_session = db is None
@@ -87,14 +88,23 @@ def persist_outline(
         if outline is None:
             outline = Outline(job_id=normalized_job_id, outline_data={})
             session.add(outline)
-        if isinstance(outline_payload, str):
+        if isinstance(outline_payload, OutlineAgentResponse):
+            payload_model = outline_payload
+        elif isinstance(outline_payload, str):
             try:
-                parsed = json.loads(outline_payload)
-            except json.JSONDecodeError:
-                parsed = {"raw": outline_payload}
+                payload_model = OutlineAgentResponse.model_validate_json(outline_payload)
+            except ValidationError:
+                payload_model = OutlineAgentResponse(
+                    chapters=[], raw_outline=outline_payload.strip() or None
+                )
         else:
-            parsed = outline_payload
-        outline.outline_data = parsed
+            try:
+                payload_model = OutlineAgentResponse.model_validate(outline_payload)
+            except ValidationError:
+                payload_model = OutlineAgentResponse(
+                    chapters=[], raw_outline=str(outline_payload)
+                )
+        outline.outline_data = payload_model.model_dump()
         outline.user_approved = False
         outline.user_modifications = None
         outline.approved_at = None

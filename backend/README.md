@@ -13,6 +13,7 @@ The backend handles:
 - Payment processing with Stripe
 - Workflow orchestration with Agent Framework
 - File storage with AWS S3
+- Structured agent responses validated through shared Pydantic models
 
 ## Project Structure
 
@@ -39,6 +40,7 @@ backend/
 │   ├── audio_agent.py
 │   ├── outline_agent.py
 │   ├── postprocess_agent.py
+│   ├── schemas.py
 │   └── script_agent.py
 ├── db/
 │   ├── migrations/
