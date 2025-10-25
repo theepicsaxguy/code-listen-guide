@@ -1,0 +1,41 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  linting:
+    name: Linting and Type Checking
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install black flake8 mypy
+
+      - name: Run Black
+        run: |
+          cd backend
+          black --check .
+
+      - name: Run Flake8
+        run: |
+          cd backend
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run MyPy
+        run: |
+          cd backend
+          mypy . --ignore-missing-imports
+        continue-on-error: true
