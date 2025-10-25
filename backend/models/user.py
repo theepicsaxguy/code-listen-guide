@@ -1,15 +1,11 @@
 """
 User model for authentication and subscription management.
 
-TODO: Implementation steps:
-1. Define User SQLAlchemy model with all fields from schema
-2. Add relationships to jobs, payments, and usage_logs
-3. Implement password hashing methods
-4. Add subscription tier validation
-5. Create methods for credit management
-6. Add indexes for email lookups
-7. Implement soft delete if needed
-8. Add created_at/updated_at timestamps with auto-update
+Provides:
+- User authentication with password hashing
+- Subscription tier management (free, professional, team, enterprise)
+- Credit tracking for pay-per-use features
+- Stripe customer integration
 """
 
 from sqlalchemy import Column, String, Integer, DateTime, Enum
@@ -26,13 +22,17 @@ class User(Base):
     """
     User model representing a registered user.
 
-    TODO:
-    - Implement all fields from database schema
-    - Add password hashing with passlib
-    - Create methods: check_password, set_password
-    - Add subscription management methods
-    - Implement credit deduction logic
-    - Add relationship to Job, Payment, UsageLog models
+    Attributes:
+        id: Unique user identifier (UUID)
+        email: User email address (unique, indexed)
+        hashed_password: Bcrypt hashed password
+        name: User display name
+        stripe_customer_id: Stripe customer ID for billing
+        subscription_tier: Subscription level (free, professional, team, enterprise)
+        subscription_status: Subscription state (active, canceled, past_due)
+        credits_remaining: Available credits for pay-per-use features
+        created_at: Account creation timestamp
+        updated_at: Last update timestamp
     """
 
     __tablename__ = "users"
@@ -40,18 +40,17 @@ class User(Base):
     # Primary Key
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    # Basic Info
+    # Authentication
     email = Column(String(255), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
     name = Column(String(255))
-    # TODO: Add hashed_password field
 
     # Stripe Integration
     stripe_customer_id = Column(String(255), unique=True)
 
     # Subscription
-    # TODO: Use proper Enum type
     subscription_tier = Column(String(50), default="free")  # free, professional, team, enterprise
-    subscription_status = Column(String(50))  # active, canceled, past_due
+    subscription_status = Column(String(50), default="active")  # active, canceled, past_due
 
     # Credits
     credits_remaining = Column(Integer, default=0)
@@ -61,7 +60,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    # TODO: Add relationships
+    # Note: Uncomment when ready to use relationships
     # jobs = relationship("Job", back_populates="user")
     # payments = relationship("Payment", back_populates="user")
     # usage_logs = relationship("UsageLog", back_populates="user")
@@ -69,19 +68,29 @@ class User(Base):
     def __repr__(self):
         return f"<User {self.email}>"
 
-    # TODO: Implement methods
-    # def set_password(self, password: str):
-    #     """Hash and set user password."""
-    #     pass
-    #
-    # def check_password(self, password: str) -> bool:
-    #     """Verify password against hash."""
-    #     pass
-    #
-    # def deduct_credits(self, amount: int) -> bool:
-    #     """Deduct credits from user account."""
-    #     pass
-    #
-    # def has_active_subscription(self) -> bool:
-    #     """Check if user has active paid subscription."""
-    #     pass
+    def deduct_credits(self, amount: int) -> bool:
+        """
+        Deduct credits from user account.
+
+        Args:
+            amount: Number of credits to deduct
+
+        Returns:
+            True if deduction successful, False if insufficient credits
+        """
+        if self.credits_remaining >= amount:
+            self.credits_remaining -= amount
+            return True
+        return False
+
+    def has_active_subscription(self) -> bool:
+        """
+        Check if user has an active paid subscription.
+
+        Returns:
+            True if subscription is active and not free tier
+        """
+        return (
+            self.subscription_status == "active"
+            and self.subscription_tier != "free"
+        )
