@@ -1,25 +1,17 @@
-version: "3.9"
-
+  GNU nano 7.2                   docker-compose.yaml
 services:
   backend:
     image: ghcr.io/theepicsaxguy/code-listen-guide-backend:latest
-    # build:
-    #   context: .
-    #   target: production
     environment:
       ENVIRONMENT: production
-      FRONTEND_URL: http://localhost:8080
+      FRONTEND_URL: http://localhost:8081
     ports:
-      - "8000:8000"
-
+      - "8001:8000"
   frontend:
     image: ghcr.io/theepicsaxguy/code-listen-guide-frontend:latest
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile.frontend
-    #   args:
-    #     VITE_API_BASE_URL: http://localhost:8000/api/v1
+    environment:
+      VITE_API_BASE_URL: http://backend:8000/api/v1
     depends_on:
       - backend
     ports:
-      - "8080:80"
+      - "8081:8080"
