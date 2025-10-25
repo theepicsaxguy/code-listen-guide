@@ -1,7 +1,5 @@
 from datetime import datetime
 import uuid
-from typing import Any, Dict
-
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -24,6 +22,7 @@ from backend.models.job import Job
 from backend.models.outline import Outline
 from backend.models.payment import Payment
 from backend.api.dependencies import get_current_user
+from backend.models.agent_responses import OutlineAgentResponse
 from backend.services.outline_generator import generate_outline as run_outline_generator
 from backend.services.payment import create_payment_intent
 from backend.tasks.audiobook_tasks import resume_audiobook_workflow
@@ -56,10 +55,9 @@ async def generate_outline(
         depth_tier=job.depth_tier,
         job_id=str(job.id),
     )
-    normalized_payload: Dict[str, Any] = {
-        **outline_payload,
-        "depth_tier": job.depth_tier,
-    }
+    if not isinstance(outline_payload, OutlineAgentResponse):
+        outline_payload = OutlineAgentResponse.model_validate(outline_payload)
+    normalized_payload = outline_payload.model_copy(update={"depth_tier": job.depth_tier})
     outline_record = persist_outline(
         str(job.id),
         normalized_payload,

@@ -33,6 +33,7 @@ if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))
 
 from backend.db.session import get_db
+from backend.models.agent_responses import OutlineAgentResponse, OutlineChapterResponse
 from backend.utils.auth import (
     create_access_token,
     create_refresh_token,
@@ -301,32 +302,28 @@ def sample_job_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_outline_data() -> Dict[str, Any]:
+def sample_outline_data() -> OutlineAgentResponse:
     """Sample outline data for testing."""
-    return {
-        "chapters": [
-            {
-                "number": 1,
-                "title": "Introduction",
-                "description": "Overview of the codebase",
-                "files_covered": ["README.md", "main.py"],
-                "topics": ["architecture", "setup"],
-                "estimated_duration_minutes": 15,
-                "learning_objectives": ["Understand project structure"],
-            },
-            {
-                "number": 2,
-                "title": "Core Modules",
-                "description": "Deep dive into core functionality",
-                "files_covered": ["core/engine.py", "core/utils.py"],
-                "topics": ["core logic", "utilities"],
-                "estimated_duration_minutes": 25,
-                "learning_objectives": ["Learn core patterns"],
-            },
+    return OutlineAgentResponse(
+        chapters=[
+            OutlineChapterResponse(
+                number=1,
+                title="Introduction",
+                description="Overview of the codebase",
+                files_covered=["README.md", "main.py"],
+                learning_objectives=["Understand project structure"],
+                estimated_duration_minutes=15,
+            ),
+            OutlineChapterResponse(
+                number=2,
+                title="Core Modules",
+                description="Deep dive into core functionality",
+                files_covered=["core/engine.py", "core/utils.py"],
+                learning_objectives=["Learn core patterns"],
+                estimated_duration_minutes=25,
+            ),
         ],
-        "total_estimated_duration_minutes": 40,
-        "total_chapters": 2,
-    }
+    )
 
 
 @pytest.fixture

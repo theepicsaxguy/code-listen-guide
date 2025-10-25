@@ -9,6 +9,7 @@ from agent_framework.openai import OpenAIResponsesClient
 from backend.agents import build_responses_client_options
 from backend.agents import script_agent as script_agents
 from backend.config import get_settings
+from backend.models.agent_responses import ScriptAgentResponse
 
 logger = logging.getLogger(__name__)
 
@@ -25,22 +26,40 @@ def _build_prompt(chapter_data: Dict[str, Any], code_context: Dict[str, Any]) ->
     )
 
 
-async def _run_script_agent(prompt: str, chapter_data: Dict[str, Any]) -> str:
+async def _run_script_agent(
+    prompt: str, chapter_data: Dict[str, Any]
+) -> ScriptAgentResponse:
     settings = get_settings()
     client = OpenAIResponsesClient(**build_responses_client_options(settings))
     agent = await script_agents.create_script_agent(client, chapter_data=chapter_data)
     response = await agent.run(prompt)
-    return getattr(response, "text", None) or getattr(response, "result", "")
+    parsed = getattr(response, "parsed", None)
+    if isinstance(parsed, ScriptAgentResponse):
+        return parsed
+    if isinstance(parsed, dict):
+        return ScriptAgentResponse.model_validate(parsed)
+    result = getattr(response, "result", None) or getattr(response, "text", None)
+    if isinstance(result, ScriptAgentResponse):
+        return result
+    if isinstance(result, dict):
+        return ScriptAgentResponse.model_validate(result)
+    if isinstance(result, str):
+        return ScriptAgentResponse.model_validate_json(result)
+    if isinstance(response, ScriptAgentResponse):
+        return response
+    if isinstance(response, dict):
+        return ScriptAgentResponse.model_validate(response)
+    return ScriptAgentResponse(script=str(response))
 
 
 async def generate_script(
     chapter_data: Dict[str, Any], code_context: Dict[str, Any], job_id: str
-) -> str:
+) -> ScriptAgentResponse:
     prompt = _build_prompt(chapter_data, code_context)
     try:
-        script_text = await _run_script_agent(prompt, chapter_data)
-        if script_text.strip():
-            return script_text
+        script_payload = await _run_script_agent(prompt, chapter_data)
+        if script_payload.script.strip():
+            return script_payload
         logger.info(
             "Script agent returned empty response",
             extra={"job_id": job_id, "chapter": chapter_data.get("number")},
@@ -55,7 +74,12 @@ async def generate_script(
             },
         )
     title = chapter_data.get("title") or "Chapter"
-    return (
-        f"Welcome to {title}. In this chapter we explore the key concepts behind the project and how the code fits together. "
-        "Review the repository while listening so you can pause and dive into the details that interest you most."
+    return ScriptAgentResponse(
+        chapter_number=chapter_data.get("number"),
+        title=title,
+        script=(
+            "Welcome to {title}. In this chapter we explore the key concepts behind the project "
+            "and how the code fits together. Review the repository while listening so you can "
+            "pause and dive into the details that interest you most."
+        ).format(title=title),
     )

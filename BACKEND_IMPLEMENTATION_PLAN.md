@@ -266,6 +266,10 @@ async def create_audio_agent(chat_client):
     )
 ```
 
+#### Typed response models
+
+Each agent factory passes a `response_format` so results arrive as structured `BaseModel` instances instead of raw JSON. The shared definitions live in `backend/models/agent_responses.py` and cover outlines, scripts, and synthesized audio payloads. Downstream services now consume these models directly, which removes ad-hoc `json.loads` calls and keeps schema changes centralized.
+
 ---
 
 ## Workflow Orchestration

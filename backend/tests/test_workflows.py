@@ -9,8 +9,10 @@ Tests for:
 """
 
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from types import SimpleNamespace
+
+from backend.models.agent_responses import OutlineAgentResponse
 
 
 @pytest.mark.workflows
@@ -203,7 +205,9 @@ class TestWorkflowTasks:
         monkeypatch.setattr(
             audiobook_tasks,
             "_load_outline",
-            lambda job_id: SimpleNamespace(outline_data={"chapters": []}),
+            lambda job_id: SimpleNamespace(
+                outline_data=OutlineAgentResponse(chapters=[]).model_dump(mode="json")
+            ),
         )
 
         def run_coroutine(coro):

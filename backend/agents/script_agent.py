@@ -3,7 +3,9 @@ from typing import Any, Dict
 from agent_framework import AIFunction, ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
 
+from backend.models.agent_responses import ScriptAgentResponse
 from backend.tools.db_tools import save_chapter_script
+
 from . import build_responses_client_options
 
 
@@ -23,6 +25,7 @@ async def create_script_agent(
             "Focus on clear teaching, code explanations, and narrative flow."
         ),
         tools=[AIFunction(_ai_save_script)],
+        response_format=ScriptAgentResponse,
     )
 
 

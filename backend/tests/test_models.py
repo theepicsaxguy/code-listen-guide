@@ -263,7 +263,9 @@ class TestOutlineModel:
         job = create_job()
 
         outline = Outline(
-            job_id=job.id, outline_data=sample_outline_data, is_approved=False
+            job_id=job.id,
+            outline_data=sample_outline_data.model_dump(mode="json"),
+            is_approved=False,
         )
 
         test_db.add(outline)
@@ -280,7 +282,9 @@ class TestOutlineModel:
         job = create_job()
 
         outline = Outline(
-            job_id=job.id, outline_data=sample_outline_data, is_approved=False
+            job_id=job.id,
+            outline_data=sample_outline_data.model_dump(mode="json"),
+            is_approved=False,
         )
 
         test_db.add(outline)

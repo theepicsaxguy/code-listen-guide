@@ -1,16 +1,18 @@
-import json
 import math
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Mapping, Optional, Union
 from uuid import UUID
 
 from sqlalchemy.orm import Session
+
+from pydantic import BaseModel
 
 from backend.db.session import SessionLocal
 from backend.models.chapter import Chapter
 from backend.models.deliverable import Deliverable
 from backend.models.job import Job
 from backend.models.outline import Outline
+from backend.models.agent_responses import OutlineAgentResponse
 
 
 def _session() -> Session:
@@ -74,7 +76,13 @@ def mark_job_status(job_id: str, status: str, stage: Optional[str]) -> None:
 
 def persist_outline(
     job_id: Union[str, UUID],
-    outline_payload: Union[str, Dict[str, Any]],
+    outline_payload: Union[
+        str,
+        Dict[str, Any],
+        OutlineAgentResponse,
+        BaseModel,
+        Mapping[str, Any],
+    ],
     db: Optional[Session] = None,
 ) -> Outline:
     owns_session = db is None
@@ -87,14 +95,22 @@ def persist_outline(
         if outline is None:
             outline = Outline(job_id=normalized_job_id, outline_data={})
             session.add(outline)
-        if isinstance(outline_payload, str):
+        if isinstance(outline_payload, OutlineAgentResponse):
+            parsed_model = outline_payload
+        elif isinstance(outline_payload, BaseModel):
+            parsed_model = OutlineAgentResponse.model_validate(
+                outline_payload.model_dump()
+            )
+        elif isinstance(outline_payload, str):
             try:
-                parsed = json.loads(outline_payload)
-            except json.JSONDecodeError:
-                parsed = {"raw": outline_payload}
+                parsed_model = OutlineAgentResponse.model_validate_json(outline_payload)
+            except ValueError:
+                parsed_model = OutlineAgentResponse(raw_outline=outline_payload.strip())
+        elif isinstance(outline_payload, Mapping):
+            parsed_model = OutlineAgentResponse.model_validate(dict(outline_payload))
         else:
-            parsed = outline_payload
-        outline.outline_data = parsed
+            parsed_model = OutlineAgentResponse.model_validate(outline_payload)
+        outline.outline_data = parsed_model.model_dump(mode="json")
         outline.user_approved = False
         outline.user_modifications = None
         outline.approved_at = None

@@ -3,6 +3,8 @@ from typing import Any
 from agent_framework import ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
 
+from backend.models.agent_responses import OutlineAgentResponse
+
 from . import build_responses_client_options
 
 
@@ -13,6 +15,7 @@ async def create_outline_agent(chat_client: Any) -> ChatAgent:
             "Generate a structured audiobook outline as JSON including chapter numbers, titles, "
             "goals, and estimated durations."
         ),
+        response_format=OutlineAgentResponse,
     )
 
 

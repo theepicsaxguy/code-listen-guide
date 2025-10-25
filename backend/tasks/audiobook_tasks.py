@@ -1,8 +1,9 @@
 import asyncio
-import json
 from typing import Any, Awaitable
 
 from opentelemetry import trace
+
+from backend.models.agent_responses import OutlineAgentResponse
 
 tracer = trace.get_tracer(__name__)
 
@@ -45,9 +46,9 @@ async def _resume_audiobook_workflow(job_id: str) -> None:
         if outline_record is None:
             await workflow.execute()
             return
-        outline_payload: Any = outline_record.outline_data
-        if isinstance(outline_payload, str):
-            outline_payload = json.loads(outline_payload)
+        outline_payload = OutlineAgentResponse.model_validate(
+            outline_record.outline_data
+        ).model_dump(mode="json")
         await workflow.continue_after_approval(outline_payload)
 
 

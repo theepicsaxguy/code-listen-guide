@@ -6,6 +6,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from backend.models.agent_responses import OutlineAgentResponse
+from backend.tasks import audiobook_tasks
+
+
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))
@@ -16,8 +20,6 @@ opentelemetry_module = ModuleType("opentelemetry")
 opentelemetry_module.trace = trace_module
 sys.modules.setdefault("opentelemetry.trace", trace_module)
 sys.modules.setdefault("opentelemetry", opentelemetry_module)
-
-from backend.tasks import audiobook_tasks
 
 
 def run_coroutine(coro):
@@ -67,7 +69,11 @@ def test_resume_workflow_without_outline_runs_execute(monkeypatch):
 
 @pytest.mark.parametrize(
     "outline_payload",
-    ['{"chapters": []}', {"chapters": []}],
+    [
+        OutlineAgentResponse(chapters=[]),
+        {"chapters": []},
+        '{"chapters": []}',
+    ],
 )
 def test_resume_workflow_with_outline_runs_continue(monkeypatch, outline_payload):
     workflow = MagicMock()
@@ -81,10 +87,15 @@ def test_resume_workflow_with_outline_runs_continue(monkeypatch, outline_payload
             id=job_id, repo_url="https://example.com/repo.git", depth_tier="survey"
         ),
     )
+    stored_payload = (
+        outline_payload.model_dump(mode="json")
+        if isinstance(outline_payload, OutlineAgentResponse)
+        else outline_payload
+    )
     monkeypatch.setattr(
         audiobook_tasks,
         "_load_outline",
-        lambda job_id: SimpleNamespace(outline_data=outline_payload),
+        lambda job_id: SimpleNamespace(outline_data=stored_payload),
     )
 
     audiobook_tasks.resume_audiobook_workflow("job-3")

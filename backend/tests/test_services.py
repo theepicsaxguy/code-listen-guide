@@ -11,10 +11,17 @@ Tests for:
 - Payment Service
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch
 from datetime import datetime
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from backend.models.agent_responses import (
+    OutlineAgentResponse,
+    ScriptAgentResponse,
+)
 
 
 @pytest.mark.services
@@ -89,7 +96,10 @@ class TestOutlineGenerator:
 
     @pytest.mark.asyncio
     async def test_generate_outline_basic(
-        self, sample_analysis_result, mock_anthropic_client
+        self,
+        sample_analysis_result,
+        mock_anthropic_client,
+        sample_outline_data,
     ):
         """Test basic outline generation."""
         from backend.services.outline_generator import generate_outline
@@ -102,8 +112,8 @@ class TestOutlineGenerator:
             ) as mock_create:
                 mock_agent = AsyncMock()
                 mock_agent.run = AsyncMock(
-                    return_value=MagicMock(
-                        result='{"chapters": [], "total_chapters": 0}'
+                    return_value=SimpleNamespace(
+                        parsed=sample_outline_data.model_copy()
                     )
                 )
                 mock_create.return_value = mock_agent
@@ -113,9 +123,8 @@ class TestOutlineGenerator:
                     depth_tier="standard",
                     job_id="test-job-1",
                 )
-
-                # Should return outline structure
-                assert "chapters" in result or isinstance(result, dict)
+                assert isinstance(result, OutlineAgentResponse)
+                assert result.chapters == sample_outline_data.chapters
 
     @pytest.mark.asyncio
     async def test_generate_outline_different_tiers(self):
@@ -129,8 +138,8 @@ class TestOutlineGenerator:
                 analysis_data=analysis_data, depth_tier=tier, job_id="test-job"
             )
 
-            # Result should be different based on tier
-            assert result is not None
+            assert isinstance(result, OutlineAgentResponse)
+            assert result.chapters
 
 
 @pytest.mark.services
@@ -150,8 +159,8 @@ class TestScriptGenerator:
             chapter_data=chapter_data, code_context=code_context, job_id="test-job"
         )
 
-        # Should return script text
-        assert result is not None
+        assert isinstance(result, ScriptAgentResponse)
+        assert result.script
 
     @pytest.mark.asyncio
     async def test_generate_script_handles_empty_context(self, sample_chapter_data):
@@ -162,7 +171,8 @@ class TestScriptGenerator:
             chapter_data=sample_chapter_data, code_context={}, job_id="test-job"
         )
 
-        assert result is not None
+        assert isinstance(result, ScriptAgentResponse)
+        assert result.script
 
 
 @pytest.mark.services

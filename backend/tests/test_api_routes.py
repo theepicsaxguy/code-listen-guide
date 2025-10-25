@@ -181,7 +181,7 @@ class TestOutlineRoutes:
         job = create_job(user=user)
 
         async def fake_generate_outline(**_kwargs):
-            return sample_outline_data
+            return sample_outline_data.model_copy()
 
         monkeypatch.setattr(
             "backend.api.routes.outlines.run_outline_generator",
@@ -222,13 +222,15 @@ class TestOutlineRoutes:
     ):
         headers, user = auth_header()
         job = create_job(user=user)
-        outline = Outline(job_id=job.id, outline_data=sample_outline_data)
+        outline = Outline(
+            job_id=job.id, outline_data=sample_outline_data.model_dump(mode="json")
+        )
         test_db.add(outline)
         test_db.commit()
         test_db.refresh(outline)
         update_payload = {
             "outline_data": {
-                "chapters": sample_outline_data["chapters"],
+                "chapters": sample_outline_data.model_dump(mode="json")["chapters"],
                 "total_estimated_duration_minutes": 45,
                 "total_chapters": 2,
             },
@@ -257,7 +259,9 @@ class TestOutlineRoutes:
     ):
         headers, user = auth_header()
         job = create_job(user=user)
-        outline = Outline(job_id=job.id, outline_data=sample_outline_data)
+        outline = Outline(
+            job_id=job.id, outline_data=sample_outline_data.model_dump(mode="json")
+        )
         test_db.add(outline)
         test_db.commit()
         test_db.refresh(outline)

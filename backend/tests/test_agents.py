@@ -9,8 +9,15 @@ These tests verify the agent creation and configuration for:
 - Post Processor Agent
 """
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+
+from backend.models.agent_responses import (
+    AudioAgentResponse,
+    OutlineAgentResponse,
+    ScriptAgentResponse,
+)
 
 
 @pytest.mark.agents
@@ -67,6 +74,9 @@ class TestOutlineAgent:
 
         assert agent is not None
         assert hasattr(agent, "name")
+        mock_chat_client.create_agent.assert_called_once()
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs.get("response_format") is OutlineAgentResponse
 
     @pytest.mark.asyncio
     async def test_outline_agent_configuration(self, mock_chat_client):
@@ -77,6 +87,9 @@ class TestOutlineAgent:
 
         # Should have instructions for creating chapter outlines
         assert hasattr(agent, "instructions") or hasattr(agent, "system_message")
+        mock_chat_client.create_agent.assert_called_once()
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs.get("response_format") is OutlineAgentResponse
 
 
 @pytest.mark.agents
@@ -99,6 +112,9 @@ class TestScriptAgent:
 
         assert agent is not None
         assert hasattr(agent, "name")
+        mock_chat_client.create_agent.assert_called_once()
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs.get("response_format") is ScriptAgentResponse
 
     @pytest.mark.asyncio
     async def test_script_agent_for_chapter(self, mock_chat_client):
@@ -114,6 +130,9 @@ class TestScriptAgent:
         agent = await create_script_agent(mock_chat_client, chapter_data=chapter_data)
 
         assert agent is not None
+        mock_chat_client.create_agent.assert_called_once()
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs.get("response_format") is ScriptAgentResponse
 
 
 @pytest.mark.agents
@@ -136,6 +155,9 @@ class TestAudioAgent:
 
         assert agent is not None
         assert hasattr(agent, "name")
+        mock_chat_client.create_agent.assert_called_once()
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs.get("response_format") is AudioAgentResponse
 
     @pytest.mark.asyncio
     async def test_audio_agent_has_tts_tools(self, mock_chat_client):
@@ -146,6 +168,9 @@ class TestAudioAgent:
 
         # Should have tools for audio synthesis
         assert hasattr(agent, "tools")
+        mock_chat_client.create_agent.assert_called_once()
+        _, kwargs = mock_chat_client.create_agent.call_args
+        assert kwargs.get("response_format") is AudioAgentResponse
 
 
 @pytest.mark.agents
