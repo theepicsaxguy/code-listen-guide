@@ -23,10 +23,10 @@ backend:
     - name: Checkout
       uses: actions/checkout@v5
 
-    - name: Setup Python 3.12
+    - name: Setup Python 3.14
       uses: actions/setup-python@v6
       with:
-        python-version: '3.12'
+        python-version: '3.14'
         cache: pip
         cache-dependency-path: backend/requirements.txt
 
@@ -38,7 +38,8 @@ backend:
     - name: Install Python dependencies
       run: |
         cd backend
-        pip install -r requirements.txt
+        python -m pip install -U pip setuptools wheel
+        python -m pip install -U -r requirements.txt
 
     - name: Run unit tests
       run: |
@@ -125,13 +126,14 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: pip
 
       - name: Install dependencies
         run: |
           cd backend
-          pip install -r requirements.txt
+          python -m pip install -U pip setuptools wheel
+          python -m pip install -U -r requirements.txt
 
       - name: Run slow integration tests
         run: |
@@ -178,13 +180,14 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: pip
 
       - name: Install dependencies
         run: |
           cd backend
-          pip install black flake8 mypy
+          python -m pip install -U pip setuptools wheel
+          python -m pip install -U black flake8 mypy
 
       - name: Run Black
         run: |

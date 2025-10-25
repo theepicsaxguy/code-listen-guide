@@ -82,7 +82,7 @@ backend/
 
 ### Prerequisites
 
-- Python 3.12
+- Python 3.14
 - PostgreSQL 15+ (required for production; local development defaults to SQLite)
 - Redis 6+ (for WebSocket fan-out between workers)
 - FFmpeg (for audio processing)
@@ -105,8 +105,12 @@ backend/
 
 3. **Install dependencies**:
    ```bash
-   pip install -r requirements.txt
+   pip install -U -r requirements.txt
    ```
+   The requirements file now floats to the latest compatible versions. We keep the standard library-only Redis provider and rely
+   on the official `redis` package, so Python 3.14 installs succeed without the deprecated `redisvl` dependency. If you need the
+   legacy vector cache helpers, install `agent-framework-redis` into a Python 3.13 environment until the upstream package adds
+   3.14 wheels.
 
 4. **Set up environment variables**:
    ```bash

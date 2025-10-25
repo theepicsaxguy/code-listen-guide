@@ -174,14 +174,14 @@ These tests are exercised by three GitHub Actions workflows so contributors get 
 
 ### CI (`.github/workflows/ci.yml`)
 - Frontend job builds the Vite app with Node.js 22 so regressions in the UI surface early.
-- Backend job installs ffmpeg, restores Python dependencies from `backend/requirements.txt`, and runs the marker suites on Python 3.12 before generating a coverage report that uploads to Codecov when credentials exist.
+- Backend job installs ffmpeg, restores Python dependencies from `backend/requirements.txt`, and runs the marker suites on Python 3.14 before generating a coverage report that uploads to Codecov when credentials exist.
 
 ### Integration Tests (`.github/workflows/integration-tests.yml`)
 - Manual dispatches and the nightly schedule light up the slow `integration` + `slow` suite with the required API keys.
 - Failures create a GitHub issue automatically so the team can follow up without combing through job logs.
 
 ### Code Quality (`.github/workflows/code-quality.yml`)
-- Black, Flake8, and MyPy run on Python 3.12 with pip caching to keep lint feedback fast.
+- Black, Flake8, and MyPy run on Python 3.14 with pip caching to keep lint feedback fast.
 - MyPy is advisory via `continue-on-error` so strict typing gaps show up without blocking urgent hotfixes.
 
 ## Environment Variables for Tests
