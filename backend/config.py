@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = Field(default=60)
     max_repo_size_mb: int = Field(default=500)
     max_concurrent_jobs_per_user: int = Field(default=3)
+    redis_url: str = Field(default="redis://localhost:6379/0")
 
 
 @lru_cache()

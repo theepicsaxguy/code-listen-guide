@@ -82,6 +82,7 @@ backend/
 
 - Python 3.12
 - PostgreSQL 15+ (required for production; local development defaults to SQLite)
+- Redis 6+ (for WebSocket fan-out between workers)
 - FFmpeg (for audio processing)
 - libxml2-dev and libxslt1-dev (required to build the `lxml` dependency used by Docling)
 - OpenAI account with an API key and optional custom base URL or model overrides
@@ -147,6 +148,9 @@ alembic -c backend/alembic.ini downgrade 20241010_initial_schema
    ```bash
    uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
    ```
+
+   Redis must be running and reachable at the URL specified by `REDIS_URL`
+   (defaults to `redis://localhost:6379/0`).
 
 2. **Kick off a workflow**:
    Create a job, then call `POST /api/v1/jobs/{job_id}/start`. The backend schedules the Agent Framework workflow in a FastAPI background task, streams progress over WebSockets, and persists checkpoints in PostgreSQL.
