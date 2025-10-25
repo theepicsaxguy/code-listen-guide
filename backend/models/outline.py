@@ -1,13 +1,8 @@
 """
 Outline model for storing chapter structure before processing.
 
-TODO: Implementation steps:
-1. Define Outline SQLAlchemy model
-2. Add foreign key relationship to Job
-3. Store outline data as JSONB
-4. Implement approval workflow
-5. Add user modification tracking
-6. Create validation methods for outline structure
+All fields are defined and the model is ready to use.
+Relationships and helper methods are commented out - uncomment when needed.
 """
 
 from sqlalchemy import Column, Boolean, DateTime, ForeignKey
@@ -24,13 +19,7 @@ class Outline(Base):
     """
     Outline model storing the approved chapter structure for a job.
 
-    TODO:
-    - Implement all fields from database schema
-    - Add JSONB field for outline data
-    - Create approval workflow methods
-    - Track user modifications
-    - Add validation for outline structure
-    - Implement relationship to Job
+    All fields are implemented. Uncomment relationships when Job model is active.
     """
 
     __tablename__ = "outlines"
@@ -50,14 +39,13 @@ class Outline(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     approved_at = Column(DateTime(timezone=True))
 
-    # Relationships
-    # TODO: Add relationships
+    # Relationships (uncomment when Job model is active)
     # job = relationship("Job", back_populates="outline")
 
     def __repr__(self):
         return f"<Outline for Job {self.job_id} - Approved: {self.user_approved}>"
 
-    # TODO: Implement methods
+    # Helper methods (uncomment and implement as needed)
     # def approve(self):
     #     """Mark outline as approved by user."""
     #     pass

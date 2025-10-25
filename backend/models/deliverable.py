@@ -1,13 +1,8 @@
 """
 Deliverable model for tracking generated files.
 
-TODO: Implementation steps:
-1. Define Deliverable SQLAlchemy model
-2. Add foreign key relationship to Job
-3. Track different file types (audio, scripts, cover, metadata)
-4. Store S3 URLs and file metadata
-5. Add file size tracking
-6. Implement cleanup methods
+All fields are defined and the model is ready to use.
+Relationships and helper methods are commented out - uncomment when needed.
 """
 
 from sqlalchemy import Column, String, BigInteger, DateTime, ForeignKey
@@ -24,12 +19,7 @@ class Deliverable(Base):
     """
     Deliverable model for tracking all generated files for a job.
 
-    TODO:
-    - Implement all fields from database schema
-    - Track different file types
-    - Store S3 URLs
-    - Add relationship to Job
-    - Implement file cleanup methods
+    All fields are implemented. Uncomment relationships when Job model is active.
     """
 
     __tablename__ = "deliverables"
@@ -49,14 +39,13 @@ class Deliverable(Base):
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
-    # TODO: Add relationships
+    # Relationships (uncomment when Job model is active)
     # job = relationship("Job", back_populates="deliverables")
 
     def __repr__(self):
         return f"<Deliverable {self.file_type} for Job {self.job_id}>"
 
-    # TODO: Implement methods
+    # Helper methods (uncomment and implement as needed)
     # def get_presigned_url(self, expiration: int = 3600) -> str:
     #     """Generate pre-signed S3 URL for download."""
     #     pass

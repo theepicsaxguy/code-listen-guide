@@ -234,10 +234,7 @@ class RepositoryAnalyzer:
         """
         Check if file/directory should be ignored.
 
-        TODO:
-        - Add common ignore patterns
-        - Read .gitignore file
-        - Add language-specific patterns
+        Note: Future enhancement could read .gitignore for custom patterns.
         """
         ignore_patterns = [
             ".git",
@@ -258,9 +255,7 @@ class RepositoryAnalyzer:
         """
         Detect programming language from file extension.
 
-        TODO:
-        - Add comprehensive file extension mapping
-        - Handle ambiguous extensions
+        Note: Extend extension_map as needed for additional languages.
         """
         extension_map = {
             ".py": "python",
@@ -278,12 +273,6 @@ class RepositoryAnalyzer:
         return extension_map.get(file_path.suffix.lower())
 
     def cleanup(self):
-        """
-        Clean up temporary directory.
-
-        TODO:
-        - Remove cloned repository
-        - Handle errors gracefully
-        """
+        """Clean up temporary directory."""
         if self.temp_dir and self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)

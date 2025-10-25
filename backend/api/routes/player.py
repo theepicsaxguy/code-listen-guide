@@ -1,12 +1,7 @@
 """
 Public player routes for accessing audiobooks via shareable links.
 
-TODO: Implementation steps:
-1. Implement GET /player/{job_id} endpoint (public, no auth)
-2. Return job info, chapters, audio URLs
-3. Add optional access token for private audiobooks
-4. Implement download endpoints with pre-signed S3 URLs
-5. Add view tracking/analytics
+Routes are defined but implementation pending.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -29,16 +24,10 @@ async def get_audiobook_player_data(
     """
     Get audiobook data for player (public endpoint).
 
-    TODO:
-    1. Fetch job by ID
-    2. Check job is completed
-    3. Fetch all chapters with audio URLs
-    4. Fetch deliverables (cover image, metadata)
-    5. Return player data
-    6. Optionally check access token for private audiobooks
+    Note: This is a public endpoint - no authentication required.
+    Optional access token can be added for private audiobooks.
     """
-    # TODO: Implement
-    pass
+    raise HTTPException(status_code=501, detail="Not yet implemented")
 
 
 @router.get("/{job_id}/download/{deliverable_type}")
@@ -50,11 +39,6 @@ async def download_deliverable(
     """
     Download a specific deliverable.
 
-    TODO:
-    1. Fetch job and deliverable
-    2. Generate pre-signed S3 URL
-    3. Return redirect to S3 URL
-    4. Track download event
+    Implementation: Generate pre-signed S3 URL and redirect.
     """
-    # TODO: Implement
-    pass
+    raise HTTPException(status_code=501, detail="Not yet implemented")

@@ -497,10 +497,12 @@ class DoclingPipeline:
         return False
 
     def _build_dependency_graph(self, files: List[Dict[str, Any]]) -> Dict[str, List[str]]:
-        """Build dependency graph from parsed files."""
-        # Simplified dependency graph based on imports
+        """
+        Build dependency graph from parsed files.
+
+        Note: Currently returns empty graph. Future enhancement: parse imports/dependencies.
+        """
         graph = {}
-        # TODO: Implement full dependency analysis
         return graph
 
     def _identify_entry_points(
