@@ -42,6 +42,7 @@ code-listen-guide/
   - `npm run dev` – start the Vite dev server at <http://localhost:5173>
   - `npm run build` – compile for production (used in CI)
   - `npm run lint` – run ESLint across the app
+  - `npm run preview` – serve the production build locally for smoke testing
 
 ### Backend snapshot
 The backend directory has its own README with full setup instructions, but the quick version is:
@@ -63,7 +64,7 @@ The FastAPI service exposes REST and WebSocket endpoints for managing jobs, runn
 ## Development workflow
 
 1. **Clone the repo** and install frontend dependencies.
-2. **Run the backend** (see snapshot above) and point the frontend to the API host via environment variables (coming soon to the frontend `.env` template).
+2. **Run the backend** (see snapshot above) and copy `.env.example` to `.env` so the frontend points at the correct API host and Stripe publishable key during local development.
 3. **Kick off a job** using the `/api/v1/jobs` endpoints, then watch the UI update through the WebSocket event stream.
 4. **Iterate with plans in mind**: the Docling parser integration plan drives current backend work, and the launch plan outlines the content and community experiments that should accompany each release.
 
