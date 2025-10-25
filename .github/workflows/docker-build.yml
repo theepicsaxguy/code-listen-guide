@@ -47,6 +47,8 @@ jobs:
     outputs:
       frontend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.frontend }}
       backend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.backend }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_changes: ${{ steps.set-matrix.outputs.has_changes }}
     steps:
       - uses: actions/checkout@v5
 
@@ -72,27 +74,54 @@ jobs:
               - 'backend/**'
               - '.github/workflows/docker-build.yml'
 
+      - id: set-matrix
+        env:
+          BUILD_FRONTEND: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.frontend }}
+          BUILD_BACKEND: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.backend }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          matrix = {"include": []}
+
+          if os.environ.get("BUILD_FRONTEND") == "true":
+              matrix["include"].append(
+                  {
+                      "service": "frontend",
+                      "context": ".",
+                      "file": "Dockerfile.frontend",
+                      "change-key": "frontend",
+                  }
+              )
+
+          if os.environ.get("BUILD_BACKEND") == "true":
+              matrix["include"].append(
+                  {
+                      "service": "backend",
+                      "context": "backend",
+                      "file": "backend/Dockerfile",
+                      "change-key": "backend",
+                  }
+              )
+
+          has_changes = "true" if matrix["include"] else "false"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"matrix={json.dumps(matrix)}\n")
+              fh.write(f"has_changes={has_changes}\n")
+          PY
+
   build-images:
     name: Build ${{ matrix.service }} image
     needs: changes
-    if: |
-      (matrix.change-key == 'frontend' && needs.changes.outputs.frontend == 'true') ||
-      (matrix.change-key == 'backend' && needs.changes.outputs.backend == 'true')
+    if: ${{ needs.changes.outputs.has_changes == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     strategy:
-      matrix:
-        include:
-          - service: frontend
-            context: .
-            file: Dockerfile.frontend
-            change-key: frontend
-          - service: backend
-            context: backend
-            file: backend/Dockerfile
-            change-key: backend
+      matrix: ${{ fromJson(needs.changes.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
