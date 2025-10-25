@@ -191,7 +191,7 @@
 4. **Audio Synthesis Service** (0%)
    - File: `backend/services/audio_synthesizer.py`
    - Status: Empty, all TODO
-   - Needs: TTS integration (ElevenLabs/OpenAI), audio processing
+   - Needs: TTS integration (OpenAI), audio processing
 
 5. **Post-Processing Service** (0%)
    - File: `backend/services/post_processor.py`
@@ -350,9 +350,6 @@ AZURE_OPENAI_API_KEY=sk-...
 AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
-
-# TTS
-ELEVENLABS_API_KEY=...
 
 # Storage
 AWS_ACCESS_KEY_ID=...
@@ -623,7 +620,7 @@ Track LLM and TTS costs per job in the `usage_logs` table.
 
 class UsageLog(Base):
     job_id = Column(UUID, ForeignKey("jobs.id"))
-    service_type = Column(String)  # "azure_openai", "anthropic", "elevenlabs"
+    service_type = Column(String)  # "azure_openai", "anthropic", "openai_tts"
     tokens_used = Column(Integer)
     cost_cents = Column(Integer)
 ```
@@ -1300,10 +1297,6 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
 
-    # TTS
-    ELEVENLABS_API_KEY: str = ""
-    ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # Default voice
-
     # Storage
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
@@ -1435,10 +1428,10 @@ api_key = settings.ANTHROPIC_API_KEY
 
 **File:** `backend/services/audio_synthesizer.py`
 **Status:** 0% complete (TODO)
-**Dependencies:** `elevenlabs` or `openai`, `pydub`, `ffmpeg`
+**Dependencies:** `openai`, `pydub`, `ffmpeg`
 
 **What needs to be done:**
-1. Initialize TTS client (ElevenLabs or OpenAI TTS)
+1. Initialize OpenAI TTS client
 2. Convert script text to audio:
    - Split long scripts into chunks (TTS has character limits)
    - Synthesize each chunk
@@ -1453,8 +1446,7 @@ api_key = settings.ANTHROPIC_API_KEY
 6. Track TTS costs
 
 **Key considerations:**
-- ElevenLabs: 2500 chars/request, costs ~$0.30/1000 chars
-- OpenAI TTS: Lower cost but less natural quality
+- OpenAI TTS: Manage request size limits and latency
 - Standard chapter: ~3000 words = ~20 minutes audio
 - Batch processing to avoid rate limits
 

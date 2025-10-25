@@ -22,7 +22,6 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str = Field(default="dev-anthropic-key")
     openai_api_key: Optional[str] = Field(default=None)
-    elevenlabs_api_key: Optional[str] = Field(default=None)
 
     stripe_secret_key: str = Field(default="sk_test_placeholder")
     stripe_webhook_secret: str = Field(default="whsec_placeholder")

@@ -41,7 +41,7 @@ class UsageLog(Base):
 
     # Cost Tracking
     cost_cents = Column(Integer)
-    provider = Column(String(50))  # anthropic, elevenlabs, openai, etc.
+    provider = Column(String(50))  # anthropic, openai, openai_tts, etc.
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

@@ -3,7 +3,7 @@ Pytest configuration and shared fixtures for backend tests.
 
 This file provides:
 - Database fixtures for testing
-- Mock clients for external services (Azure OpenAI, Anthropic, ElevenLabs, Stripe, S3)
+- Mock clients for external services (Azure OpenAI, Anthropic, Stripe, S3)
 - Test data factories
 - Async test support
 """
@@ -134,14 +134,6 @@ def mock_anthropic_client():
         content=[MagicMock(text="Test Claude response")],
         usage=MagicMock(input_tokens=50, output_tokens=50)
     ))
-    return client
-
-
-@pytest.fixture
-def mock_elevenlabs_client():
-    """Mock ElevenLabs TTS client."""
-    client = MagicMock()
-    client.generate = AsyncMock(return_value=b"fake_audio_data")
     return client
 
 

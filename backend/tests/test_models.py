@@ -386,7 +386,7 @@ class TestUsageLogModel:
         services = [
             ("azure_openai", 1000, 25),
             ("anthropic", 1500, 30),
-            ("elevenlabs", 0, 100)
+            ("openai_tts", 0, 100)
         ]
 
         for service_type, tokens, cost in services:
