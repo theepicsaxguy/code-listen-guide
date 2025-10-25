@@ -25,6 +25,7 @@ RUN apt-get update \
         build-essential \
         libxml2-dev \
         libxslt1-dev \
+        zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.txt ./requirements.txt
 RUN python -m venv /opt/venv \
@@ -42,6 +43,7 @@ RUN apt-get update \
         ffmpeg \
         libxml2 \
         libxslt1.1 \
+        zlib1g \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=backend-build /opt/venv /opt/venv
 COPY --from=backend-build /app/backend /app/backend
