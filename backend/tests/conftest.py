@@ -70,8 +70,41 @@ sys.modules.setdefault("opentelemetry", opentelemetry_module)
 
 # Mock agent framework dependencies used by services
 agent_framework_module = ModuleType("agent_framework")
+
+
+class _StubRole:
+    ASSISTANT = "assistant"
+    USER = "user"
+
+
+class _StubTextContent:
+    def __init__(self, text: str | None = None):
+        self.text = text
+
+
+class _StubChatMessage:
+    def __init__(self, *, role: str, contents: list | None = None):
+        self.role = role
+        self.contents = contents or []
+
+    @property
+    def text(self) -> str | None:
+        for content in self.contents:
+            if hasattr(content, "text"):
+                return content.text
+        return None
+
+
 agent_framework_module.ChatAgent = MagicMock()
 agent_framework_module.AgentMessage = MagicMock()
+agent_framework_module.AgentExecutor = MagicMock()
+agent_framework_module.ConcurrentBuilder = MagicMock()
+agent_framework_module.SequentialBuilder = MagicMock()
+agent_framework_module.WorkflowBuilder = MagicMock()
+agent_framework_module.AIFunction = MagicMock()
+agent_framework_module.ChatMessage = _StubChatMessage
+agent_framework_module.TextContent = _StubTextContent
+agent_framework_module.Role = _StubRole
 agent_framework_openai = ModuleType("agent_framework.openai")
 agent_framework_openai.OpenAIResponsesClient = MagicMock()
 agent_framework_anthropic = ModuleType("agent_framework.anthropic")
