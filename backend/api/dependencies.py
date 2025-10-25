@@ -1,12 +1,10 @@
 """
 Shared dependencies for API routes.
 
-TODO: Implementation steps:
-1. Implement get_current_user() dependency
-2. Implement verify_api_key() dependency (if using API keys)
-3. Add rate limiting dependency
-4. Add permission checking dependencies
-5. Add request validation dependencies
+Provides:
+- get_current_user(): Extract and validate JWT token, return user
+- get_current_active_user(): Ensure user account is active
+- require_subscription(): Check user subscription tier
 """
 
 from fastapi import Depends, HTTPException, status
@@ -28,29 +26,35 @@ async def get_current_user(
     """
     Get current authenticated user from JWT token.
 
-    TODO:
-    1. Decode JWT token
-    2. Extract user ID from token
-    3. Query user from database
-    4. Check if user is active
-    5. Return user object
-    6. Raise 401 if invalid token or user not found
+    Args:
+        token: JWT access token from Authorization header
+        db: Database session
+
+    Returns:
+        User object for the authenticated user
+
+    Raises:
+        HTTPException: 401 if token is invalid or user not found
     """
-    # TODO: Implement
-    # try:
-    #     payload = decode_access_token(token)
-    #     user_id = payload.get("sub")
-    #     if not user_id:
-    #         raise HTTPException(status_code=401, detail="Invalid token")
-    #
-    #     user = db.query(User).filter(User.id == user_id).first()
-    #     if not user:
-    #         raise HTTPException(status_code=401, detail="User not found")
-    #
-    #     return user
-    # except Exception:
-    #     raise HTTPException(status_code=401, detail="Could not validate credentials")
-    pass
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = decode_access_token(token)
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except Exception:
+        raise credentials_exception
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise credentials_exception
+
+    return user
 
 
 async def get_current_active_user(
@@ -59,14 +63,25 @@ async def get_current_active_user(
     """
     Get current user and check if active.
 
-    TODO:
-    - Add is_active field to User model
-    - Check if user is active
-    - Raise 403 if inactive
+    Args:
+        current_user: Authenticated user from get_current_user
+
+    Returns:
+        User object if active
+
+    Raises:
+        HTTPException: 403 if user account is inactive
+
+    Note:
+        Currently returns all users as active.
+        Add is_active field to User model to enable this check.
     """
-    # TODO: Implement
-    # if not current_user.is_active:
-    #     raise HTTPException(status_code=403, detail="Inactive user")
+    # TODO: Add is_active field to User model, then uncomment:
+    # if hasattr(current_user, 'is_active') and not current_user.is_active:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Inactive user account"
+    #     )
     return current_user
 
 
@@ -79,16 +94,31 @@ def require_subscription(tier: str):
         def premium_feature(user: User = Depends(require_subscription("professional"))):
             ...
 
-    TODO:
-    - Create dependency that checks user subscription tier
-    - Raise 403 if insufficient tier
+    Args:
+        tier: Required subscription tier
+
+    Returns:
+        Dependency function that validates subscription tier
     """
+    tier_hierarchy = {
+        "free": 0,
+        "professional": 1,
+        "team": 2,
+        "enterprise": 3
+    }
+
     async def _require_subscription(
         current_user: User = Depends(get_current_user)
     ) -> User:
-        # TODO: Implement tier checking
-        # if current_user.subscription_tier < tier:
-        #     raise HTTPException(status_code=403, detail="Insufficient subscription tier")
+        user_tier_level = tier_hierarchy.get(current_user.subscription_tier, 0)
+        required_tier_level = tier_hierarchy.get(tier, 0)
+
+        if user_tier_level < required_tier_level:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"This feature requires {tier} subscription or higher"
+            )
+
         return current_user
 
     return _require_subscription

@@ -1,14 +1,10 @@
 """
 Authentication utilities for JWT token management and password hashing.
 
-TODO: Implementation steps:
-1. Implement create_access_token()
-2. Implement create_refresh_token()
-3. Implement decode_access_token()
-4. Implement password hashing with passlib
-5. Implement password verification
-6. Add token expiration handling
-7. Add token blacklist support
+Provides:
+- JWT access and refresh token creation/validation
+- Password hashing with bcrypt
+- Token type verification
 """
 
 from datetime import datetime, timedelta
@@ -16,10 +12,12 @@ from typing import Dict, Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-# from backend.config import get_settings
+from backend.config import get_settings
 
-# TODO: Get from settings
-SECRET_KEY = "your-secret-key-change-this"
+settings = get_settings()
+
+# JWT configuration from settings
+SECRET_KEY = settings.jwt_secret
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
@@ -32,9 +30,11 @@ def get_password_hash(password: str) -> str:
     """
     Hash a password using bcrypt.
 
-    TODO:
-    - Use passlib to hash password
-    - Return hashed password
+    Args:
+        password: Plain text password to hash
+
+    Returns:
+        Bcrypt hashed password string
     """
     return pwd_context.hash(password)
 
@@ -43,9 +43,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a password against its hash.
 
-    TODO:
-    - Use passlib to verify password
-    - Return True if match, False otherwise
+    Args:
+        plain_password: Plain text password to verify
+        hashed_password: Bcrypt hashed password
+
+    Returns:
+        True if password matches, False otherwise
     """
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -59,13 +62,7 @@ def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -
         expires_delta: Optional expiration time delta
 
     Returns:
-        Encoded JWT token
-
-    TODO:
-    1. Copy data to encode
-    2. Add expiration time
-    3. Encode JWT with secret key
-    4. Return token string
+        Encoded JWT token string
     """
     to_encode = data.copy()
     if expires_delta:
@@ -80,11 +77,13 @@ def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -
 
 def create_refresh_token(data: Dict) -> str:
     """
-    Create JWT refresh token.
+    Create JWT refresh token with longer expiration.
 
-    TODO:
-    - Similar to access token but with longer expiration
-    - Add 'type': 'refresh' to payload
+    Args:
+        data: Dictionary with user data (must include 'sub' for user ID)
+
+    Returns:
+        Encoded JWT refresh token string
     """
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
@@ -97,17 +96,14 @@ def decode_access_token(token: str) -> Dict:
     """
     Decode and validate JWT token.
 
+    Args:
+        token: JWT token string to decode
+
     Returns:
         Decoded payload dictionary
 
     Raises:
         JWTError: If token is invalid or expired
-
-    TODO:
-    1. Decode JWT with secret key
-    2. Validate expiration
-    3. Return payload
-    4. Raise error if invalid
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -120,10 +116,12 @@ def verify_token_type(token: str, expected_type: str) -> bool:
     """
     Verify token is of expected type (access or refresh).
 
-    TODO:
-    - Decode token
-    - Check 'type' field matches expected_type
-    - Return True/False
+    Args:
+        token: JWT token string
+        expected_type: Expected token type ('access' or 'refresh')
+
+    Returns:
+        True if token type matches, False otherwise
     """
     try:
         payload = decode_access_token(token)

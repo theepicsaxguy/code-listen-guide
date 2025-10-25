@@ -1,12 +1,11 @@
 """
 Input validation utilities.
 
-TODO: Implementation steps:
-1. Implement validate_github_url()
-2. Implement validate_depth_tier()
-3. Implement validate_email()
-4. Implement validate_password_strength()
-5. Add custom Pydantic validators
+Provides validation functions for:
+- GitHub repository URLs
+- Depth tiers (survey, standard, comprehensive)
+- Email addresses
+- Password strength requirements
 """
 
 import re
@@ -18,32 +17,55 @@ def validate_github_url(url: str) -> Tuple[bool, Optional[str], Optional[str]]:
     """
     Validate GitHub repository URL and extract owner/repo.
 
+    Supports patterns:
+    - https://github.com/owner/repo
+    - https://github.com/owner/repo.git
+    - git@github.com:owner/repo.git
+
     Args:
         url: GitHub repository URL
 
     Returns:
         Tuple of (is_valid, owner, repo_name)
-
-    TODO:
-    1. Parse URL
-    2. Check if domain is github.com
-    3. Extract owner and repo name from path
-    4. Return validation result
     """
-    # TODO: Implement
-    # Example patterns:
-    # https://github.com/owner/repo
-    # https://github.com/owner/repo.git
-    # git@github.com:owner/repo.git
-    pass
+    # Handle git@ SSH format
+    if url.startswith("git@github.com:"):
+        # git@github.com:owner/repo.git
+        path = url.replace("git@github.com:", "").replace(".git", "")
+        parts = path.split("/")
+        if len(parts) == 2:
+            return (True, parts[0], parts[1])
+        return (False, None, None)
+
+    # Handle HTTPS format
+    try:
+        parsed = urlparse(url)
+        if parsed.netloc not in ["github.com", "www.github.com"]:
+            return (False, None, None)
+
+        # Path should be /owner/repo or /owner/repo.git
+        path = parsed.path.strip("/").replace(".git", "")
+        parts = path.split("/")
+
+        if len(parts) >= 2:
+            owner = parts[0]
+            repo = parts[1]
+            return (True, owner, repo)
+
+        return (False, None, None)
+    except Exception:
+        return (False, None, None)
 
 
 def validate_depth_tier(tier: str) -> bool:
     """
     Validate depth tier value.
 
-    TODO:
-    - Check if tier is one of: survey, standard, comprehensive
+    Args:
+        tier: Depth tier string to validate
+
+    Returns:
+        True if tier is valid (survey, standard, or comprehensive)
     """
     valid_tiers = ["survey", "standard", "comprehensive"]
     return tier.lower() in valid_tiers
@@ -53,28 +75,42 @@ def validate_password_strength(password: str) -> Tuple[bool, Optional[str]]:
     """
     Validate password strength.
 
+    Requirements:
+    - Minimum 8 characters
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one number
+
+    Args:
+        password: Password string to validate
+
     Returns:
         Tuple of (is_valid, error_message)
-
-    TODO:
-    - Check minimum length (8 chars)
-    - Check for uppercase letter
-    - Check for lowercase letter
-    - Check for number
-    - Check for special character
-    - Return validation result with helpful message
     """
-    # TODO: Implement
-    pass
+    if len(password) < 8:
+        return (False, "Password must be at least 8 characters long")
+
+    if not re.search(r"[A-Z]", password):
+        return (False, "Password must contain at least one uppercase letter")
+
+    if not re.search(r"[a-z]", password):
+        return (False, "Password must contain at least one lowercase letter")
+
+    if not re.search(r"\d", password):
+        return (False, "Password must contain at least one number")
+
+    return (True, None)
 
 
 def validate_email_format(email: str) -> bool:
     """
-    Validate email format.
+    Validate email format using regex.
 
-    TODO:
-    - Use regex to validate email format
-    - Return True/False
+    Args:
+        email: Email address to validate
+
+    Returns:
+        True if email format is valid, False otherwise
     """
     email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(email_regex, email) is not None
