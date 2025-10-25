@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.19
 
 ARG PYTHON_VERSION=3.14-slim
 ARG NODE_VERSION=22-bookworm-slim
