@@ -170,55 +170,19 @@ Tests are organized with pytest markers:
 
 ## CI/CD Integration
 
-These tests are designed to run in CI/CD pipelines. See `.github/workflows/ci.yml` for the workflow configuration.
+These tests are exercised by three GitHub Actions workflows so contributors get the same signal locally and in CI.
 
-### Current CI/CD Jobs
+### CI (`.github/workflows/ci.yml`)
+- Frontend job builds the Vite app with Node.js 22 so regressions in the UI surface early.
+- Backend job installs ffmpeg, restores Python dependencies from `backend/requirements.txt`, and runs the marker suites on Python 3.11 and 3.12 before generating a coverage report that uploads to Codecov when credentials exist.
 
-1. **Frontend Build** - Builds the React frontend
-2. **Backend Tests** - Runs pytest on the backend
+### Integration Tests (`.github/workflows/integration-tests.yml`)
+- Manual dispatches and the nightly schedule light up the slow `integration` + `slow` suite with the required API keys.
+- Failures create a GitHub issue automatically so the team can follow up without combing through job logs.
 
-### Recommended Enhancements
-
-Add to `.github/workflows/ci.yml`:
-
-```yaml
-backend-tests:
-  name: Backend Tests
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v5
-
-    - name: Setup Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: "3.14"
-        cache: pip
-
-    - name: Install dependencies
-      run: |
-        cd backend
-        pip install -r requirements.txt
-
-    - name: Run unit tests
-      run: |
-        cd backend
-        pytest -m unit -v
-
-    - name: Run integration tests
-      run: |
-        cd backend
-        pytest -m integration -v
-
-    - name: Generate coverage report
-      run: |
-        cd backend
-        pytest --cov=backend --cov-report=xml
-
-    - name: Upload coverage to Codecov (optional)
-      uses: codecov/codecov-action@v3
-      with:
-        files: ./backend/coverage.xml
-```
+### Code Quality (`.github/workflows/code-quality.yml`)
+- Black, Flake8, and MyPy run on Python 3.12 with pip caching to keep lint feedback fast.
+- MyPy is advisory via `continue-on-error` so strict typing gaps show up without blocking urgent hotfixes.
 
 ## Environment Variables for Tests
 
