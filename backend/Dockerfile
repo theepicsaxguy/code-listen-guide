@@ -11,8 +11,8 @@ RUN apt-get update \
         libxslt1-dev \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.runtime.txt ./requirements.runtime.txt
+RUN pip install --no-cache-dir -r requirements.runtime.txt
 COPY . .
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

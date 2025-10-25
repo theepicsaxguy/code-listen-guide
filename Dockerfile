@@ -27,7 +27,7 @@ RUN apt-get update \
         libxslt1-dev \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
-COPY backend/requirements.txt ./requirements.txt
+COPY backend/requirements.runtime.txt ./requirements.txt
 RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
     && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt

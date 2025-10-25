@@ -74,7 +74,7 @@ docker build -t codebase-audiobook .
 docker run --rm -p 8000:8000 codebase-audiobook
 ```
 
-The container exposes port 8000 and runs as a dedicated non-root user. Visiting `http://localhost:8000` loads the frontend, and `/api/v1/*` requests hit the FastAPI service on the same origin. Kubernetes clusters that enforce `runAsNonRoot` or similar policies work without extra security context overrides.
+The container exposes port 8000 and runs as a dedicated non-root user. Visiting `http://localhost:8000` loads the frontend, and `/api/v1/*` requests hit the FastAPI service on the same origin. Kubernetes clusters that enforce `runAsNonRoot` or similar policies work without extra security context overrides. The Docker build installs only the runtime dependency set defined in `backend/requirements.runtime.txt`, so the final image skips pytest, linting, and fakeredis packages that developers still keep locally via `backend/requirements.txt`.
 
 The FastAPI service exposes REST and WebSocket endpoints for managing jobs, running the audiobook workflow, and streaming status updates. It leans on PostgreSQL for persistence, Stripe for payments, OpenAI for reasoning, and AWS S3 for audio storage.
 

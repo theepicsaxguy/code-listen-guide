@@ -1,0 +1,16 @@
+.git
+node_modules
+backend/__pycache__
+__pycache__
+*.pyc
+backend/venv
+venv
+.env
+.env.*
+docs
+plans
+samples
+Plan.md
+CI_CD_SETUP_GUIDE.md
+BACKEND_IMPLEMENTATION_PLAN.md
+*.log
