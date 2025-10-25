@@ -117,10 +117,12 @@ backend/
      ```
    - With the default SQLite database no action is required; the API will create the `backend_dev.db` file on startup.
 
-6. **Run database migrations** (TODO: Set up Alembic):
+6. **Run database migrations**:
    ```bash
-   alembic upgrade head
+   alembic -c backend/alembic.ini upgrade head
    ```
+   The configuration file points Alembic at the models under `backend/models` and
+   reads connection details from your `.env`.
 
 ### Running the Application
 
@@ -168,6 +170,9 @@ backend/
 - `GET /api/v1/player/{job_id}` - Get audiobook player data
 - `GET /api/v1/player/{job_id}/download/{type}` - Download deliverable
 
+### Real-time updates
+- `WS /ws/jobs/{job_id}` - Subscribe to JSON progress events for a job
+
 ## Workflow Lifecycle
 
 Audiobook generation jobs move through several coordinated stages once a user starts a workflow:
@@ -177,6 +182,9 @@ Audiobook generation jobs move through several coordinated stages once a user st
 3. **Scripting** – after approval, dedicated Script Writer agents work concurrently (one per chapter) and persist scripts as they complete. Progress events report chapter counts.
 4. **Audio** – the Audio Producer agent batch-synthesizes narration files and uploads them to storage, storing URLs for each chapter.
 5. **Post-processing** – the Post Processor agent stitches the audio, publishes deliverables, and marks the job `completed`.
+
+Download links exposed through the player API are signed at request time so clients
+receive time-limited access to chapter audio and bundle archives stored in S3.
 
 Checkpoint records in PostgreSQL allow any stage to resume without repeating prior work. Clients can subscribe to the job channel to receive the JSON events emitted during each stage.
 
