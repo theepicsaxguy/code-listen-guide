@@ -37,7 +37,9 @@ def upgrade() -> None:
             server_default=sa.text("0"),
             nullable=False,
         ),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("email", name="uq_users_email"),
@@ -65,7 +67,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("current_stage", sa.String(length=100), nullable=True),
-        sa.Column("progress_percentage", sa.Numeric(5, 2), server_default=sa.text("0.00")),
+        sa.Column(
+            "progress_percentage", sa.Numeric(5, 2), server_default=sa.text("0.00")
+        ),
         sa.Column("error_message", sa.Text(), nullable=True),
         sa.Column("price_paid_cents", sa.Integer(), nullable=True),
         sa.Column("llm_cost_cents", sa.Integer(), nullable=True),
@@ -93,7 +97,9 @@ def upgrade() -> None:
         "outlines",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("job_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("outline_data", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column(
+            "outline_data", postgresql.JSONB(astext_type=sa.Text()), nullable=False
+        ),
         sa.Column(
             "user_approved",
             sa.Boolean(),
@@ -101,9 +107,13 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("user_modifications", postgresql.JSONB(astext_type=sa.Text())),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
         sa.Column("approved_at", sa.DateTime(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(["job_id"], ["jobs.id"], ondelete="CASCADE", name="fk_outlines_jobs"),
+        sa.ForeignKeyConstraint(
+            ["job_id"], ["jobs.id"], ondelete="CASCADE", name="fk_outlines_jobs"
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("job_id", name="uq_outlines_job_id"),
     )
@@ -119,7 +129,9 @@ def upgrade() -> None:
         sa.Column("currency", sa.String(length=3), server_default=sa.text("'usd'")),
         sa.Column("status", sa.String(length=50), nullable=True),
         sa.Column("payment_method_type", sa.String(length=50), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], name="fk_payments_users"),
         sa.ForeignKeyConstraint(["job_id"], ["jobs.id"], name="fk_payments_jobs"),
@@ -141,13 +153,17 @@ def upgrade() -> None:
         sa.Column("audio_seconds_generated", sa.Integer(), nullable=True),
         sa.Column("cost_cents", sa.Integer(), nullable=True),
         sa.Column("provider", sa.String(length=50), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], name="fk_usage_logs_users"),
         sa.ForeignKeyConstraint(["job_id"], ["jobs.id"], name="fk_usage_logs_jobs"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_usage_logs_user_id", "usage_logs", ["user_id"], unique=False)
-    op.create_index("ix_usage_logs_created_at", "usage_logs", ["created_at"], unique=False)
+    op.create_index(
+        "ix_usage_logs_created_at", "usage_logs", ["created_at"], unique=False
+    )
 
     op.create_table(
         "deliverables",
@@ -156,7 +172,9 @@ def upgrade() -> None:
         sa.Column("file_type", sa.String(length=50), nullable=False),
         sa.Column("file_url", sa.String(length=1000), nullable=False),
         sa.Column("file_size_bytes", sa.BigInteger(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
         sa.ForeignKeyConstraint(
             ["job_id"],
             ["jobs.id"],
@@ -187,7 +205,9 @@ def upgrade() -> None:
         sa.Column("audio_duration_seconds", sa.Integer(), nullable=True),
         sa.Column("audio_file_size_bytes", sa.BigInteger(), nullable=True),
         sa.Column("start_timestamp_ms", sa.Integer(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(
@@ -197,9 +217,7 @@ def upgrade() -> None:
             name="fk_chapters_jobs",
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
-            "job_id", "chapter_number", name="uq_job_chapter"
-        ),
+        sa.UniqueConstraint("job_id", "chapter_number", name="uq_job_chapter"),
     )
     op.create_index("ix_chapters_job_id", "chapters", ["job_id"], unique=False)
     op.create_index("ix_chapters_status", "chapters", ["status"], unique=False)

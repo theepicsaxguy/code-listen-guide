@@ -63,8 +63,7 @@ class OutlineData(BaseModel):
         minutes = self.total_estimated_duration_minutes
         if minutes is None:
             minutes = sum(
-                max(chapter.estimated_duration_minutes, 0)
-                for chapter in self.chapters
+                max(chapter.estimated_duration_minutes, 0) for chapter in self.chapters
             )
         chapter_count = self.total_chapters or len(self.chapters)
         object.__setattr__(self, "total_estimated_duration_minutes", minutes)
