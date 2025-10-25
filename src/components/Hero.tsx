@@ -8,7 +8,7 @@ export const Hero = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Handle repository URL submission
+    // Note: Wire this up to jobs API when backend is ready
     console.log("Repository URL:", repoUrl);
   };
 

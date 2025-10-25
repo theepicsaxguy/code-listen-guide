@@ -1,13 +1,8 @@
 """
 Outline routes for generating and managing chapter outlines.
 
-TODO: Implementation steps:
-1. Implement POST /jobs/{job_id}/outline to generate outline
-2. Implement PUT /jobs/{job_id}/outline to update with user modifications
-3. Implement POST /jobs/{job_id}/outline/approve to approve and trigger payment
-4. Integrate with OutlineGenerator service
-5. Add validation for outline structure
-6. Create payment intent on approval
+Routes are defined but implementation pending.
+Use backend/agents/outline_agent.py for actual outline generation.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -35,18 +30,9 @@ async def generate_outline(
     """
     Generate chapter outline for a job.
 
-    TODO:
-    1. Fetch job by ID
-    2. Check user owns this job
-    3. Check job is in correct status (not already processing)
-    4. Analyze repository (if not done yet)
-    5. Call OutlineGenerator service
-    6. Save outline to database
-    7. Update job with estimated chapters/duration
-    8. Return outline
+    Implementation: Use backend/agents/outline_agent.py for generation.
     """
-    # TODO: Implement
-    pass
+    raise HTTPException(status_code=501, detail="Not yet implemented")
 
 
 @router.put("", response_model=OutlineResponse)
@@ -56,19 +42,8 @@ async def update_outline(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Update outline with user modifications.
-
-    TODO:
-    1. Fetch existing outline
-    2. Validate outline structure
-    3. Update outline_data and user_modifications
-    4. Save to database
-    5. Recalculate estimates if needed
-    6. Return updated outline
-    """
-    # TODO: Implement
-    pass
+    """Update outline with user modifications."""
+    raise HTTPException(status_code=501, detail="Not yet implemented")
 
 
 @router.post("/approve", response_model=PaymentIntentResponse)
@@ -80,14 +55,6 @@ async def approve_outline(
     """
     Approve outline and create payment intent.
 
-    TODO:
-    1. Fetch outline
-    2. Mark outline as approved
-    3. Calculate final price based on outline
-    4. Create Stripe payment intent
-    5. Save payment record
-    6. Return client_secret for frontend
-    7. After payment succeeds (webhook), trigger Microsoft Agent Framework workflow
+    Note: After payment succeeds (webhook), trigger Microsoft Agent Framework workflow.
     """
-    # TODO: Implement
-    pass
+    raise HTTPException(status_code=501, detail="Not yet implemented")

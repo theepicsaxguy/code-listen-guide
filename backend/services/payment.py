@@ -1,39 +1,29 @@
 """
 Payment service for Stripe integration.
 
-TODO: Implementation steps:
-1. Initialize Stripe client
-2. Implement create_payment_intent()
-3. Implement verify_webhook_signature()
-4. Implement handle_payment_success()
-5. Implement handle_payment_failure()
-6. Add refund functionality
-7. Add customer creation
+This service handles Stripe payment processing for audiobook generation jobs.
+Implementation pending: Requires Stripe API keys and webhook configuration.
 """
 
 import stripe
 from typing import Dict
-
-# from backend.config import get_settings
 
 
 class StripeService:
     """
     Handles Stripe payment operations.
 
-    TODO:
-    - Implement all Stripe operations
-    - Add webhook verification
-    - Add error handling
+    Implementation Note: Requires Stripe API key and webhook secret configuration.
+    Used by backend/api/routes/payments.py for payment processing.
     """
 
     def __init__(self, api_key: str, webhook_secret: str):
         """
         Initialize Stripe service.
 
-        TODO:
-        - Set Stripe API key
-        - Store webhook secret
+        Args:
+            api_key: Stripe secret API key
+            webhook_secret: Stripe webhook signing secret
         """
         stripe.api_key = api_key
         self.webhook_secret = webhook_secret
@@ -48,13 +38,16 @@ class StripeService:
         """
         Create Stripe payment intent.
 
-        TODO:
-        1. Create payment intent with Stripe
-        2. Return payment intent details
-        3. Add error handling
+        Args:
+            amount_cents: Payment amount in cents
+            currency: Currency code (default: USD)
+            customer_id: Optional Stripe customer ID
+            metadata: Optional metadata dict
+
+        Returns:
+            Payment intent details including client_secret
         """
-        # TODO: Implement
-        pass
+        raise NotImplementedError("Implement using stripe.PaymentIntent.create()")
 
     def verify_webhook_signature(
         self,
@@ -64,12 +57,17 @@ class StripeService:
         """
         Verify Stripe webhook signature.
 
-        TODO:
-        - Verify signature using stripe.Webhook.construct_event
-        - Return event data if valid
-        - Raise error if invalid
+        Args:
+            payload: Raw request body bytes
+            sig_header: Stripe-Signature header value
+
+        Returns:
+            Verified event data
+
+        Raises:
+            stripe.error.SignatureVerificationError: If signature is invalid
         """
-        pass
+        raise NotImplementedError("Implement using stripe.Webhook.construct_event()")
 
     async def create_customer(
         self,
@@ -79,11 +77,14 @@ class StripeService:
         """
         Create Stripe customer.
 
-        TODO:
-        - Create customer in Stripe
-        - Return customer ID
+        Args:
+            email: Customer email address
+            name: Optional customer name
+
+        Returns:
+            Stripe customer ID
         """
-        pass
+        raise NotImplementedError("Implement using stripe.Customer.create()")
 
     async def process_refund(
         self,
@@ -93,8 +94,8 @@ class StripeService:
         """
         Process refund for payment.
 
-        TODO:
-        - Create refund in Stripe
-        - Handle partial refunds
+        Args:
+            payment_intent_id: Stripe payment intent ID
+            amount_cents: Optional partial refund amount (full refund if None)
         """
-        pass
+        raise NotImplementedError("Implement using stripe.Refund.create()")

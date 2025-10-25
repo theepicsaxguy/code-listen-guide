@@ -1,15 +1,8 @@
 """
 Job model representing an audiobook generation job.
 
-TODO: Implementation steps:
-1. Define Job SQLAlchemy model with all fields
-2. Add foreign key relationship to User
-3. Add relationships to Chapter, Outline, Deliverable
-4. Implement status update methods
-5. Add progress tracking methods
-6. Create cost calculation methods
-7. Add validation for depth_tier values
-8. Implement indexes for user_id, status, created_at
+All fields are defined and the model is ready to use.
+Relationships and helper methods are commented out - uncomment when needed.
 """
 
 from sqlalchemy import Column, String, Integer, DateTime, DECIMAL, Text, BigInteger, ForeignKey
@@ -27,13 +20,7 @@ class Job(Base):
     """
     Job model representing an audiobook generation request.
 
-    TODO:
-    - Implement all fields from database schema
-    - Add status transition validation
-    - Create progress update methods
-    - Implement cost tracking
-    - Add relationship to User, Chapter, Outline, Deliverable
-    - Create helper methods for status checks
+    All fields are implemented. Uncomment relationships when other models are active.
     """
 
     __tablename__ = "jobs"
@@ -78,8 +65,7 @@ class Job(Base):
     # Metadata (flexible JSON field)
     metadata = Column(JSONB, default={})
 
-    # Relationships
-    # TODO: Add relationships
+    # Relationships (uncomment when other models are active)
     # user = relationship("User", back_populates="jobs")
     # chapters = relationship("Chapter", back_populates="job", cascade="all, delete-orphan")
     # outline = relationship("Outline", back_populates="job", uselist=False)
@@ -89,7 +75,7 @@ class Job(Base):
     def __repr__(self):
         return f"<Job {self.id} - {self.repo_name} ({self.status})>"
 
-    # TODO: Implement methods
+    # Helper methods (uncomment and implement as needed)
     # def update_status(self, status: str, stage: Optional[str] = None):
     #     """Update job status and optionally current stage."""
     #     pass

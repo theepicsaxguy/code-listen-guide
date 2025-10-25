@@ -74,9 +74,9 @@ async def get_current_active_user(
 
     Note:
         Currently returns all users as active.
-        Add is_active field to User model to enable this check.
+        Uncomment the check below when is_active field is added to User model.
     """
-    # TODO: Add is_active field to User model, then uncomment:
+    # Uncomment when User.is_active field is added:
     # if hasattr(current_user, 'is_active') and not current_user.is_active:
     #     raise HTTPException(
     #         status_code=status.HTTP_403_FORBIDDEN,
