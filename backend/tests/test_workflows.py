@@ -229,54 +229,93 @@ class TestCheckpointing:
     """Test workflow checkpoint functionality."""
 
     @pytest.mark.asyncio
-    async def test_save_checkpoint(self, test_db):
-        """Test saving workflow checkpoint to database."""
+    async def test_save_checkpoint_persists_record(self, test_db):
+        """Persist a checkpoint using the helper."""
+        from backend.models.workflow_checkpoint import WorkflowCheckpoint
         from backend.utils.checkpointing import save_checkpoint
 
-        checkpoint_data = {
-            "stage": "outline_generation",
-            "completed_at": "2025-10-25T12:00:00",
-            "data": {"outline": {"chapters": []}},
-        }
+        workflow_id = "workflow-save"
+        state = {"stage": "outline", "chapters": 8}
 
-        result = await save_checkpoint(
-            job_id="test-job", checkpoint_data=checkpoint_data, db=test_db
+        checkpoint_id = await save_checkpoint(
+            workflow_id=workflow_id,
+            step_id="outline_generation",
+            state=state,
+            session=test_db,
         )
 
-        # Should save without error
-        assert result is not None or result is None  # Depends on implementation
+        stored = test_db.get(WorkflowCheckpoint, checkpoint_id)
+
+        assert stored is not None
+        assert stored.workflow_id == workflow_id
+        assert stored.step_id == "outline_generation"
+        assert stored.state == state
 
     @pytest.mark.asyncio
-    async def test_load_checkpoint(self, test_db):
-        """Test loading workflow checkpoint from database."""
-        from backend.utils.checkpointing import load_checkpoint
+    async def test_load_checkpoint_returns_state(self, test_db):
+        """Load a previously stored checkpoint."""
+        from backend.utils.checkpointing import load_checkpoint, save_checkpoint
 
-        # First save a checkpoint
-        from backend.utils.checkpointing import save_checkpoint
+        workflow_id = "workflow-load"
+        state = {"stage": "analysis", "status": "complete"}
 
-        await save_checkpoint(
-            job_id="test-job", checkpoint_data={"stage": "analysis"}, db=test_db
+        checkpoint_id = await save_checkpoint(
+            workflow_id=workflow_id,
+            step_id="analysis",
+            state=state,
+            session=test_db,
         )
 
-        # Then load it
-        result = await load_checkpoint(job_id="test-job", db=test_db)
+        loaded = await load_checkpoint(
+            workflow_id=workflow_id,
+            checkpoint_id=checkpoint_id,
+            session=test_db,
+        )
 
-        # Should return checkpoint data or None
-        assert result is not None or result is None
+        assert loaded is not None
+        assert loaded["id"] == checkpoint_id
+        assert loaded["workflow_id"] == workflow_id
+        assert loaded["step_id"] == "analysis"
+        assert loaded["state"] == state
 
     @pytest.mark.asyncio
-    async def test_resume_from_checkpoint(self):
-        """Test resuming workflow from saved checkpoint."""
-        from backend.workflows.audiobook_workflow import AudiobookWorkflow
-
-        workflow = AudiobookWorkflow(
-            job_id="test-job",
-            repo_url="https://github.com/user/repo",
-            depth_tier="standard",
+    async def test_list_and_delete_checkpoints(self, test_db):
+        """List and delete checkpoints for a workflow."""
+        from backend.utils.checkpointing import (
+            delete_checkpoint,
+            list_checkpoint_ids,
+            list_checkpoints,
+            save_checkpoint,
         )
 
-        # Should be able to resume from checkpoint
-        # Actual test would require saved checkpoint in database
+        workflow_id = "workflow-list"
+
+        first = await save_checkpoint(
+            workflow_id=workflow_id,
+            step_id="analysis",
+            state={"stage": "analysis"},
+            session=test_db,
+        )
+        second = await save_checkpoint(
+            workflow_id=workflow_id,
+            step_id="outline",
+            state={"stage": "outline"},
+            session=test_db,
+        )
+
+        ids = await list_checkpoint_ids(workflow_id, session=test_db)
+        assert ids == [first, second]
+
+        checkpoints = await list_checkpoints(workflow_id, session=test_db)
+        assert [cp["id"] for cp in checkpoints] == [first, second]
+
+        deleted = await delete_checkpoint(workflow_id, first, session=test_db)
+        assert deleted is True
+        remaining_ids = await list_checkpoint_ids(workflow_id, session=test_db)
+        assert remaining_ids == [second]
+
+        deleted_again = await delete_checkpoint(workflow_id, first, session=test_db)
+        assert deleted_again is False
 
 
 @pytest.mark.workflows
