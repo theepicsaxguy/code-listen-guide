@@ -79,6 +79,16 @@ service on the same origin.
 
 The FastAPI service exposes REST and WebSocket endpoints for managing jobs, running the audiobook workflow, and streaming status updates. It leans on PostgreSQL for persistence, Stripe for payments, OpenAI for reasoning, and AWS S3 for audio storage.
 
+### Docker Compose
+
+Prefer keeping the backend and the static frontend in separate containers? Use the provided Compose file to build and launch the production stack in one go:
+
+```bash
+docker compose up --build
+```
+
+The command maps the backend to `http://localhost:8000` and serves the compiled frontend through Nginx at `http://localhost:8080`. Both containers share the same network, so the UI talks to the API without extra wiring.
+
 ## Development workflow
 
 1. **Clone the repo** and install frontend dependencies.
