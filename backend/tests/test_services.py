@@ -1,11 +1,25 @@
 """Tests for backend services."""
 
 import importlib
+import sys
 from datetime import datetime
 from pathlib import Path
+from types import ModuleType
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
+docling_module = sys.modules.setdefault("docling", ModuleType("docling"))
+docling_document_converter = ModuleType("docling.document_converter")
+docling_document_converter.DocumentConverter = MagicMock()
+docling_document_converter.PdfFormatOption = MagicMock()
+sys.modules.setdefault("docling.document_converter", docling_document_converter)
+docling_base_models = ModuleType("docling.datamodel.base_models")
+docling_base_models.InputFormat = MagicMock()
+sys.modules.setdefault("docling.datamodel.base_models", docling_base_models)
+docling_pipeline_options = ModuleType("docling.datamodel.pipeline_options")
+docling_pipeline_options.PdfPipelineOptions = MagicMock()
+sys.modules.setdefault("docling.datamodel.pipeline_options", docling_pipeline_options)
 
 from backend.agents.schemas import OutlineAgentResponse, ScriptAgentResponse
 
@@ -67,6 +81,65 @@ class TestRepositoryAnalyzer:
                     assert analyzer.use_docling is True
 
     @pytest.mark.asyncio
+    async def test_parse_codebase_uses_docling_pipeline(self):
+        """Test Docling pipeline is used when available."""
+        from backend.services.repository_analyzer import RepositoryAnalyzer
+
+        docling_output = {
+            "files": [
+                {
+                    "file_path": "main.py",
+                    "content": "print('hello')",
+                    "tags": {"language": ["Python"]},
+                }
+            ],
+            "summary": {"total_files": 1, "successfully_parsed": 1},
+        }
+
+        with patch("backend.services.repository_analyzer.HAS_DOCLING_PIPELINE", True):
+            with patch(
+                "backend.services.repository_analyzer.DoclingPipeline"
+            ) as mock_docling_pipeline:
+                pipeline_instance = MagicMock()
+                pipeline_instance.process_pipeline = AsyncMock(
+                    return_value=docling_output
+                )
+                mock_docling_pipeline.return_value = pipeline_instance
+
+                analyzer = RepositoryAnalyzer(
+                    repo_url="https://github.com/user/repo", use_docling=True
+                )
+
+        result = await analyzer.parse_codebase(Path("/tmp/repo"))
+
+        pipeline_instance.process_pipeline.assert_awaited_once_with(Path("/tmp/repo"))
+        assert result == docling_output
+
+    @pytest.mark.asyncio
+    async def test_parse_codebase_uses_tree_sitter_when_docling_unavailable(self):
+        """Test fallback parser is used when Docling pipeline is unavailable."""
+        from backend.services.repository_analyzer import RepositoryAnalyzer
+
+        fallback_result = {
+            "files": [{"path": "main.py", "language": "python"}],
+            "summary": {"total_files": 1, "successfully_parsed": 1},
+        }
+
+        with patch("backend.services.repository_analyzer.HAS_DOCLING_PIPELINE", False):
+            analyzer = RepositoryAnalyzer(
+                repo_url="https://github.com/user/repo", use_docling=True
+            )
+
+        with patch(
+            "backend.services.repository_analyzer.build_code_map",
+            return_value=fallback_result,
+        ) as mock_build_code_map:
+            result = await analyzer.parse_codebase(Path("/tmp/repo"))
+
+        mock_build_code_map.assert_called_once_with("/tmp/repo")
+        assert result == fallback_result
+
+    @pytest.mark.asyncio
     @patch("backend.services.repository_analyzer.Repo")
     async def test_clone_repository(self, mock_repo_class):
         """Test repository cloning."""
@@ -98,6 +171,98 @@ class TestRepositoryAnalyzer:
         )
 
         assert analyzer.max_repo_size_mb == 100
+
+    @pytest.mark.asyncio
+    async def test_docling_analysis_and_outline_generation(self):
+        """Test Docling analysis output feeds into outline generation."""
+        from backend.services.repository_analyzer import RepositoryAnalyzer
+        from backend.services.outline_generator import generate_outline
+
+        docling_output = {
+            "files": [
+                {
+                    "file_path": "main.py",
+                    "content": "def main():\n    return 'hi'",
+                    "tags": {"language": ["Python"], "purpose": "source"},
+                }
+            ],
+            "summary": {"total_files": 1, "successfully_parsed": 1},
+        }
+
+        with patch("backend.services.repository_analyzer.HAS_DOCLING_PIPELINE", True):
+            with patch(
+                "backend.services.repository_analyzer.DoclingPipeline"
+            ) as mock_docling_pipeline:
+                pipeline_instance = MagicMock()
+                pipeline_instance.process_pipeline = AsyncMock(
+                    return_value=docling_output
+                )
+                mock_docling_pipeline.return_value = pipeline_instance
+
+                analyzer = RepositoryAnalyzer(
+                    repo_url="https://github.com/user/repo", use_docling=True
+                )
+
+        parsed = await analyzer.parse_codebase(Path("/tmp/repo"))
+
+        analysis_data = {
+            "repo_name": "Demo Repository",
+            "analysis_mode": "docling",
+            "languages": {"python": 1},
+            "structure": {
+                "files": [
+                    {
+                        "path": "main.py",
+                        "size_bytes": 128,
+                        "language": "python",
+                    }
+                ],
+                "total_size_bytes": 128,
+                "file_count": 1,
+            },
+            "parsed": parsed,
+        }
+
+        outline_response = OutlineAgentResponse(
+            chapters=[
+                {
+                    "number": 1,
+                    "title": "Introduction",
+                    "estimated_duration_minutes": 5,
+                    "files_covered": ["main.py"],
+                    "learning_objectives": ["Understand main module"],
+                }
+            ],
+            depth_tier="standard",
+        )
+
+        with patch("backend.services.outline_generator.get_settings") as mock_settings:
+            mock_settings.return_value.openai_api_key = "test-key"
+
+            with patch(
+                "backend.services.outline_generator.outline_agent.create_outline_agent"
+            ) as mock_create_agent:
+                agent_instance = AsyncMock()
+                thread = MagicMock()
+                agent_instance.get_new_thread = MagicMock(return_value=thread)
+                agent_instance.run = AsyncMock(
+                    return_value=MagicMock(result=outline_response)
+                )
+                mock_create_agent.return_value = agent_instance
+
+                result = await generate_outline(
+                    analysis_data=analysis_data,
+                    depth_tier="standard",
+                    job_id="job-123",
+                )
+
+        args, kwargs = agent_instance.run.await_args
+        prompt = args[0]
+
+        assert result == outline_response
+        assert "docling" in prompt
+        assert "main.py" in prompt
+        assert kwargs["thread"] is thread
 
 
 @pytest.mark.services
