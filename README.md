@@ -14,7 +14,7 @@ Codebase Audiobook answers both points. It gives developers a hands-free way to 
 ## How it works (high level)
 
 1. **Repository intake** – The backend clones the repository, walks the tree, and prepares language-specific parsing tasks.
-2. **Docling-powered parsing** – We are integrating IBM's Docling toolkit so the analyzer can emit rich syntax trees that downstream agents can trust.
+2. **Docling-powered parsing** – IBM's Docling toolkit parses, cleans, and tags code with semantic metadata, enabling richer narratives than basic AST parsing. The pipeline extracts structure, detects frameworks, identifies entry points, and builds dependency graphs.
 3. **Narrative planning** – A Content Architect agent designs a chapter outline, calling on semantic clustering tools to group related files and concepts.
 4. **Script generation** – A pool of Script Generation agents writes the narration for each chapter in parallel while a Quality agent vets accuracy before anything ships.
 5. **Audio assembly** – The Audio Synthesis Coordinator renders text-to-speech tracks, normalizes audio, and packages metadata for the player UI.
@@ -70,12 +70,13 @@ The FastAPI service exposes REST and WebSocket endpoints for managing jobs, runn
 
 ## Roadmap highlights
 
-- **Docling parser integration:** Replace placeholder parsing with Docling adapters so agents receive richer AST data and diagnostic context.
+- **✓ Docling parser integration:** Implemented! The pipeline now parses, cleans, and tags codebases with semantic metadata. See [`docs/DOCLING_PIPELINE.md`](docs/DOCLING_PIPELINE.md) for details.
 - **Community-driven launch:** Publish a transparent landing page, collect early-access signups, and share progress across developer forums, newsletters, and Product Hunt.
 - **Accessibility enhancements:** Pair every audio chapter with searchable transcripts and navigation cues so listeners can jump between sections quickly (identified as a gap in launch research).
 
 ## Reference material
 
+- `docs/DOCLING_PIPELINE.md` – Complete documentation for the Docling parsing, cleaning, and tagging pipeline.
 - `docs/analysis.md` – Market demand study for audio-first developer education.
 - `Plan.md` – Investor-facing deep dive into the multi-agent architecture and enterprise positioning.
 - `plans/*.md` – Execution blueprints for parser upgrades and go-to-market work.
