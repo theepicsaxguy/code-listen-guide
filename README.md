@@ -81,13 +81,13 @@ The FastAPI service exposes REST and WebSocket endpoints for managing jobs, runn
 
 ### Docker Compose
 
-Prefer keeping the backend and the static frontend in separate containers? Use the provided Compose file to build and launch the production stack in one go:
+Prefer keeping the backend and the static frontend in separate containers? Use the provided Compose file to pull the published images and launch the production stack in one go:
 
 ```bash
-docker compose up --build
+docker compose up
 ```
 
-The command maps the backend to `http://localhost:8000` and serves the compiled frontend through Nginx at `http://localhost:8080`. Both containers share the same network, so the UI talks to the API without extra wiring.
+The command maps the backend to `http://localhost:8000` and serves the compiled frontend through Nginx at `http://localhost:8080`. Both containers share the same network, so the UI talks to the API without extra wiring. Need to test local code changes instead of the published images? Uncomment the `build` sections in `docker-compose.yml` and run `docker compose up --build`.
 
 ## Development workflow
 

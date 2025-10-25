@@ -2,9 +2,10 @@ version: "3.9"
 
 services:
   backend:
-    build:
-      context: .
-      target: production
+    image: ghcr.io/theepicsaxguy/code-listen-guide-backend:latest
+    # build:
+    #   context: .
+    #   target: production
     environment:
       ENVIRONMENT: production
       FRONTEND_URL: http://localhost:8080
@@ -12,11 +13,12 @@ services:
       - "8000:8000"
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      args:
-        VITE_API_BASE_URL: http://localhost:8000/api/v1
+    image: ghcr.io/theepicsaxguy/code-listen-guide-frontend:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.frontend
+    #   args:
+    #     VITE_API_BASE_URL: http://localhost:8000/api/v1
     depends_on:
       - backend
     ports:
