@@ -5,6 +5,7 @@ from agent_framework.openai import OpenAIResponsesClient
 
 from backend.tools.db_tools import save_chapter_script
 from . import build_responses_client_options
+from .schemas import ScriptAgentResponse
 
 
 def _ai_save_script(job_id: str, chapter_number: int, script: str) -> bool:
@@ -23,6 +24,7 @@ async def create_script_agent(
             "Focus on clear teaching, code explanations, and narrative flow."
         ),
         tools=[AIFunction(_ai_save_script)],
+        response_format=ScriptAgentResponse,
     )
 
 

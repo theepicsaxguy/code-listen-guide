@@ -6,6 +6,7 @@ from agent_framework.openai import OpenAIResponsesClient
 from backend.tools.audio_tools import synthesize_speech
 from backend.tools.storage_tools import upload_to_s3
 from . import build_responses_client_options
+from .schemas import AudioAgentResponse
 
 
 def _ai_tts(text: str, voice: str = "alloy") -> str:
@@ -24,6 +25,7 @@ async def create_audio_agent(chat_client: Any) -> ChatAgent:
             "Use the provided tools for text-to-speech and uploads."
         ),
         tools=[AIFunction(_ai_tts), AIFunction(_ai_upload)],
+        response_format=AudioAgentResponse,
     )
 
 
