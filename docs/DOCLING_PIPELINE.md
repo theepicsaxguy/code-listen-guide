@@ -51,10 +51,10 @@ Basic parser used when Docling is unavailable or for specific file types:
 
 ```bash
 # Install Docling and dependencies
-pip install docling==2.58.0 docling-core==2.49.0
+pip install docling docling-core
 
 # Install git support
-pip install gitpython==3.1.45
+pip install gitpython
 ```
 
 ### Optional: Model Prefetching
@@ -360,7 +360,7 @@ RuntimeError: Docling is not installed
 
 **Solution:**
 ```bash
-pip install docling==2.58.0 docling-core==2.49.0
+pip install docling docling-core
 ```
 
 #### 2. GitPython Missing
@@ -372,7 +372,7 @@ RuntimeError: GitPython not installed
 
 **Solution:**
 ```bash
-pip install gitpython==3.1.45
+pip install gitpython
 ```
 
 #### 3. Repository Too Large

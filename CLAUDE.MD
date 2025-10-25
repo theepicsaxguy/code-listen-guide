@@ -1734,7 +1734,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: '3.14'
       - run: pip install pytest pytest-asyncio
       - run: pytest
 ```
@@ -1907,7 +1907,8 @@ STRIPE_SECRET_KEY=sk_live_...
 cd backend
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+python -m pip install -U pip setuptools wheel
+python -m pip install -U -r requirements.txt
 cp .env.example .env  # Edit with your API keys
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -1942,9 +1943,10 @@ npm install --legacy-peer-deps
 
 ```bash
 # Reinstall dependencies
-pip install -r requirements.txt --force-reinstall
+python -m pip install -U pip setuptools wheel
+python -m pip install -U -r requirements.txt --force-reinstall
 
-# Check Python version (must be 3.12)
+# Check Python version (must be 3.14)
 python --version
 ```
 
