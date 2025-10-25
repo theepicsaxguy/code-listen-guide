@@ -112,6 +112,8 @@ backend/
    legacy vector cache helpers, install `agent-framework-redis` into a Python 3.13 environment until the upstream package adds
    3.14 wheels.
 
+   Container builds rely on `requirements.runtime.txt`, which keeps the published Docker images focused on runtime code instead of bundling pytest, fakeredis, or linting toolchains. Local development and CI continue to install the full `requirements.txt` so test and quality checks run as before.
+
 4. **Set up environment variables**:
    ```bash
    cp .env.example .env

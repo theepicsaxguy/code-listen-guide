@@ -27,14 +27,13 @@ RUN apt-get update \
         libxslt1-dev \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
-COPY backend/requirements.txt ./requirements.txt
+COPY backend/requirements.runtime.txt ./requirements.txt
 RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
     && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 COPY backend ./backend
 
 FROM python:${PYTHON_VERSION} AS production
-WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/opt/venv/bin:$PATH"
@@ -45,8 +44,12 @@ RUN apt-get update \
         libxslt1.1 \
         zlib1g \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=backend-build /opt/venv /opt/venv
-COPY --from=backend-build /app/backend /app/backend
-COPY --from=frontend-build /app/dist /app/backend/frontend_dist
+RUN groupadd --system app \
+    && useradd --system --gid app --home /app --create-home --shell /usr/sbin/nologin app
+WORKDIR /app
+COPY --from=backend-build --chown=app:app /opt/venv /opt/venv
+COPY --from=backend-build --chown=app:app /app/backend /app/backend
+COPY --from=frontend-build --chown=app:app /app/dist /app/backend/frontend_dist
+USER app
 EXPOSE 8000
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
