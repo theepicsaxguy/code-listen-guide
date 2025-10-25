@@ -139,26 +139,20 @@ jobs:
       - name: Configure cache
         id: cache
         run: |
-          {
-            echo "from<<'EOF'"
-            echo "type=gha"
-            echo "type=registry,ref=ghcr.io/${{ github.repository_owner }}/code-listen-guide-${{ matrix.service }}:buildcache"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          echo "from<<EOF" >> "$GITHUB_OUTPUT"
+          echo "type=gha" >> "$GITHUB_OUTPUT"
+          echo "type=registry,ref=ghcr.io/${{ github.repository_owner }}/code-listen-guide-${{ matrix.service }}:buildcache" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
           if [[ "${{ github.event_name }}" == 'push' ]]; then
-            {
-              echo "to<<'EOF'"
-              echo "type=gha,mode=max"
-              echo "type=registry,ref=ghcr.io/${{ github.repository_owner }}/code-listen-guide-${{ matrix.service }}:buildcache,mode=max"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
+            echo "to<<EOF" >> "$GITHUB_OUTPUT"
+            echo "type=gha,mode=max" >> "$GITHUB_OUTPUT"
+            echo "type=registry,ref=ghcr.io/${{ github.repository_owner }}/code-listen-guide-${{ matrix.service }}:buildcache,mode=max" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
           else
-            {
-              echo "to<<'EOF'"
-              echo "type=gha,mode=max"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
+            echo "to<<EOF" >> "$GITHUB_OUTPUT"
+            echo "type=gha,mode=max" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build and publish ${{ matrix.service }} image
