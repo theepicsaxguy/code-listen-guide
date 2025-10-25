@@ -54,6 +54,10 @@ pip install -r requirements.txt
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+### Production bundle
+
+Run `./serve-production.sh` from the repository root when you want the production build in one command. The script compiles the frontend, starts the FastAPI server with multiple workers, and serves the built assets through `vite preview`. Override defaults by exporting `BACKEND_PORT`, `FRONTEND_PORT`, or `UVICORN_WORKERS` before launching.
+
 The FastAPI service exposes REST and WebSocket endpoints for managing jobs, running the audiobook workflow, and streaming status updates. It leans on PostgreSQL for persistence, Stripe for payments, Azure OpenAI for reasoning, and AWS S3 for audio storage.
 
 ## Development workflow
