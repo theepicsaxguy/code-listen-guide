@@ -8,6 +8,7 @@ RUN apt-get update \
         build-essential \
         libxml2-dev \
         libxslt1-dev \
+        zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt

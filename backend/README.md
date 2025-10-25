@@ -86,7 +86,7 @@ backend/
 - PostgreSQL 15+ (required for production; local development defaults to SQLite)
 - Redis 6+ (for WebSocket fan-out between workers)
 - FFmpeg (for audio processing)
-- libxml2-dev and libxslt1-dev (required to build the `lxml` dependency used by Docling)
+- libxml2-dev, libxslt1-dev, and zlib1g-dev (required to build the `lxml` dependency used by Docling)
 - OpenAI account with an API key and optional custom base URL or model overrides
 
 ### Installation
