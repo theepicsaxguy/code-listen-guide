@@ -174,7 +174,7 @@ These tests are exercised by three GitHub Actions workflows so contributors get 
 
 ### CI (`.github/workflows/ci.yml`)
 - Frontend job builds the Vite app with Node.js 22 so regressions in the UI surface early.
-- Backend job installs ffmpeg, restores Python dependencies from `backend/requirements.txt`, and runs the marker suites on Python 3.11 and 3.12 before generating a coverage report that uploads to Codecov when credentials exist.
+- Backend job installs ffmpeg, restores Python dependencies from `backend/requirements.txt`, and runs the marker suites on Python 3.12 before generating a coverage report that uploads to Codecov when credentials exist.
 
 ### Integration Tests (`.github/workflows/integration-tests.yml`)
 - Manual dispatches and the nightly schedule light up the slow `integration` + `slow` suite with the required API keys.

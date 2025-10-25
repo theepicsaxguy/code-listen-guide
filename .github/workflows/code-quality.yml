@@ -3,7 +3,15 @@ name: Code Quality
 on:
   push:
     branches: [main]
+    paths:
+      - 'backend/**'
+      - 'pytest.ini'
+      - '.github/workflows/code-quality.yml'
   pull_request:
+    paths:
+      - 'backend/**'
+      - 'pytest.ini'
+      - '.github/workflows/code-quality.yml'
 
 jobs:
   linting:
@@ -16,7 +24,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.14'
+          python-version: '3.12'
           cache: pip
 
       - name: Install dependencies

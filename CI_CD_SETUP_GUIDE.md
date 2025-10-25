@@ -19,18 +19,14 @@ backend:
   name: Backend Tests
   runs-on: ubuntu-latest
 
-  strategy:
-    matrix:
-      python-version: ["3.11", "3.12"]
-
   steps:
     - name: Checkout
       uses: actions/checkout@v5
 
-    - name: Setup Python ${{ matrix.python-version }}
+    - name: Setup Python 3.12
       uses: actions/setup-python@v6
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.12'
         cache: pip
         cache-dependency-path: backend/requirements.txt
 
@@ -92,7 +88,7 @@ backend:
         pytest --cov=backend --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         files: ./backend/coverage.xml
         flags: backend
