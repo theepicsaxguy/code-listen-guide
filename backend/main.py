@@ -105,13 +105,20 @@ if trace and Resource and TracerProvider:
     if FastAPIInstrumentor:
         FastAPIInstrumentor.instrument_app(app, tracer_provider=provider)
 
-cors_origins = {
-    "http://localhost:5173",
-    "http://localhost:3000",
-}
+cors_origins = set()
 
 if settings.frontend_url:
     cors_origins.add(settings.frontend_url.rstrip("/"))
+
+if settings.environment.lower() == "development":
+    cors_origins.update(
+        {
+            "http://localhost:4173",
+            "http://127.0.0.1:4173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        }
+    )
 
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(

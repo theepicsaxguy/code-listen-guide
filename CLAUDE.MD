@@ -1925,7 +1925,7 @@ npm run dev
 ```
 
 **Access:**
-- Frontend: http://localhost:5173
+- Frontend: http://localhost:4173
 - Backend API: http://localhost:8000
 - API docs: http://localhost:8000/docs
 
@@ -1967,10 +1967,10 @@ DATABASE_URL=postgresql://user:password@localhost:5432/audiobook
 #### CORS errors in browser
 
 ```bash
-# Backend CORS is configured for localhost:5173 by default
+# Backend CORS is configured for localhost:4173 by default
 # If using different port, update backend/main.py:
 origins = [
-    "http://localhost:5173",  # Add your port here
+    "http://localhost:4173",  # Add your port here
 ]
 ```
 

@@ -39,7 +39,7 @@ code-listen-guide/
 - **Focus:** Display job progress, surface chapter outlines, and host the audiobook player.
 - **Key scripts:**
   - `npm install` – install dependencies
-  - `npm run dev` – start the Vite dev server at <http://localhost:5173>
+  - `npm run dev` – start the Vite dev server at <http://localhost:4173>
   - `npm run build` – compile for production (used in CI)
   - `npm run lint` – run ESLint across the app
   - `npm run preview` – serve the production build locally for smoke testing

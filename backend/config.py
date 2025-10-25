@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     clerk_secret_key: Optional[str] = Field(default=None)
 
     api_base_url: str = Field(default="http://localhost:8000")
-    frontend_url: str = Field(default="http://localhost:5173")
+    frontend_url: str = Field(default="http://localhost:4173")
     environment: str = Field(default="development")
 
     sentry_dsn: Optional[str] = Field(default=None)
