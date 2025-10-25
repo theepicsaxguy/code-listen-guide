@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 try:
     from agent_framework import CheckpointStorage
 except ImportError:
+
     class CheckpointStorage:
         async def save_checkpoint(self, step_id: str, state: Dict[str, Any]) -> str:
             raise RuntimeError("agent-framework package is required for checkpointing")
@@ -19,6 +20,7 @@ except ImportError:
 
         async def delete_checkpoint(self, checkpoint_id: str) -> bool:
             raise RuntimeError("agent-framework package is required for checkpointing")
+
 
 from sqlalchemy.orm import Session
 
@@ -56,7 +58,9 @@ class PostgresCheckpointStorage(CheckpointStorage):
                 "workflow_id": record.workflow_id,
                 "step_id": record.step_id,
                 "state": record.state,
-                "created_at": record.created_at.isoformat() if record.created_at else None,
+                "created_at": (
+                    record.created_at.isoformat() if record.created_at else None
+                ),
             }
 
     async def list_checkpoints(self) -> List[Dict[str, Any]]:
@@ -72,7 +76,9 @@ class PostgresCheckpointStorage(CheckpointStorage):
                     "id": row.id,
                     "step_id": row.step_id,
                     "state": row.state,
-                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                    "created_at": (
+                        row.created_at.isoformat() if row.created_at else None
+                    ),
                 }
                 for row in rows
             ]

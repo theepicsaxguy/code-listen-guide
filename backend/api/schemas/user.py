@@ -23,6 +23,7 @@ from backend.utils.validators import validate_password_strength
 
 class SubscriptionTier(str, Enum):
     """User subscription tiers."""
+
     FREE = "free"
     PROFESSIONAL = "professional"
     TEAM = "team"
@@ -31,6 +32,7 @@ class SubscriptionTier(str, Enum):
 
 class SubscriptionStatus(str, Enum):
     """Subscription status."""
+
     ACTIVE = "active"
     CANCELED = "canceled"
     PAST_DUE = "past_due"
@@ -62,12 +64,14 @@ class UserCreate(BaseModel):
 
 class UserLogin(BaseModel):
     """Schema for user login."""
+
     email: EmailStr
     password: str
 
 
 class UserResponse(BaseModel):
     """Serialized user data for API responses."""
+
     id: uuid.UUID
     email: EmailStr
     name: Optional[str]
@@ -81,12 +85,14 @@ class UserResponse(BaseModel):
 
 class UserUpdate(BaseModel):
     """Schema for updating user profile."""
+
     name: Optional[str] = None
     email: Optional[EmailStr] = None
 
 
 class TokenResponse(BaseModel):
     """Schema for JWT token response."""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"

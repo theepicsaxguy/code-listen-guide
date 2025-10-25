@@ -30,7 +30,7 @@ class TestUserModel:
             email="test@example.com",
             name="Test User",
             hashed_password="hashed_password_123",
-            subscription_tier="free"
+            subscription_tier="free",
         )
 
         test_db.add(user)
@@ -47,17 +47,13 @@ class TestUserModel:
         from sqlalchemy.exc import IntegrityError
 
         user1 = User(
-            email="duplicate@example.com",
-            name="User 1",
-            hashed_password="pass1"
+            email="duplicate@example.com", name="User 1", hashed_password="pass1"
         )
         test_db.add(user1)
         test_db.commit()
 
         user2 = User(
-            email="duplicate@example.com",
-            name="User 2",
-            hashed_password="pass2"
+            email="duplicate@example.com", name="User 2", hashed_password="pass2"
         )
         test_db.add(user2)
 
@@ -76,7 +72,7 @@ class TestUserModel:
                 email=f"{tier}@example.com",
                 name=f"{tier.title()} User",
                 hashed_password="pass",
-                subscription_tier=tier
+                subscription_tier=tier,
             )
             test_db.add(user)
 
@@ -105,7 +101,7 @@ class TestJobModel:
             repo_owner="user",
             git_ref="main",
             depth_tier="standard",
-            status="pending"
+            status="pending",
         )
 
         test_db.add(job)
@@ -129,7 +125,7 @@ class TestJobModel:
             "scripting",
             "synthesizing",
             "post_processing",
-            "completed"
+            "completed",
         ]
 
         for status in statuses:
@@ -197,7 +193,7 @@ class TestChapterModel:
             description="Overview of the project",
             files_covered=["README.md", "main.py"],
             topics_covered=["setup", "architecture"],
-            status="pending"
+            status="pending",
         )
 
         test_db.add(chapter)
@@ -218,7 +214,7 @@ class TestChapterModel:
             chapter_number=1,
             title="Test Chapter",
             audio_url="https://s3.example.com/audio.mp3",
-            audio_duration_seconds=1800
+            audio_duration_seconds=1800,
         )
 
         test_db.add(chapter)
@@ -236,19 +232,18 @@ class TestChapterModel:
 
         # Create chapters in reverse order
         for i in [3, 1, 2]:
-            chapter = Chapter(
-                job_id=job.id,
-                chapter_number=i,
-                title=f"Chapter {i}"
-            )
+            chapter = Chapter(job_id=job.id, chapter_number=i, title=f"Chapter {i}")
             test_db.add(chapter)
 
         test_db.commit()
 
         # Query chapters ordered by chapter_number
-        chapters = test_db.query(Chapter).filter_by(
-            job_id=job.id
-        ).order_by(Chapter.chapter_number).all()
+        chapters = (
+            test_db.query(Chapter)
+            .filter_by(job_id=job.id)
+            .order_by(Chapter.chapter_number)
+            .all()
+        )
 
         assert len(chapters) == 3
         assert chapters[0].chapter_number == 1
@@ -268,9 +263,7 @@ class TestOutlineModel:
         job = create_job()
 
         outline = Outline(
-            job_id=job.id,
-            outline_data=sample_outline_data,
-            is_approved=False
+            job_id=job.id, outline_data=sample_outline_data, is_approved=False
         )
 
         test_db.add(outline)
@@ -287,9 +280,7 @@ class TestOutlineModel:
         job = create_job()
 
         outline = Outline(
-            job_id=job.id,
-            outline_data=sample_outline_data,
-            is_approved=False
+            job_id=job.id, outline_data=sample_outline_data, is_approved=False
         )
 
         test_db.add(outline)
@@ -318,7 +309,7 @@ class TestPaymentModel:
             user_id=user.id,
             stripe_payment_intent_id="pi_test_123",
             amount_cents=4900,
-            status="succeeded"
+            status="succeeded",
         )
 
         test_db.add(payment)
@@ -338,7 +329,7 @@ class TestPaymentModel:
             user_id=user.id,
             stripe_payment_intent_id="pi_test_456",
             amount_cents=4900,
-            status="pending"
+            status="pending",
         )
 
         test_db.add(payment)
@@ -364,10 +355,7 @@ class TestUsageLogModel:
         job = create_job()
 
         log = UsageLog(
-            job_id=job.id,
-            service_type="azure_openai",
-            tokens_used=1000,
-            cost_cents=25
+            job_id=job.id, service_type="azure_openai", tokens_used=1000, cost_cents=25
         )
 
         test_db.add(log)
@@ -386,7 +374,7 @@ class TestUsageLogModel:
         services = [
             ("azure_openai", 1000, 25),
             ("anthropic", 1500, 30),
-            ("openai_tts", 0, 100)
+            ("openai_tts", 0, 100),
         ]
 
         for service_type, tokens, cost in services:
@@ -394,7 +382,7 @@ class TestUsageLogModel:
                 job_id=job.id,
                 service_type=service_type,
                 tokens_used=tokens,
-                cost_cents=cost
+                cost_cents=cost,
             )
             test_db.add(log)
 
@@ -423,7 +411,7 @@ class TestWorkflowCheckpointModel:
         checkpoint = WorkflowCheckpoint(
             job_id=job.id,
             stage="outline_generation",
-            checkpoint_data={"analysis": "complete"}
+            checkpoint_data={"analysis": "complete"},
         )
 
         test_db.add(checkpoint)
@@ -443,18 +431,14 @@ class TestWorkflowCheckpointModel:
 
         for stage in stages:
             checkpoint = WorkflowCheckpoint(
-                job_id=job.id,
-                stage=stage,
-                checkpoint_data={"stage": stage}
+                job_id=job.id, stage=stage, checkpoint_data={"stage": stage}
             )
             test_db.add(checkpoint)
 
         test_db.commit()
 
         # Query checkpoints
-        checkpoints = test_db.query(WorkflowCheckpoint).filter_by(
-            job_id=job.id
-        ).all()
+        checkpoints = test_db.query(WorkflowCheckpoint).filter_by(job_id=job.id).all()
 
         assert len(checkpoints) == 5
 
@@ -484,9 +468,7 @@ class TestModelRelationships:
 
         for i in range(3):
             chapter = Chapter(
-                job_id=job.id,
-                chapter_number=i + 1,
-                title=f"Chapter {i + 1}"
+                job_id=job.id, chapter_number=i + 1, title=f"Chapter {i + 1}"
             )
             test_db.add(chapter)
 
@@ -506,9 +488,7 @@ class TestModelRelationships:
         # Add chapters
         for i in range(2):
             chapter = Chapter(
-                job_id=job.id,
-                chapter_number=i + 1,
-                title=f"Chapter {i + 1}"
+                job_id=job.id, chapter_number=i + 1, title=f"Chapter {i + 1}"
             )
             test_db.add(chapter)
 

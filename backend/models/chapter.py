@@ -5,7 +5,16 @@ All fields are defined and the model is ready to use.
 Relationships and helper methods are commented out - uncomment when needed.
 """
 
-from sqlalchemy import Column, String, Integer, DateTime, Text, BigInteger, ForeignKey, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    DateTime,
+    Text,
+    BigInteger,
+    ForeignKey,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -31,7 +40,9 @@ class Chapter(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Foreign Keys
-    job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), index=True)
+    job_id = Column(
+        UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), index=True
+    )
 
     # Chapter Info
     chapter_number = Column(Integer, nullable=False)

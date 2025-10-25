@@ -19,7 +19,10 @@ class WebSocketManager:
         await websocket.accept()
         async with self._lock:
             self._channels[channel].add(websocket)
-        logger.info("WebSocket connected", extra={"channel": channel, "connections": self._count(channel)})
+        logger.info(
+            "WebSocket connected",
+            extra={"channel": channel, "connections": self._count(channel)},
+        )
 
     async def disconnect(self, channel: str, websocket: WebSocket) -> None:
         async with self._lock:
@@ -28,7 +31,10 @@ class WebSocketManager:
                 sockets.remove(websocket)
                 if not sockets:
                     self._channels.pop(channel, None)
-        logger.info("WebSocket disconnected", extra={"channel": channel, "connections": self._count(channel)})
+        logger.info(
+            "WebSocket disconnected",
+            extra={"channel": channel, "connections": self._count(channel)},
+        )
 
     async def broadcast(self, channel: str, message: str) -> None:
         sockets = list(self._channels.get(channel, set()))
@@ -75,6 +81,8 @@ def broadcast(channel: str, message: str) -> None:
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
-        logger.warning("Dropping WebSocket message, no running loop", extra={"channel": channel})
+        logger.warning(
+            "Dropping WebSocket message, no running loop", extra={"channel": channel}
+        )
         return
     loop.create_task(manager.broadcast(channel, message))

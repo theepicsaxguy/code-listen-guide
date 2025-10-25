@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 def _build_merge_prompt(audio_files: List[str], output_path: str) -> str:
-    payload = json.dumps({"audio_files": audio_files, "output_path": output_path}, indent=2)
+    payload = json.dumps(
+        {"audio_files": audio_files, "output_path": output_path}, indent=2
+    )
     return (
         "You can merge chapter audio files by calling the available tools. "
         "Produce a single MP3 file and return its local path.\n\n"
@@ -24,7 +26,9 @@ def _build_merge_prompt(audio_files: List[str], output_path: str) -> str:
     )
 
 
-def _build_deliverables_prompt(job_data: Dict[str, str], chapters: List[Dict[str, str]]) -> str:
+def _build_deliverables_prompt(
+    job_data: Dict[str, str], chapters: List[Dict[str, str]]
+) -> str:
     payload = json.dumps({"job": job_data, "chapters": chapters}, indent=2)
     return (
         "Summarize the audiobook deliverables after post-processing. "
@@ -47,29 +51,44 @@ async def _run_postprocess_agent(prompt: str) -> str:
     return getattr(response, "text", None) or getattr(response, "result", "")
 
 
-async def merge_audio_files(audio_files: List[str], output_path: str, job_id: str) -> str:
+async def merge_audio_files(
+    audio_files: List[str], output_path: str, job_id: str
+) -> str:
     prompt = _build_merge_prompt(audio_files, output_path)
     try:
         result_path = await _run_postprocess_agent(prompt)
         if result_path and Path(result_path).exists():
             return result_path
-        logger.info("Post-process agent returned non-existent path", extra={"job_id": job_id})
+        logger.info(
+            "Post-process agent returned non-existent path", extra={"job_id": job_id}
+        )
     except Exception as exc:
-        logger.warning("Post-process agent failed; merging audio locally", extra={"job_id": job_id, "error": str(exc)})
+        logger.warning(
+            "Post-process agent failed; merging audio locally",
+            extra={"job_id": job_id, "error": str(exc)},
+        )
     titles = [f"Chapter {index + 1}" for index in range(len(audio_files))]
     return concat_audio_with_chapters(audio_files, titles)
 
 
-async def create_deliverables(job_data: Dict[str, str], chapters: List[Dict[str, str]]) -> Dict[str, Any]:
+async def create_deliverables(
+    job_data: Dict[str, str], chapters: List[Dict[str, str]]
+) -> Dict[str, Any]:
     prompt = _build_deliverables_prompt(job_data, chapters)
     try:
         raw_text = await _run_postprocess_agent(prompt)
         payload = json.loads(raw_text)
         if isinstance(payload, dict):
             return payload
-        logger.info("Post-process agent returned non-dict payload", extra={"job_id": job_data.get("id")})
+        logger.info(
+            "Post-process agent returned non-dict payload",
+            extra={"job_id": job_data.get("id")},
+        )
     except Exception as exc:
-        logger.warning("Deliverable summary generation failed", extra={"job_id": job_data.get("id"), "error": str(exc)})
+        logger.warning(
+            "Deliverable summary generation failed",
+            extra={"job_id": job_data.get("id"), "error": str(exc)},
+        )
     return {
         "job_id": job_data.get("id"),
         "chapters": chapters,

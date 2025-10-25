@@ -28,7 +28,9 @@ class Deliverable(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Foreign Keys
-    job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), index=True)
+    job_id = Column(
+        UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), index=True
+    )
 
     # File Info
     file_type = Column(String(50), nullable=False)

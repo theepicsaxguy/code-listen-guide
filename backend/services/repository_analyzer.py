@@ -21,12 +21,14 @@ import shutil
 
 try:
     from git import Repo
+
     HAS_GIT = True
 except ImportError:
     HAS_GIT = False
 
 try:
     from backend.services.docling_pipeline import DoclingPipeline
+
     HAS_DOCLING_PIPELINE = True
 except ImportError:
     HAS_DOCLING_PIPELINE = False
@@ -76,7 +78,9 @@ class RepositoryAnalyzer:
                 )
                 logger.info("Initialized Docling pipeline for analysis")
             except Exception as e:
-                logger.warning(f"Failed to initialize Docling: {e}. Falling back to tree-sitter")
+                logger.warning(
+                    f"Failed to initialize Docling: {e}. Falling back to tree-sitter"
+                )
                 self.use_docling = False
 
     async def clone_repository(self) -> Path:
@@ -91,7 +95,9 @@ class RepositoryAnalyzer:
             ValueError: If repository is too large
         """
         if not HAS_GIT:
-            raise RuntimeError("GitPython not installed. Install with: pip install gitpython")
+            raise RuntimeError(
+                "GitPython not installed. Install with: pip install gitpython"
+            )
 
         try:
             # Create temporary directory
@@ -157,11 +163,13 @@ class RepositoryAnalyzer:
             if language:
                 languages.add(language)
 
-            files_metadata.append({
-                "path": str(file_path.relative_to(repo_path)),
-                "size_bytes": file_size,
-                "language": language,
-            })
+            files_metadata.append(
+                {
+                    "path": str(file_path.relative_to(repo_path)),
+                    "size_bytes": file_size,
+                    "language": language,
+                }
+            )
 
         return {
             "files": files_metadata,

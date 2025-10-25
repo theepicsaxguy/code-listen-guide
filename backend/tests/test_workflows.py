@@ -22,14 +22,12 @@ class TestAudiobookWorkflow:
     def mock_workflow(self):
         """Create a mock workflow instance."""
         workflow = MagicMock()
-        workflow.execute = AsyncMock(return_value={
-            "status": "completed",
-            "job_id": "test-job"
-        })
-        workflow.continue_after_approval = AsyncMock(return_value={
-            "status": "completed",
-            "job_id": "test-job"
-        })
+        workflow.execute = AsyncMock(
+            return_value={"status": "completed", "job_id": "test-job"}
+        )
+        workflow.continue_after_approval = AsyncMock(
+            return_value={"status": "completed", "job_id": "test-job"}
+        )
         return workflow
 
     @pytest.mark.asyncio
@@ -40,7 +38,7 @@ class TestAudiobookWorkflow:
         workflow = AudiobookWorkflow(
             job_id="test-job",
             repo_url="https://github.com/user/repo",
-            depth_tier="standard"
+            depth_tier="standard",
         )
 
         assert workflow is not None
@@ -51,11 +49,11 @@ class TestAudiobookWorkflow:
         """Test executing complete workflow."""
         from backend.workflows.audiobook_workflow import AudiobookWorkflow
 
-        with patch.object(AudiobookWorkflow, 'execute', mock_workflow.execute):
+        with patch.object(AudiobookWorkflow, "execute", mock_workflow.execute):
             workflow = AudiobookWorkflow(
                 job_id="test-job",
                 repo_url="https://github.com/user/repo",
-                depth_tier="standard"
+                depth_tier="standard",
             )
 
             result = await workflow.execute()
@@ -71,7 +69,7 @@ class TestAudiobookWorkflow:
         workflow = AudiobookWorkflow(
             job_id="test-job",
             repo_url="https://github.com/user/repo",
-            depth_tier="standard"
+            depth_tier="standard",
         )
 
         # Workflow should have defined stages:
@@ -82,7 +80,7 @@ class TestAudiobookWorkflow:
         # 5. Audio Synthesis (parallel)
         # 6. Post-processing
 
-        assert hasattr(workflow, 'execute') or hasattr(workflow, 'run')
+        assert hasattr(workflow, "execute") or hasattr(workflow, "run")
 
     @pytest.mark.asyncio
     async def test_workflow_handles_human_approval(self, mock_workflow):
@@ -92,11 +90,13 @@ class TestAudiobookWorkflow:
         workflow = AudiobookWorkflow(
             job_id="test-job",
             repo_url="https://github.com/user/repo",
-            depth_tier="standard"
+            depth_tier="standard",
         )
 
         # Workflow should be able to pause and resume
-        assert hasattr(workflow, 'continue_after_approval') or hasattr(workflow, 'resume')
+        assert hasattr(workflow, "continue_after_approval") or hasattr(
+            workflow, "resume"
+        )
 
     @pytest.mark.asyncio
     async def test_workflow_saves_checkpoints(self):
@@ -106,7 +106,7 @@ class TestAudiobookWorkflow:
         workflow = AudiobookWorkflow(
             job_id="test-job",
             repo_url="https://github.com/user/repo",
-            depth_tier="standard"
+            depth_tier="standard",
         )
 
         # Should save checkpoints after major stages
@@ -124,11 +124,14 @@ class TestWorkflowTasks:
 
         workflow = MagicMock()
         workflow.execute = AsyncMock()
-        monkeypatch.setattr(audiobook_tasks, "_create_workflow", lambda **kwargs: workflow)
+        monkeypatch.setattr(
+            audiobook_tasks, "_create_workflow", lambda **kwargs: workflow
+        )
 
         # Run in sync mode for testing
         def run_coroutine(coro):
             import asyncio
+
             loop = asyncio.new_event_loop()
             try:
                 return loop.run_until_complete(coro)
@@ -138,9 +141,7 @@ class TestWorkflowTasks:
         monkeypatch.setattr(audiobook_tasks, "_run_coroutine", run_coroutine)
 
         audiobook_tasks.start_audiobook_workflow(
-            "job-1",
-            "https://example.com/repo.git",
-            "standard"
+            "job-1", "https://example.com/repo.git", "standard"
         )
 
         workflow.execute.assert_awaited_once()
@@ -153,20 +154,21 @@ class TestWorkflowTasks:
         workflow.execute = AsyncMock()
         workflow.continue_after_approval = AsyncMock()
 
-        monkeypatch.setattr(audiobook_tasks, "_create_workflow", lambda **kwargs: workflow)
+        monkeypatch.setattr(
+            audiobook_tasks, "_create_workflow", lambda **kwargs: workflow
+        )
         monkeypatch.setattr(
             audiobook_tasks,
             "_get_job",
             lambda job_id: SimpleNamespace(
-                id=job_id,
-                repo_url="https://example.com/repo.git",
-                depth_tier="survey"
+                id=job_id, repo_url="https://example.com/repo.git", depth_tier="survey"
             ),
         )
         monkeypatch.setattr(audiobook_tasks, "_load_outline", lambda job_id: None)
 
         def run_coroutine(coro):
             import asyncio
+
             loop = asyncio.new_event_loop()
             try:
                 return loop.run_until_complete(coro)
@@ -188,14 +190,14 @@ class TestWorkflowTasks:
         workflow.execute = AsyncMock()
         workflow.continue_after_approval = AsyncMock()
 
-        monkeypatch.setattr(audiobook_tasks, "_create_workflow", lambda **kwargs: workflow)
+        monkeypatch.setattr(
+            audiobook_tasks, "_create_workflow", lambda **kwargs: workflow
+        )
         monkeypatch.setattr(
             audiobook_tasks,
             "_get_job",
             lambda job_id: SimpleNamespace(
-                id=job_id,
-                repo_url="https://example.com/repo.git",
-                depth_tier="survey"
+                id=job_id, repo_url="https://example.com/repo.git", depth_tier="survey"
             ),
         )
         monkeypatch.setattr(
@@ -206,6 +208,7 @@ class TestWorkflowTasks:
 
         def run_coroutine(coro):
             import asyncio
+
             loop = asyncio.new_event_loop()
             try:
                 return loop.run_until_complete(coro)
@@ -233,13 +236,11 @@ class TestCheckpointing:
         checkpoint_data = {
             "stage": "outline_generation",
             "completed_at": "2025-10-25T12:00:00",
-            "data": {"outline": {"chapters": []}}
+            "data": {"outline": {"chapters": []}},
         }
 
         result = await save_checkpoint(
-            job_id="test-job",
-            checkpoint_data=checkpoint_data,
-            db=test_db
+            job_id="test-job", checkpoint_data=checkpoint_data, db=test_db
         )
 
         # Should save without error
@@ -252,17 +253,13 @@ class TestCheckpointing:
 
         # First save a checkpoint
         from backend.utils.checkpointing import save_checkpoint
+
         await save_checkpoint(
-            job_id="test-job",
-            checkpoint_data={"stage": "analysis"},
-            db=test_db
+            job_id="test-job", checkpoint_data={"stage": "analysis"}, db=test_db
         )
 
         # Then load it
-        result = await load_checkpoint(
-            job_id="test-job",
-            db=test_db
-        )
+        result = await load_checkpoint(job_id="test-job", db=test_db)
 
         # Should return checkpoint data or None
         assert result is not None or result is None
@@ -275,7 +272,7 @@ class TestCheckpointing:
         workflow = AudiobookWorkflow(
             job_id="test-job",
             repo_url="https://github.com/user/repo",
-            depth_tier="standard"
+            depth_tier="standard",
         )
 
         # Should be able to resume from checkpoint
@@ -296,9 +293,7 @@ class TestWorkflowIntegration:
         from backend.workflows.audiobook_workflow import AudiobookWorkflow
 
         workflow = AudiobookWorkflow(
-            job_id=str(job.id),
-            repo_url=job.repo_url,
-            depth_tier=job.depth_tier
+            job_id=str(job.id), repo_url=job.repo_url, depth_tier=job.depth_tier
         )
 
         result = await workflow.execute()
@@ -317,7 +312,7 @@ class TestWorkflowIntegration:
         workflow = AudiobookWorkflow(
             job_id="integration-test",
             repo_url="https://github.com/octocat/Hello-World",
-            depth_tier="survey"
+            depth_tier="survey",
         )
 
         result = await workflow.execute()
@@ -333,7 +328,7 @@ class TestWorkflowIntegration:
         workflow = AudiobookWorkflow(
             job_id="error-test",
             repo_url="https://github.com/nonexistent/repo",
-            depth_tier="standard"
+            depth_tier="standard",
         )
 
         # Should not crash, but may return error
@@ -353,11 +348,11 @@ class TestWorkflowIntegration:
         workflow = AudiobookWorkflow(
             job_id="cancel-test",
             repo_url="https://github.com/user/repo",
-            depth_tier="standard"
+            depth_tier="standard",
         )
 
         # Would need to implement cancellation mechanism
-        assert hasattr(workflow, 'cancel') or hasattr(workflow, 'stop')
+        assert hasattr(workflow, "cancel") or hasattr(workflow, "stop")
 
     @pytest.mark.asyncio
     async def test_parallel_chapter_processing(self):
@@ -367,7 +362,7 @@ class TestWorkflowIntegration:
         workflow = AudiobookWorkflow(
             job_id="parallel-test",
             repo_url="https://github.com/user/repo",
-            depth_tier="comprehensive"
+            depth_tier="comprehensive",
         )
 
         # Workflow should process script generation and audio synthesis in parallel

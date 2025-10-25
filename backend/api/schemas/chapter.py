@@ -22,6 +22,7 @@ class ChapterResponse(BaseModel):
     - Add all fields from Chapter model
     - Include audio playback metadata
     """
+
     id: uuid.UUID
     job_id: uuid.UUID
     chapter_number: int
@@ -42,6 +43,7 @@ class ChapterResponse(BaseModel):
 
 class ChapterListResponse(BaseModel):
     """Schema for list of chapters."""
+
     chapters: List[ChapterResponse]
     total_chapters: int
     total_duration_seconds: int

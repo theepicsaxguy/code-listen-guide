@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/v1/jobs/{job_id}/outline", tags=["outlines"])
 async def generate_outline(
     job_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Generate chapter outline for a job.
@@ -39,7 +39,7 @@ async def update_outline(
     job_id: uuid.UUID,
     outline_update: OutlineUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Update outline with user modifications."""
     raise HTTPException(status_code=501, detail="Not yet implemented")
@@ -49,7 +49,7 @@ async def update_outline(
 async def approve_outline(
     job_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Approve outline and create payment intent.

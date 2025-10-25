@@ -49,8 +49,12 @@ class User(Base):
     stripe_customer_id = Column(String(255), unique=True)
 
     # Subscription
-    subscription_tier = Column(String(50), default="free")  # free, professional, team, enterprise
-    subscription_status = Column(String(50), default="active")  # active, canceled, past_due
+    subscription_tier = Column(
+        String(50), default="free"
+    )  # free, professional, team, enterprise
+    subscription_status = Column(
+        String(50), default="active"
+    )  # active, canceled, past_due
 
     # Credits
     credits_remaining = Column(Integer, default=0)
@@ -90,7 +94,4 @@ class User(Base):
         Returns:
             True if subscription is active and not free tier
         """
-        return (
-            self.subscription_status == "active"
-            and self.subscription_tier != "free"
-        )
+        return self.subscription_status == "active" and self.subscription_tier != "free"

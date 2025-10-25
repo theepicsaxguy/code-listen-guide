@@ -37,6 +37,7 @@ settings = get_settings()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up...")
@@ -65,7 +66,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("Referrer-Policy", "no-referrer")
         response.headers.setdefault("Permissions-Policy", "microphone=(), camera=()")
         response.headers.setdefault("Content-Security-Policy", csp_directives)
-        response.headers.setdefault("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+        response.headers.setdefault(
+            "Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload"
+        )
         return response
 
 
@@ -116,7 +119,13 @@ app.add_middleware(
     allow_origins=sorted(cors_origins),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+    ],
     expose_headers=["Retry-After"],
     max_age=3600,
 )

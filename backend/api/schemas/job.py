@@ -21,6 +21,7 @@ import uuid
 
 class DepthTier(str, Enum):
     """Audiobook depth tiers."""
+
     SURVEY = "survey"
     STANDARD = "standard"
     COMPREHENSIVE = "comprehensive"
@@ -28,6 +29,7 @@ class DepthTier(str, Enum):
 
 class JobStatus(str, Enum):
     """Job processing statuses."""
+
     PENDING = "pending"
     ANALYZING = "analyzing"
     SCRIPTING = "scripting"
@@ -46,6 +48,7 @@ class JobCreate(BaseModel):
     - Add git ref validation
     - Estimate cost based on depth tier
     """
+
     repo_url: str = Field(..., description="GitHub repository URL")
     depth_tier: DepthTier
     git_ref: Optional[str] = Field(default="main", description="Git branch or tag")
@@ -67,6 +70,7 @@ class JobResponse(BaseModel):
     - Add deliverables list
     - Add cost information
     """
+
     id: uuid.UUID
     user_id: uuid.UUID
     repo_url: str
@@ -94,6 +98,7 @@ class JobResponse(BaseModel):
 
 class JobListResponse(BaseModel):
     """Schema for paginated job list."""
+
     jobs: List[JobResponse]
     total: int
     page: int
@@ -103,6 +108,7 @@ class JobListResponse(BaseModel):
 
 class JobEstimate(BaseModel):
     """Schema for job cost and time estimate."""
+
     estimated_cost_cents: int
     estimated_duration_hours: float
     estimated_chapters: int

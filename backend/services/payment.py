@@ -63,7 +63,9 @@ class StripeService:
             raw=intent,
         )
 
-    def verify_webhook_signature(self, payload: bytes, sig_header: str) -> Dict[str, Any]:
+    def verify_webhook_signature(
+        self, payload: bytes, sig_header: str
+    ) -> Dict[str, Any]:
         return stripe.Webhook.construct_event(
             payload=payload,
             sig_header=sig_header,
@@ -120,7 +122,10 @@ async def create_payment_intent(
 ) -> PaymentIntentResult:
     service = get_stripe_service()
     metadata = {"job_id": job_id, "user_email": user_email}
-    logger.info("Creating Stripe payment intent", extra={"job_id": job_id, "amount": amount_cents})
+    logger.info(
+        "Creating Stripe payment intent",
+        extra={"job_id": job_id, "amount": amount_cents},
+    )
     return await service.create_payment_intent(
         amount_cents=amount_cents,
         currency=currency,
@@ -129,9 +134,13 @@ async def create_payment_intent(
     )
 
 
-async def handle_payment_webhook(*, payload: bytes | Dict[str, Any], signature: str) -> Dict[str, Any]:
+async def handle_payment_webhook(
+    *, payload: bytes | Dict[str, Any], signature: str
+) -> Dict[str, Any]:
     service = get_stripe_service()
-    raw_payload = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+    raw_payload = (
+        payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+    )
     event = service.verify_webhook_signature(raw_payload, signature)
     logger.info("Processed Stripe webhook", extra={"type": event.get("type")})
     return event

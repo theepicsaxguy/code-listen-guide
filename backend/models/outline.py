@@ -28,7 +28,9 @@ class Outline(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Foreign Keys
-    job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), unique=True)
+    job_id = Column(
+        UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), unique=True
+    )
 
     # Outline Data
     outline_data = Column(JSONB, nullable=False)  # Full chapter structure

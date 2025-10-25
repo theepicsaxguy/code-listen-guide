@@ -27,8 +27,8 @@ class TestAuthRoutes:
             json={
                 "email": "newuser@example.com",
                 "password": "SecurePass123!",
-                "name": "New User"
-            }
+                "name": "New User",
+            },
         )
 
         # May return 201 or 200 depending on implementation
@@ -44,8 +44,8 @@ class TestAuthRoutes:
             json={
                 "email": "existing@example.com",
                 "password": "SecurePass123!",
-                "name": "Duplicate User"
-            }
+                "name": "Duplicate User",
+            },
         )
 
         # Should fail with conflict or bad request
@@ -58,10 +58,7 @@ class TestAuthRoutes:
 
         response = test_client.post(
             "/api/v1/auth/login",
-            json={
-                "email": "user@example.com",
-                "password": "password123"
-            }
+            json={"email": "user@example.com", "password": "password123"},
         )
 
         # May succeed or fail depending on auth implementation
@@ -71,10 +68,7 @@ class TestAuthRoutes:
         """Test login with wrong credentials."""
         response = test_client.post(
             "/api/v1/auth/login",
-            json={
-                "email": "wrong@example.com",
-                "password": "wrongpass"
-            }
+            json={"email": "wrong@example.com", "password": "wrongpass"},
         )
 
         # Should fail
@@ -86,8 +80,7 @@ class TestAuthRoutes:
 
         # Would need valid auth token for this test
         response = test_client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": "Bearer fake_token"}
+            "/api/v1/auth/me", headers={"Authorization": "Bearer fake_token"}
         )
 
         # May fail without proper auth
@@ -108,8 +101,8 @@ class TestJobRoutes:
             json={
                 "repo_url": "https://github.com/user/test-repo",
                 "depth_tier": "standard",
-                "git_ref": "main"
-            }
+                "git_ref": "main",
+            },
         )
 
         # May succeed or require auth
@@ -122,8 +115,8 @@ class TestJobRoutes:
             json={
                 "repo_url": "not-a-valid-url",
                 "depth_tier": "standard",
-                "git_ref": "main"
-            }
+                "git_ref": "main",
+            },
         )
 
         # Should fail validation
@@ -191,11 +184,7 @@ class TestOutlineRoutes:
 
         response = test_client.post(
             f"/api/v1/jobs/{job.id}/outline",
-            json={
-                "analysis_data": {
-                    "structure": {"file_count": 50}
-                }
-            }
+            json={"analysis_data": {"structure": {"file_count": 50}}},
         )
 
         assert response.status_code in [200, 201, 401, 404, 422, 500]
@@ -205,8 +194,7 @@ class TestOutlineRoutes:
         job = create_job()
 
         response = test_client.put(
-            f"/api/v1/jobs/{job.id}/outline",
-            json={"outline_data": sample_outline_data}
+            f"/api/v1/jobs/{job.id}/outline", json={"outline_data": sample_outline_data}
         )
 
         assert response.status_code in [200, 401, 404, 422, 500]
@@ -215,9 +203,7 @@ class TestOutlineRoutes:
         """Test approving outline and proceeding to payment."""
         job = create_job()
 
-        response = test_client.post(
-            f"/api/v1/jobs/{job.id}/outline/approve"
-        )
+        response = test_client.post(f"/api/v1/jobs/{job.id}/outline/approve")
 
         # May require outline to exist first
         assert response.status_code in [200, 400, 401, 404, 422, 500]
@@ -234,10 +220,7 @@ class TestPaymentRoutes:
 
         response = test_client.post(
             "/api/v1/payments/create-intent",
-            json={
-                "job_id": str(job.id),
-                "amount": 4900
-            }
+            json={"job_id": str(job.id), "amount": 4900},
         )
 
         assert response.status_code in [200, 401, 422, 500]
@@ -247,17 +230,14 @@ class TestPaymentRoutes:
         webhook_payload = {
             "type": "payment_intent.succeeded",
             "data": {
-                "object": {
-                    "id": "pi_test_123",
-                    "metadata": {"job_id": "test-job"}
-                }
-            }
+                "object": {"id": "pi_test_123", "metadata": {"job_id": "test-job"}}
+            },
         }
 
         response = test_client.post(
             "/api/v1/payments/webhook",
             json=webhook_payload,
-            headers={"Stripe-Signature": "test_signature"}
+            headers={"Stripe-Signature": "test_signature"},
         )
 
         # Webhook may fail without proper signature
@@ -299,9 +279,7 @@ class TestPlayerRoutes:
         """Test downloading deliverable file."""
         job = create_job(status="completed")
 
-        response = test_client.get(
-            f"/api/v1/player/{job.id}/download/full"
-        )
+        response = test_client.get(f"/api/v1/player/{job.id}/download/full")
 
         # May redirect to S3 or return file
         assert response.status_code in [200, 302, 303, 404, 500]
@@ -340,8 +318,8 @@ class TestAPIIntegration:
                 json={
                     "repo_url": f"https://github.com/user/repo{i}",
                     "depth_tier": "standard",
-                    "git_ref": "main"
-                }
+                    "git_ref": "main",
+                },
             )
             responses.append(response)
 

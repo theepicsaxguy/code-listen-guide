@@ -48,7 +48,9 @@ def init_db() -> None:
     try:
         import_module(module_name)
     except ImportError as exc:
-        logger.debug("Model import failed during init_db: %s", module_name, exc_info=exc)
+        logger.debug(
+            "Model import failed during init_db: %s", module_name, exc_info=exc
+        )
 
     try:
         Base.metadata.create_all(bind=engine)

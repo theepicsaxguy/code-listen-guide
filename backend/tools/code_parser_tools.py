@@ -27,7 +27,12 @@ logger = logging.getLogger(__name__)
 def _parse_python_file(file_path: Path) -> Dict[str, Any]:
     """Parse a Python file and extract functions, classes, and imports."""
     if not HAS_TREE_SITTER:
-        return {"functions": [], "classes": [], "imports": [], "error": "tree-sitter not available"}
+        return {
+            "functions": [],
+            "classes": [],
+            "imports": [],
+            "error": "tree-sitter not available",
+        }
 
     try:
         with open(file_path, "rb") as f:
@@ -67,7 +72,12 @@ def _parse_python_file(file_path: Path) -> Dict[str, Any]:
 def _parse_javascript_file(file_path: Path) -> Dict[str, Any]:
     """Parse a JavaScript/TypeScript file and extract functions and classes."""
     if not HAS_JS_PARSERS:
-        return {"functions": [], "classes": [], "imports": [], "error": "JS parsers not available"}
+        return {
+            "functions": [],
+            "classes": [],
+            "imports": [],
+            "error": "JS parsers not available",
+        }
 
     try:
         with open(file_path, "rb") as f:
@@ -83,7 +93,11 @@ def _parse_javascript_file(file_path: Path) -> Dict[str, Any]:
         imports = []
 
         def traverse(node):
-            if node.type in ("function_declaration", "method_definition", "arrow_function"):
+            if node.type in (
+                "function_declaration",
+                "method_definition",
+                "arrow_function",
+            ):
                 # Try to get function name
                 name_node = node.child_by_field_name("name")
                 if name_node:
@@ -134,7 +148,11 @@ def build_code_map(path: str) -> Dict[str, Any]:
             continue
 
         # Skip hidden directories and common non-source directories
-        if any(part.startswith(".") or part in {"node_modules", "__pycache__", "dist", "build"} for part in file_path.parts):
+        if any(
+            part.startswith(".")
+            or part in {"node_modules", "__pycache__", "dist", "build"}
+            for part in file_path.parts
+        ):
             continue
 
         if file_path.suffix in parseable_extensions:

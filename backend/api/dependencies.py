@@ -30,8 +30,7 @@ limiter = Limiter(
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> User:
     """
     Get current authenticated user from JWT token.
@@ -68,7 +67,7 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> User:
     """
     Get current user and check if active.
@@ -110,15 +109,10 @@ def require_subscription(tier: str):
     Returns:
         Dependency function that validates subscription tier
     """
-    tier_hierarchy = {
-        "free": 0,
-        "professional": 1,
-        "team": 2,
-        "enterprise": 3
-    }
+    tier_hierarchy = {"free": 0, "professional": 1, "team": 2, "enterprise": 3}
 
     async def _require_subscription(
-        current_user: User = Depends(get_current_user)
+        current_user: User = Depends(get_current_user),
     ) -> User:
         user_tier_level = tier_hierarchy.get(current_user.subscription_tier, 0)
         required_tier_level = tier_hierarchy.get(tier, 0)
@@ -126,7 +120,7 @@ def require_subscription(tier: str):
         if user_tier_level < required_tier_level:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"This feature requires {tier} subscription or higher"
+                detail=f"This feature requires {tier} subscription or higher",
             )
 
         return current_user

@@ -1,6 +1,11 @@
 from typing import Any, Dict, List
 
-from agent_framework import AgentExecutor, ConcurrentBuilder, SequentialBuilder, WorkflowBuilder
+from agent_framework import (
+    AgentExecutor,
+    ConcurrentBuilder,
+    SequentialBuilder,
+    WorkflowBuilder,
+)
 from agent_framework.messages import AssistantMessage, UserMessage
 
 from backend.agents.analyzer_agent import analyzer_agent
@@ -39,21 +44,31 @@ class AudiobookWorkflow:
             .build()
         )
         messages = [
-            UserMessage(content=f"Analyze the repository at {self.repo_url} and respond with JSON."),
-            UserMessage(content=f"Generate a {self.depth_tier} outline from the analysis and respond with JSON."),
+            UserMessage(
+                content=f"Analyze the repository at {self.repo_url} and respond with JSON."
+            ),
+            UserMessage(
+                content=f"Generate a {self.depth_tier} outline from the analysis and respond with JSON."
+            ),
         ]
         outline_message: AssistantMessage | None = None
         async for event in workflow.run_streaming(messages):
-            if hasattr(event, "message") and isinstance(event.message, AssistantMessage):
+            if hasattr(event, "message") and isinstance(
+                event.message, AssistantMessage
+            ):
                 outline_message = event.message
-                emit_job_event(self.job_id, {"stage": "outline", "message": event.message.content})
+                emit_job_event(
+                    self.job_id, {"stage": "outline", "message": event.message.content}
+                )
         outline_text = outline_message.content if outline_message else "{}"
         persist_outline(self.job_id, outline_text)
         emit_job_event(self.job_id, {"stage": "approval_wait"})
         mark_job_status(self.job_id, "waiting_approval", "outline")
         return {"outline": outline_text}
 
-    async def continue_after_approval(self, approved_outline: Dict[str, Any]) -> Dict[str, Any]:
+    async def continue_after_approval(
+        self, approved_outline: Dict[str, Any]
+    ) -> Dict[str, Any]:
         chapters = approved_outline.get("chapters", [])
         mark_job_status(self.job_id, "running", "scripting")
         script_agents = [await script_agent(settings, chapter) for chapter in chapters]
@@ -67,9 +82,16 @@ class AudiobookWorkflow:
         )
         scripts: List[str] = []
         async for event in scripts_workflow.run_streaming(
-            [UserMessage(content=f"Write the narration for chapter {chapter.get('number')}.") for chapter in chapters]
+            [
+                UserMessage(
+                    content=f"Write the narration for chapter {chapter.get('number')}."
+                )
+                for chapter in chapters
+            ]
         ):
-            if hasattr(event, "message") and isinstance(event.message, AssistantMessage):
+            if hasattr(event, "message") and isinstance(
+                event.message, AssistantMessage
+            ):
                 scripts.append(event.message.content)
                 emit_job_event(
                     self.job_id,
@@ -92,8 +114,12 @@ class AudiobookWorkflow:
                 .with_checkpointing(self.checkpoints)
                 .build()
             )
-            async for event in audio_workflow.run_streaming([UserMessage(content=text) for text in batch]):
-                if hasattr(event, "message") and isinstance(event.message, AssistantMessage):
+            async for event in audio_workflow.run_streaming(
+                [UserMessage(content=text) for text in batch]
+            ):
+                if hasattr(event, "message") and isinstance(
+                    event.message, AssistantMessage
+                ):
                     audio_urls.append(event.message.content)
                     emit_job_event(
                         self.job_id,
@@ -112,10 +138,16 @@ class AudiobookWorkflow:
             .build()
         )
         final_payload: str | None = None
-        async for event in post_workflow.run_streaming([
-            UserMessage(content="Create the final audiobook bundle and return JSON metadata."),
-        ]):
-            if hasattr(event, "message") and isinstance(event.message, AssistantMessage):
+        async for event in post_workflow.run_streaming(
+            [
+                UserMessage(
+                    content="Create the final audiobook bundle and return JSON metadata."
+                ),
+            ]
+        ):
+            if hasattr(event, "message") and isinstance(
+                event.message, AssistantMessage
+            ):
                 final_payload = event.message.content
                 emit_job_event(self.job_id, {"stage": "postprocess"})
         mark_job_status(self.job_id, "completed", "done")

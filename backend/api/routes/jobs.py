@@ -25,7 +25,7 @@ router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 async def create_job(
     job_data: JobCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Create a new audiobook generation job for the current user."""
     job = create_job_record(
@@ -44,19 +44,14 @@ async def list_jobs(
     limit: int = Query(10, le=100),
     offset: int = Query(0),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Return a paginated list of jobs for the current user."""
     query = db.query(Job).filter(Job.user_id == current_user.id)
     if status_filter:
         query = query.filter(Job.status == status_filter)
     total = query.count()
-    items = (
-        query.order_by(Job.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    items = query.order_by(Job.created_at.desc()).offset(offset).limit(limit).all()
     page = (offset // limit) + 1 if limit else 1
     has_next = offset + limit < total
     return JobListResponse(
@@ -72,7 +67,7 @@ async def list_jobs(
 async def get_job(
     job_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Return job details for the specified job."""
     job = get_job_record(db, job_id, current_user.id)
@@ -85,7 +80,7 @@ async def get_job(
 async def delete_job(
     job_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Delete a job owned by the current user."""
     job = get_job_record(db, job_id, current_user.id)
@@ -98,9 +93,7 @@ async def delete_job(
 
 @router.post("/estimate", response_model=JobEstimate)
 async def estimate_job_cost(
-    repo_url: str,
-    depth_tier: str,
-    current_user: User = Depends(get_current_user)
+    repo_url: str, depth_tier: str, current_user: User = Depends(get_current_user)
 ):
     """Estimate cost and timeline for a repository without creating a job."""
     estimate = calculate_job_estimate(repo_url, depth_tier)
@@ -118,6 +111,10 @@ async def start_job(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     if job.status not in {"pending", "waiting_approval", "paid"}:
-        raise HTTPException(status_code=400, detail="Job cannot be started in current status")
-    background.add_task(start_audiobook_workflow, str(job.id), job.repo_url, job.depth_tier)
+        raise HTTPException(
+            status_code=400, detail="Job cannot be started in current status"
+        )
+    background.add_task(
+        start_audiobook_workflow, str(job.id), job.repo_url, job.depth_tier
+    )
     return {"accepted": True}

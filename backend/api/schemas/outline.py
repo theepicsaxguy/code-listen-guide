@@ -22,6 +22,7 @@ class OutlineChapter(BaseModel):
     - Match structure from outline generation
     - Add all fields needed for chapter planning
     """
+
     number: int
     title: str
     description: str
@@ -33,6 +34,7 @@ class OutlineChapter(BaseModel):
 
 class OutlineData(BaseModel):
     """Schema for complete outline structure."""
+
     chapters: List[OutlineChapter]
     total_estimated_duration_minutes: int
     total_chapters: int
@@ -46,6 +48,7 @@ class OutlineResponse(BaseModel):
     - Include approval status
     - Add modification tracking
     """
+
     id: uuid.UUID
     job_id: uuid.UUID
     outline_data: OutlineData
@@ -59,10 +62,12 @@ class OutlineResponse(BaseModel):
 
 class OutlineUpdate(BaseModel):
     """Schema for updating outline with user modifications."""
+
     chapters: List[OutlineChapter]
     modifications: Optional[Dict[str, Any]] = None
 
 
 class OutlineApprove(BaseModel):
     """Schema for approving outline (triggers payment)."""
+
     outline_id: uuid.UUID
