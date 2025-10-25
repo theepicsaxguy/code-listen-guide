@@ -111,12 +111,14 @@ class TestOutlineGenerator:
         from backend.services.outline_generator import generate_outline
 
         with patch("backend.services.outline_generator.get_settings") as mock_settings:
-            mock_settings.return_value.ANTHROPIC_API_KEY = "test-key"
+            mock_settings.return_value.openai_api_key = "test-key"
 
             with patch(
                 "backend.agents.outline_agent.create_outline_agent"
             ) as mock_create:
                 mock_agent = AsyncMock()
+                thread = MagicMock()
+                mock_agent.get_new_thread = MagicMock(return_value=thread)
                 mock_agent.run = AsyncMock(
                     return_value=MagicMock(
                         result='{"chapters": [], "total_chapters": 0}'
@@ -132,6 +134,10 @@ class TestOutlineGenerator:
 
                 # Should return outline structure
                 assert "chapters" in result or isinstance(result, dict)
+                mock_agent.get_new_thread.assert_called_once()
+                mock_agent.run.assert_awaited_once()
+                _, kwargs = mock_agent.run.await_args
+                assert kwargs["thread"] is thread
 
     @pytest.mark.asyncio
     async def test_generate_outline_different_tiers(self):
@@ -162,12 +168,31 @@ class TestScriptGenerator:
         chapter_data = sample_chapter_data
         code_context = {"files": ["main.py"], "functions": ["main()"]}
 
-        result = await generate_script(
-            chapter_data=chapter_data, code_context=code_context, job_id="test-job"
-        )
+        with patch(
+            "backend.services.script_generator.get_settings"
+        ) as mock_settings:
+            mock_settings.return_value.openai_api_key = "test-key"
+            with patch(
+                "backend.agents.script_agent.create_script_agent"
+            ) as mock_create:
+                mock_agent = AsyncMock()
+                thread = MagicMock()
+                mock_agent.get_new_thread = MagicMock(return_value=thread)
+                mock_agent.run = AsyncMock(return_value="script")
+                mock_create.return_value = mock_agent
 
-        # Should return script text
+                result = await generate_script(
+                    chapter_data=chapter_data,
+                    code_context=code_context,
+                    job_id="test-job",
+                )
+
+        # Should return script text and use a dedicated thread
         assert result is not None
+        mock_agent.get_new_thread.assert_called_once()
+        mock_agent.run.assert_awaited_once()
+        _, kwargs = mock_agent.run.await_args
+        assert kwargs["thread"] is thread
 
     @pytest.mark.asyncio
     async def test_generate_script_handles_empty_context(self, sample_chapter_data):

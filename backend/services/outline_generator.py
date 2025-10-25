@@ -36,7 +36,8 @@ async def _run_outline_agent(prompt: str) -> str:
     settings = get_settings()
     client = OpenAIResponsesClient(**build_responses_client_options(settings))
     agent = await outline_agent.create_outline_agent(client)
-    response = await agent.run(prompt)
+    thread = agent.get_new_thread()
+    response = await agent.run(prompt, thread=thread)
     return getattr(response, "text", None) or getattr(response, "result", "")
 
 

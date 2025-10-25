@@ -29,7 +29,8 @@ async def _run_script_agent(prompt: str, chapter_data: Dict[str, Any]) -> str:
     settings = get_settings()
     client = OpenAIResponsesClient(**build_responses_client_options(settings))
     agent = await script_agents.create_script_agent(client, chapter_data=chapter_data)
-    response = await agent.run(prompt)
+    thread = agent.get_new_thread()
+    response = await agent.run(prompt, thread=thread)
     return getattr(response, "text", None) or getattr(response, "result", "")
 
 
