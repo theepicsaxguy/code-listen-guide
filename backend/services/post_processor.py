@@ -1,14 +1,13 @@
-"""Post-processing utilities orchestrated through Microsoft Agent Framework agents."""
+"""Post-processing utilities orchestrated through Agent Framework agents."""
 
 import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
-from agent_framework.azure import AzureOpenAIResponsesClient
-from azure.identity import DefaultAzureCredential
+from agent_framework.openai import OpenAIResponsesClient
 
-from backend.agents import postprocess_agent
+from backend.agents import build_responses_client_options, postprocess_agent
 from backend.config import get_settings
 from backend.tools.audio_tools import concat_audio_with_chapters
 
@@ -39,13 +38,7 @@ def _build_deliverables_prompt(
 
 async def _run_postprocess_agent(prompt: str) -> str:
     settings = get_settings()
-    credential = DefaultAzureCredential(exclude_cli_credential=True)
-    client = AzureOpenAIResponsesClient(
-        endpoint=settings.azure_openai_endpoint,
-        credential=credential,
-        deployment_name=settings.azure_openai_deployment_name,
-        api_version=settings.azure_openai_api_version,
-    )
+    client = OpenAIResponsesClient(**build_responses_client_options(settings))
     agent = await postprocess_agent.create_postprocess_agent(client)
     response = await agent.run(prompt)
     return getattr(response, "text", None) or getattr(response, "result", "")

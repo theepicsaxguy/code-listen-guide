@@ -1,6 +1,6 @@
 # Codebase Audiobook
 
-Turn any GitHub repository into a narrated tour you can listen to on the train, at the gym, or while cooking dinner. Codebase Audiobook coordinates a team of Microsoft Agent Framework workers that read source code, craft a structured story, and ship finished audio chapters straight to your browser.
+Turn any GitHub repository into a narrated tour you can listen to on the train, at the gym, or while cooking dinner. Codebase Audiobook coordinates a team of Agent Framework workers that read source code, craft a structured story, and ship finished audio chapters straight to your browser.
 
 ## Why this project exists
 
@@ -20,13 +20,13 @@ Codebase Audiobook answers both points. It gives developers a hands-free way to 
 5. **Audio assembly** – The Audio Synthesis Coordinator renders text-to-speech tracks, normalizes audio, and packages metadata for the player UI.
 6. **Delivery** – Finished chapters and transcripts are published through the Delivery Management agent to storage and streamed back to the web client.
 
-The workflow is orchestrated by the Microsoft Agent Framework using checkpointing, observability, and Azure integrations to keep long-running jobs reliable.
+The workflow is orchestrated by the Agent Framework using checkpointing, observability, and OpenAI integrations to keep long-running jobs reliable.
 
 ## Repository tour
 
 ```text
 code-listen-guide/
-├── backend/                # FastAPI service and Microsoft Agent Framework workflows
+├── backend/                # FastAPI service and Agent Framework workflows
 ├── public/                 # Static assets served by Vite
 ├── src/                    # React frontend that streams job state and plays audio
 ├── docs/                   # Market analysis and user research
@@ -64,7 +64,7 @@ Recent hardening efforts added:
 
 Run `./serve-production.sh` from the repository root when you want the production build in one command. The script compiles the frontend, starts the FastAPI server with multiple workers, and serves the built assets through `vite preview`. Override defaults by exporting `BACKEND_PORT`, `FRONTEND_PORT`, or `UVICORN_WORKERS` before launching.
 
-The FastAPI service exposes REST and WebSocket endpoints for managing jobs, running the audiobook workflow, and streaming status updates. It leans on PostgreSQL for persistence, Stripe for payments, Azure OpenAI for reasoning, and AWS S3 for audio storage.
+The FastAPI service exposes REST and WebSocket endpoints for managing jobs, running the audiobook workflow, and streaming status updates. It leans on PostgreSQL for persistence, Stripe for payments, OpenAI for reasoning, and AWS S3 for audio storage.
 
 ## Development workflow
 

@@ -1,12 +1,12 @@
-"""Script generation service using Microsoft Agent Framework agents."""
+"""Script generation service using Agent Framework agents."""
 
 import json
 import logging
 from typing import Any, Dict
 
-from agent_framework.azure import AzureOpenAIResponsesClient
-from azure.identity import DefaultAzureCredential
+from agent_framework.openai import OpenAIResponsesClient
 
+from backend.agents import build_responses_client_options
 from backend.agents import script_agent as script_agents
 from backend.config import get_settings
 
@@ -27,13 +27,7 @@ def _build_prompt(chapter_data: Dict[str, Any], code_context: Dict[str, Any]) ->
 
 async def _run_script_agent(prompt: str, chapter_data: Dict[str, Any]) -> str:
     settings = get_settings()
-    credential = DefaultAzureCredential(exclude_cli_credential=True)
-    client = AzureOpenAIResponsesClient(
-        endpoint=settings.azure_openai_endpoint,
-        credential=credential,
-        deployment_name=settings.azure_openai_deployment_name,
-        api_version=settings.azure_openai_api_version,
-    )
+    client = OpenAIResponsesClient(**build_responses_client_options(settings))
     agent = await script_agents.create_script_agent(client, chapter_data=chapter_data)
     response = await agent.run(prompt)
     return getattr(response, "text", None) or getattr(response, "result", "")

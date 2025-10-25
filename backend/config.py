@@ -17,13 +17,10 @@ class Settings(BaseSettings):
     database_url: str = Field(default="sqlite:///./backend_dev.db")
     checkpoint_database_url: str = Field(default="sqlite:///./backend_dev.db")
 
-    azure_openai_endpoint: str = Field(default="https://example.openai.azure.com/")
-    azure_openai_api_key: str = Field(default="dev-azure-openai-key")
-    azure_openai_deployment_name: str = Field(default="gpt-4o")
-    azure_openai_api_version: str = Field(default="2024-10-21")
-
     anthropic_api_key: str = Field(default="dev-anthropic-key")
     openai_api_key: Optional[str] = Field(default=None)
+    openai_responses_model: str = Field(default="gpt-4o-mini")
+    openai_base_url: Optional[str] = Field(default=None)
 
     stripe_secret_key: str = Field(default="sk_test_placeholder")
     stripe_webhook_secret: str = Field(default="whsec_placeholder")

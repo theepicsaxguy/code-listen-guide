@@ -3,7 +3,7 @@ Pytest configuration and shared fixtures for backend tests.
 
 This file provides:
 - Database fixtures for testing
-- Mock clients for external services (Azure OpenAI, Anthropic, Stripe, S3)
+- Mock clients for external services (OpenAI, Anthropic, Stripe, S3)
 - Test data factories
 - Async test support
 """
@@ -112,8 +112,8 @@ def test_client(override_get_db):
 
 
 @pytest.fixture
-def mock_azure_openai_client():
-    """Mock Azure OpenAI client."""
+def mock_openai_responses_client():
+    """Mock OpenAI responses client."""
     client = MagicMock()
     client.chat = MagicMock()
     client.chat.completions = MagicMock()

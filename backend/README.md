@@ -11,7 +11,7 @@ The backend handles:
 - Narration script generation using Claude
 - Text-to-speech audio synthesis
 - Payment processing with Stripe
-- Workflow orchestration with Microsoft Agent Framework
+- Workflow orchestration with Agent Framework
 - File storage with AWS S3
 
 ## Project Structure
@@ -33,7 +33,7 @@ backend/
 │   │   ├── payment.py
 │   │   └── user.py
 │   └── ws.py             # Broadcast helper
-├── agents/               # Microsoft Agent Framework agent factories
+├── agents/               # Agent Framework agent factories
 │   ├── __init__.py
 │   ├── analyzer_agent.py
 │   ├── audio_agent.py
@@ -84,7 +84,7 @@ backend/
 - PostgreSQL 15+ (required for production; local development defaults to SQLite)
 - FFmpeg (for audio processing)
 - libxml2-dev and libxslt1-dev (required to build the `lxml` dependency used by Docling)
-- Azure Active Directory application with `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET` configured for Azure OpenAI
+- OpenAI account with an API key and optional custom base URL or model overrides
 
 ### Installation
 
@@ -135,7 +135,7 @@ backend/
    ```
 
 2. **Kick off a workflow**:
-   Create a job, then call `POST /api/v1/jobs/{job_id}/start`. The backend schedules the Microsoft Agent Framework workflow in a FastAPI background task, streams progress over WebSockets, and persists checkpoints in PostgreSQL.
+   Create a job, then call `POST /api/v1/jobs/{job_id}/start`. The backend schedules the Agent Framework workflow in a FastAPI background task, streams progress over WebSockets, and persists checkpoints in PostgreSQL.
 
 **Access the API:**
 - API: http://localhost:8000
@@ -197,11 +197,11 @@ Checkpoint records in PostgreSQL allow any stage to resume without repeating pri
 
 ## Processing Pipeline
 
-Every AI-heavy stage now flows through the Microsoft Agent Framework. Each service composes an Azure OpenAI Responses client,
-creates the appropriate agent, and lets that agent orchestrate tool calls. Manual Anthropic or raw OpenAI integrations have been
+Every AI-heavy stage now flows through the Agent Framework. Each service composes an OpenAI responses client,
+creates the appropriate agent, and lets that agent orchestrate tool calls. Manual Anthropic or bespoke OpenAI integrations have been
 removed so there is a single, auditable execution path for analysis, outlining, scripting, audio, and post-processing.
 
-The audiobook generation uses a Microsoft Agent Framework workflow graph:
+The audiobook generation uses an Agent Framework workflow graph:
 
 1. **Repository Analysis** (`RepositoryAnalyzer` agent)
    - Clone the repository
@@ -233,7 +233,8 @@ The audiobook generation uses a Microsoft Agent Framework workflow graph:
 See `.env.example` for required environment variables:
 
 - **Database**: `DATABASE_URL`, `CHECKPOINT_DATABASE_URL`
-- **Azure OpenAI**: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT_NAME`, `AZURE_OPENAI_API_VERSION`
+- **OpenAI**: `OPENAI_API_KEY`, `OPENAI_RESPONSES_MODEL`, `OPENAI_BASE_URL`
+- **Anthropic**: `ANTHROPIC_API_KEY`
 - **Stripe**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`
 - **AWS**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`, `S3_REGION`
 - **Auth**: `JWT_SECRET`, `CLERK_SECRET_KEY`
@@ -289,7 +290,7 @@ Major remaining work:
 - [ ] Implement all service methods
 - [ ] Implement all API route handlers
 - [ ] Set up Alembic database migrations
-- [ ] Implement Microsoft Agent Framework workflow logic
+- [ ] Implement Agent Framework workflow logic
 - [ ] Add comprehensive error handling
 - [ ] Add unit tests
 - [ ] Add integration tests
