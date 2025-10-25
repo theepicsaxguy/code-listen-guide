@@ -107,6 +107,8 @@ backend/
    ```bash
    pip install -r requirements.txt
    ```
+   This pulls in Microsoft Agent Framework Core without the Redis vector extras. We removed the `redisvl` pin so installs work
+   on Python 3.14—add `agent-framework-redis` and `redisvl` manually if you need those optional caches for local experiments.
 
 4. **Set up environment variables**:
    ```bash
