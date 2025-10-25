@@ -5,6 +5,10 @@ from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 import logging
 
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+
 try:
     from opentelemetry import trace
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -20,6 +24,7 @@ except ImportError:
     TracerProvider = None
     BatchSpanProcessor = None
 
+from backend.api.dependencies import limiter
 from backend.api.routes import auth, jobs, outlines, payments, player
 from backend.api.ws import router as ws_router
 from backend.config import get_settings
@@ -43,6 +48,41 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down...")
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        csp_directives = " ".join(
+            [
+                "default-src 'none';",
+                "frame-ancestors 'none';",
+                "base-uri 'none';",
+                "form-action 'self';",
+                "connect-src 'self';",
+            ]
+        )
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault("Permissions-Policy", "microphone=(), camera=()")
+        response.headers.setdefault("Content-Security-Policy", csp_directives)
+        response.headers.setdefault("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+        return response
+
+
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    retry_after = None
+    if getattr(exc, "limit", None) is not None:
+        retry_after = getattr(exc.limit, "window_seconds", None)
+    headers = {}
+    if retry_after is not None:
+        headers["Retry-After"] = str(int(retry_after))
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={"detail": "Too many requests"},
+        headers=headers,
+    )
+
+
 app = FastAPI(
     title="Codebase Audiobook API",
     description="API for generating audiobooks from code repositories",
@@ -62,17 +102,28 @@ if trace and Resource and TracerProvider:
     if FastAPIInstrumentor:
         FastAPIInstrumentor.instrument_app(app, tracer_provider=provider)
 
-cors_origins = ["http://localhost:5173", "http://localhost:3000"]
-if settings.frontend_url not in cors_origins:
-    cors_origins.append(settings.frontend_url)
+cors_origins = {
+    "http://localhost:5173",
+    "http://localhost:3000",
+}
 
+if settings.frontend_url:
+    cors_origins.add(settings.frontend_url.rstrip("/"))
+
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=sorted(cors_origins),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    expose_headers=["Retry-After"],
+    max_age=3600,
 )
+
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 app.include_router(auth.router)
 app.include_router(jobs.router)

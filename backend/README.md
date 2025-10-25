@@ -149,6 +149,12 @@ backend/
 - `GET /api/v1/auth/me` - Get current user
 - `POST /api/v1/auth/refresh` - Refresh access token
 
+## Security
+
+- Cross-origin requests are limited to the configured frontend URLs with explicit method and header allowlists.
+- Standard security headers (CSP, HSTS, Referrer-Policy, Permissions-Policy, X-Frame-Options, X-Content-Type-Options) are applied to every response.
+- A shared rate limiter enforces per-client quotas using SlowAPI, with tighter limits on registration, login, and token refresh endpoints.
+
 ### Jobs
 - `POST /api/v1/jobs` - Create new audiobook job
 - `GET /api/v1/jobs` - List user's jobs
