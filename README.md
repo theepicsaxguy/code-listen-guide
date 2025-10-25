@@ -71,3 +71,7 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Continuous integration
+
+Every pull request now runs a GitHub Actions workflow that checks both halves of the stack. The frontend job installs dependencies with `npm install --legacy-peer-deps` and builds the app with `npm run build` on Node.js 20. The backend job installs `pytest` and `pytest-asyncio` on Python 3.11 before executing `pytest` inside the `backend` directory.
