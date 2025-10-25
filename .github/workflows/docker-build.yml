@@ -1,6 +1,7 @@
 name: Docker Build
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -44,8 +45,8 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.frontend }}
+      backend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.backend }}
     steps:
       - uses: actions/checkout@v5
 

@@ -205,7 +205,7 @@ jobs:
 
 ### 3. Build Docker Images on Pull Requests
 
-Create `.github/workflows/docker-build.yml` to make sure both container images keep building whenever a pull request targets `main`. The workflow can fan out across the frontend and backend with a matrix and run `docker/build-push-action` for each entry without pushing the result to a registry. Use `Dockerfile.frontend` at the repo root for the Vite build and `backend/Dockerfile` for the FastAPI app so reviewers know the docker context that matches each service.
+Create `.github/workflows/docker-build.yml` to make sure both container images keep building whenever a pull request targets `main`. The workflow can fan out across the frontend and backend with a matrix and run `docker/build-push-action` for each entry without pushing the result to a registry. Use `Dockerfile.frontend` at the repo root for the Vite build and `backend/Dockerfile` for the FastAPI app so reviewers know the docker context that matches each service. When you need a fresh image without waiting for a new commit, trigger the workflow manually from the Actions tab and it will rebuild both containers in one go.
 
 ## Required Secrets
 
