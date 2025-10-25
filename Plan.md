@@ -45,10 +45,10 @@ The narration follows a guided tour structure with clear narrative arcs—not dr
 
 Microsoft Agent Framework unifies Semantic Kernel and AutoGen, released in public preview on October 1, 2025 [Cloudsummit](https://cloudsummit.eu/blog/microsoft-agent-framework-production-ready-convergence-autogen-semantic-kernel)  [Visual Studio Magazine](https://visualstudiomagazine.com/articles/2025/10/01/semantic-kernel-autogen--open-source-microsoft-agent-framework.aspx) , providing:
 
-- **Enterprise-grade reliability** with production-ready runtime and Azure AI Foundry integration
+- **Enterprise-grade reliability** with production-ready runtime and managed cloud integrations
 - **Advanced multi-agent orchestration** with sequential, concurrent, and group chat workflows
 - **Built-in observability** through OpenTelemetry for debugging and performance monitoring
-- **Native security** via Azure Entra ID for authentication and authorization
+- **Native security hooks** for enterprise authentication and authorization
 - **Open standards compliance** supporting Model Context Protocol (MCP) and Agent-to-Agent (A2A) communication
 
 Major enterprises including KPMG, BMW, and Fujitsu are already deploying production workloads [Cloudsummit](https://cloudsummit.eu/blog/microsoft-agent-framework-production-ready-convergence-autogen-semantic-kernel) on this framework, validating its readiness for commercial applications.
@@ -89,7 +89,7 @@ Our application implements a sophisticated **workflow orchestration** pattern us
 
 **6. Delivery Management Agent**
 - **Role:** CDN deployment, web player generation, metadata publishing
-- **Integration:** Azure CDN, database persistence, URL generation
+- **Integration:** Global CDN providers, database persistence, URL generation
 - **Output:** Shareable audiobook pages with full player functionality
 
 ### **Workflow Orchestration Architecture**
@@ -97,7 +97,7 @@ Our application implements a sophisticated **workflow orchestration** pattern us
 ```python
 # High-level workflow structure using Microsoft Agent Framework
 from agent_framework import Workflow, ChatAgent, ToolExecutor
-from agent_framework.azure import AzureOpenAIResponsesClient
+from agent_framework.openai import OpenAIResponsesClient
 
 # Define specialized agents
 repo_analyzer = ChatAgent(
@@ -126,8 +126,8 @@ workflow.add_executor("synthesize", audio_coordinator)
 workflow.add_executor("deploy", delivery_agent)
 
 # Enable checkpointing for long-running workflows
-workflow.enable_checkpointing(storage="azure_cosmos")
-workflow.enable_observability(telemetry="azure_monitor")
+workflow.enable_checkpointing(storage="postgresql")
+workflow.enable_observability(telemetry="otel_collector")
 ```
 
 ### **Enterprise-Grade Features Leveraged**
@@ -143,12 +143,12 @@ workflow.enable_observability(telemetry="azure_monitor")
 - Persistent conversation history across agent handoffs
 
 **Security & Compliance:**
-- Azure Entra ID for robust authentication and authorization [Analytics Vidhya](https://www.analyticsvidhya.com/blog/2025/10/microsoft-agent-framework/)
+- Enterprise identity integrations for robust authentication and authorization [Analytics Vidhya](https://www.analyticsvidhya.com/blog/2025/10/microsoft-agent-framework/)
 - Content moderation hooks for preventing inappropriate narration
 - Audit trails for all agent decisions and tool invocations
 
 **Scalability & Performance:**
-- Native Azure AI Foundry integration for managed agent hosting
+- Managed agent hosting options without heavy DevOps lift
 - Horizontal scaling of concurrent script generation agents
 - Cost optimization through intelligent batching and caching
 
@@ -331,17 +331,17 @@ Leveraging Agent Framework's handoff orchestration [Microsoft](https://devblogs.
 **Cost Structure Per Audiobook (Standard tier example):**
 - LLM inference (multi-agent script generation): $8-$15
 - TTS synthesis: $3-$8
-- Azure AI Foundry agent hosting: $2-$4
+- Managed agent hosting: $2-$4
 - Storage and CDN (90 days): $0.50
 - **Total COGS:** $14-$28
 
 **Gross Margins:** 55-70% depending on tier and scale efficiencies
 
 **Key Cost Advantages of Agent Framework:**
-- Azure AI Foundry Agent Service [Cloudsummit](https://cloudsummit.eu/blog/microsoft-agent-framework-production-ready-convergence-autogen-semantic-kernel) provides managed runtime, reducing DevOps overhead
+- Managed agent services [Cloudsummit](https://cloudsummit.eu/blog/microsoft-agent-framework-production-ready-convergence-autogen-semantic-kernel) provide runtime support, reducing DevOps overhead
 - Efficient multi-agent parallelization reduces generation time and compute costs
 - Built-in observability reduces debugging and support costs
-- Native Azure integration enables volume discounts on LLM inference
+- Native cloud integrations enable volume discounts on LLM inference
 
 ### **Revenue Projections**
 
@@ -381,7 +381,7 @@ Leveraging Agent Framework's handoff orchestration [Microsoft](https://devblogs.
 - ✅ Type-safe message passing prevents coordination errors
 - ✅ Built-in checkpoint/resume for long-running workflows
 - ✅ OpenTelemetry integration provides comprehensive observability
-- ✅ 10,000+ organizations already using Azure AI Foundry Agent Service [Cloudsummit](https://cloudsummit.eu/blog/microsoft-agent-framework-production-ready-convergence-autogen-semantic-kernel) validates stability
+- ✅ 10,000+ organizations already using managed agent services [Cloudsummit](https://cloudsummit.eu/blog/microsoft-agent-framework-production-ready-convergence-autogen-semantic-kernel) validates stability
 
 ### **Specific Risk Mitigation**
 
@@ -429,7 +429,7 @@ Leveraging Agent Framework's handoff orchestration [Microsoft](https://devblogs.
 - **Built on Microsoft's flagship agentic framework** - production-ready from day one
 - **Multi-agent orchestration complexity** creates high barrier to entry
 - **Narrative generation quality** improves with proprietary prompting strategies
-- **Enterprise integrations** via native Azure AI Foundry, Microsoft Graph, and SharePoint connectors [InfoWorld](https://www.infoworld.com/article/4067500/microsoft-unveils-framework-for-building-agentic-ai-apps.html)
+- **Enterprise integrations** via native connectors for Microsoft Graph and SharePoint [InfoWorld](https://www.infoworld.com/article/4067500/microsoft-unveils-framework-for-building-agentic-ai-apps.html)
 
 ### **Market Position**
 
@@ -442,7 +442,7 @@ Leveraging Agent Framework's handoff orchestration [Microsoft](https://devblogs.
 
 - **Leverages proven enterprise technology** - not experimental research
 - **Rapid development timeline** - framework handles complex orchestration
-- **Scalable from day one** - Azure AI Foundry provides managed infrastructure
+- **Scalable from day one** - Managed services provide production-ready infrastructure
 - **Clear migration path for growth** - from pilot to enterprise scale
 
 ### **Team Positioning**
@@ -483,7 +483,7 @@ Codebase Audiobook represents a **new category of developer tools**: comprehensi
 
 **Built entirely on Microsoft Agent Framework**, we leverage the most advanced production-ready multi-agent platform available—combining enterprise reliability with cutting-edge orchestration patterns pioneered in Microsoft Research.
 
-**The technical foundation is proven.** With 10,000+ organizations using Azure AI Foundry Agent Service and major enterprises deploying production workloads [Cloudsummit](https://cloudsummit.eu/blog/microsoft-agent-framework-production-ready-convergence-autogen-semantic-kernel) , the infrastructure is battle-tested.
+**The technical foundation is proven.** With 10,000+ organizations using managed agent services and major enterprises deploying production workloads [Cloudsummit](https://cloudsummit.eu/blog/microsoft-agent-framework-production-ready-convergence-autogen-semantic-kernel) , the infrastructure is battle-tested.
 
 **The market need is validated** by developer time-use studies showing 50-75% spent on code comprehension.
 

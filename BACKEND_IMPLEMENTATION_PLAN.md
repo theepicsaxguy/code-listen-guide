@@ -61,7 +61,7 @@ The Microsoft Agent Framework (released October 2024) is the unified successor t
 │  Checkpoints stored in PostgreSQL           │
 └──────────────────────────────────────────────┘
        │
-       ├──→ Azure OpenAI / Anthropic Claude
+       ├──→ OpenAI / Anthropic Claude
        ├──→ OpenAI TTS
        ├──→ PostgreSQL (state + data)
        └──→ S3 (audio files)
@@ -133,7 +133,6 @@ backend/
 
 ```
 pip install agent-framework --pre
-pip install azure-identity
 pip install anthropic openai boto3 stripe tree-sitter
 pip install opentelemetry-api opentelemetry-sdk opentelemetry-instrumentation-fastapi
 ```
@@ -141,9 +140,8 @@ pip install opentelemetry-api opentelemetry-sdk opentelemetry-instrumentation-fa
 ### Environment Variables
 
 ```
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-AZURE_OPENAI_API_KEY=your-key
-AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
+OPENAI_API_KEY=sk-openai-xxxxx
+OPENAI_RESPONSES_MODEL=gpt-4o-mini
 ANTHROPIC_API_KEY=sk-ant-xxxxx
 
 DATABASE_URL=postgresql://user:password@localhost:5432/audiobook
@@ -401,8 +399,8 @@ edges:
 
 ```python
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from agent_framework.azure import AzureOpenAIChatClient
-from azure.identity import AzureCliCredential
+from agent_framework.openai import OpenAIResponsesClient
+from backend.config import get_settings
 from workflows.audiobook_workflow import AudiobookWorkflow
 
 router = APIRouter()
@@ -415,7 +413,11 @@ async def start_audiobook_workflow(job_id: str, background_tasks: BackgroundTask
     if job.status != "pending":
         raise HTTPException(status_code=400, detail="Job already started")
 
-    chat_client = AzureOpenAIChatClient(credential=AzureCliCredential())
+    settings = get_settings()
+    chat_client = OpenAIResponsesClient(
+        api_key=settings.openai_api_key,
+        model_id=settings.openai_responses_model,
+    )
     workflow = AudiobookWorkflow(chat_client, job_id, job.repo_url, job.depth_tier)
     background_tasks.add_task(workflow.execute)
     await mark_job_running(job_id)
@@ -604,7 +606,7 @@ result = await workflow.execute()
 
 ### Phase 1: Foundation
 - [ ] Install agent-framework and dependencies
-- [ ] Set up Azure OpenAI or Anthropic API access
+- [ ] Set up OpenAI or Anthropic API access
 - [ ] Configure OpenTelemetry for observability
 - [ ] Create checkpoint storage in PostgreSQL
 - [ ] Define workflow state types
@@ -706,13 +708,13 @@ Implementation order:
 
 ## Open Questions
 
-1. Azure OpenAI vs. Anthropic for each agent stage?
-2. Azure CLI credentials vs. API keys for local development?
+1. OpenAI vs. Anthropic for each agent stage?
+2. API keys vs. cloud identity providers for local development?
 3. Deploy Agent Framework runtime alongside FastAPI or as a separate worker?
 4. Single TTS voice or multiple voices per chapter?
 5. PostgreSQL vs. dedicated store for checkpoints?
 
-Recommendation: use Anthropic Claude for scripts, Azure OpenAI for analysis/outlining, deploy workflow with FastAPI on Railway, and persist checkpoints in PostgreSQL.
+Recommendation: use Anthropic Claude for scripts, OpenAI responses for analysis/outlining, deploy workflow with FastAPI on Railway, and persist checkpoints in PostgreSQL.
 
 ---
 

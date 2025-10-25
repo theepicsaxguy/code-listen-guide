@@ -345,9 +345,6 @@ DATABASE_URL=postgresql://user:password@localhost:5432/audiobook
 DATABASE_URL=sqlite:///./audiobook.db
 
 # LLM APIs
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-AZURE_OPENAI_API_KEY=sk-...
-AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
 
@@ -404,7 +401,7 @@ This project uses **Microsoft Agent Framework** (released October 1, 2025) to or
 - Enterprise-grade reliability with production-ready runtime
 - Built-in checkpointing for long-running workflows
 - Graph-based workflows with type safety
-- Native Azure integration
+- Native cloud integration
 - OpenTelemetry observability out of the box
 
 ### Current Implementation Status
@@ -421,7 +418,7 @@ This project uses **Microsoft Agent Framework** (released October 1, 2025) to or
 - ❌ Actual tool implementations (all TODO)
 - ❌ Agent prompts and configurations need refinement
 - ❌ Workflow checkpointing not wired to PostgreSQL
-- ❌ Real LLM calls (Azure OpenAI client created but not used)
+- ❌ Real LLM calls (OpenAI client created but not used)
 - ❌ Error handling and retry logic
 
 ### Agent Architecture
@@ -620,7 +617,7 @@ Track LLM and TTS costs per job in the `usage_logs` table.
 
 class UsageLog(Base):
     job_id = Column(UUID, ForeignKey("jobs.id"))
-    service_type = Column(String)  # "azure_openai", "anthropic", "openai_tts"
+    service_type = Column(String)  # "openai", "anthropic", "openai_tts"
     tokens_used = Column(Integer)
     cost_cents = Column(Integer)
 ```
@@ -1291,11 +1288,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./audiobook.db"
 
     # LLM APIs
-    AZURE_OPENAI_ENDPOINT: str = ""
-    AZURE_OPENAI_API_KEY: str = ""
-    AZURE_OPENAI_DEPLOYMENT_NAME: str = "gpt-4o"
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
+    OPENAI_RESPONSES_MODEL: str = "gpt-4o-mini"
 
     # Storage
     AWS_ACCESS_KEY_ID: str = ""
@@ -1404,7 +1399,7 @@ api_key = settings.ANTHROPIC_API_KEY
 **Dependencies:** `anthropic` or `openai`
 
 **What needs to be done:**
-1. Initialize LLM client (Claude or Azure OpenAI)
+1. Initialize LLM client (Claude or OpenAI)
 2. Design prompt for narration script generation:
    - Input: Chapter outline + code context
    - Output: Engaging technical narration (not code dumping)
