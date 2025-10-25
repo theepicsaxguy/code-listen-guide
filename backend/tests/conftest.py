@@ -9,20 +9,58 @@ This file provides:
 """
 
 import asyncio
+import json
+import sqlite3
 import sys
+import uuid
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, Mock
-from typing import Dict, Any, Generator
+from typing import Any, Dict, Generator
+
+import bcrypt
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.pool import StaticPool
 
 # Add backend to path if not already there
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))
+
+from backend.db.session import get_db
+from backend.utils.auth import (
+    create_access_token,
+    create_refresh_token,
+    get_password_hash,
+)
+
+if not hasattr(bcrypt, "__about__"):
+    bcrypt.__about__ = SimpleNamespace(
+        __version__=getattr(bcrypt, "__version__", "0")
+    )
+
+_native_hashpw = bcrypt.hashpw
+
+
+def _safe_hashpw(password: bytes, salt: bytes) -> bytes:
+    try:
+        return _native_hashpw(password, salt)
+    except ValueError:
+        return _native_hashpw(password[:72], salt)
+
+
+bcrypt.hashpw = _safe_hashpw
+
+sqlite3.register_adapter(dict, lambda value: json.dumps(value))
+sqlite3.register_adapter(list, lambda value: json.dumps(value))
+sqlite3.register_converter(
+    "JSON", lambda value: value.decode("utf-8") if value else None
+)
 
 # Mock OpenTelemetry before any imports
 trace_module = ModuleType("opentelemetry.trace")
@@ -31,6 +69,30 @@ opentelemetry_module = ModuleType("opentelemetry")
 opentelemetry_module.trace = trace_module
 sys.modules.setdefault("opentelemetry.trace", trace_module)
 sys.modules.setdefault("opentelemetry", opentelemetry_module)
+
+# Mock agent framework dependencies used by services
+agent_framework_module = ModuleType("agent_framework")
+agent_framework_module.ChatAgent = MagicMock()
+agent_framework_module.AgentMessage = MagicMock()
+agent_framework_openai = ModuleType("agent_framework.openai")
+agent_framework_openai.OpenAIResponsesClient = MagicMock()
+agent_framework_anthropic = ModuleType("agent_framework.anthropic")
+agent_framework_anthropic.AnthropicClaudeClient = MagicMock()
+sys.modules.setdefault("agent_framework", agent_framework_module)
+sys.modules.setdefault("agent_framework.openai", agent_framework_openai)
+sys.modules.setdefault("agent_framework.anthropic", agent_framework_anthropic)
+
+stripe_module = MagicMock()
+sys.modules.setdefault("stripe", stripe_module)
+
+boto3_module = MagicMock()
+sys.modules.setdefault("boto3", boto3_module)
+
+botocore_module = ModuleType("botocore")
+botocore_exceptions = ModuleType("botocore.exceptions")
+botocore_exceptions.ClientError = Exception
+sys.modules.setdefault("botocore", botocore_module)
+sys.modules.setdefault("botocore.exceptions", botocore_exceptions)
 
 
 # ============================================================================
@@ -41,10 +103,21 @@ sys.modules.setdefault("opentelemetry", opentelemetry_module)
 @pytest.fixture(scope="session")
 def test_db_engine():
     """Create a test database engine using SQLite in-memory."""
-    from backend.models import Base
+    from backend.db.session import Base
+    from backend.models import user, job, outline, payment, chapter, deliverable
 
     engine = create_engine(
-        "sqlite:///:memory:", connect_args={"check_same_thread": False}, echo=False
+        "sqlite://",
+        connect_args={
+            "check_same_thread": False,
+            "detect_types": sqlite3.PARSE_DECLTYPES,
+        },
+        poolclass=StaticPool,
+        json_serializer=lambda value: json.dumps(value),
+        json_deserializer=lambda value: json.loads(value)
+        if isinstance(value, str)
+        else value,
+        echo=False,
     )
 
     # Create all tables
@@ -76,8 +149,6 @@ def test_db(test_db_engine) -> Generator[Session, None, None]:
 @pytest.fixture
 def override_get_db(test_db):
     """Override the get_db dependency for FastAPI testing."""
-    from backend.db.session import get_db
-
     def _override_get_db():
         try:
             yield test_db
@@ -343,12 +414,19 @@ def create_user(test_db):
     """Factory fixture for creating test users."""
     from backend.models.user import User
 
-    def _create_user(**kwargs):
+    def _create_user(password: str = "SecurePass123!", **kwargs):
+        hashed = kwargs.pop(
+            "hashed_password",
+            get_password_hash(password),
+        )
         user_data = {
-            "email": "test@example.com",
+            "email": kwargs.pop(
+                "email", f"user-{uuid.uuid4().hex}@example.com"
+            ),
             "name": "Test User",
-            "hashed_password": "hashed_password",
+            "hashed_password": hashed,
             "subscription_tier": "free",
+            "subscription_status": "active",
             "credits_remaining": 0,
         }
         user_data.update(kwargs)
@@ -360,6 +438,32 @@ def create_user(test_db):
         return user
 
     return _create_user
+
+
+@pytest.fixture
+def auth_tokens(create_user):
+    """Return access and refresh tokens for a test user."""
+
+    def _auth_tokens(user=None, **kwargs):
+        user_obj = user or create_user(**kwargs)
+        payload = {"sub": str(user_obj.id)}
+        access = create_access_token(payload)
+        refresh = create_refresh_token(payload)
+        return {"access": access, "refresh": refresh, "user": user_obj}
+
+    return _auth_tokens
+
+
+@pytest.fixture
+def auth_header(auth_tokens):
+    """Return authorization header for a test user."""
+
+    def _auth_header(user=None, **kwargs):
+        tokens = auth_tokens(user=user, **kwargs)
+        header = {"Authorization": f"Bearer {tokens['access']}"}
+        return header, tokens["user"]
+
+    return _auth_header
 
 
 @pytest.fixture
@@ -403,3 +507,13 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+# Allow JSONB columns to compile under SQLite for tests
+@compiles(JSONB, "sqlite")
+def compile_jsonb(element, compiler, **kwargs):
+    return "JSON"
+
+
+@compiles(ARRAY, "sqlite")
+def compile_array(element, compiler, **kwargs):
+    return "JSON"
+

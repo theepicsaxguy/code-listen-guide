@@ -1,23 +1,14 @@
-"""
-Tests for API routes.
-
-Tests for:
-- Authentication routes
-- Job routes
-- Outline routes
-- Payment routes
-- Player routes
-"""
+"""Comprehensive API route tests with deterministic expectations."""
 
 import json
-from datetime import datetime
-from typing import Dict
-from unittest.mock import MagicMock, patch
+import uuid
 
 import pytest
+from fastapi import status
 
-from backend.api.dependencies import get_current_user
-from backend.main import app
+from backend.models.chapter import Chapter
+from backend.models.deliverable import Deliverable
+from backend.models.job import Job
 from backend.models.outline import Outline
 from backend.models.payment import Payment
 
@@ -25,183 +16,172 @@ from backend.models.payment import Payment
 @pytest.mark.api
 @pytest.mark.unit
 class TestAuthRoutes:
-    """Test authentication endpoints."""
+    """Authentication endpoint coverage."""
 
-    def test_register_user(self, test_client):
-        """Test user registration."""
+    def test_register_user_returns_created_user(self, test_client):
+        payload = {
+            "email": "newuser@example.com",
+            "password": "SecurePass123!",
+            "name": "New User",
+        }
+        response = test_client.post("/api/v1/auth/register", json=payload)
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert data["email"] == payload["email"]
+        assert data["subscription_tier"] == "free"
+        assert data["credits_remaining"] == 100
+
+    def test_register_duplicate_email_returns_400(self, test_client, create_user):
+        email = "existing@example.com"
+        create_user(email=email)
         response = test_client.post(
             "/api/v1/auth/register",
-            json={
-                "email": "newuser@example.com",
-                "password": "SecurePass123!",
-                "name": "New User",
-            },
+            json={"email": email, "password": "SecurePass123!", "name": "Dup"},
         )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json() == {"detail": "Email already registered"}
 
-        # May return 201 or 200 depending on implementation
-        assert response.status_code in [200, 201, 422]  # 422 if validation fails
-
-    def test_register_duplicate_email(self, test_client, create_user):
-        """Test registration with duplicate email fails."""
-        # Create existing user
-        create_user(email="existing@example.com")
-
-        response = test_client.post(
-            "/api/v1/auth/register",
-            json={
-                "email": "existing@example.com",
-                "password": "SecurePass123!",
-                "name": "Duplicate User",
-            },
-        )
-
-        # Should fail with conflict or bad request
-        assert response.status_code in [400, 409, 422, 500]
-
-    def test_login_with_valid_credentials(self, test_client, create_user):
-        """Test login with correct credentials."""
-        # Create user (would need to hash password properly)
-        create_user(email="user@example.com")
-
+    def test_login_returns_tokens_for_valid_credentials(self, test_client, create_user):
+        email = "login@example.com"
+        password = "SecurePass123!"
+        create_user(email=email, password=password)
         response = test_client.post(
             "/api/v1/auth/login",
-            json={"email": "user@example.com", "password": "password123"},
+            data={"username": email, "password": password},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["token_type"] == "bearer"
+        assert isinstance(body["access_token"], str) and body["access_token"]
+        assert isinstance(body["refresh_token"], str) and body["refresh_token"]
 
-        # May succeed or fail depending on auth implementation
-        assert response.status_code in [200, 401, 422, 500]
-
-    def test_login_with_invalid_credentials(self, test_client):
-        """Test login with wrong credentials."""
+    def test_login_rejects_invalid_credentials(self, test_client, create_user):
+        email = "login-fail@example.com"
+        create_user(email=email, password="SecurePass123!")
         response = test_client.post(
             "/api/v1/auth/login",
-            json={"email": "wrong@example.com", "password": "wrongpass"},
+            data={"username": email, "password": "WrongPass999"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.json()["detail"] == "Incorrect email or password"
 
-        # Should fail
-        assert response.status_code in [401, 404, 422, 500]
+    def test_get_current_user_returns_profile(self, test_client, auth_header):
+        headers, user = auth_header()
+        response = test_client.get("/api/v1/auth/me", headers=headers)
+        assert response.status_code == status.HTTP_200_OK
+        profile = response.json()
+        assert profile["id"] == str(user.id)
+        assert profile["email"] == user.email
 
-    def test_get_current_user(self, test_client, create_user):
-        """Test getting current user info."""
-        user = create_user()
-
-        # Would need valid auth token for this test
-        response = test_client.get(
-            "/api/v1/auth/me", headers={"Authorization": "Bearer fake_token"}
-        )
-
-        # May fail without proper auth
-        assert response.status_code in [200, 401, 403, 422]
+    def test_get_current_user_without_token_returns_401(self, test_client):
+        response = test_client.get("/api/v1/auth/me")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.json()["detail"] == "Not authenticated"
 
 
 @pytest.mark.api
 @pytest.mark.unit
 class TestJobRoutes:
-    """Test job management endpoints."""
+    """Job management endpoint coverage."""
 
-    def test_create_job(self, test_client, create_user):
-        """Test creating a new job."""
-        user = create_user()
+    def test_create_job_returns_job_response(self, test_client, auth_header):
+        headers, user = auth_header()
+        payload = {
+            "repo_url": "https://github.com/user/test-repo",
+            "depth_tier": "standard",
+            "git_ref": "main",
+        }
+        response = test_client.post("/api/v1/jobs", json=payload, headers=headers)
+        assert response.status_code == status.HTTP_201_CREATED
+        job = response.json()
+        assert job["user_id"] == str(user.id)
+        assert job["repo_url"] == payload["repo_url"]
+        assert job["status"] == "pending"
 
-        response = test_client.post(
-            "/api/v1/jobs",
-            json={
-                "repo_url": "https://github.com/user/test-repo",
-                "depth_tier": "standard",
-                "git_ref": "main",
-            },
+    def test_create_job_without_token_returns_401(self, test_client):
+        payload = {
+            "repo_url": "https://github.com/user/test-repo",
+            "depth_tier": "standard",
+            "git_ref": "main",
+        }
+        response = test_client.post("/api/v1/jobs", json=payload)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.json()["detail"] == "Not authenticated"
+
+    def test_list_jobs_returns_paginated_result(
+        self, test_client, auth_header, create_job
+    ):
+        headers, user = auth_header()
+        create_job(user=user, repo_url="https://github.com/user/alpha")
+        create_job(user=user, repo_url="https://github.com/user/beta", status="completed")
+        response = test_client.get("/api/v1/jobs", headers=headers)
+        assert response.status_code == status.HTTP_200_OK
+        payload = response.json()
+        assert payload["total"] == 2
+        assert len(payload["jobs"]) == 2
+        assert {item["user_id"] for item in payload["jobs"]} == {str(user.id)}
+
+    def test_get_job_not_found_returns_404(self, test_client, auth_header):
+        headers, _ = auth_header()
+        response = test_client.get(f"/api/v1/jobs/{uuid.uuid4()}", headers=headers)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json()["detail"] == "Job not found"
+
+    def test_delete_job_removes_record(
+        self, test_client, auth_header, create_job, test_db
+    ):
+        headers, user = auth_header()
+        job = create_job(user=user)
+        response = test_client.delete(f"/api/v1/jobs/{job.id}", headers=headers)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert test_db.query(Job).filter(Job.id == job.id).first() is None
+
+    def test_start_job_returns_202(self, test_client, auth_header, create_job):
+        headers, user = auth_header()
+        job = create_job(user=user, status="pending")
+        response = test_client.post(f"/api/v1/jobs/{job.id}/start", headers=headers)
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert response.json() == {"accepted": True}
+
+    def test_start_job_invalid_status_returns_400(
+        self, test_client, auth_header, create_job
+    ):
+        headers, user = auth_header()
+        job = create_job(user=user, status="completed")
+        response = test_client.post(f"/api/v1/jobs/{job.id}/start", headers=headers)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            response.json()["detail"]
+            == "Job cannot be started in current status"
         )
 
-        # May succeed or require auth
-        assert response.status_code in [200, 201, 401, 422, 500]
-
-    def test_create_job_with_invalid_url(self, test_client):
-        """Test creating job with invalid repo URL."""
-        response = test_client.post(
-            "/api/v1/jobs",
-            json={
-                "repo_url": "not-a-valid-url",
-                "depth_tier": "standard",
-                "git_ref": "main",
-            },
-        )
-
-        # Should fail validation
-        assert response.status_code in [400, 422, 401]
-
-    def test_list_jobs(self, test_client, create_user, create_job):
-        """Test listing user's jobs."""
-        user = create_user()
-        create_job(user=user)
-        create_job(user=user, status="completed")
-
-        response = test_client.get("/api/v1/jobs")
-
-        # May require auth
-        assert response.status_code in [200, 401, 500]
-
-        if response.status_code == 200:
-            data = response.json()
-            assert isinstance(data, list)
-
-    def test_get_job_by_id(self, test_client, create_job):
-        """Test getting specific job details."""
+    def test_start_job_without_auth_returns_401(self, test_client, create_job):
         job = create_job()
-
-        response = test_client.get(f"/api/v1/jobs/{job.id}")
-
-        assert response.status_code in [200, 404, 401, 500]
-
-    def test_get_nonexistent_job(self, test_client):
-        """Test getting job that doesn't exist."""
-        fake_uuid = "00000000-0000-0000-0000-000000000000"
-
-        response = test_client.get(f"/api/v1/jobs/{fake_uuid}")
-
-        # Should return 404
-        assert response.status_code in [404, 422, 401]
-
-    def test_delete_job(self, test_client, create_job):
-        """Test deleting a job."""
-        job = create_job()
-
-        response = test_client.delete(f"/api/v1/jobs/{job.id}")
-
-        # May require auth and ownership check
-        assert response.status_code in [200, 204, 401, 403, 404, 500]
-
-    def test_start_job_workflow(self, test_client, create_job):
-        """Test starting job workflow execution."""
-        job = create_job()
-
         response = test_client.post(f"/api/v1/jobs/{job.id}/start")
-
-        # May require auth
-        assert response.status_code in [200, 202, 401, 404, 500]
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.json()["detail"] == "Not authenticated"
 
 
 @pytest.mark.api
 @pytest.mark.unit
 class TestOutlineRoutes:
-    """Test outline generation and approval endpoints."""
+    """Outline workflow endpoint coverage."""
 
     def test_generate_outline_creates_record(
         self,
         test_client,
         test_db,
         create_job,
-        create_user,
         sample_outline_data,
+        auth_header,
         monkeypatch,
     ):
-        """Generating an outline stores the normalized data and updates job state."""
-
-        user = create_user()
+        headers, user = auth_header()
         job = create_job(user=user)
 
-        async def fake_generate_outline(
-            analysis_data: Dict[str, object], depth_tier: str, job_id: str
-        ) -> Dict[str, object]:
+        async def fake_generate_outline(**_kwargs):
             return sample_outline_data
 
         monkeypatch.setattr(
@@ -209,46 +189,46 @@ class TestOutlineRoutes:
             fake_generate_outline,
         )
 
-        app.dependency_overrides[get_current_user] = lambda: user
-        try:
-            response = test_client.post(
-                f"/api/v1/jobs/{job.id}/outline",
-                json={"analysis_data": {"structure": {"file_count": 50}}},
-            )
-        finally:
-            app.dependency_overrides.pop(get_current_user, None)
-
-        assert response.status_code == 201
+        response = test_client.post(
+            f"/api/v1/jobs/{job.id}/outline",
+            json={"analysis_data": {"structure": {"file_count": 50}}},
+            headers=headers,
+        )
+        assert response.status_code == status.HTTP_201_CREATED
         body = response.json()
         assert body["job_id"] == str(job.id)
-        assert body["outline_data"]["total_chapters"] == 2
-
-        outline = (
-            test_db.query(Outline).filter(Outline.job_id == job.id).one()
-        )
+        outline = test_db.query(Outline).filter(Outline.job_id == job.id).one()
         assert outline.user_approved is False
-        assert outline.outline_data["total_estimated_duration_minutes"] == 40
-
+        assert outline.outline_data["total_chapters"] == 2
         test_db.refresh(job)
         assert job.status == "waiting_approval"
+
+    def test_generate_outline_missing_job_returns_404(
+        self, test_client, auth_header
+    ):
+        headers, _ = auth_header()
+        response = test_client.post(
+            f"/api/v1/jobs/{uuid.uuid4()}/outline",
+            json={"analysis_data": {}},
+            headers=headers,
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json()["detail"] == "Job not found"
 
     def test_update_outline_persists_changes(
         self,
         test_client,
         test_db,
         create_job,
-        create_user,
         sample_outline_data,
+        auth_header,
     ):
-        """Updating an outline saves modifications and resets approval flags."""
-
-        user = create_user()
+        headers, user = auth_header()
         job = create_job(user=user)
         outline = Outline(job_id=job.id, outline_data=sample_outline_data)
         test_db.add(outline)
         test_db.commit()
         test_db.refresh(outline)
-
         update_payload = {
             "outline_data": {
                 "chapters": sample_outline_data["chapters"],
@@ -257,20 +237,14 @@ class TestOutlineRoutes:
             },
             "user_modifications": {"notes": "Add more detail"},
         }
-
-        app.dependency_overrides[get_current_user] = lambda: user
-        try:
-            response = test_client.put(
-                f"/api/v1/jobs/{job.id}/outline", json=update_payload
-            )
-        finally:
-            app.dependency_overrides.pop(get_current_user, None)
-
-        assert response.status_code == 200
+        response = test_client.put(
+            f"/api/v1/jobs/{job.id}/outline",
+            json=update_payload,
+            headers=headers,
+        )
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["outline_data"]["total_estimated_duration_minutes"] == 45
-        assert data["user_modifications"] == {"notes": "Add more detail"}
-
         test_db.refresh(outline)
         assert outline.user_modifications == {"notes": "Add more detail"}
         assert outline.user_approved is False
@@ -280,13 +254,11 @@ class TestOutlineRoutes:
         test_client,
         test_db,
         create_job,
-        create_user,
         sample_outline_data,
+        auth_header,
         monkeypatch,
     ):
-        """Approving an outline marks it approved and initiates payment collection."""
-
-        user = create_user()
+        headers, user = auth_header()
         job = create_job(user=user)
         outline = Outline(job_id=job.id, outline_data=sample_outline_data)
         test_db.add(outline)
@@ -294,190 +266,257 @@ class TestOutlineRoutes:
         test_db.refresh(outline)
 
         class DummyIntent:
-            def __init__(self, amount: int):
+            def __init__(self):
                 self.id = "pi_test_123"
                 self.client_secret = "secret"
-                self.amount = amount
+                self.amount = 4900
                 self.currency = "usd"
                 self.status = "requires_payment_method"
 
-        async def fake_create_payment_intent(**kwargs):
-            return DummyIntent(kwargs["amount_cents"])
+        async def fake_create_payment_intent(**_kwargs):
+            return DummyIntent()
 
         monkeypatch.setattr(
             "backend.api.routes.outlines.create_payment_intent",
             fake_create_payment_intent,
         )
 
-        app.dependency_overrides[get_current_user] = lambda: user
-        try:
-            response = test_client.post(
-                f"/api/v1/jobs/{job.id}/outline/approve",
-                json={"outline_id": str(outline.id)},
-            )
-        finally:
-            app.dependency_overrides.pop(get_current_user, None)
-
-        assert response.status_code == 200
+        response = test_client.post(
+            f"/api/v1/jobs/{job.id}/outline/approve",
+            json={"outline_id": str(outline.id)},
+            headers=headers,
+        )
+        assert response.status_code == status.HTTP_200_OK
         payload = response.json()
         assert payload["payment_intent_id"] == "pi_test_123"
-
         test_db.refresh(outline)
         assert outline.user_approved is True
-        assert outline.approved_at is not None
+        payment = test_db.query(Payment).filter(Payment.job_id == job.id).one()
+        assert payment.amount_cents == 4900
 
-        payment = (
-            test_db.query(Payment)
-            .filter(Payment.job_id == job.id)
-            .one()
+    def test_approve_outline_missing_outline_returns_404(
+        self, test_client, create_job, auth_header
+    ):
+        headers, user = auth_header()
+        job = create_job(user=user)
+        response = test_client.post(
+            f"/api/v1/jobs/{job.id}/outline/approve",
+            json={"outline_id": str(uuid.uuid4())},
+            headers=headers,
         )
-        assert payment.amount_cents == payload["amount_cents"]
-
-    def test_approve_outline(self, test_client, create_job):
-        """Test approving outline and proceeding to payment."""
-        job = create_job()
-
-        response = test_client.post(f"/api/v1/jobs/{job.id}/outline/approve")
-
-        # May require outline to exist first
-        assert response.status_code in [200, 400, 401, 404, 422, 500]
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json()["detail"] == "Outline not found"
 
 
 @pytest.mark.api
 @pytest.mark.unit
 class TestPaymentRoutes:
-    """Test payment processing endpoints."""
+    """Payment endpoint coverage."""
 
-    def test_create_payment_intent(self, test_client, create_job):
-        """Test creating Stripe payment intent."""
-        job = create_job()
+    def test_create_payment_intent_returns_details(
+        self, test_client, create_job, auth_header, monkeypatch
+    ):
+        headers, user = auth_header()
+        job = create_job(user=user, status="pending")
+
+        class DummyIntent:
+            def __init__(self):
+                self.id = "pi_123"
+                self.client_secret = "secret"
+                self.amount = 4900
+                self.currency = "usd"
+                self.status = "requires_payment_method"
+
+        async def fake_create_payment_intent(**_kwargs):
+            return DummyIntent()
+
+        monkeypatch.setattr(
+            "backend.api.routes.payments.create_payment_intent",
+            fake_create_payment_intent,
+        )
 
         response = test_client.post(
             "/api/v1/payments/create-intent",
-            json={"job_id": str(job.id), "amount": 4900},
+            json={"job_id": str(job.id), "amount_cents": 4900},
+            headers=headers,
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["payment_intent_id"] == "pi_123"
+        assert data["amount_cents"] == 4900
+
+    def test_create_payment_intent_for_completed_job_returns_400(
+        self, test_client, create_job, auth_header
+    ):
+        headers, user = auth_header()
+        job = create_job(user=user, status="completed")
+        response = test_client.post(
+            "/api/v1/payments/create-intent",
+            json={"job_id": str(job.id)},
+            headers=headers,
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["detail"] == "Job already completed"
+
+    def test_create_payment_intent_requires_authentication(self, test_client, create_job):
+        job = create_job()
+        response = test_client.post(
+            "/api/v1/payments/create-intent",
+            json={"job_id": str(job.id)},
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.json()["detail"] == "Not authenticated"
+
+    def test_stripe_webhook_updates_payment_and_job(
+        self, test_client, test_db, create_job, monkeypatch
+    ):
+        job = create_job(status="pending")
+        payment = Payment(
+            user_id=job.user_id,
+            job_id=job.id,
+            stripe_payment_intent_id="pi_existing",
+            amount_cents=4900,
+            currency="usd",
+            status="requires_payment_method",
+        )
+        test_db.add(payment)
+        test_db.commit()
+
+        class DummyStripeService:
+            def verify_webhook_signature(self, payload, sig):
+                return {
+                    "type": "payment_intent.succeeded",
+                    "data": {
+                        "object": {
+                            "id": "pi_existing",
+                            "metadata": {"job_id": str(job.id)},
+                            "latest_charge": "ch_123",
+                            "payment_method_types": ["card"],
+                        }
+                    },
+                }
+
+        def dummy_get_service():
+            return DummyStripeService()
+
+        monkeypatch.setattr(
+            "backend.api.routes.payments.get_stripe_service", dummy_get_service
         )
 
-        assert response.status_code in [200, 401, 422, 500]
-
-    def test_stripe_webhook(self, test_client):
-        """Test Stripe webhook handler."""
-        webhook_payload = {
+        payload = {
             "type": "payment_intent.succeeded",
             "data": {
-                "object": {"id": "pi_test_123", "metadata": {"job_id": "test-job"}}
+                "object": {
+                    "id": "pi_existing",
+                    "metadata": {"job_id": str(job.id)},
+                    "latest_charge": "ch_123",
+                    "payment_method_types": ["card"],
+                }
             },
         }
-
         response = test_client.post(
             "/api/v1/payments/webhook",
-            json=webhook_payload,
-            headers={"Stripe-Signature": "test_signature"},
+            data=json.dumps(payload),
+            headers={"Stripe-Signature": "signature"},
         )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {"received": True}
+        test_db.refresh(payment)
+        test_db.refresh(job)
+        assert payment.status == "succeeded"
+        assert job.status == "paid"
 
-        # Webhook may fail without proper signature
-        assert response.status_code in [200, 400, 401, 500]
-
-    def test_get_payment_history(self, test_client, create_user):
-        """Test retrieving payment history."""
-        user = create_user()
-
-        response = test_client.get("/api/v1/payments/history")
-
-        assert response.status_code in [200, 401, 500]
+    def test_payment_history_returns_user_payments(
+        self, test_client, create_job, auth_header, test_db
+    ):
+        headers, user = auth_header()
+        job = create_job(user=user)
+        payment = Payment(
+            user_id=user.id,
+            job_id=job.id,
+            stripe_payment_intent_id="pi_test",
+            amount_cents=4900,
+            currency="usd",
+            status="succeeded",
+        )
+        test_db.add(payment)
+        test_db.commit()
+        response = test_client.get("/api/v1/payments/history", headers=headers)
+        assert response.status_code == status.HTTP_200_OK
+        payload = response.json()
+        assert payload["total"] == 1
+        assert payload["payments"][0]["stripe_payment_intent_id"] == "pi_test"
 
 
 @pytest.mark.api
 @pytest.mark.unit
 class TestPlayerRoutes:
-    """Test audiobook player data endpoints."""
+    """Audiobook player endpoint coverage."""
 
-    def test_get_player_data(self, test_client, create_job):
-        """Test getting player data for completed job."""
+    def test_get_player_data_returns_job_and_chapters(
+        self, test_client, create_job, test_db
+    ):
         job = create_job(status="completed")
-
+        chapter = Chapter(
+            job_id=job.id,
+            chapter_number=1,
+            title="Intro",
+            description="Overview",
+            files_covered=["README.md"],
+            topics_covered=["setup"],
+            status="completed",
+            audio_duration_seconds=120,
+        )
+        deliverable = Deliverable(
+            job_id=job.id,
+            file_type="full",
+            file_url="https://codebase-audiobooks.s3.amazonaws.com/full.mp3",
+        )
+        test_db.add_all([chapter, deliverable])
+        test_db.commit()
         response = test_client.get(f"/api/v1/player/{job.id}")
+        assert response.status_code == status.HTTP_200_OK
+        payload = response.json()
+        assert payload["job"]["id"] == str(job.id)
+        assert payload["chapters"]["total_chapters"] == 1
+        assert payload["deliverables"][0]["file_type"] == "full"
 
-        # Public endpoint, should work
-        assert response.status_code in [200, 404, 500]
+    def test_get_player_data_missing_job_returns_404(self, test_client):
+        response = test_client.get(f"/api/v1/player/{uuid.uuid4()}")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json()["detail"] == "Job not found"
 
-    def test_get_player_data_for_incomplete_job(self, test_client, create_job):
-        """Test getting player data for incomplete job."""
-        job = create_job(status="pending")
-
-        response = test_client.get(f"/api/v1/player/{job.id}")
-
-        # Should return 404 or incomplete status
-        assert response.status_code in [200, 404, 400, 500]
-
-    def test_download_deliverable(self, test_client, create_job):
-        """Test downloading deliverable file."""
+    def test_download_deliverable_returns_signed_url(
+        self, test_client, create_job, test_db, monkeypatch
+    ):
         job = create_job(status="completed")
+        deliverable = Deliverable(
+            job_id=job.id,
+            file_type="full",
+            file_url="https://codebase-audiobooks.s3.amazonaws.com/full.mp3",
+        )
+        test_db.add(deliverable)
+        test_db.commit()
 
+        async def fake_generate_presigned_url(key: str) -> str:
+            return f"https://signed.example.com/{key}"
+
+        monkeypatch.setattr(
+            "backend.api.routes.player.generate_presigned_url",
+            fake_generate_presigned_url,
+        )
+
+        response = test_client.get(
+            f"/api/v1/player/{job.id}/download/full"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["download_url"].startswith("https://signed.example.com/")
+
+    def test_download_deliverable_missing_record_returns_404(
+        self, test_client, create_job
+    ):
+        job = create_job()
         response = test_client.get(f"/api/v1/player/{job.id}/download/full")
-
-        # May redirect to S3 or return file
-        assert response.status_code in [200, 302, 303, 404, 500]
-
-
-@pytest.mark.api
-@pytest.mark.integration
-class TestAPIIntegration:
-    """Integration tests for API endpoints."""
-
-    @pytest.mark.skip(reason="Requires full environment")
-    def test_complete_job_lifecycle(self, test_client, create_user):
-        """Test complete job lifecycle through API."""
-        # 1. Register user
-        # 2. Login
-        # 3. Create job
-        # 4. Generate outline
-        # 5. Approve outline
-        # 6. Process payment
-        # 7. Start workflow
-        # 8. Check status
-        # 9. Get completed audiobook
-
-        user = create_user()
-        assert user is not None
-
-    def test_concurrent_job_requests(self, test_client, create_user):
-        """Test handling multiple concurrent job requests."""
-        user = create_user()
-
-        # Create multiple jobs simultaneously
-        responses = []
-        for i in range(5):
-            response = test_client.post(
-                "/api/v1/jobs",
-                json={
-                    "repo_url": f"https://github.com/user/repo{i}",
-                    "depth_tier": "standard",
-                    "git_ref": "main",
-                },
-            )
-            responses.append(response)
-
-        # All should succeed (or fail consistently with auth)
-        status_codes = [r.status_code for r in responses]
-        assert all(code in [200, 201, 401, 422, 500] for code in status_codes)
-
-    def test_api_error_handling(self, test_client):
-        """Test API handles errors gracefully."""
-        # Test various error scenarios
-        test_cases = [
-            ("/api/v1/jobs/invalid-uuid", 404),
-            ("/api/v1/nonexistent", 404),
-        ]
-
-        for endpoint, expected_status in test_cases:
-            response = test_client.get(endpoint)
-            # May return various error codes depending on implementation
-            assert response.status_code >= 400
-
-    def test_api_cors_headers(self, test_client):
-        """Test CORS headers are present."""
-        response = test_client.options("/api/v1/jobs")
-
-        # CORS headers should be present
-        # (Actual test depends on CORS configuration)
-        assert response.status_code in [200, 405, 500]
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json()["detail"] == "Deliverable not found"

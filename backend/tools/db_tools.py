@@ -73,16 +73,21 @@ def mark_job_status(job_id: str, status: str, stage: Optional[str]) -> None:
 
 
 def persist_outline(
-    job_id: str,
+    job_id: Union[str, UUID],
     outline_payload: Union[str, Dict[str, Any]],
     db: Optional[Session] = None,
 ) -> Outline:
     owns_session = db is None
     session = db or _session()
     try:
-        outline = session.query(Outline).filter(Outline.job_id == job_id).first()
+        normalized_job_id = job_id if isinstance(job_id, UUID) else UUID(str(job_id))
+        outline = (
+            session.query(Outline)
+            .filter(Outline.job_id == normalized_job_id)
+            .first()
+        )
         if outline is None:
-            outline = Outline(job_id=job_id, outline_data={})
+            outline = Outline(job_id=normalized_job_id, outline_data={})
             session.add(outline)
         if isinstance(outline_payload, str):
             try:

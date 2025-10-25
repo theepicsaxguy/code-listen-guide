@@ -7,6 +7,8 @@ Provides:
 - require_subscription(): Check user subscription tier
 """
 
+import uuid
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -53,9 +55,10 @@ async def get_current_user(
 
     try:
         payload = decode_access_token(token)
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        user_id_value = payload.get("sub")
+        if user_id_value is None:
             raise credentials_exception
+        user_id = uuid.UUID(str(user_id_value))
     except Exception:
         raise credentials_exception
 
