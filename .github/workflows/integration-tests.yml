@@ -35,6 +35,16 @@ jobs:
           python-version: '3.14'
           cache: pip
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ffmpeg \
+            build-essential \
+            libxml2-dev \
+            libxslt1-dev \
+            zlib1g-dev
+
       - name: Install dependencies
         run: |
           cd backend
