@@ -28,6 +28,8 @@ settings = get_settings()
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=[f"{settings.rate_limit_per_minute}/minute"],
+    storage_uri=settings.rate_limit_storage_uri,
+    storage_options=settings.rate_limit_storage_options,
 )
 
 

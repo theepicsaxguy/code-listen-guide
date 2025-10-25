@@ -1,20 +1,36 @@
-"""
-Tests for backend services.
+"""Tests for backend services."""
 
-Tests for:
-- Repository Analyzer Service
-- Outline Generator Service
-- Script Generator Service
-- Audio Tools
-- Post Processor Service
-- Storage Service
-- Payment Service
-"""
+import importlib
+from datetime import datetime
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch
-from datetime import datetime
+
+
+@pytest.mark.unit
+class TestRateLimiterDependencies:
+    """Validate rate limiter configuration."""
+
+    def test_rate_limiter_uses_configured_storage(self, monkeypatch):
+        monkeypatch.setenv("RATE_LIMIT_STORAGE_URI", "redis://localhost:6379/0")
+        monkeypatch.setenv("RATE_LIMIT_STORAGE_OPTIONS", '{"key_prefix": "test-prefix"}')
+
+        from backend import config
+        import backend.api.dependencies as dependencies
+
+        config.get_settings.cache_clear()
+        reloaded = importlib.reload(dependencies)
+
+        storage = reloaded.limiter.limiter.storage
+
+        assert storage.__class__.__name__ == "RedisStorage"
+        assert storage.key_prefix == "test-prefix"
+
+        monkeypatch.delenv("RATE_LIMIT_STORAGE_URI", raising=False)
+        monkeypatch.delenv("RATE_LIMIT_STORAGE_OPTIONS", raising=False)
+        config.get_settings.cache_clear()
+        importlib.reload(dependencies)
 
 
 @pytest.mark.services

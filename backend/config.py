@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     service_name: str = Field(default="cba-backend")
 
     rate_limit_per_minute: int = Field(default=60)
+    rate_limit_storage_uri: str = Field(default="memory://")
+    rate_limit_storage_options: dict[str, str] = Field(default_factory=dict)
     max_repo_size_mb: int = Field(default=500)
     max_concurrent_jobs_per_user: int = Field(default=3)
 
