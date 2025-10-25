@@ -125,6 +125,20 @@ backend/
    The configuration file points Alembic at the models under `backend/models` and
    reads connection details from your `.env`.
 
+### Workflow checkpoint migration
+
+Run the targeted upgrade when you deploy the checkpoint persistence feature:
+
+```bash
+alembic -c backend/alembic.ini upgrade 20241025_add_workflow_checkpoints
+```
+
+Only the `workflow_checkpoints` table is created in this revision. To back it out without touching earlier tables, roll back to the previous marker:
+
+```bash
+alembic -c backend/alembic.ini downgrade 20241010_initial_schema
+```
+
 ### Running the Application
 
 **Development mode:**
