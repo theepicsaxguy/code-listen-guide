@@ -1,89 +1,98 @@
-"""
-Outline generation service using Claude API.
+"""Outline generation service backed by Microsoft Agent Framework agents."""
 
-DEPRECATED: This service is deprecated in favor of the Microsoft Agent Framework.
-Use backend/agents/outline_agent.py instead.
-
-This file is kept for reference but should not be used in new code.
-"""
-
-from anthropic import Anthropic
 import json
-from typing import Dict, List
+import logging
+from typing import Any, Dict
 
-# from backend.config import get_settings
+from agent_framework.azure import AzureOpenAIResponsesClient
+from azure.identity import DefaultAzureCredential
+
+from backend.agents import outline_agent
+from backend.config import get_settings
+
+logger = logging.getLogger(__name__)
+
+_DEPTH_INSTRUCTIONS = {
+    "survey": "Focus on top-level architecture and main modules. Aim for 10-15 chapters.",
+    "standard": "Cover user-facing modules, critical internals, and architectural decisions. Aim for 20-30 chapters.",
+    "comprehensive": "Document every subsystem and important implementation detail. Aim for 35-50 chapters.",
+}
 
 
-class OutlineGenerator:
-    """
-    Generates chapter outlines using Claude AI.
+def _build_prompt(analysis_data: Dict[str, Any], depth_tier: str) -> str:
+    summary = json.dumps(analysis_data, indent=2)[:4000]
+    tier = depth_tier if depth_tier in _DEPTH_INSTRUCTIONS else "standard"
+    guidance = _DEPTH_INSTRUCTIONS[tier]
+    return (
+        "You are an expert technical narrator planning an audiobook about a codebase. "
+        "Use the repository analysis to design a multi-chapter outline. "
+        "Respond with strict JSON containing chapters, estimated durations, learning objectives, and files covered.\n\n"
+        f"Depth tier: {tier}\n"
+        f"Guidance: {guidance}\n\n"
+        f"Repository analysis summary:\n{summary}"
+    )
 
-    DEPRECATED: Use backend/agents/outline_agent.py instead.
-    """
 
-    def __init__(self, anthropic_api_key: str):
-        """Initialize outline generator (deprecated)."""
-        self.client = Anthropic(api_key=anthropic_api_key)
+async def _run_outline_agent(prompt: str) -> str:
+    settings = get_settings()
+    credential = DefaultAzureCredential(exclude_cli_credential=True)
+    client = AzureOpenAIResponsesClient(
+        endpoint=settings.azure_openai_endpoint,
+        credential=credential,
+        deployment_name=settings.azure_openai_deployment_name,
+        api_version=settings.azure_openai_api_version,
+    )
+    agent = await outline_agent.create_outline_agent(client)
+    response = await agent.run(prompt)
+    return getattr(response, "text", None) or getattr(response, "result", "")
 
-    async def generate_outline(
-        self,
-        repo_analysis: Dict,
-        parsed_codebase: Dict,
-        depth_tier: str
-    ) -> Dict:
-        """
-        Generate chapter outline using Claude (deprecated).
 
-        Use backend/agents/outline_agent.py instead.
-        """
+def _parse_outline(raw_text: str) -> Dict[str, Any]:
+    try:
+        payload = json.loads(raw_text)
+        if isinstance(payload, dict) and "chapters" in payload:
+            return payload
+    except json.JSONDecodeError:
+        logger.warning("Agent returned non-JSON outline payload")
+    return {"chapters": [], "raw_outline": raw_text.strip()}
 
-        depth_instructions = {
-            "survey": "Focus on high-level architecture, public APIs, and key algorithms. Aim for 10-15 chapters.",
-            "standard": "Cover all public interfaces, important private functions, and design patterns. Aim for 25-35 chapters.",
-            "comprehensive": "Explain every class, function, and implementation detail. Aim for 40-60 chapters."
-        }
 
-        prompt = f"""
-You are an expert technical writer creating an audiobook outline for a codebase.
+def _fallback_outline(analysis_data: Dict[str, Any], depth_tier: str) -> Dict[str, Any]:
+    repo_name = analysis_data.get("repo_name") or "Unknown Repository"
+    primary_language = next(iter((analysis_data.get("languages") or {}).keys()), "the project")
+    chapters = [
+        {
+            "number": 1,
+            "title": f"Overview of {repo_name}",
+            "description": "High-level architecture and goals",
+            "estimated_duration_minutes": 12,
+            "files_covered": [],
+            "learning_objectives": [f"Understand the purpose of {repo_name}"]
+        },
+        {
+            "number": 2,
+            "title": f"Core {primary_language} Modules",
+            "description": "Key components and how they collaborate",
+            "estimated_duration_minutes": 18,
+            "files_covered": [],
+            "learning_objectives": ["Identify main modules", "Recognize extension points"],
+        },
+    ]
+    return {
+        "chapters": chapters,
+        "depth_tier": depth_tier,
+        "total_estimated_duration_minutes": sum(chapter["estimated_duration_minutes"] for chapter in chapters),
+    }
 
-Repository: {repo_analysis.get('repo_name', 'Unknown')}
-Languages: {', '.join(repo_analysis.get('languages', {}).keys())}
-File count: {repo_analysis.get('file_count', 0)}
-Depth: {depth_tier}
 
-{depth_instructions[depth_tier]}
-
-Based on this codebase analysis:
-{json.dumps(repo_analysis, indent=2)[:2000]}
-
-Create a chapter outline where each chapter:
-1. Has a clear title and scope
-2. Groups related functionality logically
-3. Follows a narrative arc (high-level → detailed)
-4. Has estimated duration of 10-25 minutes
-5. Lists specific files/classes/functions covered
-6. Includes learning objectives
-
-Return ONLY valid JSON in this format:
-{{
-  "chapters": [
-    {{
-      "number": 1,
-      "title": "Introduction and Architecture Overview",
-      "description": "High-level system architecture and core concepts",
-      "estimated_duration_minutes": 12,
-      "files_covered": ["src/index.ts", "src/app.ts"],
-      "topics": ["Project structure", "Entry points", "Core patterns"],
-      "learning_objectives": ["Understand overall architecture", "Identify main components"]
-    }}
-  ],
-  "total_estimated_duration_minutes": 480,
-  "total_chapters": 35
-}}
-"""
-        # Deprecated: Use backend/agents/outline_agent.py instead
-        raise NotImplementedError("Use backend/agents/outline_agent.py instead")
-
-    def _validate_outline(self, outline: Dict) -> bool:
-        """Validate outline structure (deprecated)."""
-        raise NotImplementedError("Use backend/agents/outline_agent.py instead")
+async def generate_outline(analysis_data: Dict[str, Any], depth_tier: str, job_id: str) -> Dict[str, Any]:
+    prompt = _build_prompt(analysis_data, depth_tier)
+    try:
+        raw_text = await _run_outline_agent(prompt)
+        parsed = _parse_outline(raw_text)
+        if parsed.get("chapters"):
+            return parsed
+        logger.info("Outline agent returned empty result, falling back to template", extra={"job_id": job_id})
+    except Exception as exc:
+        logger.warning("Outline agent failed; returning fallback outline", extra={"job_id": job_id, "error": str(exc)})
+    return _fallback_outline(analysis_data, depth_tier)

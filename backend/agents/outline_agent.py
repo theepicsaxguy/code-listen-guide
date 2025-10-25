@@ -1,7 +1,18 @@
 from typing import Any
 
+from agent_framework import ChatAgent
 from agent_framework.azure import AzureOpenAIResponsesClient
 from azure.identity import DefaultAzureCredential
+
+
+async def create_outline_agent(chat_client: Any) -> ChatAgent:
+    return chat_client.create_agent(
+        name="OutlineGenerator",
+        instructions=(
+            "Generate a structured audiobook outline as JSON including chapter numbers, titles, "
+            "goals, and estimated durations."
+        ),
+    )
 
 
 async def outline_agent(settings: Any) -> Any:
@@ -12,7 +23,4 @@ async def outline_agent(settings: Any) -> Any:
         deployment_name=settings.azure_openai_deployment_name,
         api_version=settings.azure_openai_api_version,
     )
-    return client.create_agent(
-        name="OutlineGenerator",
-        instructions="Generate a structured audiobook outline as JSON including titles, goals, and timing.",
-    )
+    return await create_outline_agent(client)

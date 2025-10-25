@@ -16,7 +16,6 @@ from backend.models.user import User
 from backend.models.job import Job
 from backend.models.outline import Outline
 from backend.api.dependencies import get_current_user
-from backend.services.outline_generator import OutlineGenerator
 
 router = APIRouter(prefix="/api/v1/jobs/{job_id}/outline", tags=["outlines"])
 

@@ -1,6 +1,6 @@
 from typing import Annotated, Any, Dict, List
 
-from agent_framework import AIFunction
+from agent_framework import AIFunction, ChatAgent
 from agent_framework.azure import AzureOpenAIResponsesClient
 from azure.identity import DefaultAzureCredential
 from pydantic import Field
@@ -21,6 +21,22 @@ def _ai_build_code_map(path: Annotated[str, Field(description="Path to cloned re
     return build_code_map(path)
 
 
+async def create_analyzer_agent(chat_client: Any) -> ChatAgent:
+    tools = [
+        AIFunction(_ai_clone_repo),
+        AIFunction(_ai_list_files),
+        AIFunction(_ai_build_code_map),
+    ]
+    return chat_client.create_agent(
+        name="RepositoryAnalyzer",
+        instructions=(
+            "Clone the supplied repository, build a structural summary, and respond with JSON. "
+            "Use the available tools for git operations and code parsing."
+        ),
+        tools=tools,
+    )
+
+
 async def analyzer_agent(settings: Any) -> Any:
     credential = DefaultAzureCredential(exclude_cli_credential=True)
     client = AzureOpenAIResponsesClient(
@@ -29,13 +45,4 @@ async def analyzer_agent(settings: Any) -> Any:
         deployment_name=settings.azure_openai_deployment_name,
         api_version=settings.azure_openai_api_version,
     )
-    tools = [
-        AIFunction(_ai_clone_repo),
-        AIFunction(_ai_list_files),
-        AIFunction(_ai_build_code_map),
-    ]
-    return client.create_agent(
-        name="RepositoryAnalyzer",
-        instructions="Clone the repository, list the files, and describe the structure as JSON.",
-        tools=tools,
-    )
+    return await create_analyzer_agent(client)

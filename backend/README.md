@@ -182,6 +182,10 @@ Checkpoint records in PostgreSQL allow any stage to resume without repeating pri
 
 ## Processing Pipeline
 
+Every AI-heavy stage now flows through the Microsoft Agent Framework. Each service composes an Azure OpenAI Responses client,
+creates the appropriate agent, and lets that agent orchestrate tool calls. Manual Anthropic or raw OpenAI integrations have been
+removed so there is a single, auditable execution path for analysis, outlining, scripting, audio, and post-processing.
+
 The audiobook generation uses a Microsoft Agent Framework workflow graph:
 
 1. **Repository Analysis** (`RepositoryAnalyzer` agent)
@@ -215,7 +219,6 @@ See `.env.example` for required environment variables:
 
 - **Database**: `DATABASE_URL`, `CHECKPOINT_DATABASE_URL`
 - **Azure OpenAI**: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT_NAME`, `AZURE_OPENAI_API_VERSION`
-- **Other LLM Providers**: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`
 - **Stripe**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`
 - **AWS**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`, `S3_REGION`
 - **Auth**: `JWT_SECRET`, `CLERK_SECRET_KEY`
