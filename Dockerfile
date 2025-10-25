@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.19
 
-ARG PYTHON_VERSION=3.14-slim
-ARG NODE_VERSION=22-bookworm-slim
+ARG PYTHON_VERSION=3.11.11-slim
+ARG NODE_VERSION=22.12.0-bookworm-slim
 ARG VITE_API_BASE_URL=/api/v1
 
 FROM node:${NODE_VERSION} AS frontend-build
@@ -26,6 +26,13 @@ RUN apt-get update \
         libxml2-dev \
         libxslt1-dev \
         zlib1g-dev \
+        git \
+        cmake \
+        pkg-config \
+        libssl-dev \
+        libffi-dev \
+        libpq-dev \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.runtime.txt ./requirements.txt
 RUN python -m venv /opt/venv \
@@ -43,6 +50,9 @@ RUN apt-get update \
         libxml2 \
         libxslt1.1 \
         zlib1g \
+        git \
+        curl \
+        libpq5 \
     && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system app \
     && useradd --system --gid app --home /app --create-home --shell /usr/sbin/nologin app
