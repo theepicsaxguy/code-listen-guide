@@ -249,7 +249,8 @@ class TestCheckpointing:
         assert stored is not None
         assert stored.workflow_id == workflow_id
         assert stored.step_id == "outline_generation"
-        assert stored.state == state
+        assert isinstance(stored.state, dict)
+        assert stored.state.get("shared_state", {}).get("state") == state
 
     @pytest.mark.asyncio
     async def test_load_checkpoint_returns_state(self, test_db):
@@ -316,6 +317,41 @@ class TestCheckpointing:
 
         deleted_again = await delete_checkpoint(workflow_id, first, session=test_db)
         assert deleted_again is False
+
+    @pytest.mark.asyncio
+    async def test_checkpoint_preserves_thread_state(self, test_db):
+        """Store and recover serialized thread metadata."""
+        import pytest
+
+        from backend.utils.checkpointing import load_checkpoint, save_checkpoint
+
+        workflow_id = "workflow-thread"
+        thread_state = {"service_thread_id": "thread-123"}
+
+        checkpoint_id = await save_checkpoint(
+            workflow_id=workflow_id,
+            step_id="scripting",
+            state={"status": "pending"},
+            thread_state=thread_state,
+            session=test_db,
+        )
+
+        loaded = await load_checkpoint(
+            workflow_id=workflow_id,
+            checkpoint_id=checkpoint_id,
+            session=test_db,
+        )
+
+        assert loaded is not None
+        assert loaded["metadata"]["thread_state"] == thread_state
+
+        try:
+            from agent_framework import AgentThread
+        except ImportError:  # pragma: no cover - package variant without threads
+            pytest.skip("AgentThread helper unavailable in installed agent_framework")
+
+        restored_thread = await AgentThread.deserialize(thread_state)
+        assert restored_thread.service_thread_id == "thread-123"
 
 
 @pytest.mark.workflows

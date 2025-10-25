@@ -217,9 +217,11 @@ receive time-limited access to chapter audio and bundle archives stored in S3.
 
 Workflow progress is persisted in the `workflow_checkpoints` table. The helpers in
 `backend/utils/checkpointing.py` wrap the `PostgresCheckpointStorage` implementation
-and accept an optional SQLAlchemy session. Workflows call `save_checkpoint` with a
-workflow identifier, step name, and JSON-serializable state; `load_checkpoint` and
-the related helpers return the stored payloads so runs can resume cleanly.
+and accept an optional SQLAlchemy session. Workflows call `save_checkpoint` with the
+workflow identifier plus optional step labels, metadata, and serialized agent thread
+state. `load_checkpoint` and the related helpers return the stored payloads—including
+any `metadata.thread_state` blobs—so multi-turn conversations can resume without
+requesting fresh threads from the model provider.
 
 Checkpoint records in PostgreSQL allow any stage to resume without repeating prior work. Clients can subscribe to the job channel to receive the JSON events emitted during each stage.
 
