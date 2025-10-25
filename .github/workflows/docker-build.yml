@@ -1,0 +1,35 @@
+name: Docker Build
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-images:
+    name: Build ${{ matrix.service }} image
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: frontend
+            context: .
+            file: Dockerfile.frontend
+            tag: frontend:pr
+          - service: backend
+            context: backend
+            file: backend/Dockerfile
+            tag: backend:pr
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          tags: ${{ matrix.tag }}
+          push: false
