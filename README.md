@@ -55,6 +55,11 @@ pip install -r requirements.txt
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+Recent hardening efforts added:
+- Locked-down CORS settings tied to the configured frontend URL.
+- A bundle of security headers (CSP, HSTS, Referrer Policy, and more) on every response.
+- SlowAPI-backed rate limiting with stricter quotas on registration, login, and token refresh flows.
+
 ### Production bundle
 
 Run `./serve-production.sh` from the repository root when you want the production build in one command. The script compiles the frontend, starts the FastAPI server with multiple workers, and serves the built assets through `vite preview`. Override defaults by exporting `BACKEND_PORT`, `FRONTEND_PORT`, or `UVICORN_WORKERS` before launching.
@@ -87,6 +92,12 @@ The FastAPI service exposes REST and WebSocket endpoints for managing jobs, runn
 - `Plan.md` – Investor-facing deep dive into the multi-agent architecture and enterprise positioning.
 - `plans/*.md` – Execution blueprints for parser upgrades and go-to-market work.
 - `samples/` – External agent framework examples that inspire our own workflow design.
+
+## Legal
+
+- [LICENSE](LICENSE) – MIT terms for using the code.
+- [TERMS.md](TERMS.md) – Rules for using the hosted service.
+- [PRIVACY.md](PRIVACY.md) – How we handle account, payment, and usage data.
 
 ## Contributing
 

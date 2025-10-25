@@ -11,11 +11,14 @@ TODO: Implementation steps:
 7. Create subscription tier enum
 """
 
-from pydantic import BaseModel, EmailStr, Field, validator
-from typing import Optional
 from datetime import datetime
 from enum import Enum
 import uuid
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from backend.utils.validators import validate_password_strength
 
 
 class SubscriptionTier(str, Enum):
@@ -34,23 +37,27 @@ class SubscriptionStatus(str, Enum):
 
 
 class UserCreate(BaseModel):
-    """
-    Schema for user registration.
+    """Input payload for user registration."""
 
-    TODO:
-    - Add password strength validation
-    - Add email format validation
-    - Add name validation
-    """
     email: EmailStr
     password: str = Field(..., min_length=8)
     name: Optional[str] = None
 
-    # TODO: Add validators
-    # @validator("password")
-    # def validate_password_strength(cls, v):
-    #     # Check for uppercase, lowercase, number, special char
-    #     pass
+    @field_validator("password")
+    @classmethod
+    def enforce_password_strength(cls, value: str) -> str:
+        is_valid, error_msg = validate_password_strength(value)
+        if not is_valid and error_msg:
+            raise ValueError(error_msg)
+        return value
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        cleaned = value.strip()
+        return cleaned or None
 
 
 class UserLogin(BaseModel):
@@ -60,23 +67,16 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(BaseModel):
-    """
-    Schema for user data in responses (excludes password).
-
-    TODO:
-    - Add computed fields if needed
-    - Configure from_attributes for ORM compatibility
-    """
+    """Serialized user data for API responses."""
     id: uuid.UUID
-    email: str
+    email: EmailStr
     name: Optional[str]
     subscription_tier: str
     subscription_status: Optional[str]
     credits_remaining: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserUpdate(BaseModel):
@@ -91,3 +91,9 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int
+
+
+class TokenRefreshRequest(BaseModel):
+    """Input payload for refreshing access tokens."""
+
+    refresh_token: str = Field(..., min_length=1)

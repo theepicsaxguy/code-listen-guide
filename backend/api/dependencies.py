@@ -10,13 +10,23 @@ Provides:
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from typing import Optional
 
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+from backend.config import get_settings
 from backend.db.session import get_db
 from backend.models.user import User
 from backend.utils.auth import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+settings = get_settings()
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[f"{settings.rate_limit_per_minute}/minute"],
+)
 
 
 async def get_current_user(

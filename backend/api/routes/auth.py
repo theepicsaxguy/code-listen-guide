@@ -9,13 +9,17 @@ Provides endpoints for:
 - Logout (token invalidation placeholder)
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timedelta
 
-from backend.api.dependencies import get_current_user
-from backend.api.schemas.user import UserCreate, UserResponse, TokenResponse
+from backend.api.dependencies import get_current_user, limiter
+from backend.api.schemas.user import (
+    TokenRefreshRequest,
+    UserCreate,
+    UserResponse,
+    TokenResponse,
+)
 from backend.db.session import get_db
 from backend.models.user import User
 from backend.utils.auth import (
@@ -35,7 +39,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+async def register(
+    request: Request,
+    user_data: UserCreate,
+    db: Session = Depends(get_db),
+):
     """
     Register a new user.
 
@@ -99,7 +108,12 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+async def login(
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
     """
     Login user and return JWT tokens.
 
@@ -146,7 +160,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 
 
 @router.post("/logout")
-async def logout(token: str = Depends(oauth2_scheme)):
+async def logout(request: Request, token: str = Depends(oauth2_scheme)):
     """
     Logout user (invalidate token).
 
@@ -169,7 +183,7 @@ async def logout(token: str = Depends(oauth2_scheme)):
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: User = Depends(get_current_user)):
+async def get_me(request: Request, current_user: User = Depends(get_current_user)):
     """
     Get current authenticated user.
 
@@ -183,7 +197,12 @@ async def get_me(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+async def refresh_token(
+    request: Request,
+    payload: TokenRefreshRequest,
+    db: Session = Depends(get_db),
+):
     """
     Refresh access token using refresh token.
 
@@ -191,7 +210,7 @@ async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     Optionally rotates refresh token for enhanced security.
 
     Args:
-        refresh_token: JWT refresh token
+        payload: TokenRefreshRequest containing the refresh token
         db: Database session
 
     Returns:
@@ -201,6 +220,8 @@ async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
         HTTPException: 401 if refresh token is invalid
     """
     # Verify token type
+    refresh_token = payload.refresh_token
+
     if not verify_token_type(refresh_token, "refresh"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
