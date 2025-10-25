@@ -115,7 +115,9 @@ class TestJobRoutes:
     ):
         headers, user = auth_header()
         create_job(user=user, repo_url="https://github.com/user/alpha")
-        create_job(user=user, repo_url="https://github.com/user/beta", status="completed")
+        create_job(
+            user=user, repo_url="https://github.com/user/beta", status="completed"
+        )
         response = test_client.get("/api/v1/jobs", headers=headers)
         assert response.status_code == status.HTTP_200_OK
         payload = response.json()
@@ -152,10 +154,7 @@ class TestJobRoutes:
         job = create_job(user=user, status="completed")
         response = test_client.post(f"/api/v1/jobs/{job.id}/start", headers=headers)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert (
-            response.json()["detail"]
-            == "Job cannot be started in current status"
-        )
+        assert response.json()["detail"] == "Job cannot be started in current status"
 
     def test_start_job_without_auth_returns_401(self, test_client, create_job):
         job = create_job()
@@ -203,9 +202,7 @@ class TestOutlineRoutes:
         test_db.refresh(job)
         assert job.status == "waiting_approval"
 
-    def test_generate_outline_missing_job_returns_404(
-        self, test_client, auth_header
-    ):
+    def test_generate_outline_missing_job_returns_404(self, test_client, auth_header):
         headers, _ = auth_header()
         response = test_client.post(
             f"/api/v1/jobs/{uuid.uuid4()}/outline",
@@ -358,7 +355,9 @@ class TestPaymentRoutes:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json()["detail"] == "Job already completed"
 
-    def test_create_payment_intent_requires_authentication(self, test_client, create_job):
+    def test_create_payment_intent_requires_authentication(
+        self, test_client, create_job
+    ):
         job = create_job()
         response = test_client.post(
             "/api/v1/payments/create-intent",
@@ -506,9 +505,7 @@ class TestPlayerRoutes:
             fake_generate_presigned_url,
         )
 
-        response = test_client.get(
-            f"/api/v1/player/{job.id}/download/full"
-        )
+        response = test_client.get(f"/api/v1/player/{job.id}/download/full")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["download_url"].startswith("https://signed.example.com/")

@@ -82,9 +82,7 @@ def persist_outline(
     try:
         normalized_job_id = job_id if isinstance(job_id, UUID) else UUID(str(job_id))
         outline = (
-            session.query(Outline)
-            .filter(Outline.job_id == normalized_job_id)
-            .first()
+            session.query(Outline).filter(Outline.job_id == normalized_job_id).first()
         )
         if outline is None:
             outline = Outline(job_id=normalized_job_id, outline_data={})

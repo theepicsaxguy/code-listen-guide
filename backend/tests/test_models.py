@@ -355,7 +355,10 @@ class TestUsageLogModel:
         job = create_job()
 
         log = UsageLog(
-            job_id=job.id, service_type="openai_responses", tokens_used=1000, cost_cents=25
+            job_id=job.id,
+            service_type="openai_responses",
+            tokens_used=1000,
+            cost_cents=25,
         )
 
         test_db.add(log)

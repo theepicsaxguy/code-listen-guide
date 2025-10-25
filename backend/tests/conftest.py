@@ -40,9 +40,7 @@ from backend.utils.auth import (
 )
 
 if not hasattr(bcrypt, "__about__"):
-    bcrypt.__about__ = SimpleNamespace(
-        __version__=getattr(bcrypt, "__version__", "0")
-    )
+    bcrypt.__about__ = SimpleNamespace(__version__=getattr(bcrypt, "__version__", "0"))
 
 _native_hashpw = bcrypt.hashpw
 
@@ -114,9 +112,9 @@ def test_db_engine():
         },
         poolclass=StaticPool,
         json_serializer=lambda value: json.dumps(value),
-        json_deserializer=lambda value: json.loads(value)
-        if isinstance(value, str)
-        else value,
+        json_deserializer=lambda value: (
+            json.loads(value) if isinstance(value, str) else value
+        ),
         echo=False,
     )
 
@@ -149,6 +147,7 @@ def test_db(test_db_engine) -> Generator[Session, None, None]:
 @pytest.fixture
 def override_get_db(test_db):
     """Override the get_db dependency for FastAPI testing."""
+
     def _override_get_db():
         try:
             yield test_db
@@ -420,9 +419,7 @@ def create_user(test_db):
             get_password_hash(password),
         )
         user_data = {
-            "email": kwargs.pop(
-                "email", f"user-{uuid.uuid4().hex}@example.com"
-            ),
+            "email": kwargs.pop("email", f"user-{uuid.uuid4().hex}@example.com"),
             "name": "Test User",
             "hashed_password": hashed,
             "subscription_tier": "free",
@@ -507,6 +504,8 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
 # Allow JSONB columns to compile under SQLite for tests
 @compiles(JSONB, "sqlite")
 def compile_jsonb(element, compiler, **kwargs):
@@ -516,4 +515,3 @@ def compile_jsonb(element, compiler, **kwargs):
 @compiles(ARRAY, "sqlite")
 def compile_array(element, compiler, **kwargs):
     return "JSON"
-

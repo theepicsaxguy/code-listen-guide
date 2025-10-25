@@ -33,11 +33,7 @@ router = APIRouter(prefix="/api/v1/jobs/{job_id}/outline", tags=["outlines"])
 
 
 def _get_job_for_user(db: Session, job_id: uuid.UUID, user_id: uuid.UUID) -> Job | None:
-    return (
-        db.query(Job)
-        .filter(Job.id == job_id, Job.user_id == user_id)
-        .first()
-    )
+    return db.query(Job).filter(Job.id == job_id, Job.user_id == user_id).first()
 
 
 def _get_outline_for_job(db: Session, job_id: uuid.UUID) -> Outline | None:
