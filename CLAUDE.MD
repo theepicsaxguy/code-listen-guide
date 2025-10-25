@@ -1401,7 +1401,7 @@ api_key = settings.ANTHROPIC_API_KEY
 
 **File:** `backend/services/script_generator.py`
 **Status:** 0% complete (TODO)
-**Dependencies:** `anthropic` or `azure-ai-openai`
+**Dependencies:** `anthropic` or `openai`
 
 **What needs to be done:**
 1. Initialize LLM client (Claude or Azure OpenAI)

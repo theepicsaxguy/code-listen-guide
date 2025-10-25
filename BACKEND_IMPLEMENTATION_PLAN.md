@@ -133,7 +133,7 @@ backend/
 
 ```
 pip install agent-framework --pre
-pip install azure-identity azure-ai-openai
+pip install azure-identity
 pip install anthropic openai boto3 stripe tree-sitter
 pip install opentelemetry-api opentelemetry-sdk opentelemetry-instrumentation-fastapi
 ```
