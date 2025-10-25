@@ -1739,7 +1739,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - run: pip install pytest pytest-asyncio
       - run: pytest
 ```
@@ -1949,7 +1949,7 @@ npm install --legacy-peer-deps
 # Reinstall dependencies
 pip install -r requirements.txt --force-reinstall
 
-# Check Python version (must be 3.11+)
+# Check Python version (must be 3.12)
 python --version
 ```
 

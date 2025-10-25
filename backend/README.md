@@ -80,7 +80,7 @@ backend/
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.12
 - PostgreSQL 15+ (required for production; local development defaults to SQLite)
 - FFmpeg (for audio processing)
 - libxml2-dev and libxslt1-dev (required to build the `lxml` dependency used by Docling)
