@@ -9,10 +9,17 @@ Tests for:
 - Player routes
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-from datetime import datetime
 import json
+from datetime import datetime
+from typing import Dict
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from backend.api.dependencies import get_current_user
+from backend.main import app
+from backend.models.outline import Outline
+from backend.models.payment import Payment
 
 
 @pytest.mark.api
@@ -178,26 +185,153 @@ class TestJobRoutes:
 class TestOutlineRoutes:
     """Test outline generation and approval endpoints."""
 
-    def test_generate_outline(self, test_client, create_job):
-        """Test generating chapter outline."""
-        job = create_job()
+    def test_generate_outline_creates_record(
+        self,
+        test_client,
+        test_db,
+        create_job,
+        create_user,
+        sample_outline_data,
+        monkeypatch,
+    ):
+        """Generating an outline stores the normalized data and updates job state."""
 
-        response = test_client.post(
-            f"/api/v1/jobs/{job.id}/outline",
-            json={"analysis_data": {"structure": {"file_count": 50}}},
+        user = create_user()
+        job = create_job(user=user)
+
+        async def fake_generate_outline(
+            analysis_data: Dict[str, object], depth_tier: str, job_id: str
+        ) -> Dict[str, object]:
+            return sample_outline_data
+
+        monkeypatch.setattr(
+            "backend.api.routes.outlines.run_outline_generator",
+            fake_generate_outline,
         )
 
-        assert response.status_code in [200, 201, 401, 404, 422, 500]
+        app.dependency_overrides[get_current_user] = lambda: user
+        try:
+            response = test_client.post(
+                f"/api/v1/jobs/{job.id}/outline",
+                json={"analysis_data": {"structure": {"file_count": 50}}},
+            )
+        finally:
+            app.dependency_overrides.pop(get_current_user, None)
 
-    def test_update_outline(self, test_client, create_job, sample_outline_data):
-        """Test updating chapter outline."""
-        job = create_job()
+        assert response.status_code == 201
+        body = response.json()
+        assert body["job_id"] == str(job.id)
+        assert body["outline_data"]["total_chapters"] == 2
 
-        response = test_client.put(
-            f"/api/v1/jobs/{job.id}/outline", json={"outline_data": sample_outline_data}
+        outline = (
+            test_db.query(Outline).filter(Outline.job_id == job.id).one()
+        )
+        assert outline.user_approved is False
+        assert outline.outline_data["total_estimated_duration_minutes"] == 40
+
+        test_db.refresh(job)
+        assert job.status == "waiting_approval"
+
+    def test_update_outline_persists_changes(
+        self,
+        test_client,
+        test_db,
+        create_job,
+        create_user,
+        sample_outline_data,
+    ):
+        """Updating an outline saves modifications and resets approval flags."""
+
+        user = create_user()
+        job = create_job(user=user)
+        outline = Outline(job_id=job.id, outline_data=sample_outline_data)
+        test_db.add(outline)
+        test_db.commit()
+        test_db.refresh(outline)
+
+        update_payload = {
+            "outline_data": {
+                "chapters": sample_outline_data["chapters"],
+                "total_estimated_duration_minutes": 45,
+                "total_chapters": 2,
+            },
+            "user_modifications": {"notes": "Add more detail"},
+        }
+
+        app.dependency_overrides[get_current_user] = lambda: user
+        try:
+            response = test_client.put(
+                f"/api/v1/jobs/{job.id}/outline", json=update_payload
+            )
+        finally:
+            app.dependency_overrides.pop(get_current_user, None)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["outline_data"]["total_estimated_duration_minutes"] == 45
+        assert data["user_modifications"] == {"notes": "Add more detail"}
+
+        test_db.refresh(outline)
+        assert outline.user_modifications == {"notes": "Add more detail"}
+        assert outline.user_approved is False
+
+    def test_approve_outline_creates_payment_intent(
+        self,
+        test_client,
+        test_db,
+        create_job,
+        create_user,
+        sample_outline_data,
+        monkeypatch,
+    ):
+        """Approving an outline marks it approved and initiates payment collection."""
+
+        user = create_user()
+        job = create_job(user=user)
+        outline = Outline(job_id=job.id, outline_data=sample_outline_data)
+        test_db.add(outline)
+        test_db.commit()
+        test_db.refresh(outline)
+
+        class DummyIntent:
+            def __init__(self, amount: int):
+                self.id = "pi_test_123"
+                self.client_secret = "secret"
+                self.amount = amount
+                self.currency = "usd"
+                self.status = "requires_payment_method"
+
+        async def fake_create_payment_intent(**kwargs):
+            return DummyIntent(kwargs["amount_cents"])
+
+        monkeypatch.setattr(
+            "backend.api.routes.outlines.create_payment_intent",
+            fake_create_payment_intent,
         )
 
-        assert response.status_code in [200, 401, 404, 422, 500]
+        app.dependency_overrides[get_current_user] = lambda: user
+        try:
+            response = test_client.post(
+                f"/api/v1/jobs/{job.id}/outline/approve",
+                json={"outline_id": str(outline.id)},
+            )
+        finally:
+            app.dependency_overrides.pop(get_current_user, None)
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["payment_intent_id"] == "pi_test_123"
+
+        test_db.refresh(outline)
+        assert outline.user_approved is True
+        assert outline.approved_at is not None
+
+        payment = (
+            test_db.query(Payment)
+            .filter(Payment.job_id == job.id)
+            .one()
+        )
+        assert payment.amount_cents == payload["amount_cents"]
 
     def test_approve_outline(self, test_client, create_job):
         """Test approving outline and proceeding to payment."""

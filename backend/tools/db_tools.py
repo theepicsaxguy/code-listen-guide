@@ -1,7 +1,7 @@
 import json
 import math
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -72,20 +72,39 @@ def mark_job_status(job_id: str, status: str, stage: Optional[str]) -> None:
         db.commit()
 
 
-def persist_outline(job_id: str, outline_payload: str) -> None:
-    with _session() as db:
-        outline = db.query(Outline).filter(Outline.job_id == job_id).first()
+def persist_outline(
+    job_id: str,
+    outline_payload: Union[str, Dict[str, Any]],
+    db: Optional[Session] = None,
+) -> Outline:
+    owns_session = db is None
+    session = db or _session()
+    try:
+        outline = session.query(Outline).filter(Outline.job_id == job_id).first()
         if outline is None:
             outline = Outline(job_id=job_id, outline_data={})
-            db.add(outline)
-        try:
-            parsed = json.loads(outline_payload)
-        except json.JSONDecodeError:
-            parsed = {"raw": outline_payload}
+            session.add(outline)
+        if isinstance(outline_payload, str):
+            try:
+                parsed = json.loads(outline_payload)
+            except json.JSONDecodeError:
+                parsed = {"raw": outline_payload}
+        else:
+            parsed = outline_payload
         outline.outline_data = parsed
         outline.user_approved = False
+        outline.user_modifications = None
         outline.approved_at = None
-        db.commit()
+        session.flush()
+        if owns_session:
+            session.commit()
+            session.refresh(outline)
+        else:
+            session.refresh(outline)
+        return outline
+    finally:
+        if owns_session:
+            session.close()
 
 
 def load_approved_outline(job_id: str) -> Optional[Outline]:

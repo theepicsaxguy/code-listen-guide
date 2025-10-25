@@ -168,6 +168,12 @@ backend/
 - `PUT /api/v1/jobs/{job_id}/outline` - Update outline
 - `POST /api/v1/jobs/{job_id}/outline/approve` - Approve and pay
 
+Clients submit repository analysis JSON to the generation endpoint. The backend runs the outline agent, normalizes chapter
+durations, persists the outline, and moves the job into the `waiting_approval` stage. Updates accept the full outline payload
+plus optional `user_modifications`, reset approval flags, and overwrite the stored JSON. Approvals require an `outline_id` and
+return a Stripe payment intent; if a successful payment already exists the workflow resumes immediately after the outline is
+marked as approved.
+
 ### Payments
 - `POST /api/v1/payments/create-intent` - Create payment intent
 - `POST /api/v1/payments/webhook` - Stripe webhook handler
