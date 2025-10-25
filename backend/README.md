@@ -176,6 +176,22 @@ Every clone runs in an isolated temporary directory. The helper sets `GIT_TERMIN
 - Standard security headers (CSP, HSTS, Referrer-Policy, Permissions-Policy, X-Frame-Options, X-Content-Type-Options) are applied to every response.
 - A shared rate limiter enforces per-client quotas using SlowAPI, with tighter limits on registration, login, and token refresh endpoints.
 
+### Rate limiting configuration
+
+The limiter uses SlowAPI’s storage adapters so every worker applies the same counters.
+
+- `RATE_LIMIT_STORAGE_URI` selects the backend. Use a shared store such as Redis (`redis://cache.example.com:6379/0`) or Memcached (`memcached://cache.example.com:11211`). The default `memory://` is fine for local development but will not persist counters across processes.
+- `RATE_LIMIT_STORAGE_OPTIONS` accepts a JSON object for adapter-specific settings. For Redis we set `{"key_prefix": "cba-rate-limit"}` in staging to isolate counters.
+
+To validate the configuration in staging:
+
+1. Point the environment variables above at the shared cache and restart the deployment so every worker loads the new settings.
+2. Open two shells and send bursts of authenticated requests through the load balancer, for example:
+   ```bash
+   hey -n 40 -c 5 -H "Authorization: Bearer <token>" https://staging.codebaseaudiobook.com/api/v1/auth/me
+   ```
+3. Observe `429 Too Many Requests` responses appearing once the shared limit is exceeded. The responses should arrive even if the load balancer routes you to different workers, confirming that the backend store keeps counters in sync.
+
 ### Jobs
 - `POST /api/v1/jobs` - Create new audiobook job
 - `GET /api/v1/jobs` - List user's jobs
