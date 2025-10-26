@@ -94,6 +94,34 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Verify frontend dev server starts
+        run: |
+          set -euo pipefail
+          npm run dev -- --host 127.0.0.1 --port 4173 >frontend-dev.log 2>&1 &
+          DEV_PID=$!
+          trap 'kill $DEV_PID 2>/dev/null || true' EXIT
+          started=0
+          for attempt in $(seq 1 30); do
+            if curl -sSf http://127.0.0.1:4173/ >/dev/null; then
+              started=1
+              break
+            fi
+            if ! kill -0 $DEV_PID 2>/dev/null; then
+              cat frontend-dev.log
+              echo "Frontend dev server exited unexpectedly"
+              exit 1
+            fi
+            sleep 2
+          done
+          if [ "$started" -ne 1 ]; then
+            cat frontend-dev.log
+            echo "Frontend dev server did not respond in time"
+            exit 1
+          fi
+          trap - EXIT
+          kill $DEV_PID
+          wait $DEV_PID || true
+
   backend:
     name: Backend Tests
     needs: changes
@@ -125,6 +153,35 @@ jobs:
           cd backend
           python -m pip install -U pip setuptools wheel
           python -m pip install -U -r requirements.txt
+
+      - name: Verify backend server starts
+        run: |
+          set -euo pipefail
+          cd backend
+          uvicorn backend.main:app --host 127.0.0.1 --port 8000 --log-level warning >backend-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          started=0
+          for attempt in $(seq 1 30); do
+            if curl -sSf http://127.0.0.1:8000/docs >/dev/null; then
+              started=1
+              break
+            fi
+            if ! kill -0 $SERVER_PID 2>/dev/null; then
+              cat backend-server.log
+              echo "Backend server exited unexpectedly"
+              exit 1
+            fi
+            sleep 2
+          done
+          if [ "$started" -ne 1 ]; then
+            cat backend-server.log
+            echo "Backend server did not respond in time"
+            exit 1
+          fi
+          trap - EXIT
+          kill $SERVER_PID
+          wait $SERVER_PID || true
 
       - name: Run unit tests
         run: |
