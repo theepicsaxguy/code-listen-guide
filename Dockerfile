@@ -8,7 +8,7 @@ FROM node:${NODE_VERSION} AS frontend-build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY tsconfig.json tsconfig.node.json tsconfig.app.json vite.config.ts postcss.config.js tailwind.config.ts eslint.config.js components.json ./
+COPY index.html tsconfig.json tsconfig.node.json tsconfig.app.json vite.config.ts postcss.config.js tailwind.config.ts eslint.config.js components.json ./
 COPY public ./public
 COPY src ./src
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
