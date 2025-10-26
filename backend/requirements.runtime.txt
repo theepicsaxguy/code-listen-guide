@@ -24,5 +24,5 @@ tree-sitter-typescript==0.23.2
 gitpython==3.1.45
 pydub==0.25.1
 docling==2.58.0
-docling-core==2.7.3
+docling-core==3.0.0
 slowapi==0.1.9
