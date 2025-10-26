@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.19
 
-ARG PYTHON_VERSION=3.11.11-slim
+ARG PYTHON_VERSION=3.14.0-slim
 ARG NODE_VERSION=22.21.0-bookworm-slim
 ARG VITE_API_BASE_URL=/api/v1
 
