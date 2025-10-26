@@ -37,6 +37,7 @@ code-listen-guide/
 ### Frontend snapshot
 - **Stack:** Vite, React 19, TypeScript, Tailwind, shadcn/ui.
 - **Focus:** Display job progress, surface chapter outlines, and host the audiobook player.
+- **Admin tools:** Dedicated dashboard with user, payment, content versioning, tracing, and support consoles powered by React Query.
 - **Key scripts:**
   - `npm install` – install dependencies
   - `npm run dev` – start the Vite dev server at <http://localhost:4173>
