@@ -30,6 +30,12 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Ensure proper MIME types for assets
+    location ~* \.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
     location / {
         try_files $uri /index.html;
     }
