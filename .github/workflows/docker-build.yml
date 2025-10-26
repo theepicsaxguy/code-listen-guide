@@ -6,23 +6,6 @@ concurrency:
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'Dockerfile.frontend'
-      - 'backend/Dockerfile'
-      - 'src/**'
-      - 'public/**'
-      - 'components.json'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig*.json'
-      - 'vite.config.ts'
-      - 'tailwind.config.ts'
-      - 'postcss.config.js'
-      - 'eslint.config.js'
-      - 'backend/**'
-      - '.github/workflows/docker-build.yml'
   pull_request:
     branches: [main]
     paths:
@@ -44,6 +27,9 @@ on:
 jobs:
   changes:
     name: Detect Changes
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'build')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
