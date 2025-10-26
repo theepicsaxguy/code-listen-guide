@@ -117,7 +117,20 @@ class ApiClient {
   }
 
   async getJobs(params?: { status?: string; limit?: number; page?: number }) {
-    const query = new URLSearchParams(params as any).toString();
+    // Backend expects 'offset' and 'status_filter', not 'page' and 'status'
+    const backendParams: Record<string, string> = {};
+    if (params?.status) {
+      backendParams.status_filter = params.status;
+    }
+    if (params?.limit !== undefined) {
+      backendParams.limit = String(params.limit);
+    }
+    if (params?.page !== undefined) {
+      // Convert page to offset (page starts at 1, offset at 0)
+      const limit = params.limit || 10;
+      backendParams.offset = String((params.page - 1) * limit);
+    }
+    const query = new URLSearchParams(backendParams).toString();
     return this.request<{ jobs: any[]; total: number; page: number }>(`/jobs${query ? `?${query}` : ''}`);
   }
 
@@ -138,15 +151,18 @@ class ApiClient {
   }
 
   async updateOutline(jobId: string, outlineId: string, data: any) {
-    return this.request(`/jobs/${jobId}/outline/${outlineId}`, {
+    // Backend expects outline data in request body, not outlineId in URL path
+    return this.request(`/jobs/${jobId}/outline`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async approveOutline(jobId: string, outlineId: string) {
-    return this.request(`/jobs/${jobId}/outline/${outlineId}/approve`, {
+    // Backend expects outline_id in request body, not in URL path
+    return this.request(`/jobs/${jobId}/outline/approve`, {
       method: 'POST',
+      body: JSON.stringify({ outline_id: outlineId }),
     });
   }
 
@@ -168,7 +184,8 @@ class ApiClient {
   }
 
   async getDownloadUrl(jobId: string, deliverableType: string) {
-    return this.request(`/jobs/${jobId}/download/${deliverableType}`);
+    // Backend route is under /player prefix, not /jobs
+    return this.request(`/player/${jobId}/download/${deliverableType}`);
   }
 }
 
