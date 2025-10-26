@@ -13,7 +13,7 @@ export const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center px-6 py-24 overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center px-6 py-24 pt-32 md:pt-24 overflow-hidden">
       {/* Gradient background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
       <div className="absolute top-1/4 -left-48 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
