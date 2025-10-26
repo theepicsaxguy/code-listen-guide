@@ -36,7 +36,7 @@ settings = get_settings()
 
 
 @router.post("/create-intent", response_model=PaymentIntentResponse)
-async def create_payment_intent(
+async def create_payment_intent_route(
     payment_data: PaymentIntentCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

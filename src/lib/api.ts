@@ -100,6 +100,15 @@ class ApiClient {
     this.setToken(null);
   }
 
+  async refreshToken(refreshToken: string) {
+    const data = await this.request<{ access_token: string; refresh_token: string; token_type: string; expires_in: number }>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    this.setToken(data.access_token);
+    return data;
+  }
+
   async getMe() {
     return this.request('/auth/me');
   }
@@ -117,7 +126,20 @@ class ApiClient {
   }
 
   async getJobs(params?: { status?: string; limit?: number; page?: number }) {
-    const query = new URLSearchParams(params as any).toString();
+    // Backend expects 'offset' and 'status_filter', not 'page' and 'status'
+    const backendParams: Record<string, string> = {};
+    if (params?.status) {
+      backendParams.status_filter = params.status;
+    }
+    if (params?.limit !== undefined) {
+      backendParams.limit = String(params.limit);
+    }
+    if (params?.page !== undefined) {
+      // Convert page to offset (page starts at 1, offset at 0)
+      const limit = params.limit || 10;
+      backendParams.offset = String((params.page - 1) * limit);
+    }
+    const query = new URLSearchParams(backendParams).toString();
     return this.request<{ jobs: any[]; total: number; page: number }>(`/jobs${query ? `?${query}` : ''}`);
   }
 
@@ -129,6 +151,13 @@ class ApiClient {
     return this.request(`/jobs/${jobId}`, { method: 'DELETE' });
   }
 
+  async estimateJobCost(repoUrl: string, depthTier: string) {
+    return this.request<{ estimated_cost_cents: number; estimated_time_minutes: number }>('/jobs/estimate', {
+      method: 'POST',
+      body: JSON.stringify({ repo_url: repoUrl, depth_tier: depthTier }),
+    });
+  }
+
   // Outline endpoints
   async generateOutline(jobId: string, data: { repo_url: string; depth_tier: string }) {
     return this.request(`/jobs/${jobId}/outline`, {
@@ -138,15 +167,18 @@ class ApiClient {
   }
 
   async updateOutline(jobId: string, outlineId: string, data: any) {
-    return this.request(`/jobs/${jobId}/outline/${outlineId}`, {
+    // Backend expects outline data in request body, not outlineId in URL path
+    return this.request(`/jobs/${jobId}/outline`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async approveOutline(jobId: string, outlineId: string) {
-    return this.request(`/jobs/${jobId}/outline/${outlineId}/approve`, {
+    // Backend expects outline_id in request body, not in URL path
+    return this.request(`/jobs/${jobId}/outline/approve`, {
       method: 'POST',
+      body: JSON.stringify({ outline_id: outlineId }),
     });
   }
 
@@ -168,7 +200,8 @@ class ApiClient {
   }
 
   async getDownloadUrl(jobId: string, deliverableType: string) {
-    return this.request(`/jobs/${jobId}/download/${deliverableType}`);
+    // Backend route is under /player prefix, not /jobs
+    return this.request(`/player/${jobId}/download/${deliverableType}`);
   }
 }
 
