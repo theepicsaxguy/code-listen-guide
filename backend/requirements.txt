@@ -26,7 +26,7 @@ pydub==0.25.1
 docling==2.58.0
 docling-core==3.0.0
 slowapi==0.1.9
-pytest==8.3.4
+pytest==8.4.2
 pytest-asyncio==1.2.0
 pytest-cov==7.0.0
 fakeredis==2.26.2
