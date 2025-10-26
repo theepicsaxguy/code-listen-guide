@@ -73,6 +73,7 @@ The Docker setup consists of two main services:
 - **Base Image**: Node 22.12.0 (build), Nginx 1.29-alpine (runtime)
 - **Build Process**: Multi-stage build with deps, build, and production stages
 - **Port**: 8080 (mapped to 8081 on host)
+- **Reverse Proxy**: Requests to `/api/` are forwarded to the backend service at `http://backend:8000`
 - **Healthcheck**: HTTP check on root endpoint
 - **User**: Runs as non-root `nginx` user
 
