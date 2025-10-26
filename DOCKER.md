@@ -13,19 +13,7 @@ This guide explains how to build and run the Codebase Audiobook application usin
 
 ### 1. Environment Configuration
 
-The Compose file now ships with a committed `backend/.env.docker` that keeps the stack bootable without any manual setup. It uses SQLite, placeholder API keys, and in-memory rate limiting so `docker compose up` works straight away.
-
-Add your own credentials once you are ready to exercise real integrations:
-
-```bash
-# Optional: override the defaults with your own env file
-cp backend/.env.example backend/.env.local
-
-# Point Compose at it before launching
-export BACKEND_ENV_FILE=backend/.env.local
-```
-
-Edit the file you created with your production database URL, LLM credentials, Stripe keys, and storage configuration. The backend will pick up every value on container start.
+The Compose stack includes `backend/.env.docker`, which mirrors the production wiring. It pins the API base path to `/api/v1`, points at the bundled Postgres and Redis services, and sets every required secret so containers fail fast if configuration drifts. Update the file before launching if you need to supply real credentials for Anthropic, Stripe, or AWS. Every container reads the same values—no local overrides or environment-specific exceptions.
 
 ### 2. Build and Run
 
@@ -41,9 +29,8 @@ docker compose up -d
 ```
 
 The application will be available at:
-- **Frontend**: http://localhost:8081
-- **Backend API**: http://localhost:8001
-- **API Documentation**: http://localhost:8001/docs
+- **Web app and API**: http://localhost:8080
+- **API Documentation**: http://localhost:8080/docs
 
 ### 3. Stop the Services
 
@@ -65,17 +52,22 @@ The Docker setup consists of two main services:
 ### Backend Service
 - **Base Image**: Python 3.11.11-slim
 - **Build Process**: Multi-stage build with separate build and runtime stages
-- **Port**: 8000 (mapped to 8001 on host)
+- **Port**: 8000 (internal only, traffic arrives through the proxy)
 - **Healthcheck**: HTTP check on `/health` endpoint
 - **User**: Runs as non-root `app` user for security
 
 ### Frontend Service
 - **Base Image**: Node 22.12.0 (build), Nginx 1.29-alpine (runtime)
 - **Build Process**: Multi-stage build with deps, build, and production stages
-- **Port**: 8080 (mapped to 8081 on host)
+- **Port**: 8080 (exposed on the host)
 - **Reverse Proxy**: Requests to `/api/` are forwarded to the backend service at `http://backend:8000`
 - **Healthcheck**: HTTP check on root endpoint
 - **User**: Runs as non-root `nginx` user
+
+### Redis Service
+- **Base Image**: Redis 7.4-alpine
+- **Purpose**: Provides shared state for WebSocket coordination and rate limiting backends that require Redis semantics
+- **Port**: Internal only; the proxy and backend share it over the Compose network
 
 ## Configuration
 
@@ -83,35 +75,31 @@ The Docker setup consists of two main services:
 
 #### Backend Environment (`backend/.env.docker`)
 
-The checked-in defaults look like this:
+The committed defaults pin every required value to a deterministic setting:
 ```bash
-# Database (SQLite for local dev)
-DATABASE_URL=sqlite:///./backend_dev.db
-CHECKPOINT_DATABASE_URL=sqlite:///./backend_dev.db
-
-# LLM Provider (placeholders; add your own keys)
+ENVIRONMENT=production
+DATABASE_URL=postgresql://audiobook:audiobook_dev_password@postgres:5432/audiobook
+CHECKPOINT_DATABASE_URL=postgresql://audiobook:audiobook_dev_password@postgres:5432/audiobook
+API_BASE_URL=http://localhost:8080/api/v1
+JWT_SECRET=development-secret
 ANTHROPIC_API_KEY=dev-anthropic-key
 OPENAI_RESPONSES_MODEL=gpt-4o-mini
-
-# Storage (swap in your cloud credentials)
+STRIPE_SECRET_KEY=sk_test_placeholder
+STRIPE_WEBHOOK_SECRET=whsec_placeholder
+STRIPE_PUBLISHABLE_KEY=pk_test_placeholder
 AWS_ACCESS_KEY_ID=dev-access-key
 AWS_SECRET_ACCESS_KEY=dev-secret-key
 S3_BUCKET_NAME=codebase-audiobooks
 S3_REGION=us-east-1
-
-# Payments (Stripe test placeholders)
-STRIPE_SECRET_KEY=sk_test_placeholder
-STRIPE_WEBHOOK_SECRET=whsec_placeholder
-STRIPE_PUBLISHABLE_KEY=pk_test_placeholder
+REDIS_URL=redis://redis:6379/0
+RATE_LIMIT_STORAGE_URI=memory://
 ```
 
-See `backend/.env.example` for the complete list of knobs, or create your own file and set `BACKEND_ENV_FILE` to point Compose at it.
+Adjust the file with production-grade secrets before deploying anywhere outside local development. The backend fails during startup if any required value is missing or points at an unsupported datastore.
 
-#### Frontend Environment (`.env`)
+#### Frontend Build Arguments
 
-```bash
-VITE_API_BASE_URL=http://localhost:8001/api/v1
-```
+The frontend never reaches across origins. `Dockerfile.frontend` bakes a single value—`VITE_API_BASE_PATH=/api/v1`—into the bundle so all browser requests reuse the same origin and port that served the web app.
 
 ### Docker Compose Configuration
 
@@ -122,7 +110,7 @@ The `docker-compose.yml` file includes:
 - **Dependency ordering**: Frontend waits for backend to be healthy
 - **Restart policy**: Services restart automatically unless manually stopped
 - **Environment files**: Backend loads `backend/.env.docker` by default (override with `BACKEND_ENV_FILE`)
-- **Frontend build args**: Compose forwards `VITE_API_BASE_URL` into the frontend build so the generated bundle targets the correct API host. Export `VITE_API_BASE_URL` before running `docker compose build frontend` if you need the image to point at a different backend.
+- **Frontend build args**: Compose bakes `VITE_API_BASE_PATH=/api/v1` into the frontend build so every browser request stays on the same origin.
 
 ## Development Workflow
 
@@ -197,9 +185,9 @@ Most common issues:
 **Problem**: Frontend shows "Cannot connect to backend"
 
 **Solution**:
-1. Check that backend is healthy: `docker compose ps`
-2. Verify VITE_API_BASE_URL points to correct host
-3. For browser access, use: `VITE_API_BASE_URL=http://localhost:8001/api/v1`
+1. Confirm the proxy is healthy: `docker compose ps frontend`
+2. Hit the health endpoint through the proxy: `curl http://localhost:8080/api/v1/health`
+3. If that works, refresh the browser so it picks up the same-origin `/api/` path baked into the bundle.
 
 ### Permission Issues
 
@@ -215,7 +203,7 @@ docker compose exec -u root backend bash
 
 **Problem**: Services can't communicate
 
-**Solution**: Services use Docker's internal network. The backend should reference the frontend as `http://frontend:8080`, not `http://localhost:8081`.
+**Solution**: Services use Docker's internal network. The frontend proxies `/api/` to `http://backend:8000`, so containers should never reference `localhost` when talking to each other.
 
 ## Production Deployment
 

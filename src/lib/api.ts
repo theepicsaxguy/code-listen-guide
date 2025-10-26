@@ -1,23 +1,13 @@
 // API Client for Backend Communication
 
-const resolveApiBaseUrl = () => {
-  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL;
-  if (configuredBaseUrl && configuredBaseUrl.trim().length > 0) {
-    return configuredBaseUrl;
+const API_BASE_PATH = (() => {
+  const configured = import.meta.env.VITE_API_BASE_PATH ?? '/api/v1';
+  const trimmed = configured.trim();
+  if (!trimmed.startsWith('/')) {
+    throw new Error('VITE_API_BASE_PATH must be a path starting with "/"');
   }
-
-  if (typeof window === 'undefined') {
-    return 'http://localhost:8000/api/v1';
-  }
-
-  if (import.meta.env.DEV) {
-    return 'http://localhost:8000/api/v1';
-  }
-
-  return `${window.location.origin}/api/v1`;
-};
-
-const API_BASE_URL = resolveApiBaseUrl().replace(/\/$/, '');
+  return trimmed.replace(/\/$/, '');
+})();
 
 class ApiClient {
   private baseUrl: string;
@@ -222,4 +212,4 @@ class ApiClient {
   }
 }
 
-export const apiClient = new ApiClient(API_BASE_URL);
+export const apiClient = new ApiClient(API_BASE_PATH);
