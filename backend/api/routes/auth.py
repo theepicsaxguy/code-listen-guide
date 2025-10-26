@@ -11,6 +11,7 @@ Provides endpoints for:
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.api.dependencies import get_current_user, limiter
@@ -78,7 +79,8 @@ async def register(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     # Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    stmt = select(User).where(User.email == user_data.email)
+    existing_user = db.scalars(stmt).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
@@ -127,7 +129,8 @@ async def login(
         HTTPException: 401 if credentials are invalid
     """
     # Find user by email (username field in OAuth2 form)
-    user = db.query(User).filter(User.email == form_data.username).first()
+    stmt = select(User).where(User.email == form_data.username)
+    user = db.scalars(stmt).first()
 
     if not user:
         raise HTTPException(
@@ -235,7 +238,8 @@ async def refresh_token(
             )
 
         # Verify user exists
-        user = db.query(User).filter(User.id == user_id).first()
+        stmt = select(User).where(User.id == user_id)
+        user = db.scalars(stmt).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
