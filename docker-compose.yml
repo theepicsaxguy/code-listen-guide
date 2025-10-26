@@ -47,6 +47,8 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       target: production
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://backend:8000/api/v1}
     image: code-listen-guide-frontend:latest
     environment:
       VITE_API_BASE_URL: http://backend:8000/api/v1

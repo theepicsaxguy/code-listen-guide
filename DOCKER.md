@@ -121,6 +121,7 @@ The `docker-compose.yml` file includes:
 - **Dependency ordering**: Frontend waits for backend to be healthy
 - **Restart policy**: Services restart automatically unless manually stopped
 - **Environment files**: Backend loads `backend/.env.docker` by default (override with `BACKEND_ENV_FILE`)
+- **Frontend build args**: Compose forwards `VITE_API_BASE_URL` into the frontend build so the generated bundle targets the correct API host. Export `VITE_API_BASE_URL` before running `docker compose build frontend` if you need the image to point at a different backend.
 
 ## Development Workflow
 
