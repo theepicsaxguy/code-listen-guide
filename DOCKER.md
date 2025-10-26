@@ -13,20 +13,19 @@ This guide explains how to build and run the Codebase Audiobook application usin
 
 ### 1. Environment Configuration
 
-Before running the application, you need to configure environment variables:
+The Compose file now ships with a committed `backend/.env.docker` that keeps the stack bootable without any manual setup. It uses SQLite, placeholder API keys, and in-memory rate limiting so `docker compose up` works straight away.
+
+Add your own credentials once you are ready to exercise real integrations:
 
 ```bash
-# Copy the example environment files
-cp .env.example .env
-cp backend/.env.example backend/.env
+# Optional: override the defaults with your own env file
+cp backend/.env.example backend/.env.local
 
-# Edit backend/.env with your API keys and configuration
-# At minimum, you need to set:
-# - DATABASE_URL (or use SQLite for local testing)
-# - OPENAI_API_KEY or ANTHROPIC_API_KEY
-# - STRIPE_SECRET_KEY (for payment processing)
-# - AWS credentials (for audio storage)
+# Point Compose at it before launching
+export BACKEND_ENV_FILE=backend/.env.local
 ```
+
+Edit the file you created with your production database URL, LLM credentials, Stripe keys, and storage configuration. The backend will pick up every value on container start.
 
 ### 2. Build and Run
 
@@ -81,30 +80,31 @@ The Docker setup consists of two main services:
 
 ### Environment Variables
 
-#### Backend Environment (`backend/.env`)
+#### Backend Environment (`backend/.env.docker`)
 
-Required variables:
+The checked-in defaults look like this:
 ```bash
-# Database (use SQLite for local development)
-DATABASE_URL=sqlite:///./audiobook.db
+# Database (SQLite for local dev)
+DATABASE_URL=sqlite:///./backend_dev.db
+CHECKPOINT_DATABASE_URL=sqlite:///./backend_dev.db
 
-# LLM Provider (at least one required)
-OPENAI_API_KEY=sk-xxxxx
-# or
-ANTHROPIC_API_KEY=sk-ant-xxxxx
+# LLM Provider (placeholders; add your own keys)
+ANTHROPIC_API_KEY=dev-anthropic-key
+OPENAI_RESPONSES_MODEL=gpt-4o-mini
 
-# Storage (required for production)
-AWS_ACCESS_KEY_ID=xxxxx
-AWS_SECRET_ACCESS_KEY=xxxxx
+# Storage (swap in your cloud credentials)
+AWS_ACCESS_KEY_ID=dev-access-key
+AWS_SECRET_ACCESS_KEY=dev-secret-key
 S3_BUCKET_NAME=codebase-audiobooks
 S3_REGION=us-east-1
 
-# Payments (required for production)
-STRIPE_SECRET_KEY=sk_test_xxxxx
-STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+# Payments (Stripe test placeholders)
+STRIPE_SECRET_KEY=sk_test_placeholder
+STRIPE_WEBHOOK_SECRET=whsec_placeholder
+STRIPE_PUBLISHABLE_KEY=pk_test_placeholder
 ```
 
-See `backend/.env.example` for all available options.
+See `backend/.env.example` for the complete list of knobs, or create your own file and set `BACKEND_ENV_FILE` to point Compose at it.
 
 #### Frontend Environment (`.env`)
 
@@ -120,7 +120,7 @@ The `docker-compose.yml` file includes:
 - **Healthchecks**: Services include health checks for better orchestration
 - **Dependency ordering**: Frontend waits for backend to be healthy
 - **Restart policy**: Services restart automatically unless manually stopped
-- **Environment files**: Backend loads `backend/.env` automatically
+- **Environment files**: Backend loads `backend/.env.docker` by default (override with `BACKEND_ENV_FILE`)
 
 ## Development Workflow
 

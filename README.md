@@ -88,6 +88,8 @@ docker compose up
 
 The command maps the backend to `http://localhost:8000` and serves the compiled frontend through Nginx at `http://localhost:8080`. Both containers share the same network, so the UI talks to the API without extra wiring. Need to test local code changes instead of the published images? Uncomment the `build` sections in `docker-compose.yml` and run `docker compose up --build`.
 
+Compose feeds the backend with `backend/.env.docker` out of the box; point `BACKEND_ENV_FILE` at your own secrets file when you are ready to call real infrastructure.
+
 ## Development workflow
 
 1. **Clone the repo** and install frontend dependencies.
