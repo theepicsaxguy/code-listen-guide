@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: audiobook
+      POSTGRES_PASSWORD: audiobook_dev_password
+      POSTGRES_DB: audiobook
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U audiobook"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: .
@@ -8,10 +25,15 @@ services:
     environment:
       ENVIRONMENT: production
       FRONTEND_URL: http://frontend:8080
+      DATABASE_URL: postgresql://audiobook:audiobook_dev_password@postgres:5432/audiobook
+      CHECKPOINT_DATABASE_URL: postgresql://audiobook:audiobook_dev_password@postgres:5432/audiobook
     env_file:
       - ${BACKEND_ENV_FILE:-backend/.env.docker}
     ports:
       - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -40,3 +62,6 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+
+volumes:
+  postgres_data:
