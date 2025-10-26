@@ -6,7 +6,6 @@ ARG VITE_API_BASE_URL=/api/v1
 
 FROM node:${NODE_VERSION} AS frontend-build
 WORKDIR /app
-ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY tsconfig.json tsconfig.node.json tsconfig.app.json vite.config.ts postcss.config.js tailwind.config.ts eslint.config.js components.json ./
@@ -14,6 +13,7 @@ COPY public ./public
 COPY src ./src
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build
+ENV NODE_ENV=production
 
 FROM python:${PYTHON_VERSION} AS backend-build
 WORKDIR /app
