@@ -1,12 +1,23 @@
 // API Client for Backend Communication
 
-const resolvedApiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL ||
-  (typeof window !== 'undefined'
-    ? `${window.location.origin}/api/v1`
-    : 'http://localhost:8000/api/v1');
+const resolveApiBaseUrl = () => {
+  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  if (configuredBaseUrl && configuredBaseUrl.trim().length > 0) {
+    return configuredBaseUrl;
+  }
 
-const API_BASE_URL = resolvedApiBaseUrl.replace(/\/$/, '');
+  if (typeof window === 'undefined') {
+    return 'http://localhost:8000/api/v1';
+  }
+
+  if (import.meta.env.DEV) {
+    return 'http://localhost:8000/api/v1';
+  }
+
+  return `${window.location.origin}/api/v1`;
+};
+
+const API_BASE_URL = resolveApiBaseUrl().replace(/\/$/, '');
 
 class ApiClient {
   private baseUrl: string;
@@ -14,15 +25,21 @@ class ApiClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
-    this.token = localStorage.getItem('auth_token');
+    if (typeof window !== 'undefined') {
+      this.token = window.localStorage.getItem('auth_token');
+    }
   }
 
   setToken(token: string | null) {
     this.token = token;
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     if (token) {
-      localStorage.setItem('auth_token', token);
+      window.localStorage.setItem('auth_token', token);
     } else {
-      localStorage.removeItem('auth_token');
+      window.localStorage.removeItem('auth_token');
     }
   }
 
