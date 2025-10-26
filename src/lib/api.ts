@@ -61,12 +61,38 @@ class ApiClient {
   }
 
   async login(email: string, password: string) {
-    const response = await this.request<{ token: string; user: any }>('/auth/login', {
+    // Backend expects OAuth2 form data, not JSON
+    const formData = new URLSearchParams();
+    formData.append('username', email); // OAuth2 uses 'username' field for email
+    formData.append('password', password);
+
+    const headers: HeadersInit = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}/auth/login`, {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...headers,
+      },
+      body: formData.toString(),
     });
-    this.setToken(response.token);
-    return response;
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Login failed' }));
+      throw new Error(error.detail || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    // Backend returns { access_token, refresh_token, token_type, expires_in }
+    this.setToken(data.access_token);
+
+    // Fetch user data after login
+    const user = await this.getMe();
+
+    return { access_token: data.access_token, refresh_token: data.refresh_token, user };
   }
 
   async logout() {
