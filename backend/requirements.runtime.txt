@@ -14,7 +14,6 @@ passlib[bcrypt]==1.7.4
 python-dotenv==1.2.1
 pydantic[email]==2.12.3
 pydantic-settings==2.11.0
-openai==2.6.1
 stripe==13.0.1
 boto3==1.40.59
 tree-sitter==0.25.2
