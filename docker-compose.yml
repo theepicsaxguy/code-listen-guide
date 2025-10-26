@@ -9,7 +9,7 @@ services:
       ENVIRONMENT: production
       FRONTEND_URL: http://frontend:8080
     env_file:
-      - backend/.env
+      - ${BACKEND_ENV_FILE:-backend/.env.docker}
     ports:
       - "8001:8000"
     healthcheck:
