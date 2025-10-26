@@ -100,6 +100,15 @@ class ApiClient {
     this.setToken(null);
   }
 
+  async refreshToken(refreshToken: string) {
+    const data = await this.request<{ access_token: string; refresh_token: string; token_type: string; expires_in: number }>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    this.setToken(data.access_token);
+    return data;
+  }
+
   async getMe() {
     return this.request('/auth/me');
   }
@@ -140,6 +149,13 @@ class ApiClient {
 
   async deleteJob(jobId: string) {
     return this.request(`/jobs/${jobId}`, { method: 'DELETE' });
+  }
+
+  async estimateJobCost(repoUrl: string, depthTier: string) {
+    return this.request<{ estimated_cost_cents: number; estimated_time_minutes: number }>('/jobs/estimate', {
+      method: 'POST',
+      body: JSON.stringify({ repo_url: repoUrl, depth_tier: depthTier }),
+    });
   }
 
   // Outline endpoints
