@@ -172,9 +172,44 @@ app.include_router(ws_router)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Return structured validation errors."""
+    # Safely serialize errors by converting to JSON-serializable format
+    def sanitize_error(error):
+        """Convert validation error to JSON-serializable format."""
+        sanitized = {}
+        for key, value in error.items():
+            if isinstance(value, (str, int, float, bool, type(None))):
+                sanitized[key] = value
+            elif isinstance(value, (list, tuple)):
+                sanitized[key] = [
+                    sanitize_error(item) if isinstance(item, dict) else str(item)
+                    for item in value
+                ]
+            elif isinstance(value, dict):
+                sanitized[key] = sanitize_error(value)
+            else:
+                # Convert non-serializable objects to string
+                sanitized[key] = str(value)
+        return sanitized
+
+    errors = [sanitize_error(error) for error in exc.errors()]
+
+    # Safely handle body - it might contain non-serializable data
+    body = None
+    if exc.body is not None:
+        try:
+            # Try to decode if it's bytes
+            if isinstance(exc.body, bytes):
+                body = exc.body.decode('utf-8')
+            elif isinstance(exc.body, str):
+                body = exc.body
+            else:
+                body = str(exc.body)
+        except Exception:
+            body = "<unable to serialize body>"
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": exc.errors(), "body": exc.body},
+        content={"detail": errors, "body": body},
     )
 
 
