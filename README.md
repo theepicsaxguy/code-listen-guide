@@ -58,13 +58,13 @@ uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Recent hardening efforts added:
-- Locked-down CORS settings tied to the configured frontend URL.
+- Development-only CORS rules while production traffic stays same-origin behind the proxy.
 - A bundle of security headers (CSP, HSTS, Referrer Policy, and more) on every response.
 - SlowAPI-backed rate limiting with stricter quotas on registration, login, and token refresh flows.
 
 ### Production bundle
 
-Run `./serve-production.sh` from the repository root when you want the production build in one command. The script compiles the frontend, starts the FastAPI server with multiple workers, and serves the built assets through `vite preview`. Override defaults by exporting `BACKEND_PORT`, `FRONTEND_PORT`, or `UVICORN_WORKERS` before launching.
+Run `./serve-production.sh` from the repository root when you want the production build in one command. The script compiles the frontend, copies the build output into `backend/frontend_dist`, and starts the FastAPI server with multiple workers so the app and API share the same origin. Override defaults by exporting `BACKEND_PORT` or `UVICORN_WORKERS` before launching.
 
 ### Docker image
 
@@ -87,14 +87,14 @@ Prefer keeping the backend and the static frontend in separate containers? Use t
 docker compose up
 ```
 
-The command maps the backend to `http://localhost:8000` and serves the compiled frontend through Nginx at `http://localhost:8080`. Both containers share the same network, so the UI talks to the API without extra wiring. Need to test local code changes instead of the published images? Uncomment the `build` sections in `docker-compose.yml` and run `docker compose up --build`.
+The command exposes a single public origin at `http://localhost:8080`. Nginx serves the frontend bundle and forwards `/api/` traffic to the backend container over the internal network, so browsers never hit container-only hostnames. Need to test local code changes instead of the published images? Uncomment the `build` sections in `docker-compose.yml` and run `docker compose up --build`.
 
 Compose feeds the backend with `backend/.env.docker` out of the box; point `BACKEND_ENV_FILE` at your own secrets file when you are ready to call real infrastructure.
 
 ## Development workflow
 
 1. **Clone the repo** and install frontend dependencies.
-2. **Run the backend** (see snapshot above) and copy `.env.example` to `.env` so the frontend points at the correct API host and Stripe publishable key during local development.
+2. **Run the backend** (see snapshot above). The Vite dev server proxies `/api/` to `http://localhost:8000`, so no `.env` tweaks are required for same-origin calls during development.
 3. **Kick off a job** using the `/api/v1/jobs` endpoints, then watch the UI update through the WebSocket event stream.
 4. **Iterate with plans in mind**: the Docling parser integration plan drives current backend work, and the launch plan outlines the content and community experiments that should accompany each release.
 

@@ -16,6 +16,16 @@ services:
       retries: 5
     restart: unless-stopped
 
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: .
@@ -29,10 +39,10 @@ services:
       CHECKPOINT_DATABASE_URL: postgresql://audiobook:audiobook_dev_password@postgres:5432/audiobook
     env_file:
       - ${BACKEND_ENV_FILE:-backend/.env.docker}
-    ports:
-      - "8001:8000"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -48,15 +58,13 @@ services:
       dockerfile: Dockerfile.frontend
       target: production
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://backend:8000/api/v1}
+        VITE_API_BASE_PATH: /api/v1
     image: code-listen-guide-frontend:latest
-    environment:
-      VITE_API_BASE_URL: http://backend:8000/api/v1
     depends_on:
       backend:
         condition: service_healthy
     ports:
-      - "8081:8080"
+      - "8080:8080"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080"]
       interval: 30s

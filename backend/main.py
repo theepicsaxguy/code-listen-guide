@@ -56,10 +56,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up...")
-    try:
-        init_db()
-    except Exception as exc:
-        logger.warning("Database initialization skipped: %s", exc)
+    init_db()
     yield
     logger.info("Shutting down...")
 
@@ -127,10 +124,9 @@ if trace and Resource and TracerProvider:
 
 cors_origins = set()
 
-if settings.frontend_url:
-    cors_origins.add(settings.frontend_url.rstrip("/"))
-
 if settings.environment.lower() == "development":
+    if settings.frontend_url:
+        cors_origins.add(settings.frontend_url.rstrip("/"))
     cors_origins.update(
         {
             "http://localhost:4173",
@@ -141,21 +137,23 @@ if settings.environment.lower() == "development":
     )
 
 app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=sorted(cors_origins),
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=[
-        "Authorization",
-        "Content-Type",
-        "Accept",
-        "Origin",
-        "X-Requested-With",
-    ],
-    expose_headers=["Retry-After"],
-    max_age=3600,
-)
+
+if cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=sorted(cors_origins),
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=[
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "Origin",
+            "X-Requested-With",
+        ],
+        expose_headers=["Retry-After"],
+        max_age=3600,
+    )
 
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)

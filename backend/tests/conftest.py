@@ -10,6 +10,7 @@ This file provides:
 
 import asyncio
 import json
+import os
 import sqlite3
 import sys
 import uuid
@@ -31,6 +32,21 @@ from sqlalchemy.pool import StaticPool
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))
+
+os.environ.setdefault("ENVIRONMENT", "test")
+os.environ.setdefault("DATABASE_URL", "sqlite:///./backend_test.db")
+os.environ.setdefault("CHECKPOINT_DATABASE_URL", "sqlite:///./backend_test.db")
+os.environ.setdefault("API_BASE_URL", "http://testserver/api/v1")
+os.environ.setdefault("JWT_SECRET", "test-secret")
+os.environ.setdefault("ANTHROPIC_API_KEY", "test-anthropic-key")
+os.environ.setdefault("STRIPE_SECRET_KEY", "sk_test_123")
+os.environ.setdefault("STRIPE_WEBHOOK_SECRET", "whsec_test_123")
+os.environ.setdefault("STRIPE_PUBLISHABLE_KEY", "pk_test_123")
+os.environ.setdefault("AWS_ACCESS_KEY_ID", "test-access-key")
+os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "test-secret-key")
+os.environ.setdefault("S3_BUCKET_NAME", "test-bucket")
+os.environ.setdefault("S3_REGION", "us-east-1")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 
 from backend.db.session import get_db
 from backend.utils.auth import (

@@ -2,7 +2,7 @@
 
 ARG PYTHON_VERSION=3.14.0-slim
 ARG NODE_VERSION=22.21.0-bookworm-slim
-ARG VITE_API_BASE_URL=/api/v1
+ARG VITE_API_BASE_PATH=/api/v1
 
 FROM node:${NODE_VERSION} AS frontend-build
 WORKDIR /app
@@ -11,7 +11,7 @@ RUN npm ci
 COPY index.html tsconfig.json tsconfig.node.json tsconfig.app.json vite.config.ts postcss.config.js tailwind.config.ts eslint.config.js components.json ./
 COPY public ./public
 COPY src ./src
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_API_BASE_PATH=${VITE_API_BASE_PATH}
 RUN npm run build
 ENV NODE_ENV=production
 

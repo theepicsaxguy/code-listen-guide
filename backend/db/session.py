@@ -5,7 +5,6 @@ from importlib import import_module
 from typing import Generator
 
 from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from backend.config import get_settings
@@ -52,7 +51,4 @@ def init_db() -> None:
             "Model import failed during init_db: %s", module_name, exc_info=exc
         )
 
-    try:
-        Base.metadata.create_all(bind=engine)
-    except SQLAlchemyError as exc:
-        logger.warning("Database initialization skipped: %s", exc)
+    Base.metadata.create_all(bind=engine)
