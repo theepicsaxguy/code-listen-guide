@@ -17,7 +17,7 @@ argon2-cffi==25.1.0
 python-dotenv==1.2.1
 pydantic[email]==2.12.3
 pydantic-settings==2.11.0
-requests==2.32.3
+requests==2.32.4
 stripe==13.0.1
 boto3==1.40.59
 tree-sitter==0.25.2
