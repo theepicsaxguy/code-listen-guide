@@ -1,19 +1,22 @@
 ARG VITE_API_BASE_PATH=/api/v1
 ARG NODE_VERSION=22.21.0-bookworm-slim
 
+# =============================================================================
+# Frontend Dependencies Stage
+# =============================================================================
 FROM node:${NODE_VERSION} AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --frozen-lockfile
 
-
+# =============================================================================
+# Frontend Build Stage
+# =============================================================================
 FROM node:${NODE_VERSION} AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY package*.json ./
-COPY index.html ./
-COPY vite.config.ts ./
-COPY tsconfig.json tsconfig.node.json tsconfig.app.json ./
+COPY index.html vite.config.ts tsconfig.json tsconfig.node.json tsconfig.app.json ./
 COPY postcss.config.js tailwind.config.ts eslint.config.js components.json ./
 COPY public ./public
 COPY src ./src
@@ -21,7 +24,11 @@ ARG VITE_API_BASE_PATH=/api/v1
 ENV VITE_API_BASE_PATH=${VITE_API_BASE_PATH}
 RUN npm run build
 
+# =============================================================================
+# Frontend Production Runtime Stage
+# =============================================================================
 FROM nginx:1.29-alpine AS production
+# Configure nginx for SPA routing and API proxying
 RUN rm /etc/nginx/conf.d/default.conf \
     && cat <<'EOF' > /etc/nginx/conf.d/default.conf
 server {
@@ -31,24 +38,27 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # Ensure proper MIME types for assets
+    # Cache static assets
     location ~* \.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 
+    # Proxy API requests to backend
     location /api/ {
         proxy_pass http://backend:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
 
+    # SPA fallback to index.html
     location / {
         try_files $uri /index.html;
     }
 }
 EOF
-# Create nginx.conf that works with non-root user
+
+# Minimal nginx config for Alpine
 RUN cat <<'EOF' > /etc/nginx/nginx.conf
 worker_processes auto;
 pid /tmp/nginx.pid;
@@ -75,6 +85,7 @@ http {
     include /etc/nginx/conf.d/*.conf;
 }
 EOF
+
 COPY --from=build /app/dist /usr/share/nginx/html
 RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/run /var/log/nginx /tmp
 USER nginx

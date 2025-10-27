@@ -3,14 +3,14 @@ Authentication utilities for JWT token management and password hashing.
 
 Provides:
 - JWT access and refresh token creation/validation
-- Password hashing with bcrypt
+- Password hashing with Argon2
 - Token type verification
 """
 
+import argon2
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from backend.config import get_settings
 
@@ -22,21 +22,21 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Argon2 password hasher
+ph = argon2.PasswordHasher()
 
 
 def get_password_hash(password: str) -> str:
     """
-    Hash a password using bcrypt.
+    Hash a password using Argon2.
 
     Args:
         password: Plain text password to hash
 
     Returns:
-        Bcrypt hashed password string
+        Argon2 hashed password string
     """
-    return pwd_context.hash(password)
+    return ph.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -45,12 +45,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
     Args:
         plain_password: Plain text password to verify
-        hashed_password: Bcrypt hashed password
+        hashed_password: Argon2 hashed password
 
     Returns:
         True if password matches, False otherwise
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        ph.verify(hashed_password, plain_password)
+        return True
+    except argon2.exceptions.VerifyMismatchError:
+        return False
 
 
 def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -> str:
