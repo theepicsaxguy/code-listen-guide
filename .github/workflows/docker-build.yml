@@ -28,8 +28,17 @@ jobs:
   changes:
     name: Detect Changes
     if: >-
-      ${{ github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'build')) }}
+      (github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'pull_request' &&
+         contains(github.event.pull_request.labels.*.name, 'build')))
+      &&
+      (github.event_name != 'pull_request' ||
+        (!github.event.pull_request.draft &&
+         !contains(format('{0}\n{1}', github.event.pull_request.title, github.event.pull_request.body), '[skip ci]') &&
+         !contains(format('{0}\n{1}', github.event.pull_request.title, github.event.pull_request.body), '[ci skip]') &&
+         !contains(format('{0}\n{1}', github.event.pull_request.title, github.event.pull_request.body), '[skip actions]') &&
+         !contains(github.event.pull_request.labels.*.name, 'skip-ci') &&
+         !contains(github.event.pull_request.labels.*.name, 'skip-actions')))
     runs-on: ubuntu-latest
     permissions:
       contents: read
