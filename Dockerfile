@@ -84,7 +84,6 @@ COPY backend ./backend
 FROM python:${PYTHON_VERSION} AS production
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PATH="/opt/venv/bin:$PATH"
 
 # Install minimal runtime dependencies
 RUN apt-get update \
@@ -105,10 +104,13 @@ RUN groupadd --system app \
 WORKDIR /app
 
 # Copy built artifacts
-COPY --from=backend-build --chown=app:app /opt/venv /opt/venv
-COPY --from=backend-build --chown=app:app /app/backend /app/backend
-COPY --from=frontend-build --chown=app:app /app/dist /app/backend/frontend_dist
+COPY --from=backend-build /opt/venv /opt/venv
+COPY --from=backend-build /app/backend /app/backend
+COPY --from=frontend-build /app/dist /app/backend/frontend_dist
+
+# Ensure virtual environment ownership
+RUN chown -R app:app /opt/venv
 
 USER app
 EXPOSE 8000
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/opt/venv/bin/uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
