@@ -41,8 +41,7 @@ export default function Submit() {
         description: 'Repository is being analyzed. Redirecting to outline...',
       });
 
-      // Redirect to outline page
-      navigate(`/jobs/${response.job_id}/outline`);
+      navigate(`/jobs/${response.id}/outline`);
     } catch (error: any) {
       toast({
         title: 'Failed to create job',

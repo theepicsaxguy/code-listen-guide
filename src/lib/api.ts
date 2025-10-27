@@ -1,7 +1,11 @@
 import { resolveApiBasePath } from './api-base-path';
-import type { OutlineGenerateRequest } from './types';
+import type { Job, OutlineGenerateRequest } from './types';
 
 const API_BASE_PATH = resolveApiBasePath();
+
+type JobResponsePayload = Omit<Job, 'progress_percentage'> & {
+  progress_percentage: number | string;
+};
 
 class ApiClient {
   private baseUrl: string;
@@ -51,6 +55,18 @@ class ApiClient {
     }
 
     return response.json();
+  }
+
+  private normalizeJob(job: JobResponsePayload): Job {
+    const progress =
+      typeof job.progress_percentage === 'string'
+        ? Number.parseFloat(job.progress_percentage)
+        : job.progress_percentage;
+
+    return {
+      ...job,
+      progress_percentage: Number.isFinite(progress) ? progress : 0,
+    };
   }
 
   // Auth endpoints
@@ -119,11 +135,13 @@ class ApiClient {
     repo_url: string;
     depth_tier: string;
     git_ref?: string;
-  }) {
-    return this.request<{ job_id: string; estimated_cost: number; estimated_time: number }>('/jobs', {
+  }): Promise<Job> {
+    const job = await this.request<JobResponsePayload>('/jobs', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+
+    return this.normalizeJob(job);
   }
 
   async getJobs(params?: { status?: string; limit?: number; page?: number }) {
