@@ -29,6 +29,6 @@ async def create_audio_agent(chat_client: Any) -> ChatAgent:
     )
 
 
-async def audio_agent(settings: Any) -> Any:
+async def audio_agent(settings: Any) -> ChatAgent:
     client = OpenAIResponsesClient(**build_responses_client_options(settings))
     return await create_audio_agent(client)
