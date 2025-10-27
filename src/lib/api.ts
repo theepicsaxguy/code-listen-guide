@@ -7,7 +7,7 @@ type JobResponsePayload = Omit<Job, 'progress_percentage'> & {
   progress_percentage: number | string;
 };
 
-class ApiClient {
+export class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
 
@@ -31,7 +31,7 @@ class ApiClient {
     }
   }
 
-  private async request<T>(
+  private async request<T = unknown>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
@@ -54,7 +54,25 @@ class ApiClient {
       throw new Error(error.message || `HTTP ${response.status}`);
     }
 
-    return response.json();
+    if (response.status === 204 || response.status === 205) {
+      return undefined as T;
+    }
+
+    const contentLength = response.headers.get('Content-Length');
+    if (contentLength !== null && Number.parseInt(contentLength, 10) === 0) {
+      return undefined as T;
+    }
+
+    const text = await response.text();
+    if (text.trim() === '') {
+      return undefined as T;
+    }
+
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new Error('Invalid JSON response');
+    }
   }
 
   private normalizeJob(job: JobResponsePayload): Job {
@@ -144,7 +162,11 @@ class ApiClient {
     return this.normalizeJob(job);
   }
 
-  async getJobs(params?: { status?: string; limit?: number; page?: number }) {
+  async getJobs(params?: { status?: string; limit?: number; page?: number }): Promise<{
+    jobs: Job[];
+    total: number;
+    page: number;
+  }> {
     // Backend expects 'offset' and 'status_filter', not 'page' and 'status'
     const backendParams: Record<string, string> = {};
     if (params?.status) {
@@ -159,15 +181,25 @@ class ApiClient {
       backendParams.offset = String((params.page - 1) * limit);
     }
     const query = new URLSearchParams(backendParams).toString();
-    return this.request<{ jobs: any[]; total: number; page: number }>(`/jobs${query ? `?${query}` : ''}`);
+    const result = await this.request<{
+      jobs: JobResponsePayload[];
+      total: number;
+      page: number;
+    }>(`/jobs${query ? `?${query}` : ''}`);
+
+    return {
+      ...result,
+      jobs: result.jobs.map((job) => this.normalizeJob(job)),
+    };
   }
 
-  async getJob(jobId: string) {
-    return this.request<any>(`/jobs/${jobId}`);
+  async getJob(jobId: string): Promise<Job> {
+    const job = await this.request<JobResponsePayload>(`/jobs/${jobId}`);
+    return this.normalizeJob(job);
   }
 
-  async deleteJob(jobId: string) {
-    return this.request(`/jobs/${jobId}`, { method: 'DELETE' });
+  async deleteJob(jobId: string): Promise<void> {
+    await this.request<void>(`/jobs/${jobId}`, { method: 'DELETE' });
   }
 
   async estimateJobCost(repoUrl: string, depthTier: string) {
@@ -189,7 +221,7 @@ class ApiClient {
     });
   }
 
-  async updateOutline(jobId: string, outlineId: string, data: any) {
+  async updateOutline(jobId: string, outlineId: string, data: Record<string, unknown>) {
     // Backend expects outline data in request body, not outlineId in URL path
     return this.request(`/jobs/${jobId}/outline`, {
       method: 'PUT',
