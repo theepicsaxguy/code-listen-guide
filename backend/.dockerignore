@@ -1,0 +1,43 @@
+# Python caches and virtual envs
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+build/
+dist/
+*.egg-info
+
+# Git and editor metadata
+.git
+.gitignore
+.vscode
+.idea
+
+# Node / other
+node_modules
+
+# Tests / local artifacts
+coverage
+*.log
+
+# Ignore docker files at root that aren't needed in context
+Dockerfile
+Dockerfile.frontend
+
+# Samples and docs not needed in image
+samples/
+docs/
+plans/
+
+# Local env and DB files
+.env
+.env.*
+*.sqlite3
+
+# Source and frontend build artifacts (not needed in backend image)
+src/
+frontend/

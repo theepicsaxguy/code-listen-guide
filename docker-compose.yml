@@ -31,6 +31,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
+      cache_from:
+        - code-listen-guide-backend:latest
     image: code-listen-guide-backend:latest
     environment:
       ENVIRONMENT: production
@@ -59,6 +61,8 @@ services:
       target: production
       args:
         VITE_API_BASE_PATH: /api/v1
+      cache_from:
+        - code-listen-guide-frontend:latest
     image: code-listen-guide-frontend:latest
     depends_on:
       backend:
@@ -75,3 +79,7 @@ services:
 
 volumes:
   postgres_data:
+
+x-buildkit:
+  buildkit:
+    enabled: true

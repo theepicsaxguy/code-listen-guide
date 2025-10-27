@@ -1,3 +1,31 @@
+# Ignore node and python artifacts that should not invalidate docker build cache
+node_modules
+frontend/node_modules
+**/node_modules
+dist
+build
+/.venv
+venv
+env
+*.pyc
+__pycache__
+.pytest_cache
+.mypy_cache
+.venv/
+.cache
+.DS_Store
+.git
+.gitignore
+coverage/
+*.tgz
+*.log
+
+# Ignore local env files (they shouldn't be copied into the image)
+*.env
+backend/.env
+backend/.env.*
+
+# Dockerfiles and docker-compose may be needed; keep them
 .git
 node_modules
 backend/__pycache__
@@ -14,3 +42,14 @@ Plan.md
 CI_CD_SETUP_GUIDE.md
 BACKEND_IMPLEMENTATION_PLAN.md
 *.log
+
+frontend/dist
+dist
+.vscode
+.idea
+npm-debug.log
+coverage
+tests
+Dockerfile*
+.dockerignore
+
