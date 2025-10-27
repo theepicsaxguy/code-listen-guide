@@ -36,16 +36,12 @@ RUN apt-get update \
         libffi-dev \
         libpq-dev \
     && rm -rf /var/lib/apt/lists/*
-COPY backend/requirements.runtime.txt ./requirements.txt
-RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m pip install --upgrade pip wheel setuptools && \
-    python -m pip wheel --no-deps --wheel-dir=/wheels -r requirements.txt
+COPY backend/requirements.runtime.txt ./requirements.runtime.txt
 
 # =============================================================================
-# Backend Build Stage
+# System Dependencies Stage (very rarely changes)
 # =============================================================================
-FROM python:${PYTHON_VERSION} AS backend-deps
-WORKDIR /app
+FROM python:${PYTHON_VERSION} AS system-deps
 ENV PYTHONDONTWRITEBYTECODE=1
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -63,11 +59,23 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
+# =============================================================================
+# Backend Dependencies Stage (cached)
+# =============================================================================
+FROM system-deps AS backend-deps
+WORKDIR /app
 RUN python -m venv /opt/venv && /opt/venv/bin/pip install --upgrade pip
-COPY backend/requirements.runtime.txt ./requirements.txt
-COPY --from=python-deps /wheels /wheels
+COPY backend/requirements.runtime.txt backend/requirements.base.txt /wheels/
 RUN --mount=type=cache,target=/root/.cache/pip \
-    /opt/venv/bin/pip install --find-links=/wheels -r requirements.txt
+    cd /wheels && \
+    python -m pip install --upgrade pip wheel setuptools && \
+    python -m pip wheel --no-deps --wheel-dir=/wheels -r requirements.runtime.txt
+
+# =============================================================================
+# Backend Build Stage (source code - changes frequently)
+# =============================================================================
+FROM backend-deps AS backend-build
+WORKDIR /app
 COPY backend ./backend
 
 # =============================================================================
@@ -97,8 +105,8 @@ RUN groupadd --system app \
 WORKDIR /app
 
 # Copy built artifacts
-COPY --from=backend-deps --chown=app:app /opt/venv /opt/venv
-COPY --from=backend-deps --chown=app:app /app/backend /app/backend
+COPY --from=backend-build --chown=app:app /opt/venv /opt/venv
+COPY --from=backend-build --chown=app:app /app/backend /app/backend
 COPY --from=frontend-build --chown=app:app /app/dist /app/backend/frontend_dist
 
 USER app
