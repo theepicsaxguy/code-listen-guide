@@ -95,7 +95,7 @@ Compose feeds the backend with `backend/.env.docker` out of the box; point `BACK
 
 1. **Clone the repo** and install frontend dependencies.
 2. **Run the backend** (see snapshot above). The Vite dev server proxies `/api/` to `http://localhost:8000`, so no `.env` tweaks are required for same-origin calls during development.
-3. **Kick off a job** using the `/api/v1/jobs` endpoints, then watch the UI update through the WebSocket event stream.
+3. **Kick off a job** using the `/api/v1/jobs` endpoints. The POST handler returns the full job record (including its `id`), so the UI can immediately redirect to `/jobs/<job-id>/outline` while the WebSocket feed streams updates.
 4. **Iterate with plans in mind**: the Docling parser integration plan drives current backend work, and the launch plan outlines the content and community experiments that should accompany each release.
 
 ### Testing
