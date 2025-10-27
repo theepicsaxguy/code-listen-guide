@@ -21,18 +21,17 @@ const normalizePath = (value: string): string => {
   return trimmed === '' ? '/' : trimmed;
 };
 
-const fromUrl = (raw: string): string => {
-  const url = new URL(raw);
-  const path = normalizePath(url.pathname || '/');
-  return path === '/' ? DEFAULT_API_PATH : path;
+const normalizeRelative = (value: string): string => {
+  const normalized = normalizePath(value);
+  return normalized === '/' ? '' : normalized;
 };
 
-const fromHostLike = (raw: string): string => {
-  try {
-    return fromUrl(`http://${raw}`);
-  } catch (error) {
-    throw new Error('VITE_API_BASE_PATH must be a path beginning with "/"');
-  }
+const normalizeAbsolute = (raw: string): string => {
+  const candidate = ABSOLUTE_URL_PATTERN.test(raw) ? raw : `http://${raw}`;
+  const url = new URL(candidate);
+  const normalizedPath = normalizePath(url.pathname || '/');
+  const path = normalizedPath === '/' ? '' : normalizedPath;
+  return `${url.origin}${path}`;
 };
 
 const pickRawValue = (): string => {
@@ -47,13 +46,11 @@ export const resolveApiBasePath = (): string => {
     throw new Error('VITE_API_BASE_PATH cannot be empty');
   }
   if (ABSOLUTE_URL_PATTERN.test(raw)) {
-    return fromUrl(raw);
+    return normalizeAbsolute(raw);
   }
   if (!raw.startsWith('/')) {
-    if (raw.includes(':')) {
-      return fromHostLike(raw);
-    }
-    throw new Error('VITE_API_BASE_PATH must be a path beginning with "/"');
+    return normalizeAbsolute(raw);
   }
-  return normalizePath(raw);
+  const relative = normalizeRelative(raw);
+  return relative;
 };
