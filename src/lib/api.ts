@@ -1,4 +1,5 @@
 import { resolveApiBasePath } from './api-base-path';
+import type { OutlineGenerateRequest } from './types';
 
 const API_BASE_PATH = resolveApiBasePath();
 
@@ -159,7 +160,11 @@ class ApiClient {
   }
 
   // Outline endpoints
-  async generateOutline(jobId: string, data: { repo_url: string; depth_tier: string }) {
+  async getOutline(jobId: string) {
+    return this.request(`/jobs/${jobId}/outline`);
+  }
+
+  async generateOutline(jobId: string, data: OutlineGenerateRequest) {
     return this.request(`/jobs/${jobId}/outline`, {
       method: 'POST',
       body: JSON.stringify(data),

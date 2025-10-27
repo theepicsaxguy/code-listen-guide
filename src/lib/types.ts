@@ -58,8 +58,9 @@ export interface Outline {
   job_id: string;
   outline_data: {
     chapters: OutlineChapter[];
-    total_estimated_duration_minutes: number;
-    total_chapters: number;
+    total_estimated_duration_minutes?: number;
+    total_chapters?: number;
+    depth_tier?: string;
   };
   user_approved: boolean;
   user_modifications?: any;
@@ -75,6 +76,10 @@ export interface OutlineChapter {
   files_covered: string[];
   topics: string[];
   learning_objectives: string[];
+}
+
+export interface OutlineGenerateRequest {
+  analysis_data: Record<string, unknown>;
 }
 
 export interface Deliverable {

@@ -18,29 +18,54 @@ export default function OutlinePreview() {
   const [isApproving, setIsApproving] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, [jobId]);
-
-  const loadData = async () => {
-    if (!jobId) return;
-
-    try {
-      const [jobData, outlineData] = await Promise.all([
-        apiClient.getJob(jobId),
-        apiClient.generateOutline(jobId, { repo_url: '', depth_tier: '' }),
-      ]);
-      setJob(jobData as Job);
-      setOutline(outlineData as Outline);
-    } catch (error: any) {
-      toast({
-        title: 'Failed to load outline',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
+    if (!jobId) {
+      setJob(null);
+      setOutline(null);
       setIsLoading(false);
+      return;
     }
-  };
+
+    let isActive = true;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [jobData, outlineData] = await Promise.all([
+          apiClient.getJob(jobId),
+          apiClient.getOutline(jobId),
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        setJob(jobData as Job);
+        setOutline(outlineData as Outline);
+      } catch (error: unknown) {
+        if (!isActive) {
+          return;
+        }
+
+        setOutline(null);
+        toast({
+          title: 'Failed to load outline',
+          description:
+            error instanceof Error ? error.message : 'Unable to fetch outline details.',
+          variant: 'destructive',
+        });
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isActive = false;
+    };
+  }, [jobId, toast]);
 
   const handleApprove = async () => {
     if (!jobId || !outline) return;
@@ -91,7 +116,13 @@ export default function OutlinePreview() {
     );
   }
 
-  const chapters = outline.outline_data.chapters;
+  const chapters = outline.outline_data.chapters ?? [];
+  const totalChapters = outline.outline_data.total_chapters ?? chapters.length;
+  const totalMinutes =
+    outline.outline_data.total_estimated_duration_minutes ??
+    chapters.reduce((sum, chapter) => sum + Math.max(chapter.estimated_duration_minutes, 0), 0);
+  const totalHours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,7 +147,7 @@ export default function OutlinePreview() {
               <CardTitle className="text-sm">Total Chapters</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{outline.outline_data.total_chapters}</p>
+              <p className="text-3xl font-bold">{totalChapters}</p>
             </CardContent>
           </Card>
           <Card>
@@ -125,8 +156,7 @@ export default function OutlinePreview() {
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">
-                {Math.floor(outline.outline_data.total_estimated_duration_minutes / 60)}h{' '}
-                {outline.outline_data.total_estimated_duration_minutes % 60}m
+                {totalHours}h {remainingMinutes}m
               </p>
             </CardContent>
           </Card>
@@ -144,7 +174,7 @@ export default function OutlinePreview() {
           <CardHeader>
             <CardTitle>Chapter Outline</CardTitle>
             <CardDescription>
-              {chapters.length} chapters covering the entire codebase
+              {totalChapters} chapters covering the entire codebase
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -170,7 +200,7 @@ export default function OutlinePreview() {
                       <div>
                         <h4 className="text-sm font-semibold mb-2">Topics Covered:</h4>
                         <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                          {chapter.topics.map((topic, i) => (
+                          {(chapter.topics ?? []).map((topic, i) => (
                             <li key={i}>{topic}</li>
                           ))}
                         </ul>
@@ -179,7 +209,7 @@ export default function OutlinePreview() {
                       <div>
                         <h4 className="text-sm font-semibold mb-2">Files:</h4>
                         <div className="flex flex-wrap gap-2">
-                          {chapter.files_covered.map((file, i) => (
+                          {(chapter.files_covered ?? []).map((file, i) => (
                             <code key={i} className="text-xs bg-muted px-2 py-1 rounded">
                               {file}
                             </code>

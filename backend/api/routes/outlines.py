@@ -39,6 +39,23 @@ def _get_outline_for_job(db: Session, job_id: uuid.UUID) -> Outline | None:
     return db.query(Outline).filter(Outline.job_id == job_id).first()
 
 
+@router.get("", response_model=OutlineResponse)
+async def get_outline(
+    job_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    job = _get_job_for_user(db, job_id, current_user.id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    outline = _get_outline_for_job(db, job.id)
+    if not outline:
+        raise HTTPException(status_code=404, detail="Outline not found")
+
+    return OutlineResponse.model_validate(outline)
+
+
 @router.post("", response_model=OutlineResponse, status_code=status.HTTP_201_CREATED)
 async def generate_outline(
     job_id: uuid.UUID,
