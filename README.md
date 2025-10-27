@@ -101,7 +101,7 @@ Compose feeds the backend with `backend/.env.docker` out of the box; point `BACK
 ### Testing
 - Frontend: `npm run lint` keeps TypeScript and hooks tidy.
 - Backend: from `backend/`, run the marker-driven suites with `pytest -m <marker>` once the virtual environment is active. The CI runner installs the full `backend/requirements.txt`, so every job mirrors local development.
-- Full CI: GitHub Actions builds the frontend with Node.js 22 and runs backend unit, workflow, service, agent, API, model, and integration suites on Python 3.14, publishing coverage to Codecov when configured.
+- Full CI: GitHub Actions builds the frontend with Node.js 22 and runs backend unit, workflow, service, agent, API, model, and integration suites on Python 3.14, publishing coverage to Codecov when configured. Draft pull requests and anything marked with `[skip ci]`, `[ci skip]`, `[skip actions]`, or the `skip-ci`/`skip-actions` labels stay idle so you can iterate without burning runner minutes.
 - Scheduled checks: nightly integration runs and an always-on code-quality workflow catch slow or lint-related regressions without blocking day-to-day development.
 
 ## Roadmap highlights

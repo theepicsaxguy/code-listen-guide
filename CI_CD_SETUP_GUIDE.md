@@ -8,6 +8,7 @@ The project currently has `.github/workflows/ci.yml` with:
 - ✅ Frontend build job
 - ✅ Basic backend test job (runs pytest)
 - ⏱️ Concurrency guard so only the freshest run for a branch keeps executing
+- 🛑 Cost controls that ignore draft pull requests and any run tagged with `[skip ci]`, `[ci skip]`, `[skip actions]`, or the `skip-ci`/`skip-actions` labels.
 
 ## Required Updates
 
