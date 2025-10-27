@@ -4,7 +4,7 @@ sqlalchemy==2.0.44
 alembic==1.17.0
 psycopg2-binary==2.9.11
 agent-framework-core==1.0.0b251016
-redis==7.0.0
+redis==7.0.1
 opentelemetry-instrumentation-fastapi==0.59b0
 opentelemetry-proto==1.38.0
 opentelemetry-semantic-conventions==0.59b0
