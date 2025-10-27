@@ -1,22 +1,29 @@
 # syntax=docker/dockerfile:1.19
 
-ARG PYTHON_VERSION=3.14.0-slim
-ARG NODE_VERSION=22.21.0-bookworm-slim
+ARG PYTHON_IMAGE=python:3.14.0-slim@sha256:4ed33101ee7ec299041cc41dd268dae17031184be94384b1ce7936dc4e5dead3
+ARG NODE_IMAGE=node:22.21.0-bookworm-slim@sha256:f9f7f95dcf1f007b007c4dcd44ea8f7773f931b71dc79d57c216e731c87a090b
 ARG NPM_VERSION=10.9.2
 ARG VITE_API_BASE_PATH=/api/v1
+ARG DEBIAN_RELEASE=bookworm
+ARG DEBIAN_SNAPSHOT=20241103T000000Z
+ARG SNAPSHOT_BASE_URL=https://snapshot.debian.org/archive
 
 # =============================================================================
 # Frontend Build Stage
 # =============================================================================
-FROM node:${NODE_VERSION} AS frontend-deps
+FROM ${NODE_IMAGE} AS frontend-deps
+ARG NPM_VERSION
 WORKDIR /app
+ENV SOURCE_DATE_EPOCH=0
 # Pin npm version for reproducibility
 RUN npm install -g npm@${NPM_VERSION}
 COPY package.json package-lock.json ./
 RUN npm ci --frozen-lockfile
 
-FROM node:${NODE_VERSION} AS frontend-build
+FROM ${NODE_IMAGE} AS frontend-build
+ARG NPM_VERSION
 WORKDIR /app
+ENV SOURCE_DATE_EPOCH=0
 RUN npm install -g npm@${NPM_VERSION}
 COPY --from=frontend-deps /app/node_modules ./node_modules
 COPY package*.json ./
@@ -28,40 +35,67 @@ ENV VITE_API_BASE_PATH=${VITE_API_BASE_PATH}
 RUN npm run build
 
 # =============================================================================
+# Python Base Stage (snapshot-pinned apt sources)
+# =============================================================================
+FROM ${PYTHON_IMAGE} AS python-base
+ARG DEBIAN_RELEASE
+ARG DEBIAN_SNAPSHOT
+ARG SNAPSHOT_BASE_URL
+ENV SOURCE_DATE_EPOCH=0
+RUN set -eux; \
+    rm -f /etc/apt/sources.list.d/debian.sources; \
+    printf 'deb [check-valid-until=no] %s/debian/%s %s main\n' "${SNAPSHOT_BASE_URL}" "${DEBIAN_SNAPSHOT}" "${DEBIAN_RELEASE}" > /etc/apt/sources.list; \
+    printf 'deb [check-valid-until=no] %s/debian-security/%s %s-security main\n' "${SNAPSHOT_BASE_URL}" "${DEBIAN_SNAPSHOT}" "${DEBIAN_RELEASE}" >> /etc/apt/sources.list; \
+    printf 'deb [check-valid-until=no] %s/debian/%s %s-updates main\n' "${SNAPSHOT_BASE_URL}" "${DEBIAN_SNAPSHOT}" "${DEBIAN_RELEASE}" >> /etc/apt/sources.list; \
+    printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/90snapshot
+
+# =============================================================================
 # Python Wheels Build Stage
 # =============================================================================
-FROM python:${PYTHON_VERSION} AS python-deps
+FROM python-base AS python-deps
+ARG DEBIAN_RELEASE
+ARG DEBIAN_SNAPSHOT
+ARG SNAPSHOT_BASE_URL
 WORKDIR /wheels
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        build-essential \
-        python3-dev \
-        libssl-dev \
-        libffi-dev \
-        libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt \
+    set -eux; \
+    export DEBIAN_FRONTEND=noninteractive; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        build-essential=12.9 \
+        python3-dev=3.11.2-1+b1 \
+        libssl-dev=3.0.14-1~deb12u1 \
+        libffi-dev=3.4.4-1 \
+        libpq-dev=15.8-0+deb12u1; \
+    rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.runtime.txt ./requirements.runtime.txt
 
 # =============================================================================
 # System Dependencies Stage (very rarely changes)
 # =============================================================================
-FROM python:${PYTHON_VERSION} AS system-deps
+FROM python-base AS system-deps
+ARG DEBIAN_RELEASE
+ARG DEBIAN_SNAPSHOT
+ARG SNAPSHOT_BASE_URL
 ENV PYTHONDONTWRITEBYTECODE=1
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        ffmpeg \
-        build-essential \
-        libxml2-dev \
-        libxslt1-dev \
-        zlib1g-dev \
-        git \
-        cmake \
-        pkg-config \
-        libssl-dev \
-        libffi-dev \
-        libpq-dev \
-        curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt \
+    set -eux; \
+    export DEBIAN_FRONTEND=noninteractive; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ffmpeg=7:5.1.6-0+deb12u1 \
+        build-essential=12.9 \
+        libxml2-dev=2.9.14+dfsg-1.3~deb12u1 \
+        libxslt1-dev=1.1.35-1 \
+        zlib1g-dev=1:1.2.13.dfsg-1 \
+        git=1:2.39.2-1.1 \
+        cmake=3.25.1-1 \
+        pkg-config=1.8.1-1 \
+        libssl-dev=3.0.14-1~deb12u1 \
+        libffi-dev=3.4.4-1 \
+        libpq-dev=15.8-0+deb12u1 \
+        curl=7.88.1-10+deb12u7; \
+    rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
 # Backend Dependencies Stage (cached)
@@ -72,11 +106,11 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY backend/requirements.runtime.txt backend/requirements.base.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
-    /opt/venv/bin/pip install --no-cache-dir \
+    /opt/venv/bin/pip install --cache-dir /root/.cache/pip \
         pip==24.3.1 \
         wheel==0.45.0 \
         setuptools==75.3.0 && \
-    /opt/venv/bin/pip install --no-cache-dir -r requirements.runtime.txt
+    /opt/venv/bin/pip install --require-hashes --cache-dir /root/.cache/pip -r requirements.runtime.txt
 
 # =============================================================================
 # Backend Build Stage (source code - changes frequently)
@@ -88,21 +122,27 @@ COPY backend ./backend
 # =============================================================================
 # Production Runtime Stage
 # =============================================================================
-FROM python:${PYTHON_VERSION} AS production
+FROM python-base AS production
+ARG DEBIAN_RELEASE
+ARG DEBIAN_SNAPSHOT
+ARG SNAPSHOT_BASE_URL
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install minimal runtime dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        ffmpeg \
-        libxml2 \
-        libxslt1.1 \
-        zlib1g \
-        git \
-        curl \
-        libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt \
+    set -eux; \
+    export DEBIAN_FRONTEND=noninteractive; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ffmpeg=7:5.1.6-0+deb12u1 \
+        libxml2=2.9.14+dfsg-1.3~deb12u1 \
+        libxslt1.1=1.1.35-1 \
+        zlib1g=1:1.2.13.dfsg-1 \
+        git=1:2.39.2-1.1 \
+        curl=7.88.1-10+deb12u7 \
+        libpq5=15.8-0+deb12u1; \
+    rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN groupadd --system app \
