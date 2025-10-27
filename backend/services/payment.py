@@ -50,7 +50,7 @@ class StripeService:
         if metadata:
             payload["metadata"] = metadata
 
-        async def _create() -> Any:
+        def _create() -> Any:
             return stripe.PaymentIntent.create(**payload)
 
         intent = await asyncio.to_thread(_create)
@@ -73,7 +73,7 @@ class StripeService:
         )
 
     async def create_customer(self, *, email: str, name: Optional[str] = None) -> str:
-        async def _create() -> Any:
+        def _create() -> Any:
             return stripe.Customer.create(email=email, name=name)
 
         customer = await asyncio.to_thread(_create)
@@ -92,7 +92,7 @@ class StripeService:
         if reason:
             payload["reason"] = reason
 
-        async def _refund() -> Any:
+        def _refund() -> Any:
             return stripe.Refund.create(**payload)
 
         return await asyncio.to_thread(_refund)
