@@ -50,14 +50,15 @@ docker compose down -v
 The Docker setup consists of two main services:
 
 ### Backend Service
-- **Base Image**: Python 3.11.11-slim
+- **Base Image**: Python 3.14.0-slim (digest `sha256:4ed33101ee7ec299041cc41dd268dae17031184be94384b1ce7936dc4e5dead3`)
 - **Build Process**: Multi-stage build with separate build and runtime stages
 - **Port**: 8000 (internal only, traffic arrives through the proxy)
 - **Healthcheck**: HTTP check on `/health` endpoint
 - **User**: Runs as non-root `app` user for security
+- **Determinism**: OS packages install from a frozen Debian snapshot with explicit version pins, the Python runtime comes from a digest-locked base image, and the backend installs from a hash-locked `backend/requirements.runtime.txt` using `pip install --require-hashes` so every build reuses the same cached wheels. Each stage also exports `SOURCE_DATE_EPOCH=0` to avoid embedding build timestamps in the layers.
 
 ### Frontend Service
-- **Base Image**: Node 22.12.0 (build), Nginx 1.29-alpine (runtime)
+- **Base Image**: Node 22.21.0-bookworm-slim (digest `sha256:f9f7f95dcf1f007b007c4dcd44ea8f7773f931b71dc79d57c216e731c87a090b`) for the build stage, Nginx 1.29-alpine (digest `sha256:61e01287e546aac28a3f56839c136b31f590273f3b41187a36f46f6a03bbfe22`) for runtime
 - **Build Process**: Multi-stage build with deps, build, and production stages
 - **Port**: 8080 (exposed on the host)
 - **Reverse Proxy**: Requests to `/api/` are forwarded to the backend service at `http://backend:8000`
