@@ -176,11 +176,11 @@ def persist_audio_parts(job_id: str, audio_urls: List[str]) -> None:
 def estimate_job_cost(repo_url: str, depth_tier: str) -> Dict[str, Any]:
     tiers = {"survey": 2, "standard": 4, "comprehensive": 6}
     chapters = tiers.get(depth_tier, 3)
-    duration_hours = chapters * 0.5
+    duration_minutes = int(chapters * 30)
     cost_cents = int(math.ceil(chapters * 500))
     return {
         "estimated_cost_cents": cost_cents,
-        "estimated_duration_hours": duration_hours,
+        "estimated_duration_minutes": duration_minutes,
         "estimated_chapters": chapters,
         "depth_tier": depth_tier,
     }

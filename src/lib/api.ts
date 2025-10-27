@@ -152,7 +152,7 @@ class ApiClient {
   }
 
   async estimateJobCost(repoUrl: string, depthTier: string) {
-    return this.request<{ estimated_cost_cents: number; estimated_time_minutes: number }>('/jobs/estimate', {
+    return this.request<{ estimated_cost_cents: number; estimated_duration_minutes: number }>('/jobs/estimate', {
       method: 'POST',
       body: JSON.stringify({ repo_url: repoUrl, depth_tier: depthTier }),
     });
