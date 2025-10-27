@@ -1,5 +1,5 @@
 # Core runtime dependencies - rarely change, used for production builds
-fastapi==0.120.0
+fastapi==0.120.1
 uvicorn[standard]==0.38.0
 sqlalchemy==2.0.44
 alembic==1.17.0
