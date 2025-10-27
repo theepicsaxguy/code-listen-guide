@@ -29,8 +29,8 @@ code-listen-guide/
 ├── backend/                # FastAPI service and Agent Framework workflows
 ├── public/                 # Static assets served by Vite
 ├── src/                    # React frontend that streams job state and plays audio
-├── docs/                   # Market analysis and user research
-├── plans/                  # Product and engineering plans that shape the roadmap
+├── decisions/                   # Market analysis and user research
+├── decisions/                  # Product and engineering plans that shape the roadmap
 └── samples/                # Reference implementations we study for agent design
 ```
 
@@ -106,16 +106,16 @@ Compose feeds the backend with `backend/.env.docker` out of the box; point `BACK
 
 ## Roadmap highlights
 
-- **✓ Docling parser integration:** Implemented! The pipeline now parses, cleans, and tags codebases with semantic metadata. See [`docs/DOCLING_PIPELINE.md`](docs/DOCLING_PIPELINE.md) for details.
+- **✓ Docling parser integration:** Implemented! The pipeline now parses, cleans, and tags codebases with semantic metadata. See [`decisions/DOCLING_PIPELINE.md`](decisions/DOCLING_PIPELINE.md) for details.
 - **Community-driven launch:** Publish a transparent landing page, collect early-access signups, and share progress across developer forums, newsletters, and Product Hunt.
 - **Accessibility enhancements:** Pair every audio chapter with searchable transcripts and navigation cues so listeners can jump between sections quickly (identified as a gap in launch research).
 
 ## Reference material
 
-- `docs/DOCLING_PIPELINE.md` – Complete documentation for the Docling parsing, cleaning, and tagging pipeline.
-- `docs/analysis.md` – Market demand study for audio-first developer education.
+- `decisions/DOCLING_PIPELINE.md` – Complete documentation for the Docling parsing, cleaning, and tagging pipeline.
+- `decisions/analysis.md` – Market demand study for audio-first developer education.
 - `Plan.md` – Investor-facing deep dive into the multi-agent architecture and enterprise positioning.
-- `plans/*.md` – Execution blueprints for parser upgrades and go-to-market work.
+- `decisions/*.md` – Execution blueprints for parser upgrades and go-to-market work.
 - `samples/` – External agent framework examples that inspire our own workflow design.
 
 ## Legal
@@ -126,5 +126,5 @@ Compose feeds the backend with `backend/.env.docker` out of the box; point `BACK
 
 ## Contributing
 
-Open an issue before starting large changes so we can cross-check with the roadmap. For new features, update the relevant plan files or add a short proposal in `docs/` so future contributors know the reasoning. Pull requests must pass linting, frontend build, and backend tests before review.
+Open an issue before starting large changes so we can cross-check with the roadmap. For new features, update the relevant plan files or add a short proposal in `decisions/` so future contributors know the reasoning. Pull requests must pass linting, frontend build, and backend tests before review.
 

@@ -485,7 +485,7 @@ pytest backend/tests/test_docling_pipeline.py
 - [Docling Documentation](https://ds4sd.github.io/docling/)
 - [Docling GitHub](https://github.com/DS4SD/docling)
 - [Docling Paper](https://arxiv.org/abs/2408.09869)
-- [Project Plan](../plans/docling-parser-plan.md)
+- [Project Plan](../decisions/docling-parser-plan.md)
 - [Sample Reference](../samples/docling.md)
 
 ## Future Enhancements

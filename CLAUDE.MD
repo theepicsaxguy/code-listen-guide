@@ -69,7 +69,7 @@
 | `README.md` | ✅ Accurate | Setup and development workflow |
 | `Plan.md` | 📋 Vision | Understand goals, NOT current state |
 | `BACKEND_IMPLEMENTATION_PLAN.md` | 📋 Blueprint | Architecture guide, many TODOs remain |
-| `plans/*.md` | 📋 Future | Roadmap items (Docling, launch strategy) |
+| `decisions/*.md` | 📋 Future | Roadmap items (Docling, launch strategy) |
 | This file (`CLAUDE.MD`) | ✅ Reality Check | Current implementation status |
 
 ### Key Principle for AI Assistants
@@ -1985,7 +1985,7 @@ python -c "from agent_framework import Agent; print('OK')"
 
 1. **Search TODO comments** for implementation notes: `grep -r "TODO:" backend/`
 2. **Check reference samples** in `samples/` folder
-3. **Review plan documents** in `plans/` folder
+3. **Review plan documents** in `decisions/` folder
 4. **Read Microsoft Agent Framework docs**: https://learn.microsoft.com/en-us/agent-framework/
 5. **Check existing issues** on GitHub
 

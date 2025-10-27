@@ -30,8 +30,8 @@ Dockerfile.frontend
 
 # Samples and docs not needed in image
 samples/
-docs/
-plans/
+decisions/
+decisions/
 
 # Local env and DB files
 .env
