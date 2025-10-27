@@ -189,6 +189,10 @@ Most common issues:
 2. Hit the health endpoint through the proxy: `curl http://localhost:8080/api/v1/health`
 3. If that works, refresh the browser so it picks up the same-origin `/api/` path baked into the bundle.
 
+**Problem**: Browser keeps asking for an old hashed asset (for example `/assets/index-ABC123.js`) after a deploy
+
+**Solution**: The Nginx layer now marks `index.html` responses as `no-store`, so every navigation grabs the latest bundle manifest. If you fork the Dockerfile, keep that cache policy in place; otherwise stale HTML will point to JavaScript files that no longer exist. Clear the browser cache once to recover clients that hit the issue before this fix shipped.
+
 ### Permission Issues
 
 **Problem**: Permission denied errors in containers
