@@ -57,6 +57,14 @@ backend/
 │   ├── usage_log.py
 │   ├── user.py
 │   └── workflow_checkpoint.py
+├── services/
+│   ├── __init__.py
+│   ├── audio_synthesizer.py
+│   ├── github_service.py
+│   ├── outline_generator.py
+│   ├── post_processor.py
+│   ├── repository_analyzer.py
+│   └── script_generator.py
 ├── tasks/
 │   └── audiobook_tasks.py
 ├── tools/                 # Helper functions exposed as agent tools
@@ -302,7 +310,12 @@ See `.env.example` for required environment variables:
 - **Stripe**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`
 - **AWS**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`, `S3_REGION`
 - **Auth**: `JWT_SECRET`, `CLERK_SECRET_KEY`
+- **GitHub**: `GITHUB_APP_ID`, `GITHUB_INSTALLATION_ID`, `GITHUB_PRIVATE_KEY`, `GITHUB_PAT`
 - **Observability**: `SENTRY_DSN`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`
+
+### GitHub API integration
+
+`backend/services/github_service.py` wraps the GitHub REST API so other services can inspect repositories without shelling out to `git`. Supply either a GitHub App credential set (App ID, installation ID, and private key) or a classic personal access token. If you omit credentials, the client still works for public repositories but you will be limited to the unauthenticated rate cap of sixty requests per hour.
 
 ## Development
 
