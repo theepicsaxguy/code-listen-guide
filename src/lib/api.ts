@@ -1,6 +1,19 @@
 import { resolveApiBasePath } from './api-base-path';
+import type { DepthTier, Job } from '@/lib/types';
 
 const API_BASE_PATH = resolveApiBasePath();
+
+type CreateJobPayload = {
+  repo_url: string;
+  depth_tier: DepthTier;
+  git_ref?: string;
+};
+
+type PaginatedJobsResponse = {
+  jobs: Job[];
+  total: number;
+  page: number;
+};
 
 class ApiClient {
   private baseUrl: string;
@@ -114,12 +127,8 @@ class ApiClient {
   }
 
   // Job endpoints
-  async createJob(data: {
-    repo_url: string;
-    depth_tier: string;
-    git_ref?: string;
-  }) {
-    return this.request<{ job_id: string; estimated_cost: number; estimated_time: number }>('/jobs', {
+  async createJob(data: CreateJobPayload) {
+    return this.request<Job>('/jobs', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -140,11 +149,11 @@ class ApiClient {
       backendParams.offset = String((params.page - 1) * limit);
     }
     const query = new URLSearchParams(backendParams).toString();
-    return this.request<{ jobs: any[]; total: number; page: number }>(`/jobs${query ? `?${query}` : ''}`);
+    return this.request<PaginatedJobsResponse>(`/jobs${query ? `?${query}` : ''}`);
   }
 
   async getJob(jobId: string) {
-    return this.request<any>(`/jobs/${jobId}`);
+    return this.request<Job>(`/jobs/${jobId}`);
   }
 
   async deleteJob(jobId: string) {
@@ -166,7 +175,7 @@ class ApiClient {
     });
   }
 
-  async updateOutline(jobId: string, outlineId: string, data: any) {
+  async updateOutline(jobId: string, outlineId: string, data: Record<string, unknown>) {
     // Backend expects outline data in request body, not outlineId in URL path
     return this.request(`/jobs/${jobId}/outline`, {
       method: 'PUT',
