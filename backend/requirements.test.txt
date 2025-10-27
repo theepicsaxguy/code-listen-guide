@@ -1,6 +1,6 @@
 # Test dependencies - testing framework and mocks
 -r requirements.base.txt
 pytest==8.4.2
-pytest-asyncio==0.2.0
+pytest-asyncio==1.2.0
 pytest-cov==7.0.0
 fakeredis==2.32.0
