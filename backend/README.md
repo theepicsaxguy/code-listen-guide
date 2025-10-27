@@ -220,6 +220,30 @@ To validate the configuration in staging:
 - `DELETE /api/v1/jobs/{job_id}` - Delete job
 - `POST /api/v1/jobs/{job_id}/start` - Start or resume workflow execution
 
+#### `POST /api/v1/jobs/estimate`
+
+Authenticated clients send a JSON payload describing the repository and desired depth tier:
+
+```json
+{
+  "repo_url": "https://github.com/org/project",
+  "depth_tier": "standard"
+}
+```
+
+The API responds with the cost and timeline projection using the same shape as the job estimate schema:
+
+```json
+{
+  "estimated_cost_cents": 2000,
+  "estimated_duration_minutes": 120,
+  "estimated_chapters": 4,
+  "depth_tier": "standard"
+}
+```
+
+Use this endpoint when you need pricing before creating a job record.
+
 ### Outlines
 - `GET /api/v1/jobs/{job_id}/outline` - Retrieve stored outline for review
 - `POST /api/v1/jobs/{job_id}/outline` - Generate chapter outline
