@@ -1,11 +1,14 @@
 ARG VITE_API_BASE_PATH=/api/v1
 ARG NODE_VERSION=22.21.0-bookworm-slim
+ARG NPM_VERSION=10.9.2
 
 # =============================================================================
 # Frontend Dependencies Stage
 # =============================================================================
 FROM node:${NODE_VERSION} AS deps
 WORKDIR /app
+# Pin npm version for reproducibility
+RUN npm install -g npm@${NPM_VERSION}
 COPY package.json package-lock.json ./
 RUN npm ci --frozen-lockfile
 
@@ -14,6 +17,7 @@ RUN npm ci --frozen-lockfile
 # =============================================================================
 FROM node:${NODE_VERSION} AS build
 WORKDIR /app
+RUN npm install -g npm@${NPM_VERSION}
 COPY --from=deps /app/node_modules ./node_modules
 COPY package*.json ./
 COPY index.html vite.config.ts tsconfig.json tsconfig.node.json tsconfig.app.json ./

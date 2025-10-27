@@ -2,6 +2,7 @@
 
 ARG PYTHON_VERSION=3.14.0-slim
 ARG NODE_VERSION=22.21.0-bookworm-slim
+ARG NPM_VERSION=10.9.2
 ARG VITE_API_BASE_PATH=/api/v1
 
 # =============================================================================
@@ -9,11 +10,14 @@ ARG VITE_API_BASE_PATH=/api/v1
 # =============================================================================
 FROM node:${NODE_VERSION} AS frontend-deps
 WORKDIR /app
+# Pin npm version for reproducibility
+RUN npm install -g npm@${NPM_VERSION}
 COPY package.json package-lock.json ./
 RUN npm ci --frozen-lockfile
 
 FROM node:${NODE_VERSION} AS frontend-build
 WORKDIR /app
+RUN npm install -g npm@${NPM_VERSION}
 COPY --from=frontend-deps /app/node_modules ./node_modules
 COPY package*.json ./
 COPY index.html vite.config.ts tsconfig.json tsconfig.node.json tsconfig.app.json ./
@@ -64,12 +68,15 @@ RUN apt-get update \
 # =============================================================================
 FROM system-deps AS backend-deps
 WORKDIR /app
-RUN python -m venv /opt/venv && /opt/venv/bin/pip install --upgrade pip
-COPY backend/requirements.runtime.txt backend/requirements.base.txt /wheels/
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY backend/requirements.runtime.txt backend/requirements.base.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
-    cd /wheels && \
-    python -m pip install --upgrade pip wheel setuptools && \
-    python -m pip wheel --no-deps --wheel-dir=/wheels -r requirements.runtime.txt
+    /opt/venv/bin/pip install --no-cache-dir \
+        pip==24.3.1 \
+        wheel==0.45.0 \
+        setuptools==75.3.0 && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.runtime.txt
 
 # =============================================================================
 # Backend Build Stage (source code - changes frequently)
