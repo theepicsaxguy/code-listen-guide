@@ -1,11 +1,6 @@
-const API_BASE_PATH = (() => {
-  const configured = import.meta.env.VITE_API_BASE_PATH ?? '/api/v1';
-  const trimmed = configured.trim();
-  if (!trimmed.startsWith('/')) {
-    throw new Error('VITE_API_BASE_PATH must be a path starting with "/"');
-  }
-  return trimmed.replace(/\/$/, '');
-})();
+import { resolveApiBasePath } from './api-base-path';
+
+const API_BASE_PATH = resolveApiBasePath();
 
 export class ApiClient {
   private token: string | null = null;

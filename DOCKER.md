@@ -99,7 +99,7 @@ Adjust the file with production-grade secrets before deploying anywhere outside 
 
 #### Frontend Build Arguments
 
-The frontend never reaches across origins. `Dockerfile.frontend` bakes a single value—`VITE_API_BASE_PATH=/api/v1`—into the bundle so all browser requests reuse the same origin and port that served the web app.
+The frontend never reaches across origins during Compose runs. `Dockerfile.frontend` bakes a single value—`VITE_API_BASE_PATH=/api/v1`—into the bundle so all browser requests reuse the same origin and port that served the web app. If you need to test against a remote deployment, set `VITE_API_BASE_PATH` (or the legacy `VITE_API_BASE_URL`) to a full URL before building the frontend image.
 
 ### Docker Compose Configuration
 
