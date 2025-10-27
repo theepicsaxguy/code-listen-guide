@@ -30,7 +30,7 @@ export default function Submit() {
 
     setIsLoading(true);
     try {
-      const response = await apiClient.createJob({
+      const job = await apiClient.createJob({
         repo_url: repoUrl,
         depth_tier: selectedDepth,
         git_ref: gitRef,
@@ -42,11 +42,12 @@ export default function Submit() {
       });
 
       // Redirect to outline page
-      navigate(`/jobs/${response.job_id}/outline`);
-    } catch (error: any) {
+      navigate(`/jobs/${job.id}/outline`);
+    } catch (error: unknown) {
+      const description = error instanceof Error ? error.message : 'Please check the repository URL';
       toast({
         title: 'Failed to create job',
-        description: error.message || 'Please check the repository URL',
+        description,
         variant: 'destructive',
       });
     } finally {
