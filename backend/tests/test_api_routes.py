@@ -162,6 +162,19 @@ class TestJobRoutes:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.json()["detail"] == "Not authenticated"
 
+    def test_estimate_job_cost_accepts_json_body(self, test_client, auth_header):
+        headers, _ = auth_header()
+        payload = {
+            "repo_url": "https://github.com/example/project",
+            "depth_tier": "survey",
+        }
+        response = test_client.post(
+            "/api/v1/jobs/estimate", json=payload, headers=headers
+        )
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["depth_tier"] == payload["depth_tier"]
+
 
 @pytest.mark.api
 @pytest.mark.unit

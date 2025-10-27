@@ -7,7 +7,13 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, s
 from sqlalchemy.orm import Session
 
 from backend.api.dependencies import get_current_user
-from backend.api.schemas.job import JobCreate, JobEstimate, JobListResponse, JobResponse
+from backend.api.schemas.job import (
+    JobCreate,
+    JobEstimate,
+    JobEstimateRequest,
+    JobListResponse,
+    JobResponse,
+)
 from backend.db.session import get_db
 from backend.models.job import Job
 from backend.models.user import User
@@ -93,10 +99,13 @@ async def delete_job(
 
 @router.post("/estimate", response_model=JobEstimate)
 async def estimate_job_cost(
-    repo_url: str, depth_tier: str, current_user: User = Depends(get_current_user)
+    estimate_request: JobEstimateRequest,
+    current_user: User = Depends(get_current_user),
 ):
     """Estimate cost and timeline for a repository without creating a job."""
-    estimate = calculate_job_estimate(repo_url, depth_tier)
+    estimate = calculate_job_estimate(
+        str(estimate_request.repo_url), estimate_request.depth_tier.value
+    )
     return JobEstimate(**estimate)
 
 

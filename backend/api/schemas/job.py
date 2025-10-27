@@ -11,7 +11,7 @@ TODO: Implementation steps:
 7. Add progress tracking fields
 """
 
-from pydantic import BaseModel, HttpUrl, Field, validator
+from pydantic import BaseModel, Field, HttpUrl
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -104,6 +104,13 @@ class JobListResponse(BaseModel):
     page: int
     page_size: int
     has_next: bool
+
+
+class JobEstimateRequest(BaseModel):
+    """Schema for requesting a job cost estimate."""
+
+    repo_url: HttpUrl = Field(..., description="Git repository URL to analyze")
+    depth_tier: DepthTier = Field(..., description="Requested audiobook depth tier")
 
 
 class JobEstimate(BaseModel):
