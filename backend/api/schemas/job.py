@@ -109,7 +109,7 @@ class JobListResponse(BaseModel):
 class JobEstimate(BaseModel):
     """Schema for job cost and time estimate."""
 
-    estimated_cost_cents: int
-    estimated_duration_hours: float
-    estimated_chapters: int
+    estimated_cost_cents: int = Field(..., ge=0)
+    estimated_duration_minutes: int = Field(..., ge=0)
+    estimated_chapters: int = Field(..., ge=0)
     depth_tier: str

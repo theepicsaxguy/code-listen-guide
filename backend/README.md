@@ -214,6 +214,7 @@ To validate the configuration in staging:
 
 ### Jobs
 - `POST /api/v1/jobs` - Create new audiobook job
+- `POST /api/v1/jobs/estimate` - Estimate cost and duration in minutes without creating a job
 - `GET /api/v1/jobs` - List user's jobs
 - `GET /api/v1/jobs/{job_id}` - Get job details
 - `DELETE /api/v1/jobs/{job_id}` - Delete job
