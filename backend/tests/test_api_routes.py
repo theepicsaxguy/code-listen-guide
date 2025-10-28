@@ -507,7 +507,7 @@ class TestPlayerRoutes:
         deliverable = Deliverable(
             job_id=job.id,
             file_type="full",
-            file_url="https://codebase-audiobooks.s3.amazonaws.com/full.mp3",
+            file_url="https://test-bucket.s3.amazonaws.com/full.mp3",
         )
         test_db.add(deliverable)
         test_db.commit()

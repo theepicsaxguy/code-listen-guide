@@ -137,8 +137,14 @@ class TestDoclingPipeline:
     @pytest.mark.asyncio
     async def test_clean_content_detects_minified_code(self, pipeline):
         """Test that minified code is detected and marked."""
-        # Create content that looks minified (very long lines)
-        minified_content = "a" * 300 + "\n" + "b" * 300 + "\n" + "c" * 300
+        # Create content that looks minified (very long lines, need at least 5 lines)
+        minified_content = "\n".join([
+            "a" * 300,
+            "b" * 300,
+            "c" * 300,
+            "d" * 300,
+            "e" * 300
+        ])
 
         parsed_data = {"content": minified_content, "metadata": {}}
 
@@ -290,8 +296,14 @@ class TestDoclingPipeline:
         regular_code = "def function():\n    return True\n\ndef another():\n    pass"
         assert pipeline._is_likely_minified(regular_code) is False
 
-        # Minified code - very long lines
-        minified_code = "x=" + "a" * 300 + ";y=" + "b" * 300
+        # Minified code - very long lines (need at least 5 lines for detection)
+        minified_code = "\n".join([
+            "x=" + "a" * 300 + ";y=" + "b" * 300,
+            "z=" + "c" * 300 + ";w=" + "d" * 300,
+            "foo=" + "e" * 300 + ";bar=" + "f" * 300,
+            "baz=" + "g" * 300 + ";qux=" + "h" * 300,
+            "test=" + "i" * 300 + ";val=" + "j" * 300
+        ])
         assert pipeline._is_likely_minified(minified_code) is True
 
     def test_normalize_whitespace(self, pipeline):

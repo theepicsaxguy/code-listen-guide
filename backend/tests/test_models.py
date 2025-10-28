@@ -114,8 +114,6 @@ class TestJobModel:
 
     def test_job_status_transitions(self, test_db, create_job):
         """Test job status can transition through states."""
-        from backend.models.job import JobStatus
-
         job = create_job(status="pending")
 
         # Transition through statuses
@@ -263,7 +261,7 @@ class TestOutlineModel:
         job = create_job()
 
         outline = Outline(
-            job_id=job.id, outline_data=sample_outline_data, is_approved=False
+            job_id=job.id, outline_data=sample_outline_data, user_approved=False
         )
 
         test_db.add(outline)
@@ -271,7 +269,7 @@ class TestOutlineModel:
         test_db.refresh(outline)
 
         assert outline.id is not None
-        assert outline.is_approved is False
+        assert outline.user_approved is False
 
     def test_outline_approval(self, test_db, create_job, sample_outline_data):
         """Test outline approval workflow."""
@@ -280,18 +278,18 @@ class TestOutlineModel:
         job = create_job()
 
         outline = Outline(
-            job_id=job.id, outline_data=sample_outline_data, is_approved=False
+            job_id=job.id, outline_data=sample_outline_data, user_approved=False
         )
 
         test_db.add(outline)
         test_db.commit()
 
         # Approve outline
-        outline.is_approved = True
+        outline.user_approved = True
         test_db.commit()
         test_db.refresh(outline)
 
-        assert outline.is_approved is True
+        assert outline.user_approved is True
 
 
 @pytest.mark.models

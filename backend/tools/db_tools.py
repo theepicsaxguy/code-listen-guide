@@ -56,12 +56,14 @@ def get_job_record(db: Session, job_id: UUID, user_id: UUID) -> Optional[Job]:
 
 def get_job_by_id(job_id: str) -> Optional[Job]:
     with _session() as db:
-        return db.query(Job).filter(Job.id == job_id).first()
+        normalized_id = UUID(job_id) if isinstance(job_id, str) else job_id
+        return db.query(Job).filter(Job.id == normalized_id).first()
 
 
 def mark_job_status(job_id: str, status: str, stage: Optional[str]) -> None:
     with _session() as db:
-        job = db.query(Job).filter(Job.id == job_id).first()
+        normalized_id = UUID(job_id) if isinstance(job_id, str) else job_id
+        job = db.query(Job).filter(Job.id == normalized_id).first()
         if not job:
             return
         job.status = status
