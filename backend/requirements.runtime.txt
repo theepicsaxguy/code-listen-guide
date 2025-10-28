@@ -438,9 +438,9 @@ docling-core[chunking]==2.49.0 \
     #   docling
     #   docling-ibm-models
     #   docling-parse
-docling-ibm-models==3.10.1 \
-    --hash=sha256:6a781d21160d389f1ed2a42967173930b877b0c96374468e8be2861af4fbf7d2 \
-    --hash=sha256:be618e265eecdfeef7307659a1ba05a4f148678d4deb2e6e67eac6bb257323e2
+docling-ibm-models==3.10.2 \
+    --hash=sha256:977591cb57f7b442af000614bbdb5cafce9973b2edff6d0b4c3cfafb638ed335 \
+    --hash=sha256:b2ac6fbd9fb0729320ae4970891b96684a2375841b9ba2c316d2389f8b8ef796
     # via docling
 docling-parse==4.7.0 \
     --hash=sha256:018fa9ebf33af3ff3825a2ba4df3cfa3b6cb7dba1e4bebcbc4ea0ec0bf0a813e \
