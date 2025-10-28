@@ -165,9 +165,6 @@ COPY --from=backend-build /opt/venv /opt/venv
 COPY --from=backend-build /app/backend /app/backend
 COPY --from=frontend-build /app/dist /app/backend/frontend_dist
 
-# Ensure virtual environment ownership
-RUN chown -R app:app /opt/venv
-
 USER app
 EXPOSE 8000
 CMD ["/opt/venv/bin/uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
