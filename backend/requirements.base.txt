@@ -11,7 +11,7 @@ alembic==1.17.0
 psycopg2-binary==2.9.11
 
 # AI Agent Framework (REQUIRED)
-agent-framework-core==1.0.0b251016
+agent-framework-core==1.0.0b251028
 
 # Configuration & Validation (REQUIRED)
 python-dotenv==1.2.1
