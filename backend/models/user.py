@@ -44,6 +44,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     name = Column(String(255))
+    is_admin = Column(Boolean, default=False, nullable=False)
 
     # Stripe Integration
     stripe_customer_id = Column(String(255), unique=True)

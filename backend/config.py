@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     max_repo_size_mb: int = Field(default=500)
     max_concurrent_jobs_per_user: int = Field(default=3)
     redis_url: str = Field(..., min_length=1)
+    log_level: str = Field(default="INFO")
 
     @model_validator(mode="after")
     def ensure_postgres(cls, values: "Settings") -> "Settings":

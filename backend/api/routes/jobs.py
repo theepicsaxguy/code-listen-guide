@@ -30,10 +30,17 @@ router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 @router.post("", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
 async def create_job(
     job_data: JobCreate,
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Create a new audiobook generation job for the current user."""
+    """Create a new audiobook generation job."""
+    logger.debug(f"Creating job with data: repo_url={job_data.repo_url}, depth_tier={job_data.depth_tier}, git_ref={job_data.git_ref}")
+    
+    # Parse GitHub URL to extract owner and repo name
+    repo_parts = str(job_data.repo_url).rstrip('/').split('/')
+    repo_owner = repo_parts[-2] if len(repo_parts) >= 2 else "unknown"
+    repo_name = repo_parts[-1].replace('.git', '') if repo_parts else "unknown"
+    
+    logger.debug(f"Parsed repository: owner={repo_owner}, name={repo_name}")
     job = create_job_record(
         db=db,
         user_id=current_user.id,
