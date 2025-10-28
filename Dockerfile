@@ -112,13 +112,14 @@ FROM system-deps AS backend-deps
 WORKDIR /app
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-COPY backend/requirements.runtime.txt backend/requirements.base.txt ./
+# Use clean requirements.txt (11 packages) instead of bloated runtime.txt (3286 lines)
+COPY backend/requirements.txt backend/requirements.base.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
     /opt/venv/bin/pip install --cache-dir /root/.cache/pip \
         pip==25.3 \
         wheel==0.45.1 \
         setuptools==80.9.0 && \
-    /opt/venv/bin/pip install --require-hashes --cache-dir /root/.cache/pip -r requirements.runtime.txt
+    /opt/venv/bin/pip install --cache-dir /root/.cache/pip -r requirements.txt
 
 # =============================================================================
 # Backend Build Stage (source code - changes frequently)

@@ -1,5 +1,13 @@
 # Development tools - code formatting, linting, type checking
+# Install with: pip install -r requirements.dev.txt
 -r requirements.base.txt
+-r requirements.test.txt
+
+# Code Formatting
 black==25.9.0
+
+# Linting
 flake8==7.3.0
+
+# Type Checking
 mypy==1.18.2
