@@ -40,28 +40,81 @@ dev-backend: dev-services ## Start backend server (with auto-reload)
 	@echo "$(YELLOW)Waiting for PostgreSQL to be ready...$(NC)"
 	@bash -c 'until docker compose -f docker-compose.dev.yml exec -T postgres pg_isready -U audiobook > /dev/null 2>&1; do sleep 1; done'
 	@echo "$(GREEN)✓ PostgreSQL ready$(NC)"
+	@if [ ! -d ".venv" ]; then \
+		echo "$(YELLOW).venv not found, creating virtual environment...$(NC)"; \
+		cd backend && python3 -m venv ../.venv; \
+		echo "$(YELLOW)Installing backend dependencies...$(NC)"; \
+		. .venv/bin/activate && pip install -U pip setuptools wheel && pip install -r backend/requirements.txt; \
+	fi
 	cd backend && . ../.venv/bin/activate && PYTHONPATH=$(PWD) python3 main.py
 
 dev-frontend: ## Start frontend dev server (with hot reload)
 	@echo "$(BLUE)Starting frontend dev server...$(NC)"
-	npm run dev
+	@if [ ! -d "node_modules" ]; then \
+		echo "$(YELLOW)node_modules not found, running npm install...$(NC)"; \
+		npm install --legacy-peer-deps; \
+	fi
+	npx vite
 
-dev: ## Start full development environment (services + backend + frontend)
+dev: ## Start full development environment (services + backend + frontend in parallel)
 	@echo "$(BLUE)Starting full development environment...$(NC)"
 	@$(MAKE) dev-services
 	@echo ""
-	@echo "$(GREEN)Services are running. Now start backend and frontend in separate terminals:$(NC)"
-	@echo "  Terminal 1: $(YELLOW)make dev-backend$(NC)"
-	@echo "  Terminal 2: $(YELLOW)make dev-frontend$(NC)"
+	@echo "$(GREEN)Services started. Now starting backend and frontend...$(NC)"
+	@echo "$(YELLOW)Press Ctrl+C to stop all processes$(NC)"
 	@echo ""
-	@echo "Or run them in background:"
-	@echo "  $(YELLOW)make dev-backend &$(NC)"
-	@echo "  $(YELLOW)make dev-frontend &$(NC)"
+	@if [ ! -d ".venv" ]; then \
+		echo "$(YELLOW).venv not found, creating virtual environment...$(NC)"; \
+		cd backend && python3 -m venv ../.venv; \
+		echo "$(YELLOW)Installing backend dependencies...$(NC)"; \
+		. .venv/bin/activate && pip install -U pip setuptools wheel && pip install -r backend/requirements.txt; \
+	fi
+	@if [ ! -d "node_modules" ]; then \
+		echo "$(YELLOW)node_modules not found, running npm install...$(NC)"; \
+		npm install --legacy-peer-deps; \
+	fi
+	@bash -c 'set -m; \
+		cleanup() { \
+			echo ""; \
+			echo "$(YELLOW)Stopping all processes...$(NC)"; \
+			kill 0; \
+			exit 0; \
+		}; \
+		trap cleanup INT TERM; \
+		(cd backend && source ../.venv/bin/activate && PYTHONPATH=$(PWD) python3 main.py) & \
+		npx vite & \
+		wait'
+
+dev-separate: ## Show instructions for running backend and frontend separately
+	@echo "$(BLUE)Development Services$(NC)"
+	@echo ""
+	@echo "$(GREEN)1. Start services:$(NC)"
+	@echo "   $(YELLOW)make dev-services$(NC)"
+	@echo ""
+	@echo "$(GREEN)2. In separate terminals, start:$(NC)"
+	@echo "   Terminal 1: $(YELLOW)make dev-backend$(NC)"
+	@echo "   Terminal 2: $(YELLOW)make dev-frontend$(NC)"
 
 stop: ## Stop all services
 	@echo "$(BLUE)Stopping services...$(NC)"
 	docker compose -f docker-compose.dev.yml down
 	@echo "$(GREEN)✓ Services stopped$(NC)"
+
+stop-dev: ## Stop all development processes (backend, frontend, services)
+	@echo "$(BLUE)Stopping all development processes...$(NC)"
+	@# Kill backend on port 8000
+	@if lsof -ti:8000 >/dev/null 2>&1; then \
+		echo "$(YELLOW)Stopping backend (port 8000)...$(NC)"; \
+		lsof -ti:8000 | xargs kill -9 2>/dev/null || true; \
+	fi
+	@# Kill frontend on port 4173
+	@if lsof -ti:4173 >/dev/null 2>&1; then \
+		echo "$(YELLOW)Stopping frontend (port 4173)...$(NC)"; \
+		lsof -ti:4173 | xargs kill -9 2>/dev/null || true; \
+	fi
+	@# Stop Docker services
+	@docker compose -f docker-compose.dev.yml down
+	@echo "$(GREEN)✓ All processes stopped$(NC)"
 
 clean: ## Stop services and remove volumes (WARNING: deletes database!)
 	@echo "$(RED)WARNING: This will delete all database data!$(NC)"
