@@ -249,15 +249,16 @@ def mock_stripe_client():
     """Mock Stripe client."""
     client = MagicMock()
 
-    # Mock PaymentIntent
+    # Mock PaymentIntent with proper attributes
+    mock_payment_intent = MagicMock()
+    mock_payment_intent.id = "pi_test_123"
+    mock_payment_intent.client_secret = "pi_test_123_secret"
+    mock_payment_intent.amount = 4900
+    mock_payment_intent.currency = "usd"
+    mock_payment_intent.status = "requires_payment_method"
+
     client.PaymentIntent = MagicMock()
-    client.PaymentIntent.create = MagicMock(
-        return_value=MagicMock(
-            id="pi_test_123",
-            client_secret="pi_test_123_secret",
-            status="requires_payment_method",
-        )
-    )
+    client.PaymentIntent.create = MagicMock(return_value=mock_payment_intent)
 
     # Mock Webhook
     client.Webhook = MagicMock()

@@ -194,9 +194,18 @@ class TestStripeWebhookEvent:
 class TestWebhookSignatureVerification:
     """Tests for webhook signature verification function."""
 
-    def test_verify_webhook_signature_invalid_signature(self):
+    def test_verify_webhook_signature_invalid_signature(self, monkeypatch):
         """Test that invalid signature returns False."""
-        # This will return False because we're not using real Stripe data
+        import stripe
+
+        # Mock stripe to raise SignatureVerificationError
+        def mock_construct_event(payload, signature, secret):
+            raise stripe.error.SignatureVerificationError("Invalid signature", "sig_header")
+
+        monkeypatch.setattr("stripe.Webhook.construct_event", mock_construct_event)
+        monkeypatch.setattr("stripe.error.SignatureVerificationError", Exception)
+
+        # This will return False because signature verification fails
         result = verify_webhook_signature(
             payload='{"test": "data"}',
             signature="invalid_signature",
@@ -204,8 +213,16 @@ class TestWebhookSignatureVerification:
         )
         assert result is False
 
-    def test_verify_webhook_signature_handles_exceptions(self):
+    def test_verify_webhook_signature_handles_exceptions(self, monkeypatch):
         """Test that verification handles exceptions gracefully."""
+        import stripe
+
+        # Mock stripe to raise a generic exception
+        def mock_construct_event(payload, signature, secret):
+            raise ValueError("Some error")
+
+        monkeypatch.setattr("stripe.Webhook.construct_event", mock_construct_event)
+
         # Should not raise exception, just return False
         result = verify_webhook_signature(
             payload="",

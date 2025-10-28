@@ -305,7 +305,7 @@ class TestPaymentModel:
 
         payment = Payment(
             user_id=user.id,
-            stripe_payment_intent_id="pi_test_123",
+            stripe_payment_intent_id=f"pi_test_{uuid.uuid4().hex}",
             amount_cents=4900,
             status="succeeded",
         )
@@ -354,7 +354,8 @@ class TestUsageLogModel:
 
         log = UsageLog(
             job_id=job.id,
-            service_type="openai_responses",
+            event_type="openai_responses",
+            provider="openai",
             tokens_used=1000,
             cost_cents=25,
         )
@@ -373,15 +374,16 @@ class TestUsageLogModel:
         job = create_job()
 
         services = [
-            ("openai_responses", 1000, 25),
-            ("anthropic", 1500, 30),
-            ("openai_tts", 0, 100),
+            ("script_generated", "openai", 1000, 25),
+            ("script_generated", "anthropic", 1500, 30),
+            ("audio_synthesized", "openai_tts", 0, 100),
         ]
 
-        for service_type, tokens, cost in services:
+        for event_type, provider, tokens, cost in services:
             log = UsageLog(
                 job_id=job.id,
-                service_type=service_type,
+                event_type=event_type,
+                provider=provider,
                 tokens_used=tokens,
                 cost_cents=cost,
             )

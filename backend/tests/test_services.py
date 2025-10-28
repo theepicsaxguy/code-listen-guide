@@ -140,26 +140,27 @@ class TestRepositoryAnalyzer:
         assert result == fallback_result
 
     @pytest.mark.asyncio
-    @patch("backend.services.repository_analyzer.Repo")
-    async def test_clone_repository(self, mock_repo_class):
+    async def test_clone_repository(self):
         """Test repository cloning."""
         from backend.services.repository_analyzer import RepositoryAnalyzer
 
         # Mock the git repo
         mock_repo = MagicMock()
         mock_repo.head.commit.hexsha = "abc123"
-        mock_repo_class.clone_from.return_value = mock_repo
-
-        analyzer = RepositoryAnalyzer(
-            repo_url="https://github.com/user/repo", use_docling=False
-        )
 
         with patch("backend.services.repository_analyzer.HAS_GIT", True):
-            result = await analyzer.clone_repository()
+            with patch("git.Repo") as mock_repo_class:
+                mock_repo_class.clone_from.return_value = mock_repo
 
-            assert result is not None
-            assert result.exists()
-            mock_repo_class.clone_from.assert_called_once()
+                analyzer = RepositoryAnalyzer(
+                    repo_url="https://github.com/user/repo", use_docling=False
+                )
+
+                result = await analyzer.clone_repository()
+
+                assert result is not None
+                assert result.exists()
+                mock_repo_class.clone_from.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_analyzer_max_size_validation(self):
@@ -404,15 +405,12 @@ class TestAudioTools:
         class DummySettings:
             openai_api_key = None
 
-        monkeypatch.setattr(
-            "backend.tools.audio_tools.get_settings", lambda: DummySettings()
-        )
+        with patch("backend.config.get_settings", return_value=DummySettings()):
+            path = synthesize_speech("This is a test narration script.")
 
-        path = synthesize_speech("This is a test narration script.")
-
-        assert Path(path).exists()
-        assert Path(path).suffix == ".mp3"
-        assert Path(path).read_bytes().startswith(b"This is a test")
+            assert Path(path).exists()
+            assert Path(path).suffix == ".mp3"
+            assert Path(path).read_bytes().startswith(b"This is a test")
 
     def test_synthesize_speech_streams_audio(self, monkeypatch):
         """Test streaming audio to a file when OpenAI returns data."""
@@ -437,15 +435,12 @@ class TestAudioTools:
             def __init__(self, api_key):
                 self.audio = DummyAudio()
 
-        monkeypatch.setattr(
-            "backend.tools.audio_tools.get_settings", lambda: DummySettings()
-        )
-        monkeypatch.setattr("backend.tools.audio_tools.OpenAI", DummyClient)
+        with patch("backend.config.get_settings", return_value=DummySettings()):
+            with patch("openai.OpenAI", DummyClient):
+                path = synthesize_speech("Hello world.", voice="alloy")
 
-        path = synthesize_speech("Hello world.", voice="alloy")
-
-        assert Path(path).exists()
-        assert Path(path).read_bytes() == b"audio-bytes"
+                assert Path(path).exists()
+                assert Path(path).read_bytes() == b"audio-bytes"
 
 
 @pytest.mark.services
@@ -557,7 +552,8 @@ class TestPaymentService:
             )
 
             assert result is not None
-            assert "client_secret" in result
+            assert hasattr(result, "client_secret")
+            assert result.client_secret is not None
 
     @pytest.mark.asyncio
     async def test_handle_payment_success_webhook(
