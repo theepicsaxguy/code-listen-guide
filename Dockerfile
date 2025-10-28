@@ -90,10 +90,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libxml2-dev=2.9.14+dfsg-1.3~deb12u1 \
         libxslt1-dev=1.1.35-1 \
         zlib1g-dev=1:1.2.13.dfsg-1 \
-        git=1:2.39.2-1.1 \
+        git=1:2.39.5-0+deb12u1 \
         cmake=3.25.1-1 \
         pkg-config=1.8.1-1 \
-        libssl-dev=3.0.14-1~deb12u1 \
+        libssl-dev=3.0.14-1~deb12u2 \
         libffi-dev=3.4.4-1 \
         libpq-dev=15.8-0+deb12u1 \
         curl=7.88.1-10+deb12u7; \
@@ -109,9 +109,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY backend/requirements.runtime.txt backend/requirements.base.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
     /opt/venv/bin/pip install --cache-dir /root/.cache/pip \
-        pip==24.3.1 \
-        wheel==0.45.0 \
-        setuptools==75.3.0 && \
+        pip==25.3 \
+        wheel==0.45.1 \
+        setuptools==80.9.0 && \
     /opt/venv/bin/pip install --require-hashes --cache-dir /root/.cache/pip -r requirements.runtime.txt
 
 # =============================================================================
