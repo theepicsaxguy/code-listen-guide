@@ -8,8 +8,7 @@ export interface User {
   subscription_status?: string;
   credits_remaining: number;
   created_at: string;
-  // TODO: Add back after running migration 20241028_add_is_admin_to_users.py
-  // is_admin?: boolean;
+  is_admin?: boolean;
 }
 
 export interface Job {

@@ -13,7 +13,6 @@ password strength, and proper data sanitization.
 
 from datetime import datetime
 from enum import Enum
-import uuid
 from typing import Optional
 from uuid import UUID
 
@@ -76,8 +75,7 @@ class UserResponse(BaseModel):
     id: UUID
     email: str
     name: Optional[str] = None
-    # TODO: Add back after running migration 20241028_add_is_admin_to_users.py
-    # is_admin: bool = False
+    is_admin: bool = False
     subscription_tier: str
     subscription_status: str = "active"
     credits_remaining: int

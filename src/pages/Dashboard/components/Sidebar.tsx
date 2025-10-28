@@ -17,8 +17,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user 
     { id: 'audiobooks', label: 'Audiobooks', icon: <Library size={20} /> },
     { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
     { id: 'billing', label: 'Billing', icon: <CreditCard size={20} /> },
-    // TODO: Uncomment after running migration 20241028_add_is_admin_to_users.py
-    // ...(user?.is_admin ? [{ id: 'admin', label: 'Admin', icon: <Settings size={20} /> }] : [])
+    ...(user?.is_admin ? [{ id: 'admin', label: 'Admin', icon: <Settings size={20} /> }] : [])
   ];
 
   const handleNavClick = (itemId: string) => {

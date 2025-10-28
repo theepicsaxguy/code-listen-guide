@@ -13,7 +13,9 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAdminAuth } from "@/contexts/AdminAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiClient } from "@/lib/api-client";
+import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
   { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -30,7 +32,16 @@ const navItems = [
 
 export const AdminLayout = () => {
   const location = useLocation();
-  const { isAuthenticated, isLoading, logout } = useAdminAuth();
+  const { user, isLoading: isAuthLoading, logout: mainLogout } = useAuth();
+
+  // Fetch user data to check admin status
+  const { data: userData, isLoading: isUserDataLoading } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => apiClient.getCurrentUser(),
+    enabled: !!user,
+  });
+
+  const isLoading = isAuthLoading || isUserDataLoading;
 
   if (isLoading) {
     return (
@@ -40,9 +51,20 @@ export const AdminLayout = () => {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+  // Redirect to login if not authenticated
+  if (!user) {
+    return <Navigate to="/auth" replace />;
   }
+
+  // Redirect to dashboard if not admin
+  if (!userData?.is_admin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const handleLogout = () => {
+    mainLogout();
+    apiClient.clearToken();
+  };
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -81,7 +103,7 @@ export const AdminLayout = () => {
           <Button
             variant="ghost"
             className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={logout}
+            onClick={handleLogout}
           >
             <LogOut className="mr-3 h-4 w-4" />
             Logout
