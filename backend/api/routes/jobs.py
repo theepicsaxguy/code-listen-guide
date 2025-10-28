@@ -1,5 +1,6 @@
 """Job routes for creating and managing audiobook generation jobs."""
 
+import logging
 import uuid
 from typing import Optional
 
@@ -25,6 +26,7 @@ from backend.tools.db_tools import (
 )
 
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("", response_model=JobResponse, status_code=status.HTTP_201_CREATED)

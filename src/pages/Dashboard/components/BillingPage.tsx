@@ -23,6 +23,12 @@ export const BillingPage: React.FC = () => {
   const creditsTotal = 100; // Placeholder - adjust based on actual plan
   const usagePercentage = (creditsUsed / creditsTotal) * 100;
 
+  const handleUpgradePlan = () => {
+    // TODO: Implement upgrade flow - could navigate to pricing page or open modal
+    // For now, you can link to a pricing page or Stripe checkout
+    window.open('https://stripe.com', '_blank'); // Replace with actual pricing URL
+  };
+
   return (
     <div className="max-w-4xl space-y-6">
       <div className="bg-gray-800 border border-gray-700 rounded-xl p-8">
@@ -35,7 +41,10 @@ export const BillingPage: React.FC = () => {
               {user.subscription_status === 'active' ? 'Active subscription' : user.subscription_status}
             </p>
           </div>
-          <button className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors">
+          <button
+            onClick={handleUpgradePlan}
+            className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors"
+          >
             Upgrade Plan
           </button>
         </div>

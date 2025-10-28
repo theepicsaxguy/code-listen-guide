@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from './Dashboard/hooks';
 import {
   Sidebar,
@@ -11,11 +13,37 @@ import {
 } from './Dashboard/components';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const { user: authUser, isLoading: isAuthLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
   const [selectedAudiobookId, setSelectedAudiobookId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: user } = useUser();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthLoading && !authUser) {
+      navigate('/auth');
+    }
+  }, [authUser, isAuthLoading, navigate]);
+
+  // Show loading while checking auth
+  if (isAuthLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-950">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!authUser) {
+    return null;
+  }
 
   const handleNavigateToAudiobook = (id: string) => {
     setSelectedAudiobookId(id);
@@ -27,9 +55,14 @@ const Dashboard: React.FC = () => {
     setActiveTab('audiobooks');
   };
 
+  const handleCreateNewAudiobook = () => {
+    // Navigate to the submit page where users can create new audiobooks
+    navigate('/submit');
+  };
+
   return (
     <div className="flex h-screen bg-gray-950">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user || null} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user ?? null} />
       <div className="flex-1 overflow-auto">
         <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-10 backdrop-blur-sm bg-gray-900/95">
           <div className="px-8 py-4 flex items-center justify-between">
@@ -56,6 +89,7 @@ const Dashboard: React.FC = () => {
             </div>
             {activeTab !== 'audiobook-detail' && (
               <button
+                onClick={handleCreateNewAudiobook}
                 className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all shadow-lg shadow-purple-500/25"
                 aria-label="Create New Audiobook"
               >
