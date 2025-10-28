@@ -57,7 +57,8 @@ ARG DEBIAN_RELEASE
 ARG DEBIAN_SNAPSHOT
 ARG SNAPSHOT_BASE_URL
 WORKDIR /wheels
-RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
     set -eux; \
     export DEBIAN_FRONTEND=noninteractive; \
     apt-get update; \
@@ -78,7 +79,8 @@ ARG DEBIAN_RELEASE
 ARG DEBIAN_SNAPSHOT
 ARG SNAPSHOT_BASE_URL
 ENV PYTHONDONTWRITEBYTECODE=1
-RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
     set -eux; \
     export DEBIAN_FRONTEND=noninteractive; \
     apt-get update; \
@@ -130,7 +132,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install minimal runtime dependencies
-RUN --mount=type=cache,target=/var/cache/apt --mount=type=cache,target=/var/lib/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
     set -eux; \
     export DEBIAN_FRONTEND=noninteractive; \
     apt-get update; \
