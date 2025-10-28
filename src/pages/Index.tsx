@@ -2,6 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
 import { SampleShowcase } from "@/components/SampleShowcase";
+import { Stats } from "@/components/Stats";
+import { Testimonials } from "@/components/Testimonials";
+import { Pricing } from "@/components/Pricing";
+import { FAQ } from "@/components/FAQ";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 
@@ -10,9 +14,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
-      <nav className="fixed top-0 w-full z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+      <nav className="fixed top-0 w-full z-50 border-b border-border/30 glass supports-[backdrop-filter]:bg-background/70">
         <div className="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+          <h1 className="text-xl sm:text-2xl font-bold gradient-text-primary">
             Codebase Audiobook
           </h1>
           <div className="flex gap-2 sm:gap-4">
@@ -32,7 +36,7 @@ const Index = () => {
             </Button>
             <Button
               onClick={() => navigate('/auth')}
-              className="bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30"
+              className="bg-gradient-to-r from-primary to-accent hover:scale-105 shadow-[0_0_20px_rgba(138,43,226,0.3)] hover:shadow-[0_0_30px_rgba(0,255,255,0.4)] transition-all duration-300"
             >
               Get Started
             </Button>
@@ -41,8 +45,12 @@ const Index = () => {
       </nav>
       <div className="pt-16">
         <Hero />
-        <SampleShowcase />
+        <Stats />
         <HowItWorks />
+        <SampleShowcase />
+        <Testimonials />
+        <Pricing />
+        <FAQ />
         <Footer />
       </div>
     </div>
