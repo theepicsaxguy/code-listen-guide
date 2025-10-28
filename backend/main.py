@@ -51,7 +51,7 @@ def get_frontend_file(relative_path: str) -> Path:
 # Configure logging
 from backend.config import get_settings
 _settings = get_settings()
-log_level = getattr(logging, _settings.LOG_LEVEL.upper(), logging.INFO)
+log_level = getattr(logging, _settings.log_level.upper(), logging.INFO)
 logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
 

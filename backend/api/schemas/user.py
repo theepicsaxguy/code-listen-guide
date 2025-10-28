@@ -15,6 +15,7 @@ from datetime import datetime
 from enum import Enum
 import uuid
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -70,16 +71,17 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(BaseModel):
-    """Serialized user data for API responses."""
-
-    id: uuid.UUID
-    email: EmailStr
-    name: Optional[str]
+    """Response schema for user information."""
+    
+    id: UUID
+    email: str
+    name: Optional[str] = None
+    is_admin: bool = False
     subscription_tier: str
-    subscription_status: Optional[str]
+    subscription_status: str = "active"
     credits_remaining: int
     created_at: datetime
-
+    
     model_config = ConfigDict(from_attributes=True)
 
 
