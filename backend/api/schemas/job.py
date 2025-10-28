@@ -186,12 +186,12 @@ class JobEstimate(BaseModel):
             depth_tier,
             {"duration": 120, "chapters": 8}
         )
-        
-        # TODO: Adjust based on repo_analysis (file count, complexity, language mix)
+
+        # Future enhancement: Adjust based on repo_analysis (file count, complexity, language mix)
         # if repo_analysis:
         #     file_count = repo_analysis.get("file_count", 0)
         #     # Adjust estimates based on actual repository size
-        
+
         return cls(
             estimated_cost_cents=estimated_cost,
             estimated_duration_minutes=estimates["duration"],
@@ -208,3 +208,10 @@ class JobEstimate(BaseModel):
         if v > 1000000:  # $10,000 max
             raise ValueError("Cost exceeds maximum allowed")
         return v
+
+
+# Rebuild models after all are defined to resolve forward references
+from backend.api.schemas.chapter import ChapterResponse  # noqa: E402
+from backend.api.schemas.deliverable import DeliverableResponse  # noqa: E402
+
+JobResponse.model_rebuild()

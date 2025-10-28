@@ -1,6 +1,7 @@
 """SQLAlchemy database models export package."""
 
 from backend.db.session import Base
+from backend.api.schemas.job import JobStatus  # Export JobStatus enum
 
 from . import chapter
 from . import deliverable

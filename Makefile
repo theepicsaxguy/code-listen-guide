@@ -137,10 +137,53 @@ logs-redis: ## Show Redis logs
 	docker compose -f docker-compose.dev.yml logs -f redis
 
 test: ## Run backend tests
-	cd backend && . ../.venv/bin/activate && PYTHONPATH=$(PWD) pytest
+	@echo "$(BLUE)Running backend tests...$(NC)"
+	@if [ ! -d ".venv" ]; then \
+		echo "$(RED)Error: .venv not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	. .venv/bin/activate && cd backend && PYTHONPATH=$(PWD) pytest -v
 
-test-coverage: ## Run tests with coverage
-	cd backend && . ../.venv/bin/activate && PYTHONPATH=$(PWD) pytest --cov=backend --cov-report=html
+test-coverage: ## Run backend tests with coverage report
+	@echo "$(BLUE)Running backend tests with coverage...$(NC)"
+	@if [ ! -d ".venv" ]; then \
+		echo "$(RED)Error: .venv not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	. .venv/bin/activate && cd backend && PYTHONPATH=$(PWD) pytest --cov=backend --cov-report=html --cov-report=term-missing -v
+	@echo "$(GREEN)✓ Coverage report generated in coverage_html/$(NC)"
+
+test-fast: ## Run backend tests (fail fast on first error)
+	@echo "$(BLUE)Running backend tests (fast mode)...$(NC)"
+	@if [ ! -d ".venv" ]; then \
+		echo "$(RED)Error: .venv not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	. .venv/bin/activate && cd backend && PYTHONPATH=$(PWD) pytest -x -v
+
+test-watch: ## Run backend tests in watch mode (requires pytest-watch)
+	@echo "$(BLUE)Running backend tests in watch mode...$(NC)"
+	@if [ ! -d ".venv" ]; then \
+		echo "$(RED)Error: .venv not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	. .venv/bin/activate && cd backend && PYTHONPATH=$(PWD) ptw -- -v
+
+test-models: ## Run only model tests
+	@echo "$(BLUE)Running model tests...$(NC)"
+	. .venv/bin/activate && cd backend && PYTHONPATH=$(PWD) pytest tests/test_models.py -v
+
+test-routes: ## Run only API route tests
+	@echo "$(BLUE)Running API route tests...$(NC)"
+	. .venv/bin/activate && cd backend && PYTHONPATH=$(PWD) pytest tests/test_api_routes.py -v
+
+test-schemas: ## Run only schema tests
+	@echo "$(BLUE)Running schema tests...$(NC)"
+	. .venv/bin/activate && cd backend && PYTHONPATH=$(PWD) pytest tests/test_schemas/ -v
+
+test-services: ## Run only service tests
+	@echo "$(BLUE)Running service tests...$(NC)"
+	. .venv/bin/activate && cd backend && PYTHONPATH=$(PWD) pytest tests/test_services.py -v
 
 db-shell: ## Open PostgreSQL shell
 	docker compose -f docker-compose.dev.yml exec postgres psql -U audiobook -d audiobook

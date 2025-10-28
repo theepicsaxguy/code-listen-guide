@@ -1,7 +1,9 @@
-# CLAUDE.MD - AI Assistant Guide for Codebase Audiobook
+# CLAUDE.md
 
-> **Last Updated**: October 25, 2025
-> **Project Status**: MVP in Development - Frontend Complete, Backend Services TODO
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+> **Last Updated**: October 28, 2025
+> **Project Status**: MVP in Active Development - Frontend Complete, Backend Core Functional, Services In Progress
 > **Architecture**: Microsoft Agent Framework (Python) + React 19 + FastAPI
 
 ---
@@ -59,8 +61,34 @@
 1. **Read `README.md`** - User-facing documentation with setup instructions
 2. **Read `Plan.md`** - Investor specification with vision and architecture (ASPIRATIONAL)
 3. **Read `BACKEND_IMPLEMENTATION_PLAN.md`** - Detailed technical architecture (PLANNED, NOT ALL IMPLEMENTED)
-4. **Search for `TODO:`** - Find specific implementation gaps throughout the codebase
-5. **Check this file's [Critical Implementation Gaps](#critical-implementation-gaps)** section
+4. **Read `backend/README.md`** - Backend-specific setup, API docs, and workflow details
+5. **Search for `TODO:`** - Find specific implementation gaps throughout the codebase
+6. **Check this file's [Critical Implementation Gaps](#critical-implementation-gaps)** section
+
+### Quick Development Setup
+
+The easiest way to get started is using the Makefile:
+
+```bash
+# Install all dependencies (frontend + backend)
+make install
+
+# Start full development environment (services + backend + frontend)
+make dev
+
+# Or run services separately in different terminals:
+make dev-services  # Start PostgreSQL and Redis in Docker
+make dev-backend   # Start FastAPI server (Terminal 1)
+make dev-frontend  # Start Vite dev server (Terminal 2)
+
+# Stop everything
+make stop-dev
+```
+
+**Quick access:**
+- Frontend: http://localhost:4173
+- Backend API: http://localhost:8000
+- API docs: http://localhost:8000/docs
 
 ### IMPORTANT: What's Real vs. Aspirational
 
@@ -315,7 +343,7 @@ backend/
 ├── tools/              # Agent tools (functions agents can call)
 ├── db/
 │   ├── session.py      # Database connection
-│   └── migrations/     # Alembic (not yet configured)
+│   └── migrations/     # Alembic migrations (configured)
 ├── utils/              # Helpers (auth, validators, checkpointing)
 └── tests/              # Pytest test files
 ```
@@ -347,6 +375,8 @@ DATABASE_URL=sqlite:///./audiobook.db
 # LLM APIs
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
+OPENAI_RESPONSES_MODEL=gpt-4o-mini  # Model for Agent Framework
+OPENAI_BASE_URL=https://api.openai.com/v1  # Optional
 
 # Storage
 AWS_ACCESS_KEY_ID=...
@@ -357,15 +387,57 @@ S3_REGION=us-east-1
 # Payments
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 # Auth
-JWT_SECRET_KEY=your-secret-key-here
+JWT_SECRET=your-secret-key-here
 JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440  # 24 hours
+
+# GitHub Integration (optional)
+GITHUB_APP_ID=...
+GITHUB_INSTALLATION_ID=...
+GITHUB_PRIVATE_KEY=...
+GITHUB_PAT=...  # Personal Access Token
+
+# Redis (WebSocket + rate limiting)
+REDIS_URL=redis://localhost:6379/0
+
+# Rate Limiting
+RATE_LIMIT_STORAGE_URI=memory://  # Use redis:// in production
+RATE_LIMIT_STORAGE_OPTIONS={}
+
+# Git Repository Safeguards
+CBA_GIT_ALLOWED_HOSTS=github.com
+CBA_GIT_ALLOWED_ORGS=codebase-audiobooks,user
+CBA_GIT_CLONE_TIMEOUT_SECONDS=300
+CBA_GIT_CLONE_SIZE_MB=500
 
 # Optional: Observability
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+OTEL_SERVICE_NAME=codebase-audiobook
 SENTRY_DSN=https://...
 ```
+
+### Security & Rate Limiting
+
+**Security Features:**
+- CORS protection with explicit allowlist
+- Security headers (CSP, HSTS, X-Frame-Options, etc.)
+- SlowAPI rate limiting (stricter on auth endpoints)
+- Git repository cloning safeguards
+- JWT authentication with token expiration
+
+**Rate Limiting:**
+- Development: `memory://` (single process)
+- Production: `redis://` (shared across workers)
+- Test limits: `hey -n 40 -c 5 -H "Authorization: Bearer <token>" https://api.example.com/api/v1/auth/me`
+
+**Repository Safeguards:**
+- Only allowed hosts/orgs (configured via env vars)
+- Shallow clones with size/timeout limits
+- Isolated temp directories with cleanup
+- `GIT_TERMINAL_PROMPT=0` to prevent prompts
 
 ### Git Workflow
 
@@ -1214,6 +1286,8 @@ This is where business logic lives. **Most services are currently TODO.**
 - `post_processor.py` - Merge audio, create deliverables
 - `payment.py` - Stripe integration
 - `storage.py` - AWS S3 operations
+- `github_service.py` - GitHub REST API wrapper (inspect repos without cloning)
+- `docling_pipeline.py` - IBM Docling integration for advanced code parsing
 
 **Example Service Implementation Pattern:**
 
@@ -1557,17 +1631,29 @@ async def upload_audio_file(
 #### 9. Database Migrations (Alembic)
 
 **File:** `backend/db/migrations/`
-**Status:** Folder exists, not configured
+**Status:** ✅ Configured and working
 
-**What needs to be done:**
-1. Initialize Alembic: `alembic init backend/db/migrations`
-2. Configure `alembic.ini` with database URL
-3. Update `env.py` to import models
-4. Generate initial migration: `alembic revision --autogenerate -m "Initial schema"`
-5. Apply migration: `alembic upgrade head`
-6. Document migration workflow in README
+**What's implemented:**
+- Alembic is configured with `backend/alembic.ini`
+- Initial schema migration: `20241010_initial_schema.py`
+- Workflow checkpoints migration: `20241025_add_workflow_checkpoints.py`
 
-**Estimated effort:** 0.5 days
+**Running migrations:**
+```bash
+# Apply all migrations
+alembic -c backend/alembic.ini upgrade head
+
+# Apply specific migration
+alembic -c backend/alembic.ini upgrade 20241025_add_workflow_checkpoints
+
+# Rollback to previous version
+alembic -c backend/alembic.ini downgrade 20241010_initial_schema
+
+# Create new migration
+alembic -c backend/alembic.ini revision --autogenerate -m "Description"
+```
+
+**Status:** Complete, migrations in place
 
 ---
 
@@ -1743,7 +1829,51 @@ jobs:
 
 ### Recommended Deployment Setup
 
-#### Option 1: Railway (Easiest)
+#### Option 1: Docker (Single Container)
+
+Build and run everything in one container:
+
+```bash
+docker build -t codebase-audiobook .
+docker run --rm -p 8000:8000 codebase-audiobook
+```
+
+- Frontend and backend served from same origin
+- Runs as non-root user for security
+- Uses `requirements.runtime.txt` (no test/dev deps)
+- Access: http://localhost:8000
+
+#### Option 2: Docker Compose (Separate Containers)
+
+Use published images or build locally:
+
+```bash
+# Using published images
+docker compose up
+
+# Build from local code
+docker compose up --build
+```
+
+- Frontend: Nginx on port 8080 (non-root)
+- Backend: FastAPI (proxied via Nginx)
+- Configuration via `backend/.env.docker`
+- Access: http://localhost:8080
+
+#### Option 3: Production Script
+
+One-command production build:
+
+```bash
+./serve-production.sh
+```
+
+- Compiles frontend
+- Copies to `backend/frontend_dist`
+- Starts FastAPI with multiple workers
+- Override: `BACKEND_PORT=8080 UVICORN_WORKERS=4 ./serve-production.sh`
+
+#### Option 4: Railway (PaaS)
 
 1. Frontend and backend in same repo (monorepo)
 2. Create two Railway services:
@@ -1753,11 +1883,7 @@ jobs:
 4. Set environment variables in Railway dashboard
 5. Connect GitHub repo for automatic deploys
 
-#### Option 2: Render
-
-Similar to Railway, good free tier for testing
-
-#### Option 3: AWS (Production-Ready)
+#### Option 5: AWS (Enterprise)
 
 - Frontend: S3 + CloudFront
 - Backend: ECS Fargate or App Runner
@@ -1902,7 +2028,19 @@ STRIPE_SECRET_KEY=sk_live_...
 
 ### Running the Full Stack Locally
 
-**Terminal 1 - Backend:**
+**Recommended: Use Makefile Commands**
+
+```bash
+# Full stack in one command (services + backend + frontend)
+make dev
+
+# Or run separately:
+make dev-services  # PostgreSQL + Redis in Docker
+make dev-backend   # FastAPI server
+make dev-frontend  # Vite dev server
+```
+
+**Manual Setup (Terminal 1 - Backend):**
 ```bash
 cd backend
 python -m venv venv
@@ -1913,7 +2051,7 @@ cp .env.example .env  # Edit with your API keys
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Terminal 2 - Frontend:**
+**Manual Setup (Terminal 2 - Frontend):**
 ```bash
 npm install --legacy-peer-deps
 cp .env.example .env  # Edit if needed
@@ -1924,6 +2062,33 @@ npm run dev
 - Frontend: http://localhost:4173
 - Backend API: http://localhost:8000
 - API docs: http://localhost:8000/docs
+
+### Common Development Commands
+
+```bash
+# Testing
+make test               # Run all backend tests
+make test-coverage      # Run tests with coverage report
+make test-fast          # Fail fast on first error
+make test-models        # Run only model tests
+make test-routes        # Run only API route tests
+make test-schemas       # Run only schema tests
+
+# Database
+make db-shell           # Open PostgreSQL shell
+make redis-shell        # Open Redis CLI
+
+# Monitoring
+make logs               # Show all service logs
+make logs-postgres      # Show PostgreSQL logs
+make logs-redis         # Show Redis logs
+make status             # Show service status
+
+# Cleanup
+make stop               # Stop Docker services
+make stop-dev           # Stop all dev processes (backend + frontend + services)
+make clean              # Stop and remove all data (WARNING: deletes database!)
+```
 
 ---
 
@@ -1988,6 +2153,129 @@ python -c "from agent_framework import Agent; print('OK')"
 3. **Review plan documents** in `decisions/` folder
 4. **Read Microsoft Agent Framework docs**: https://learn.microsoft.com/en-us/agent-framework/
 5. **Check existing issues** on GitHub
+
+---
+
+## Workflow Lifecycle & Key API Patterns
+
+### Job Workflow Stages
+
+Jobs move through coordinated stages once started:
+
+1. **Analysis** (`running` / `analysis`)
+   - Repository Analyzer clones repo and builds code map
+   - Job moves to next stage automatically
+
+2. **Outline** (`running` / `outline`)
+   - Outline Generator creates chapter structure
+   - Outline JSON stored, job transitions to `waiting_approval`
+   - WebSocket notification sent to clients
+
+3. **Approval** (`waiting_approval`)
+   - User reviews outline via frontend
+   - On approval: payment processing, then continue
+   - Job transitions to `scripting`
+
+4. **Scripting** (`running` / `scripting`)
+   - Script Writer agents work concurrently (one per chapter)
+   - Progress events report completion counts
+   - Scripts persisted as they complete
+
+5. **Audio** (`running` / `synthesizing`)
+   - Audio Producer batch-synthesizes narration
+   - Uploads to S3, stores URLs per chapter
+
+6. **Post-processing** (`running` / `post_processing`)
+   - Post Processor stitches audio
+   - Publishes deliverables
+   - Marks job `completed`
+
+### Key API Endpoints
+
+**Jobs:**
+```
+POST   /api/v1/jobs/estimate       - Get cost/duration without creating job
+POST   /api/v1/jobs                - Create new job
+GET    /api/v1/jobs                - List user's jobs (with filters)
+GET    /api/v1/jobs/{job_id}       - Get job details
+POST   /api/v1/jobs/{job_id}/start - Start/resume workflow
+DELETE /api/v1/jobs/{job_id}       - Delete job
+```
+
+**Outlines:**
+```
+GET  /api/v1/jobs/{job_id}/outline         - Retrieve stored outline
+POST /api/v1/jobs/{job_id}/outline         - Generate outline (from analysis)
+PUT  /api/v1/jobs/{job_id}/outline         - Update outline with modifications
+POST /api/v1/jobs/{job_id}/outline/approve - Approve and process payment
+```
+
+**Payments:**
+```
+POST /api/v1/payments/create-intent  - Create Stripe payment intent
+POST /api/v1/payments/webhook        - Stripe webhook handler
+GET  /api/v1/payments/history        - User's payment history
+```
+
+**Player (Public):**
+```
+GET /api/v1/player/{job_id}                  - Get audiobook player data
+GET /api/v1/player/{job_id}/download/{type}  - Download deliverable (signed URL)
+```
+
+**Real-time:**
+```
+WS /ws/jobs/{job_id}  - Subscribe to JSON progress events
+```
+
+### Checkpoint Storage Pattern
+
+Workflows persist progress in `workflow_checkpoints` table:
+
+```python
+from backend.utils.checkpointing import save_checkpoint, load_checkpoint
+
+# Save workflow state
+await save_checkpoint(
+    workflow_id=job_id,
+    step="analysis_complete",
+    metadata={"files_analyzed": 142, "languages": ["Python", "TypeScript"]},
+    thread_state=serialized_agent_state  # Optional for multi-turn conversations
+)
+
+# Resume from checkpoint
+checkpoint = await load_checkpoint(workflow_id=job_id)
+if checkpoint:
+    # Resume from checkpoint.metadata
+    pass
+```
+
+### GitHub Integration
+
+The `github_service.py` provides REST API access without cloning:
+
+```python
+from backend.services.github_service import GitHubService
+
+# Initialize with credentials (optional for public repos)
+gh = GitHubService(
+    app_id=settings.GITHUB_APP_ID,
+    installation_id=settings.GITHUB_INSTALLATION_ID,
+    private_key=settings.GITHUB_PRIVATE_KEY
+)
+
+# Or use PAT
+gh = GitHubService(pat=settings.GITHUB_PAT)
+
+# Inspect repo metadata
+repo_info = await gh.get_repository("owner", "repo")
+languages = await gh.get_languages("owner", "repo")
+tree = await gh.get_tree("owner", "repo", "main")
+```
+
+**Rate limits:**
+- Unauthenticated: 60 requests/hour
+- Authenticated: 5000 requests/hour
 
 ---
 
@@ -2120,7 +2408,48 @@ python -c "from agent_framework import Agent; print('OK')"
 
 ---
 
-**Last Updated:** October 25, 2025
+## Dependency Management
+
+The project uses a split requirements system for optimal container builds:
+
+### Backend Requirements Structure
+
+```
+backend/
+├── requirements.txt          # Development: includes base + dev + test
+├── requirements.base.txt     # Core runtime dependencies
+├── requirements.dev.txt      # Linting, formatters (ruff, mypy)
+├── requirements.test.txt     # Testing (pytest, fakeredis)
+└── requirements.runtime.txt  # DEPRECATED: use requirements.base.txt
+```
+
+**Key points:**
+- `requirements.base.txt` contains only MVP-ready packages
+- Many optional deps are commented out (tree-sitter, docling, redis)
+- Docker production builds use `requirements.base.txt` (smaller images)
+- Local development uses `requirements.txt` (includes all tools)
+- Python 3.14 compatible (no legacy dependencies)
+- Agent Framework: `agent-framework-core==1.0.0b251016`
+
+**Installing dependencies:**
+```bash
+# Development (includes everything)
+pip install -r backend/requirements.txt
+
+# Production runtime only
+pip install -r backend/requirements.base.txt
+```
+
+**Uncommenting packages:**
+When implementing features, uncomment the relevant packages in `requirements.base.txt`:
+- Repository analysis: tree-sitter packages
+- Advanced parsing: docling-core (WARNING: 100+ deps!)
+- Real-time updates: redis
+- Audio processing: pydub
+
+---
+
+**Last Updated:** October 28, 2025
 **Maintainer:** Project Team
 **Questions?** Open an issue on GitHub
 

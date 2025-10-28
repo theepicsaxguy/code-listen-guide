@@ -66,7 +66,7 @@ class Job(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     started_at = Column(DateTime(timezone=True))
     completed_at = Column(DateTime(timezone=True))
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Metadata (flexible JSON field)
     metadata_json = Column(JSONB, default=dict)
