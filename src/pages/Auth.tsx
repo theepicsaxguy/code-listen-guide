@@ -54,6 +54,7 @@ export default function Auth() {
         title: 'Registration failed',
         description: error.message || 'Could not create account',
         variant: 'destructive',
+        duration: 6000, // Show longer for validation errors
       });
     } finally {
       setIsLoading(false);

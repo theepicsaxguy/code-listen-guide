@@ -133,6 +133,21 @@ if settings.environment.lower() == "development":
             "http://127.0.0.1:4173",
             "http://localhost:3000",
             "http://127.0.0.1:3000",
+            "http://localhost:8081",
+            "http://127.0.0.1:8081",
+        }
+    )
+else:
+    # Production: Allow frontend origins
+    if settings.frontend_url:
+        cors_origins.add(settings.frontend_url.rstrip("/"))
+    # Allow localhost for docker-compose deployments
+    cors_origins.update(
+        {
+            "http://localhost:8081",
+            "http://127.0.0.1:8081",
+            "http://localhost:8080",
+            "http://127.0.0.1:8080",
         }
     )
 

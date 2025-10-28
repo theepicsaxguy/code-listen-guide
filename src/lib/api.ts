@@ -50,8 +50,22 @@ export class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Request failed' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      const error = await response.json().catch(() => ({ detail: 'Request failed' }));
+      
+      // Handle FastAPI validation errors (422)
+      if (response.status === 422 && Array.isArray(error.detail)) {
+        const fieldErrors = error.detail.map((err: any) => {
+          const field = err.loc?.slice(1).join('.') || 'field';
+          return `${field}: ${err.msg || err.ctx?.error || 'Invalid value'}`;
+        }).join(', ');
+        throw new Error(fieldErrors);
+      }
+      
+      // Handle other error formats
+      const errorMessage = typeof error.detail === 'string' 
+        ? error.detail 
+        : error.message || `HTTP ${response.status}`;
+      throw new Error(errorMessage);
     }
 
     if (response.status === 204 || response.status === 205) {
