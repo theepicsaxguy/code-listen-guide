@@ -4,8 +4,8 @@ ARG PYTHON_IMAGE=python:3.14.0-slim@sha256:4ed33101ee7ec299041cc41dd268dae170311
 ARG NODE_IMAGE=node:22.21.0-bookworm-slim@sha256:f9f7f95dcf1f007b007c4dcd44ea8f7773f931b71dc79d57c216e731c87a090b
 ARG NPM_VERSION=10.9.2
 ARG VITE_API_BASE_PATH=/api/v1
-ARG DEBIAN_RELEASE=bookworm
-ARG DEBIAN_SNAPSHOT=20241103T000000Z
+ARG DEBIAN_RELEASE=trixie
+ARG DEBIAN_SNAPSHOT=20251008T000000Z
 ARG SNAPSHOT_BASE_URL=https://snapshot.debian.org/archive
 
 # =============================================================================
@@ -63,17 +63,23 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     export DEBIAN_FRONTEND=noninteractive; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        build-essential=12.9 \
-        python3-dev=3.11.2-1+b1 \
-        libssl-dev=3.0.14-1~deb12u1 \
-        libffi-dev=3.4.4-1 \
-        libpq-dev=15.8-0+deb12u1; \
+        build-essential=12.12 \
+        python3-dev=3.13.5-1 \
+        libssl-dev=3.5.1-1+deb13u1 \
+        libffi-dev=3.4.8-2 \
+        libpq-dev=17.6-0+deb13u1; \
     rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.runtime.txt ./requirements.runtime.txt
 
 # =============================================================================
 # System Dependencies Stage (very rarely changes)
 # =============================================================================
+# NOTE: Reproducibility strategy:
+# 1. Pinned base image (python:3.14.0-slim@sha256:...)
+# 2. Debian snapshot from base image build date (20251008T000000Z)
+# 3. All Debian packages pinned to snapshot versions
+# 4. Python packages pinned (pip, wheel, setuptools)
+# This ensures consistent builds and effective Docker layer caching.
 FROM python-base AS system-deps
 ARG DEBIAN_RELEASE
 ARG DEBIAN_SNAPSHOT
@@ -85,18 +91,18 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     export DEBIAN_FRONTEND=noninteractive; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        ffmpeg=7:5.1.6-0+deb12u1 \
-        build-essential=12.9 \
-        libxml2-dev=2.9.14+dfsg-1.3~deb12u1 \
-        libxslt1-dev=1.1.35-1 \
-        zlib1g-dev=1:1.2.13.dfsg-1 \
-        git=1:2.39.5-0+deb12u1 \
-        cmake=3.25.1-1 \
-        pkg-config=1.8.1-1 \
-        libssl-dev=3.0.14-1~deb12u2 \
-        libffi-dev=3.4.4-1 \
-        libpq-dev=15.8-0+deb12u1 \
-        curl=7.88.1-10+deb12u7; \
+        ffmpeg=7:7.1.2-0+deb13u1 \
+        build-essential=12.12 \
+        libxml2-dev=2.12.7+dfsg+really2.9.14-2.1+deb13u1 \
+        libxslt1-dev=1.1.35-1.2+deb13u2 \
+        zlib1g-dev=1:1.3.dfsg+really1.3.1-1+b1 \
+        git=1:2.47.3-0+deb13u1 \
+        cmake=3.31.6-2 \
+        pkg-config=1.8.1-4 \
+        libssl-dev=3.5.1-1+deb13u1 \
+        libffi-dev=3.4.8-2 \
+        libpq-dev=17.6-0+deb13u1 \
+        curl=8.14.1-2; \
     rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
@@ -138,13 +144,13 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     export DEBIAN_FRONTEND=noninteractive; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        ffmpeg=7:5.1.6-0+deb12u1 \
-        libxml2=2.9.14+dfsg-1.3~deb12u1 \
-        libxslt1.1=1.1.35-1 \
-        zlib1g=1:1.2.13.dfsg-1 \
-        git=1:2.39.2-1.1 \
-        curl=7.88.1-10+deb12u7 \
-        libpq5=15.8-0+deb12u1; \
+        ffmpeg=7:7.1.2-0+deb13u1 \
+        libxml2=2.12.7+dfsg+really2.9.14-2.1+deb13u1 \
+        libxslt1.1=1.1.35-1.2+deb13u2 \
+        zlib1g=1:1.3.dfsg+really1.3.1-1+b1 \
+        git=1:2.47.3-0+deb13u1 \
+        curl=8.14.1-2 \
+        libpq5=17.6-0+deb13u1; \
     rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
