@@ -1,0 +1,39 @@
+# Docker Compose for local development
+# Usage: docker-compose -f docker-compose.dev.yml up
+# Or use the Makefile: make dev-services
+
+services:
+  postgres:
+    image: postgres:18.0-alpine
+    container_name: audiobook-postgres-dev
+    environment:
+      POSTGRES_USER: audiobook
+      POSTGRES_PASSWORD: audiobook_dev_password
+      POSTGRES_DB: audiobook
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U audiobook"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:8.2.2-alpine
+    container_name: audiobook-redis-dev
+    ports:
+      - "6380:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
+    name: audiobook_postgres_dev_data

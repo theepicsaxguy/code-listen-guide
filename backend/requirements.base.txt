@@ -34,7 +34,7 @@ argon2-cffi==25.1.0
 # redis==7.0.1
 
 # Observability (TODO - optional for production monitoring only)
-# opentelemetry-instrumentation-fastapi==0.59b0
+opentelemetry-instrumentation-fastapi==0.59b0
 # opentelemetry-proto==1.38.0
 # opentelemetry-semantic-conventions==0.59b0
 # opentelemetry-instrumentation==0.59b0
@@ -42,10 +42,10 @@ argon2-cffi==25.1.0
 # opentelemetry-util-http==0.59b0
 
 # Payment Processing (TODO - payment service is 0% implemented)
-# stripe==13.0.1
+stripe==13.0.1
 
 # Cloud Storage (TODO - storage service is 0% implemented)
-# boto3==1.40.60
+boto3==1.40.60
 
 # Repository Analysis (TODO - analyzer is 10% implemented)
 # tree-sitter==0.25.2

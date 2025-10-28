@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     """Runtime configuration with sensible defaults for local development."""
 
     model_config = SettingsConfigDict(
-        env_file=".env.docker", case_sensitive=False, extra="ignore"
+        env_file=[".env.docker", ".env"], case_sensitive=False, extra="ignore"
     )
 
     database_url: str = Field(..., min_length=1)
