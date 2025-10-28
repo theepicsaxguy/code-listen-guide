@@ -31,7 +31,7 @@ python-jose[cryptography]==3.5.0
 argon2-cffi==25.1.0
 
 # Real-time Updates (WebSocket - optional for MVP)
-# redis==7.0.1
+redis==7.0.1
 
 # Observability (optional for production monitoring only)
 opentelemetry-instrumentation-fastapi==0.59b0

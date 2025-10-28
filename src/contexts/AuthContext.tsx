@@ -38,6 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, name: string) => {
+    // Note: The backend expects the password to be at least 8 characters long,
+    // with at least one uppercase letter, one lowercase letter, and one number.
     const response = await apiClient.register(email, password, name);
     // Auto-login after registration
     await login(email, password);
