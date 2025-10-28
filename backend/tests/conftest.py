@@ -19,7 +19,6 @@ from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, Mock
 from typing import Any, Dict, Generator
 
-import bcrypt
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -55,21 +54,7 @@ from backend.utils.auth import (
     get_password_hash,
 )
 
-if not hasattr(bcrypt, "__about__"):
-    bcrypt.__about__ = SimpleNamespace(__version__=getattr(bcrypt, "__version__", "0"))
-
-_native_hashpw = bcrypt.hashpw
-
-
-def _safe_hashpw(password: bytes, salt: bytes) -> bytes:
-    try:
-        return _native_hashpw(password, salt)
-    except ValueError:
-        return _native_hashpw(password[:72], salt)
-
-
-bcrypt.hashpw = _safe_hashpw
-
+# Register JSON adapters for SQLite
 sqlite3.register_adapter(dict, lambda value: json.dumps(value))
 sqlite3.register_adapter(list, lambda value: json.dumps(value))
 sqlite3.register_converter(

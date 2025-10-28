@@ -1,14 +1,14 @@
 """
 Pydantic schemas for User-related requests and responses.
 
-TODO: Implementation steps:
-1. Define UserCreate schema for registration
-2. Define UserLogin schema
-3. Define UserResponse schema (exclude password)
-4. Define UserUpdate schema
-5. Add email validation
-6. Add password strength validation
-7. Create subscription tier enum
+Provides schemas for:
+- User registration and login
+- User profile management
+- Subscription tier management
+- Token-based authentication
+
+All schemas include comprehensive validation for email format,
+password strength, and proper data sanitization.
 """
 
 from datetime import datetime

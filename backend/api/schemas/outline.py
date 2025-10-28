@@ -1,11 +1,11 @@
 """
 Pydantic schemas for Outline-related requests and responses.
 
-TODO: Implementation steps:
-1. Define OutlineChapter schema for chapter structure
-2. Define OutlineResponse schema
-3. Define OutlineUpdate schema for user modifications
-4. Add validation for outline structure
+Provides schemas for:
+- Chapter outline structure with learning objectives
+- Outline generation and user modifications
+- Automatic validation and totals calculation
+- User approval workflow
 """
 
 from pydantic import BaseModel, Field, ConfigDict, model_validator

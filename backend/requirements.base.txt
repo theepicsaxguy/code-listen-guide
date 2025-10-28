@@ -26,9 +26,9 @@ slowapi==0.1.9
 # Optional packages - uncomment when needed
 # ============================================
 
-# Authentication (TODO - auth service is 0% implemented)
-# python-jose[cryptography]==3.5.0
-# argon2-cffi==25.1.0
+# Authentication (REQUIRED - already implemented in utils/auth.py)
+python-jose[cryptography]==3.5.0
+argon2-cffi==25.1.0
 
 # Real-time Updates (TODO - WebSocket is not critical for MVP)
 # redis==7.0.1

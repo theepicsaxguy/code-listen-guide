@@ -1,11 +1,11 @@
 """
 Pydantic schemas for Chapter-related responses.
 
-TODO: Implementation steps:
-1. Define ChapterResponse schema
-2. Add audio metadata fields
-3. Create chapter list response
-4. Add status tracking
+Provides schemas for:
+- Individual chapter metadata
+- Audio playback information
+- Chapter lists with totals
+- Status tracking and progress
 """
 
 from pydantic import BaseModel
@@ -17,10 +17,8 @@ import uuid
 class ChapterResponse(BaseModel):
     """
     Schema for chapter data in responses.
-
-    TODO:
-    - Add all fields from Chapter model
-    - Include audio playback metadata
+    
+    Includes all fields from the Chapter model plus audio playback metadata.
     """
 
     id: uuid.UUID
