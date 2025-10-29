@@ -273,6 +273,63 @@ export class ApiClient {
     // Backend route is under /player prefix, not /jobs
     return this.request(`/player/${jobId}/download/${deliverableType}`);
   }
+
+  // Parse endpoints
+  async parseRepository(data: {
+    repo_url: string;
+    git_ref?: string;
+    include_patterns?: string[];
+    exclude_patterns?: string[];
+    max_file_size_kb?: number;
+    enable_code_enrichment?: boolean;
+    enable_formula_enrichment?: boolean;
+    enable_table_extraction?: boolean;
+  }) {
+    return this.request<{
+      repository_url: string;
+      git_ref: string;
+      commit_sha: string | null;
+      modules: Record<string, {
+        path: string;
+        language: string | null;
+        content: string;
+        raw_content: string | null;
+        chunks: Array<{
+          index: number;
+          text: string;
+          token_count: number;
+          start_index: number;
+          end_index: number;
+        }> | null;
+        metadata: {
+          path: string;
+          language: string | null;
+          size_bytes: number;
+          tags: string[];
+          summary: string | null;
+          complexity: string | null;
+          visibility: string | null;
+          num_chunks: number | null;
+          total_tokens: number | null;
+          avg_chunk_size: number | null;
+        };
+      }>;
+      summary: {
+        total_files: number;
+        total_size_bytes: number;
+        languages: string[];
+        frameworks: string[];
+        patterns: string[];
+        entry_points: string[];
+        parse_success_rate: number;
+        warnings: string[];
+      };
+      execution_time_seconds: number;
+    }>('/parse/repository', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_PATH);
