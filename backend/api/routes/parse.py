@@ -192,6 +192,12 @@ async def parse_repository(
             if "entry_point" in tags or "purpose:entry_point" in tags:
                 entry_points.append(file_path)
 
+            # Extract chunk metadata from file_data metadata
+            file_metadata = file_data.get("metadata", {})
+            num_chunks = file_metadata.get("num_chunks")
+            total_tokens = file_metadata.get("total_tokens")
+            avg_chunk_size = file_metadata.get("avg_chunk_size")
+
             # Build metadata
             metadata = FileMetadata(
                 path=file_path,
@@ -201,11 +207,15 @@ async def parse_repository(
                 summary=file_summary,
                 complexity=complexity,
                 visibility=visibility,
+                num_chunks=num_chunks,
+                total_tokens=total_tokens,
+                avg_chunk_size=avg_chunk_size,
             )
 
             # Build parsed file
             content = file_data.get("content", "")
             raw_content = file_data.get("raw_content")
+            chunks = file_data.get("chunks")  # Get the chunks data
 
             if content:
                 successful_parses += 1
@@ -215,6 +225,7 @@ async def parse_repository(
                 language=language,
                 content=content,
                 raw_content=raw_content,
+                chunks=chunks,  # Include chunks in response
                 metadata=metadata,
             )
 

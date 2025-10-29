@@ -75,6 +75,25 @@ class FileMetadata(BaseModel):
     visibility: Optional[str] = Field(
         None, description="Visibility: public, private, internal"
     )
+    num_chunks: Optional[int] = Field(
+        None, description="Number of chunks the file was split into"
+    )
+    total_tokens: Optional[int] = Field(
+        None, description="Total tokens across all chunks"
+    )
+    avg_chunk_size: Optional[float] = Field(
+        None, description="Average chunk size in tokens"
+    )
+
+
+class ChunkDetail(BaseModel):
+    """Details about a specific chunk of text."""
+
+    index: int = Field(..., description="Chunk index (0-based)")
+    text: str = Field(..., description="The chunked text content")
+    token_count: int = Field(..., description="Number of tokens in this chunk")
+    start_index: int = Field(..., description="Start character index in original content")
+    end_index: int = Field(..., description="End character index in original content")
 
 
 class ParsedFile(BaseModel):
@@ -85,6 +104,9 @@ class ParsedFile(BaseModel):
     content: str = Field(..., description="Parsed/cleaned file content")
     raw_content: Optional[str] = Field(
         None, description="Original file content before cleaning"
+    )
+    chunks: Optional[List[ChunkDetail]] = Field(
+        None, description="Detailed chunk information for this file"
     )
     metadata: FileMetadata = Field(..., description="File metadata and analysis")
 

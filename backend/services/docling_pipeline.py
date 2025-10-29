@@ -119,17 +119,32 @@ class chonkiePipeline:
             # Chunk the content using chonkie
             chunks = self.chunker.chunk(content)
 
+            # Extract detailed chunk information
+            chunk_details = []
+            for i, chunk in enumerate(chunks):
+                chunk_info = {
+                    "index": i,
+                    "text": chunk.text,
+                    "token_count": getattr(chunk, 'token_count', len(chunk.text.split())),
+                    "start_index": getattr(chunk, 'start_index', 0),
+                    "end_index": getattr(chunk, 'end_index', len(chunk.text)),
+                }
+                chunk_details.append(chunk_info)
+
             # Extract structured data
             parsed_data = {
                 "file_path": str(file_path),
                 "content_type": content_type,
                 "content": content,
-                "chunks": [{"text": chunk.text, "index": i} for i, chunk in enumerate(chunks)],
+                "raw_content": content,  # For API compatibility
+                "chunks": chunk_details,
                 "metadata": {
                     "file_name": file_path.name,
                     "file_size": file_path.stat().st_size,
                     "file_type": file_path.suffix,
                     "num_chunks": len(chunks),
+                    "total_tokens": sum(c.get('token_count', 0) for c in chunk_details),
+                    "avg_chunk_size": sum(c.get('token_count', 0) for c in chunk_details) / len(chunks) if chunks else 0,
                 },
             }
 
@@ -167,23 +182,37 @@ class chonkiePipeline:
         if not repo_path.exists():
             raise FileNotFoundError(f"Repository not found: {repo_path}")
 
-        # Default patterns
+        # Default patterns - include ALL common code and config files
         if include_patterns is None:
             include_patterns = [
-                "*.py",
-                "*.js",
-                "*.ts",
-                "*.tsx",
-                "*.jsx",
-                "*.md",
-                "*.rst",
-                "*.txt",
-                "*.json",
-                "*.yaml",
-                "*.yml",
-                "*.toml",
-                "README*",
-                "LICENSE*",
+                # Python
+                "*.py", "*.pyx", "*.pyd",
+                # JavaScript/TypeScript
+                "*.js", "*.jsx", "*.ts", "*.tsx", "*.mjs", "*.cjs",
+                # Web
+                "*.html", "*.htm", "*.css", "*.scss", "*.sass", "*.less",
+                "*.vue", "*.svelte",
+                # Documentation
+                "*.md", "*.rst", "*.txt", "*.adoc",
+                # Config
+                "*.json", "*.yaml", "*.yml", "*.toml", "*.ini", "*.cfg",
+                "*.xml", "*.env", ".env*",
+                # Other languages
+                "*.java", "*.kt", "*.kts",  # Java/Kotlin
+                "*.go",  # Go
+                "*.rs",  # Rust
+                "*.rb",  # Ruby
+                "*.php",  # PHP
+                "*.cpp", "*.c", "*.h", "*.hpp", "*.cc",  # C/C++
+                "*.cs",  # C#
+                "*.swift",  # Swift
+                "*.sh", "*.bash", "*.zsh",  # Shell
+                "*.sql",  # SQL
+                "*.r", "*.R",  # R
+                # Special files
+                "Makefile", "Dockerfile", "*.dockerfile",
+                "README*", "LICENSE*", "CHANGELOG*",
+                ".gitignore", ".dockerignore",
             ]
 
         if exclude_patterns is None:
