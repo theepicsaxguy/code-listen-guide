@@ -49,7 +49,7 @@ async def parse_repository(
     - Validates GitHub URL format
 
     Performance:
-    - Synchronous processing with 60s timeout
+    - Synchronous processing with 180s timeout (enforced)
     - Suitable for repositories up to 500MB (configurable)
     - Average processing time: 5-15 seconds for typical repos
 
