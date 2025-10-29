@@ -1,7 +1,7 @@
 """
-Docling Pipeline Service for parsing, cleaning, and tagging codebases.
+chonkie Pipeline Service for parsing, cleaning, and tagging codebases.
 
-This service integrates IBM's Docling toolkit to provide advanced document
+This service integrates IBM's chonkie toolkit to provide advanced document
 and code parsing capabilities.
 
 Key features:
@@ -20,14 +20,14 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 try:
-    from docling.document_converter import DocumentConverter, PdfFormatOption
-    from docling.datamodel.base_models import InputFormat
-    from docling.datamodel.pipeline_options import PdfPipelineOptions
+    from chonkie.document_converter import DocumentConverter, PdfFormatOption
+    from chonkie.datamodel.base_models import InputFormat
+    from chonkie.datamodel.pipeline_options import PdfPipelineOptions
 
-    HAS_DOCLING = True
+    HAS_chonkie = True
 except ImportError:
-    HAS_DOCLING = False
-    logger.warning("Docling not available. Install with: pip install docling")
+    HAS_chonkie = False
+    logger.warning("chonkie not available. Install with: pip install chonkie")
 
 
 class ContentType(str, Enum):
@@ -51,9 +51,9 @@ class TagCategory(str, Enum):
     PURPOSE = "purpose"
 
 
-class DoclingPipeline:
+class chonkiePipeline:
     """
-    Main pipeline for processing codebases with Docling.
+    Main pipeline for processing codebases with chonkie.
 
     This pipeline provides three main operations:
     1. Parse: Extract structured content from files
@@ -69,17 +69,17 @@ class DoclingPipeline:
         artifacts_path: Optional[str] = None,
     ):
         """
-        Initialize Docling pipeline.
+        Initialize chonkie pipeline.
 
         Args:
             enable_code_enrichment: Enable advanced code understanding
             enable_formula_enrichment: Enable formula/equation parsing
             enable_table_extraction: Enable table extraction from documents
-            artifacts_path: Path to Docling model artifacts (for offline usage)
+            artifacts_path: Path to chonkie model artifacts (for offline usage)
         """
-        if not HAS_DOCLING:
+        if not HAS_chonkie:
             raise RuntimeError(
-                "Docling is not installed. Install with: pip install docling"
+                "chonkie is not installed. Install with: pip install chonkie"
             )
 
         self.enable_code_enrichment = enable_code_enrichment
@@ -91,7 +91,7 @@ class DoclingPipeline:
         self._init_converter()
 
     def _init_converter(self):
-        """Initialize Docling document converter with configured options."""
+        """Initialize chonkie document converter with configured options."""
         pipeline_options = PdfPipelineOptions(
             artifacts_path=self.artifacts_path,
             do_code_enrichment=self.enable_code_enrichment,
@@ -106,7 +106,7 @@ class DoclingPipeline:
 
     async def parse_file(self, file_path: Path) -> Dict[str, Any]:
         """
-        Parse a single file using Docling.
+        Parse a single file using chonkie.
 
         Args:
             file_path: Path to file to parse
@@ -128,7 +128,7 @@ class DoclingPipeline:
             # Determine content type
             content_type = self._detect_content_type(file_path)
 
-            # Parse with Docling
+            # Parse with chonkie
             result = self.converter.convert(str(file_path))
             doc = result.document
 
@@ -383,7 +383,7 @@ class DoclingPipeline:
         Returns:
             Fully processed codebase data with parsing, cleaning, and tagging
         """
-        logger.info(f"Starting Docling pipeline for: {repo_path}")
+        logger.info(f"Starting chonkie pipeline for: {repo_path}")
 
         # Step 1: Parse
         logger.info("Step 1/3: Parsing codebase...")
@@ -469,7 +469,7 @@ class DoclingPipeline:
 
     def _extract_structure(self, doc) -> Dict[str, Any]:
         """Extract document structure (headings, sections)."""
-        # This would extract the hierarchical structure from the Docling document
+        # This would extract the hierarchical structure from the chonkie document
         # For now, return a placeholder
         return {
             "sections": [],

@@ -1,18 +1,18 @@
 """
-Example script demonstrating the Docling pipeline for parsing, cleaning, and tagging codebases.
+Example script demonstrating the chonkie pipeline for parsing, cleaning, and tagging codebases.
 
 Usage:
-    python -m backend.examples.test_docling_pipeline <repo_url> [git_ref]
+    python -m backend.examples.test_chonkie_pipeline <repo_url> [git_ref]
 
 Examples:
     # Analyze a small Python project
-    python -m backend.examples.test_docling_pipeline https://github.com/psf/requests
+    python -m backend.examples.test_chonkie_pipeline https://github.com/psf/requests
 
     # Analyze specific branch
-    python -m backend.examples.test_docling_pipeline https://github.com/user/repo main
+    python -m backend.examples.test_chonkie_pipeline https://github.com/user/repo main
 
     # Test with a local directory
-    python -m backend.examples.test_docling_pipeline /path/to/local/repo
+    python -m backend.examples.test_chonkie_pipeline /path/to/local/repo
 """
 
 import asyncio
@@ -28,23 +28,23 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def test_docling_pipeline(repo_url: str, git_ref: str = "main"):
-    """Test the Docling pipeline on a repository."""
+async def test_chonkie_pipeline(repo_url: str, git_ref: str = "main"):
+    """Test the chonkie pipeline on a repository."""
     from backend.services.repository_analyzer import RepositoryAnalyzer
 
     logger.info("=" * 80)
-    logger.info("Testing Docling Pipeline")
+    logger.info("Testing chonkie Pipeline")
     logger.info("=" * 80)
     logger.info(f"Repository: {repo_url}")
     logger.info(f"Git ref: {git_ref}")
     logger.info("")
 
     try:
-        # Initialize analyzer with Docling
+        # Initialize analyzer with chonkie
         analyzer = RepositoryAnalyzer(
             repo_url=repo_url,
             git_ref=git_ref,
-            use_docling=True,
+            use_chonkie=True,
             max_repo_size_mb=500,
         )
 
@@ -108,7 +108,7 @@ async def test_docling_pipeline(repo_url: str, git_ref: str = "main"):
                         logger.info(f"    Code blocks: {len(file_data['code_blocks'])}")
 
         # Save detailed results to JSON
-        output_file = Path("docling_analysis_result.json")
+        output_file = Path("chonkie_analysis_result.json")
         with open(output_file, "w") as f:
             json.dump(result, f, indent=2, default=str)
 
@@ -125,11 +125,11 @@ async def test_docling_pipeline(repo_url: str, git_ref: str = "main"):
 
 
 async def test_local_directory(directory_path: str):
-    """Test the Docling pipeline on a local directory (no git clone needed)."""
-    from backend.services.docling_pipeline import DoclingPipeline
+    """Test the chonkie pipeline on a local directory (no git clone needed)."""
+    from backend.services.chonkie_pipeline import chonkiePipeline
 
     logger.info("=" * 80)
-    logger.info("Testing Docling Pipeline on Local Directory")
+    logger.info("Testing chonkie Pipeline on Local Directory")
     logger.info("=" * 80)
     logger.info(f"Directory: {directory_path}")
     logger.info("")
@@ -140,7 +140,7 @@ async def test_local_directory(directory_path: str):
             raise FileNotFoundError(f"Directory not found: {directory_path}")
 
         # Initialize pipeline
-        pipeline = DoclingPipeline(
+        pipeline = chonkiePipeline(
             enable_code_enrichment=True,
             enable_formula_enrichment=False,
         )
@@ -168,7 +168,7 @@ async def test_local_directory(directory_path: str):
                 logger.info(f"  - {entry}")
 
         # Save results
-        output_file = Path("docling_pipeline_result.json")
+        output_file = Path("chonkie_pipeline_result.json")
         with open(output_file, "w") as f:
             json.dump(result, f, indent=2, default=str)
 
@@ -199,7 +199,7 @@ def main():
         asyncio.run(test_local_directory(path_or_url))
     else:
         # Assume it's a git URL
-        asyncio.run(test_docling_pipeline(path_or_url, git_ref))
+        asyncio.run(test_chonkie_pipeline(path_or_url, git_ref))
 
 
 if __name__ == "__main__":

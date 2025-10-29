@@ -26,7 +26,7 @@ import JobTracing from "./pages/admin/JobTracing";
 import Support from "./pages/admin/Support";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSettings from "./pages/admin/Settings";
-import DoclingTest from "./pages/admin/DoclingTest";
+import chonkieTest from "./pages/admin/chonkieTest";
 
 const queryClient = new QueryClient();
 
@@ -56,7 +56,7 @@ const App = () => (
                 <Route path="versioning" element={<ContentVersioning />} />
                 <Route path="agents" element={<AdminAgents />} />
                 <Route path="tracing" element={<JobTracing />} />
-                <Route path="docling-test" element={<DoclingTest />} />
+                <Route path="chonkie-test" element={<chonkieTest />} />
                 <Route path="support" element={<Support />} />
                 <Route path="audit" element={<AdminAuditLogs />} />
                 <Route path="settings" element={<AdminSettings />} />

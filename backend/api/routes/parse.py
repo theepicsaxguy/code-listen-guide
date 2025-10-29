@@ -22,7 +22,7 @@ from backend.api.schemas.parse import (
     RepositorySummary,
 )
 from backend.models.user import User
-from backend.services.docling_pipeline import DoclingPipeline
+from backend.services.chonkie_pipeline import chonkiePipeline
 from backend.tools.git_tools import clone_repository
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ async def parse_repository(
     Parse a GitHub repository and return structured analysis results.
 
     This endpoint clones the specified repository, parses all files using either
-    the Docling pipeline (advanced) or tree-sitter (fallback), and returns
+    the chonkie pipeline (advanced) or tree-sitter (fallback), and returns
     comprehensive analysis results including file content, metadata, and summaries.
 
     Security:
@@ -84,25 +84,25 @@ async def parse_repository(
                 },
             )
 
-        # Step 2: Parse repository with Docling pipeline
+        # Step 2: Parse repository with chonkie pipeline
         try:
             logger.info(
-                f"Parsing repository with Docling pipeline "
+                f"Parsing repository with chonkie pipeline "
                 f"(code_enrichment={request.enable_code_enrichment}, "
                 f"formula_enrichment={request.enable_formula_enrichment}, "
                 f"table_extraction={request.enable_table_extraction})"
             )
-            docling = DoclingPipeline(
+            chonkie = chonkiePipeline(
                 enable_code_enrichment=request.enable_code_enrichment,
                 enable_formula_enrichment=request.enable_formula_enrichment,
                 enable_table_extraction=request.enable_table_extraction,
             )
             analysis_result = await asyncio.wait_for(
-                docling.process_pipeline(Path(repo_path)),
+                chonkie.process_pipeline(Path(repo_path)),
                 timeout=180.0,  # 3 minute timeout for large repos
             )
         except asyncio.TimeoutError:
-            logger.error(f"Docling parsing timeout for {request.repo_url}")
+            logger.error(f"chonkie parsing timeout for {request.repo_url}")
             raise HTTPException(
                 status_code=504,
                 detail={
@@ -114,11 +114,11 @@ async def parse_repository(
                 },
             )
         except Exception as e:
-            logger.error(f"Docling parsing failed for {request.repo_url}: {str(e)}")
+            logger.error(f"chonkie parsing failed for {request.repo_url}: {str(e)}")
             raise HTTPException(
                 status_code=500,
                 detail={
-                    "error": f"Failed to parse repository with Docling: {str(e)}",
+                    "error": f"Failed to parse repository with chonkie: {str(e)}",
                     "error_type": "parsing",
                 },
             )
@@ -135,7 +135,7 @@ async def parse_repository(
         successful_parses = 0
 
         # Extract modules from analysis result
-        # Both docling and tree-sitter return {modules: {...}}
+        # Both chonkie and tree-sitter return {modules: {...}}
         raw_modules = analysis_result.get("modules", {})
 
         for file_path, file_data in raw_modules.items():

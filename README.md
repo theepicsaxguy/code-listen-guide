@@ -14,7 +14,7 @@ Codebase Audiobook answers both points. It gives developers a hands-free way to 
 ## How it works (high level)
 
 1. **Repository intake** – The backend clones the repository, walks the tree, and prepares language-specific parsing tasks.
-2. **Docling-powered parsing** – IBM's Docling toolkit parses, cleans, and tags code with semantic metadata, enabling richer narratives than basic AST parsing. The pipeline extracts structure, detects frameworks, identifies entry points, and builds dependency graphs.
+2. **chonkie-powered parsing** – IBM's chonkie toolkit parses, cleans, and tags code with semantic metadata, enabling richer narratives than basic AST parsing. The pipeline extracts structure, detects frameworks, identifies entry points, and builds dependency graphs.
 3. **Narrative planning** – A Content Architect agent designs a chapter outline, calling on semantic clustering tools to group related files and concepts.
 4. **Script generation** – A pool of Script Generation agents writes the narration for each chapter in parallel while a Quality agent vets accuracy before anything ships.
 5. **Audio assembly** – The Audio Synthesis Coordinator renders text-to-speech tracks, normalizes audio, and packages metadata for the player UI.
@@ -96,7 +96,7 @@ Compose feeds the backend with `backend/.env.docker` out of the box; point `BACK
 1. **Clone the repo** and install frontend dependencies.
 2. **Run the backend** (see snapshot above). The Vite dev server proxies `/api/` to `http://localhost:8000`, so no `.env` tweaks are required for same-origin calls during development.
 3. **Kick off a job** using the `/api/v1/jobs` endpoints. The POST handler returns the full job record (including its `id`), so the UI can immediately redirect to `/jobs/<job-id>/outline` while the WebSocket feed streams updates.
-4. **Iterate with plans in mind**: the Docling parser integration plan drives current backend work, and the launch plan outlines the content and community experiments that should accompany each release.
+4. **Iterate with plans in mind**: the chonkie parser integration plan drives current backend work, and the launch plan outlines the content and community experiments that should accompany each release.
 
 ### Testing
 - Frontend: `npm run lint` keeps TypeScript and hooks tidy.
@@ -106,13 +106,13 @@ Compose feeds the backend with `backend/.env.docker` out of the box; point `BACK
 
 ## Roadmap highlights
 
-- **✓ Docling parser integration:** Implemented! The pipeline now parses, cleans, and tags codebases with semantic metadata. See [`decisions/DOCLING_PIPELINE.md`](decisions/DOCLING_PIPELINE.md) for details.
+- **✓ chonkie parser integration:** Implemented! The pipeline now parses, cleans, and tags codebases with semantic metadata. See [`decisions/chonkie_PIPELINE.md`](decisions/chonkie_PIPELINE.md) for details.
 - **Community-driven launch:** Publish a transparent landing page, collect early-access signups, and share progress across developer forums, newsletters, and Product Hunt.
 - **Accessibility enhancements:** Pair every audio chapter with searchable transcripts and navigation cues so listeners can jump between sections quickly (identified as a gap in launch research).
 
 ## Reference material
 
-- `decisions/DOCLING_PIPELINE.md` – Complete documentation for the Docling parsing, cleaning, and tagging pipeline.
+- `decisions/chonkie_PIPELINE.md` – Complete documentation for the chonkie parsing, cleaning, and tagging pipeline.
 - `decisions/analysis.md` – Market demand study for audio-first developer education.
 - `Plan.md` – Investor-facing deep dive into the multi-agent architecture and enterprise positioning.
 - `decisions/*.md` – Execution blueprints for parser upgrades and go-to-market work.

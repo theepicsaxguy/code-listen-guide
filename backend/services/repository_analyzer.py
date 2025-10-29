@@ -1,7 +1,7 @@
 """
-Repository analysis service for code structure extraction using Docling.
+Repository analysis service for code structure extraction using chonkie.
 
-This service uses the Docling Pipeline for advanced parsing:
+This service uses the chonkie Pipeline for advanced parsing:
 - Rich document parsing (code, markdown, JSON, YAML)
 - Content cleaning and normalization
 - Semantic tagging and classification
@@ -22,14 +22,14 @@ try:
 except ImportError:
     HAS_GIT = False
 
-from backend.services.docling_pipeline import DoclingPipeline
+from backend.services.chonkie_pipeline import chonkiePipeline
 
 logger = logging.getLogger(__name__)
 
 
 class RepositoryAnalyzer:
     """
-    Analyzes GitHub repositories to extract code structure using Docling Pipeline.
+    Analyzes GitHub repositories to extract code structure using chonkie Pipeline.
 
     Provides advanced parsing with content cleaning, tagging, and semantic analysis.
     """
@@ -53,12 +53,12 @@ class RepositoryAnalyzer:
         self.max_repo_size_mb = max_repo_size_mb
         self.temp_dir: Optional[Path] = None
 
-        # Initialize Docling pipeline
-        self.docling_pipeline = DoclingPipeline(
+        # Initialize chonkie pipeline
+        self.chonkie_pipeline = chonkiePipeline(
             enable_code_enrichment=True,
             enable_formula_enrichment=False,
         )
-        logger.info("Initialized Docling pipeline for analysis")
+        logger.info("Initialized chonkie pipeline for analysis")
 
     async def clone_repository(self) -> Path:
         """
@@ -158,13 +158,13 @@ class RepositoryAnalyzer:
 
     async def parse_codebase(self, repo_path: Path) -> Dict:
         """
-        Parse codebase to extract code structure using Docling pipeline.
+        Parse codebase to extract code structure using chonkie pipeline.
 
         Returns:
             Comprehensive analysis with parsed code, dependencies, and tags
         """
-        logger.info("Parsing codebase with Docling pipeline")
-        return await self.docling_pipeline.process_pipeline(repo_path)
+        logger.info("Parsing codebase with chonkie pipeline")
+        return await self.chonkie_pipeline.process_pipeline(repo_path)
 
     async def analyze_full(self) -> Dict:
         """
@@ -192,7 +192,7 @@ class RepositoryAnalyzer:
             return {
                 "repository_url": self.repo_url,
                 "git_ref": self.git_ref,
-                "analysis_mode": "docling",
+                "analysis_mode": "chonkie",
                 "structure": structure,
                 "parsed": parsed,
             }

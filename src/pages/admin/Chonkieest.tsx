@@ -21,7 +21,7 @@ interface ParseResult {
   execution_time_seconds: number;
 }
 
-export default function DoclingTest() {
+export default function chonkieTest() {
   const [repoUrl, setRepoUrl] = useState("https://github.com/pallets/click");
   const [gitRef, setGitRef] = useState("main");
   const [maxFileSizeKb, setMaxFileSizeKb] = useState(500);
@@ -68,10 +68,10 @@ export default function DoclingTest() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-3">
           <FileCode2 className="w-8 h-8" />
-          Docling Parse Test
+          chonkie Parse Test
         </h1>
         <p className="text-gray-400 mt-1">
-          Test the Docling parsing pipeline with configurable settings
+          Test the chonkie parsing pipeline with configurable settings
         </p>
       </div>
 
@@ -157,9 +157,9 @@ export default function DoclingTest() {
           />
         </div>
 
-        {/* Docling Options */}
+        {/* chonkie Options */}
         <div className="border-t border-gray-700 pt-6">
-          <h3 className="text-white font-medium mb-4">Docling Features</h3>
+          <h3 className="text-white font-medium mb-4">chonkie Features</h3>
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
               <input

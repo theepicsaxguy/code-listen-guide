@@ -29,7 +29,7 @@ const navItems = [
   { path: "/admin/versioning", label: "Versioning", icon: History },
   { path: "/admin/agents", label: "Agents", icon: Activity },
   { path: "/admin/tracing", label: "Job Tracing", icon: ActivityIcon },
-  { path: "/admin/docling-test", label: "Docling Test", icon: FileCode2 },
+  { path: "/admin/chonkie-test", label: "chonkie Test", icon: FileCode2 },
   { path: "/admin/support", label: "Support", icon: MessageSquare },
   { path: "/admin/audit", label: "Audit Logs", icon: FileText },
   { path: "/admin/settings", label: "Settings", icon: Settings },

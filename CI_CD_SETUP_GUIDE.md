@@ -1,6 +1,6 @@
 # CI/CD Setup Guide for Backend Tests
 
-This guide explains how to update the CI/CD workflows to include comprehensive backend testing for Docling and Microsoft Agent Framework agents.
+This guide explains how to update the CI/CD workflows to include comprehensive backend testing for chonkie and Microsoft Agent Framework agents.
 
 ## Current CI/CD Status
 
@@ -48,11 +48,11 @@ backend:
         cd backend
         pytest -m unit -v --tb=short
 
-    - name: Run Docling tests
+    - name: Run chonkie tests
       run: |
         cd backend
-        pytest -m docling -v --tb=short
-      continue-on-error: true  # Allow to fail if Docling not fully configured
+        pytest -m chonkie -v --tb=short
+      continue-on-error: true  # Allow to fail if chonkie not fully configured
 
     - name: Run agent tests
       run: |
@@ -328,7 +328,7 @@ Track test execution time:
 |---------------|-------|---------------|
 | Unit | ~150 | < 30s |
 | Integration | ~50 | < 2m |
-| Docling | ~30 | < 1m |
+| chonkie | ~30 | < 1m |
 | Agents | ~25 | < 30s |
 | Services | ~40 | < 45s |
 | API | ~45 | < 30s |

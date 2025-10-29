@@ -9,17 +9,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-docling_module = sys.modules.setdefault("docling", ModuleType("docling"))
-docling_document_converter = ModuleType("docling.document_converter")
-docling_document_converter.DocumentConverter = MagicMock()
-docling_document_converter.PdfFormatOption = MagicMock()
-sys.modules.setdefault("docling.document_converter", docling_document_converter)
-docling_base_models = ModuleType("docling.datamodel.base_models")
-docling_base_models.InputFormat = MagicMock()
-sys.modules.setdefault("docling.datamodel.base_models", docling_base_models)
-docling_pipeline_options = ModuleType("docling.datamodel.pipeline_options")
-docling_pipeline_options.PdfPipelineOptions = MagicMock()
-sys.modules.setdefault("docling.datamodel.pipeline_options", docling_pipeline_options)
+chonkie_module = sys.modules.setdefault("chonkie", ModuleType("chonkie"))
+chonkie_document_converter = ModuleType("chonkie.document_converter")
+chonkie_document_converter.DocumentConverter = MagicMock()
+chonkie_document_converter.PdfFormatOption = MagicMock()
+sys.modules.setdefault("chonkie.document_converter", chonkie_document_converter)
+chonkie_base_models = ModuleType("chonkie.datamodel.base_models")
+chonkie_base_models.InputFormat = MagicMock()
+sys.modules.setdefault("chonkie.datamodel.base_models", chonkie_base_models)
+chonkie_pipeline_options = ModuleType("chonkie.datamodel.pipeline_options")
+chonkie_pipeline_options.PdfPipelineOptions = MagicMock()
+sys.modules.setdefault("chonkie.datamodel.pipeline_options", chonkie_pipeline_options)
 
 from backend.agents.schemas import OutlineAgentResponse, ScriptAgentResponse
 
@@ -60,32 +60,32 @@ class TestRepositoryAnalyzer:
         from backend.services.repository_analyzer import RepositoryAnalyzer
 
         analyzer = RepositoryAnalyzer(
-            repo_url="https://github.com/user/repo", git_ref="main", use_docling=False
+            repo_url="https://github.com/user/repo", git_ref="main", use_chonkie=False
         )
 
         assert analyzer.repo_url == "https://github.com/user/repo"
         assert analyzer.git_ref == "main"
 
     @pytest.mark.asyncio
-    async def test_analyzer_with_docling_mode(self):
-        """Test analyzer initialization with Docling enabled."""
+    async def test_analyzer_with_chonkie_mode(self):
+        """Test analyzer initialization with chonkie enabled."""
         from backend.services.repository_analyzer import RepositoryAnalyzer
 
-        with patch("backend.services.repository_analyzer.HAS_DOCLING_PIPELINE", True):
-            with patch("backend.services.docling_pipeline.HAS_DOCLING", True):
-                with patch("backend.services.docling_pipeline.DocumentConverter"):
+        with patch("backend.services.repository_analyzer.HAS_chonkie_PIPELINE", True):
+            with patch("backend.services.chonkie_pipeline.HAS_chonkie", True):
+                with patch("backend.services.chonkie_pipeline.DocumentConverter"):
                     analyzer = RepositoryAnalyzer(
-                        repo_url="https://github.com/user/repo", use_docling=True
+                        repo_url="https://github.com/user/repo", use_chonkie=True
                     )
 
-                    assert analyzer.use_docling is True
+                    assert analyzer.use_chonkie is True
 
     @pytest.mark.asyncio
-    async def test_parse_codebase_uses_docling_pipeline(self):
-        """Test Docling pipeline is used when available."""
+    async def test_parse_codebase_uses_chonkie_pipeline(self):
+        """Test chonkie pipeline is used when available."""
         from backend.services.repository_analyzer import RepositoryAnalyzer
 
-        docling_output = {
+        chonkie_output = {
             "files": [
                 {
                     "file_path": "main.py",
@@ -96,24 +96,24 @@ class TestRepositoryAnalyzer:
             "summary": {"total_files": 1, "successfully_parsed": 1},
         }
 
-        with patch("backend.services.repository_analyzer.HAS_DOCLING_PIPELINE", True):
+        with patch("backend.services.repository_analyzer.HAS_chonkie_PIPELINE", True):
             with patch(
-                "backend.services.repository_analyzer.DoclingPipeline"
-            ) as mock_docling_pipeline:
+                "backend.services.repository_analyzer.chonkiePipeline"
+            ) as mock_chonkie_pipeline:
                 pipeline_instance = MagicMock()
                 pipeline_instance.process_pipeline = AsyncMock(
-                    return_value=docling_output
+                    return_value=chonkie_output
                 )
-                mock_docling_pipeline.return_value = pipeline_instance
+                mock_chonkie_pipeline.return_value = pipeline_instance
 
                 analyzer = RepositoryAnalyzer(
-                    repo_url="https://github.com/user/repo", use_docling=True
+                    repo_url="https://github.com/user/repo", use_chonkie=True
                 )
 
         result = await analyzer.parse_codebase(Path("/tmp/repo"))
 
         pipeline_instance.process_pipeline.assert_awaited_once_with(Path("/tmp/repo"))
-        assert result == docling_output
+        assert result == chonkie_output
 
     @pytest.mark.asyncio
     async def test_clone_repository(self):
@@ -129,7 +129,7 @@ class TestRepositoryAnalyzer:
                 mock_repo_class.clone_from.return_value = mock_repo
 
                 analyzer = RepositoryAnalyzer(
-                    repo_url="https://github.com/user/repo", use_docling=False
+                    repo_url="https://github.com/user/repo", use_chonkie=False
                 )
 
                 result = await analyzer.clone_repository()
@@ -150,12 +150,12 @@ class TestRepositoryAnalyzer:
         assert analyzer.max_repo_size_mb == 100
 
     @pytest.mark.asyncio
-    async def test_docling_analysis_and_outline_generation(self):
-        """Test Docling analysis output feeds into outline generation."""
+    async def test_chonkie_analysis_and_outline_generation(self):
+        """Test chonkie analysis output feeds into outline generation."""
         from backend.services.repository_analyzer import RepositoryAnalyzer
         from backend.services.outline_generator import generate_outline
 
-        docling_output = {
+        chonkie_output = {
             "files": [
                 {
                     "file_path": "main.py",
@@ -166,25 +166,25 @@ class TestRepositoryAnalyzer:
             "summary": {"total_files": 1, "successfully_parsed": 1},
         }
 
-        with patch("backend.services.repository_analyzer.HAS_DOCLING_PIPELINE", True):
+        with patch("backend.services.repository_analyzer.HAS_chonkie_PIPELINE", True):
             with patch(
-                "backend.services.repository_analyzer.DoclingPipeline"
-            ) as mock_docling_pipeline:
+                "backend.services.repository_analyzer.chonkiePipeline"
+            ) as mock_chonkie_pipeline:
                 pipeline_instance = MagicMock()
                 pipeline_instance.process_pipeline = AsyncMock(
-                    return_value=docling_output
+                    return_value=chonkie_output
                 )
-                mock_docling_pipeline.return_value = pipeline_instance
+                mock_chonkie_pipeline.return_value = pipeline_instance
 
                 analyzer = RepositoryAnalyzer(
-                    repo_url="https://github.com/user/repo", use_docling=True
+                    repo_url="https://github.com/user/repo", use_chonkie=True
                 )
 
         parsed = await analyzer.parse_codebase(Path("/tmp/repo"))
 
         analysis_data = {
             "repo_name": "Demo Repository",
-            "analysis_mode": "docling",
+            "analysis_mode": "chonkie",
             "languages": {"python": 1},
             "structure": {
                 "files": [
@@ -237,7 +237,7 @@ class TestRepositoryAnalyzer:
         prompt = args[0]
 
         assert result == outline_response
-        assert "docling" in prompt
+        assert "chonkie" in prompt
         assert "main.py" in prompt
         assert kwargs["thread"] is thread
 

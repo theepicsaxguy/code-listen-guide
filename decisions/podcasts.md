@@ -20,13 +20,13 @@ To build an automated code‑to‑podcast system, we can use the Microsoft Agent
 1. Orchestrator/Manager Agent:  The controller receives the repository (git URL or upload) and coordinates all work.  It delegates sub-tasks in order (e.g. clone repo, analyze structure, generate scripts).  It may also store intermediate results (using a database or persistent storage) so agents can share context.
 
 
-2. Repository Parser Agent:  This agent checks out the codebase and extracts all text content.  It might use tools like Docling to convert any documentation or code files into a unified, LLM-friendly format.  (For example, Docling can ingest DOCX/PDF/HTML files and output structured Markdown/JSON, which is helpful if the repo has design docs or specs.)  The parser indexes modules, classes, and functions for later use.
+2. Repository Parser Agent:  This agent checks out the codebase and extracts all text content.  It might use tools like chonkie to convert any documentation or code files into a unified, LLM-friendly format.  (For example, chonkie can ingest DOCX/PDF/HTML files and output structured Markdown/JSON, which is helpful if the repo has design docs or specs.)  The parser indexes modules, classes, and functions for later use.
 
 
 3. Architecture/Index Agent:  To avoid getting lost in thousands of lines, one agent summarizes the code’s high-level structure.  It could build a simple dependency graph or “hierarchy tree” of modules/functions (a technique suggested by the RepoUnderstander system).  This agent produces a map of how components fit together, so later agents can reference the “big picture” context.
 
 
-4. Content Extractor Agent:  This agent scans code files and extracts comments, docstrings, and key code blocks.  It tags or labels different sections (e.g. “class definitions,” “important algorithm”), effectively creating “chunks” for narration.  If needed, Docling’s advanced parsing could even extract code snippets embedded in PDFs or docs.
+4. Content Extractor Agent:  This agent scans code files and extracts comments, docstrings, and key code blocks.  It tags or labels different sections (e.g. “class definitions,” “important algorithm”), effectively creating “chunks” for narration.  If needed, chonkie’s advanced parsing could even extract code snippets embedded in PDFs or docs.
 
 
 5. Explainer Agent: Acting like a senior developer, this agent walks through the code line by line.  Prompt it with context (e.g. function signatures, module purpose) and have it produce clear, conversational explanations of each part.  The prompt or role should emphasize being approachable and human – for example, instruct the agent to simplify jargon and use analogies.  Each chunk of code gets transformed into explanatory script.

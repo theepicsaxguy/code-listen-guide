@@ -1,7 +1,7 @@
 """
-Tests for Docling pipeline service.
+Tests for chonkie pipeline service.
 
-These tests verify the parse, clean, and tag functionality of the Docling pipeline.
+These tests verify the parse, clean, and tag functionality of the chonkie pipeline.
 """
 
 import pytest
@@ -9,24 +9,24 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
 import sys
 
-# Mock docling before import
-docling_mock = MagicMock()
-sys.modules["docling"] = docling_mock
-sys.modules["docling.document_converter"] = MagicMock()
-sys.modules["docling.datamodel.base_models"] = MagicMock()
-sys.modules["docling.datamodel.pipeline_options"] = MagicMock()
+# Mock chonkie before import
+chonkie_mock = MagicMock()
+sys.modules["chonkie"] = chonkie_mock
+sys.modules["chonkie.document_converter"] = MagicMock()
+sys.modules["chonkie.datamodel.base_models"] = MagicMock()
+sys.modules["chonkie.datamodel.pipeline_options"] = MagicMock()
 
-from backend.services.docling_pipeline import DoclingPipeline, ContentType, TagCategory
+from backend.services.chonkie_pipeline import chonkiePipeline, ContentType, TagCategory
 
 
-@pytest.mark.docling
+@pytest.mark.chonkie
 @pytest.mark.unit
-class TestDoclingPipeline:
-    """Test Docling pipeline functionality."""
+class TestchonkiePipeline:
+    """Test chonkie pipeline functionality."""
 
     @pytest.fixture
-    def mock_docling_converter(self):
-        """Create a mock Docling converter."""
+    def mock_chonkie_converter(self):
+        """Create a mock chonkie converter."""
         converter = MagicMock()
 
         # Mock document result
@@ -42,35 +42,35 @@ class TestDoclingPipeline:
         return converter
 
     @pytest.fixture
-    def pipeline(self, mock_docling_converter):
-        """Create a DoclingPipeline instance with mocked converter."""
-        with patch("backend.services.docling_pipeline.HAS_DOCLING", True):
+    def pipeline(self, mock_chonkie_converter):
+        """Create a chonkiePipeline instance with mocked converter."""
+        with patch("backend.services.chonkie_pipeline.HAS_chonkie", True):
             with patch(
-                "backend.services.docling_pipeline.DocumentConverter",
-                return_value=mock_docling_converter,
+                "backend.services.chonkie_pipeline.DocumentConverter",
+                return_value=mock_chonkie_converter,
             ):
-                pipeline = DoclingPipeline(
+                pipeline = chonkiePipeline(
                     enable_code_enrichment=True, enable_formula_enrichment=False
                 )
-                pipeline.converter = mock_docling_converter
+                pipeline.converter = mock_chonkie_converter
                 return pipeline
 
-    def test_init_with_docling_available(self, mock_docling_converter):
-        """Test initialization when Docling is available."""
-        with patch("backend.services.docling_pipeline.HAS_DOCLING", True):
+    def test_init_with_chonkie_available(self, mock_chonkie_converter):
+        """Test initialization when chonkie is available."""
+        with patch("backend.services.chonkie_pipeline.HAS_chonkie", True):
             with patch(
-                "backend.services.docling_pipeline.DocumentConverter",
-                return_value=mock_docling_converter,
+                "backend.services.chonkie_pipeline.DocumentConverter",
+                return_value=mock_chonkie_converter,
             ):
-                pipeline = DoclingPipeline()
+                pipeline = chonkiePipeline()
                 assert pipeline.enable_code_enrichment is True
                 assert pipeline.enable_formula_enrichment is False
 
-    def test_init_without_docling_raises_error(self):
-        """Test initialization fails when Docling is not available."""
-        with patch("backend.services.docling_pipeline.HAS_DOCLING", False):
-            with pytest.raises(RuntimeError, match="Docling is not installed"):
-                DoclingPipeline()
+    def test_init_without_chonkie_raises_error(self):
+        """Test initialization fails when chonkie is not available."""
+        with patch("backend.services.chonkie_pipeline.HAS_chonkie", False):
+            with pytest.raises(RuntimeError, match="chonkie is not installed"):
+                chonkiePipeline()
 
     def test_detect_content_type_code(self, pipeline):
         """Test content type detection for code files."""
@@ -339,13 +339,13 @@ class TestDoclingPipeline:
         assert "/repo/utils.py" not in entry_points
 
 
-@pytest.mark.docling
+@pytest.mark.chonkie
 @pytest.mark.slow
 @pytest.mark.integration
-class TestDoclingPipelineIntegration:
-    """Integration tests for Docling pipeline (requires Docling installation)."""
+class TestchonkiePipelineIntegration:
+    """Integration tests for chonkie pipeline (requires chonkie installation)."""
 
-    @pytest.mark.skip(reason="Requires Docling installation and real files")
+    @pytest.mark.skip(reason="Requires chonkie installation and real files")
     @pytest.mark.asyncio
     async def test_full_pipeline_execution(self, tmp_path):
         """Test complete pipeline on a real directory."""
@@ -354,7 +354,7 @@ class TestDoclingPipelineIntegration:
         (tmp_path / "src" / "main.py").write_text("print('hello')")
         (tmp_path / "README.md").write_text("# Test Repo")
 
-        pipeline = DoclingPipeline()
+        pipeline = chonkiePipeline()
         result = await pipeline.process_pipeline(tmp_path)
 
         assert "files" in result

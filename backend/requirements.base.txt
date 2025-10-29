@@ -58,4 +58,4 @@ boto3==1.40.60
 # pydub==0.25.1
 
 # Advanced Parsing (has HUGE deps)
-# docling-core==2.49.0  # WARNING: Adds 100+ transitive dependencies!
+chonkie==1.4.0

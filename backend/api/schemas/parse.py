@@ -35,11 +35,11 @@ class ParseRepositoryRequest(BaseModel):
     )
     enable_code_enrichment: bool = Field(
         default=True,
-        description="Enable code enrichment in Docling (extracts functions, classes, etc.)",
+        description="Enable code enrichment in chonkie (extracts functions, classes, etc.)",
     )
     enable_formula_enrichment: bool = Field(
         default=False,
-        description="Enable formula enrichment in Docling (useful for scientific papers)",
+        description="Enable formula enrichment in chonkie (useful for scientific papers)",
     )
     enable_table_extraction: bool = Field(
         default=True,

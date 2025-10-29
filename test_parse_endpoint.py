@@ -54,7 +54,7 @@ def test_parse_endpoint(token: str, repo_url: str):
     payload = {
         "repo_url": repo_url,
         "git_ref": "main",
-        "use_docling": True,
+        "use_chonkie": True,
         "max_file_size_kb": 100,  # Small limit for testing
     }
 

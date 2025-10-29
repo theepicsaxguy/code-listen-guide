@@ -8,7 +8,7 @@ Comprehensive test suite for the Codebase Audiobook backend.
 backend/tests/
 ├── conftest.py              # Shared fixtures and configuration
 ├── test_audiobook_tasks.py  # Existing workflow task tests
-├── test_docling_service.py  # Docling pipeline tests
+├── test_chonkie_service.py  # chonkie pipeline tests
 ├── test_agents.py           # Microsoft Agent Framework agent tests
 ├── test_services.py         # Backend service layer tests
 ├── test_api_routes.py       # FastAPI route tests
@@ -34,8 +34,8 @@ pytest -m unit
 # Integration tests only
 pytest -m integration
 
-# Docling tests
-pytest -m docling
+# chonkie tests
+pytest -m chonkie
 
 # Agent tests
 pytest -m agents
@@ -56,8 +56,8 @@ pytest -m models
 ### Run Specific Test Files
 
 ```bash
-# Test Docling service
-pytest backend/tests/test_docling_service.py
+# Test chonkie service
+pytest backend/tests/test_chonkie_service.py
 
 # Test agents
 pytest backend/tests/test_agents.py
@@ -98,7 +98,7 @@ Tests are organized with pytest markers:
 - `unit` - Fast unit tests for individual components
 - `integration` - Integration tests across multiple components
 - `slow` - Tests that take longer to execute
-- `docling` - Tests requiring Docling installation
+- `chonkie` - Tests requiring chonkie installation
 - `agents` - Tests for Microsoft Agent Framework agents
 - `api` - API route tests
 - `services` - Service layer tests
@@ -108,7 +108,7 @@ Tests are organized with pytest markers:
 
 ## Test Coverage
 
-### Docling Pipeline Tests (`test_docling_service.py`)
+### chonkie Pipeline Tests (`test_chonkie_service.py`)
 - ✅ Pipeline initialization
 - ✅ Content type detection (code, documentation, configuration)
 - ✅ File parsing
@@ -116,7 +116,7 @@ Tests are organized with pytest markers:
 - ✅ Semantic tagging (language, framework, patterns, complexity)
 - ✅ File exclusion/inclusion patterns
 - ✅ Entry point identification
-- 🔲 Full pipeline integration (requires Docling installation)
+- 🔲 Full pipeline integration (requires chonkie installation)
 
 ### Agent Tests (`test_agents.py`)
 - ✅ Analyzer agent creation
@@ -248,7 +248,7 @@ def test_my_new_feature(mock_client):
 
 ## Known Limitations
 
-1. **Docling Tests**: Some tests require Docling installation and are marked with `@pytest.mark.skip`
+1. **chonkie Tests**: Some tests require chonkie installation and are marked with `@pytest.mark.skip`
 2. **Agent Integration**: Full agent workflow tests require Microsoft Agent Framework setup
 3. **External Services**: Tests requiring real API keys are mocked by default
 4. **Model Relationships**: Some relationship tests are skipped because relationships are commented out in models

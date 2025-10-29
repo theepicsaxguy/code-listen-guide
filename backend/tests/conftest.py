@@ -387,7 +387,7 @@ def sample_analysis_result() -> Dict[str, Any]:
         "repository_url": "https://github.com/user/test-repo",
         "git_ref": "main",
         "commit_hash": "abc123",
-        "analysis_mode": "docling",
+        "analysis_mode": "chonkie",
         "structure": {
             "file_count": 42,
             "total_size_bytes": 1024000,

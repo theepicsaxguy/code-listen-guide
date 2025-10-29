@@ -1,14 +1,14 @@
-# Docling Pipeline Documentation
+# chonkie Pipeline Documentation
 
 ## Overview
 
-The Docling Pipeline is a comprehensive system for parsing, cleaning, and tagging codebases using IBM's Docling toolkit. It provides advanced document understanding capabilities beyond basic AST parsing, enabling the creation of rich, semantically-annotated code representations for the audiobook generation workflow.
+The chonkie Pipeline is a comprehensive system for parsing, cleaning, and tagging codebases using IBM's chonkie toolkit. It provides advanced document understanding capabilities beyond basic AST parsing, enabling the creation of rich, semantically-annotated code representations for the audiobook generation workflow.
 
 ## Architecture
 
 The pipeline consists of three main components:
 
-### 1. DoclingPipeline (`backend/services/docling_pipeline.py`)
+### 1. chonkiePipeline (`backend/services/chonkie_pipeline.py`)
 
 The core pipeline service that orchestrates the three-stage process:
 
@@ -28,17 +28,17 @@ The core pipeline service that orchestrates the three-stage process:
 
 ### 2. RepositoryAnalyzer (`backend/services/repository_analyzer.py`)
 
-High-level service that combines git operations with the Docling pipeline:
+High-level service that combines git operations with the chonkie pipeline:
 
 **Features:**
 - Git repository cloning
 - Repository size validation
-- Dual-mode analysis (Docling or tree-sitter fallback)
+- Dual-mode analysis (chonkie or tree-sitter fallback)
 - Automatic cleanup of temporary directories
 
 ### 3. Tree-sitter Fallback (`backend/tools/code_parser_tools.py`)
 
-Basic parser used when Docling is unavailable or for specific file types:
+Basic parser used when chonkie is unavailable or for specific file types:
 
 **Supports:**
 - Python, JavaScript, TypeScript
@@ -50,8 +50,8 @@ Basic parser used when Docling is unavailable or for specific file types:
 ### Prerequisites
 
 ```bash
-# Install Docling and dependencies
-pip install docling docling-core
+# Install chonkie and dependencies
+pip install chonkie chonkie-core
 
 # Install git support
 pip install gitpython
@@ -62,11 +62,11 @@ pip install gitpython
 For offline usage or air-gapped environments:
 
 ```bash
-# Download Docling models
-docling-tools models download
+# Download chonkie models
+chonkie-tools models download
 
 # Or set custom artifacts path
-export DOCLING_ARTIFACTS_PATH="/path/to/models"
+export chonkie_ARTIFACTS_PATH="/path/to/models"
 ```
 
 ## Usage
@@ -80,7 +80,7 @@ from backend.services.repository_analyzer import RepositoryAnalyzer
 analyzer = RepositoryAnalyzer(
     repo_url="https://github.com/user/repo",
     git_ref="main",
-    use_docling=True,
+    use_chonkie=True,
 )
 
 result = await analyzer.analyze_full()
@@ -89,11 +89,11 @@ result = await analyzer.analyze_full()
 ### Direct Pipeline Usage
 
 ```python
-from backend.services.docling_pipeline import DoclingPipeline
+from backend.services.chonkie_pipeline import chonkiePipeline
 from pathlib import Path
 
 # Initialize pipeline
-pipeline = DoclingPipeline(
+pipeline = chonkiePipeline(
     enable_code_enrichment=True,
     enable_formula_enrichment=False,
 )
@@ -109,13 +109,13 @@ codebase_result = await pipeline.process_pipeline(Path("/repo"))
 
 ```bash
 # Test with a GitHub repository
-python -m backend.examples.test_docling_pipeline https://github.com/user/repo
+python -m backend.examples.test_chonkie_pipeline https://github.com/user/repo
 
 # Test with local directory
-python -m backend.examples.test_docling_pipeline /path/to/repo
+python -m backend.examples.test_chonkie_pipeline /path/to/repo
 
 # Test specific branch
-python -m backend.examples.test_docling_pipeline https://github.com/user/repo develop
+python -m backend.examples.test_chonkie_pipeline https://github.com/user/repo develop
 ```
 
 ## Pipeline Stages
@@ -125,7 +125,7 @@ python -m backend.examples.test_docling_pipeline https://github.com/user/repo de
 **Purpose:** Extract structured content from files
 
 **Operations:**
-- Document conversion with Docling
+- Document conversion with chonkie
 - Code block extraction
 - Table and image detection
 - Formula parsing (if enabled)
@@ -213,10 +213,10 @@ def bar():
 
 ## Configuration
 
-### DoclingPipeline Options
+### chonkiePipeline Options
 
 ```python
-pipeline = DoclingPipeline(
+pipeline = chonkiePipeline(
     enable_code_enrichment=True,     # Advanced code understanding
     enable_formula_enrichment=False,  # Math formula parsing
     artifacts_path=None,              # Custom model path (for offline)
@@ -229,7 +229,7 @@ pipeline = DoclingPipeline(
 analyzer = RepositoryAnalyzer(
     repo_url="https://github.com/user/repo",
     git_ref="main",
-    use_docling=True,        # Use Docling (True) or tree-sitter (False)
+    use_chonkie=True,        # Use chonkie (True) or tree-sitter (False)
     max_repo_size_mb=500,    # Maximum repository size
 )
 ```
@@ -263,7 +263,7 @@ exclude_patterns = [
 {
   "repository_url": "https://github.com/user/repo",
   "git_ref": "main",
-  "analysis_mode": "docling",
+  "analysis_mode": "chonkie",
   "structure": {
     "files": [...],
     "languages": ["Python", "JavaScript"],
@@ -303,7 +303,7 @@ exclude_patterns = [
 
 ## Integration with Audiobook Workflow
 
-The Docling pipeline integrates with the audiobook generation workflow as follows:
+The chonkie pipeline integrates with the audiobook generation workflow as follows:
 
 ```
 ┌────────────────┐
@@ -315,7 +315,7 @@ The Docling pipeline integrates with the audiobook generation workflow as follow
 ┌────────────────┐
 │ Analyzer Agent │ (uses RepositoryAnalyzer)
 │  - Clone repo  │
-│  - Run Docling │
+│  - Run chonkie │
 └───────┬────────┘
         │
         ▼
@@ -351,16 +351,16 @@ stable even as agents emit richer content internally.
 
 ### Common Issues
 
-#### 1. Docling Not Installed
+#### 1. chonkie Not Installed
 
 **Error:**
 ```
-RuntimeError: Docling is not installed
+RuntimeError: chonkie is not installed
 ```
 
 **Solution:**
 ```bash
-pip install docling docling-core
+pip install chonkie chonkie-core
 ```
 
 #### 2. GitPython Missing
@@ -392,13 +392,13 @@ analyzer = RepositoryAnalyzer(
 
 #### 4. Automatic Fallback
 
-If Docling initialization fails, the system automatically falls back to tree-sitter:
+If chonkie initialization fails, the system automatically falls back to tree-sitter:
 
 ```
-WARNING: Failed to initialize Docling: [error]. Falling back to tree-sitter
+WARNING: Failed to initialize chonkie: [error]. Falling back to tree-sitter
 ```
 
-This is expected behavior and ensures the pipeline continues working even without Docling.
+This is expected behavior and ensures the pipeline continues working even without chonkie.
 
 ### Performance Optimization
 
@@ -414,7 +414,7 @@ This is expected behavior and ensures the pipeline continues working even withou
 
 2. **Disable formula enrichment** if not needed:
    ```python
-   pipeline = DoclingPipeline(
+   pipeline = chonkiePipeline(
        enable_code_enrichment=True,
        enable_formula_enrichment=False,  # Faster
    )
@@ -431,7 +431,7 @@ This is expected behavior and ensures the pipeline continues working even withou
 
 To support a new content type:
 
-1. Add to `ContentType` enum in `docling_pipeline.py`:
+1. Add to `ContentType` enum in `chonkie_pipeline.py`:
    ```python
    class ContentType(str, Enum):
        NEW_TYPE = "new_type"
@@ -471,22 +471,22 @@ Run the test suite:
 
 ```bash
 # Test with sample repository
-python -m backend.examples.test_docling_pipeline https://github.com/psf/requests
+python -m backend.examples.test_chonkie_pipeline https://github.com/psf/requests
 
 # Test with local directory
-python -m backend.examples.test_docling_pipeline ./backend
+python -m backend.examples.test_chonkie_pipeline ./backend
 
 # Run automated tests (when available)
-pytest backend/tests/test_docling_pipeline.py
+pytest backend/tests/test_chonkie_pipeline.py
 ```
 
 ## References
 
-- [Docling Documentation](https://ds4sd.github.io/docling/)
-- [Docling GitHub](https://github.com/DS4SD/docling)
-- [Docling Paper](https://arxiv.org/abs/2408.09869)
-- [Project Plan](../decisions/docling-parser-plan.md)
-- [Sample Reference](../samples/docling.md)
+- [chonkie Documentation](https://ds4sd.github.io/chonkie/)
+- [chonkie GitHub](https://github.com/DS4SD/chonkie)
+- [chonkie Paper](https://arxiv.org/abs/2408.09869)
+- [Project Plan](../decisions/chonkie-parser-plan.md)
+- [Sample Reference](../samples/chonkie.md)
 
 ## Future Enhancements
 
@@ -507,4 +507,4 @@ For issues or questions:
 1. Check this documentation
 2. Review examples in `backend/examples/`
 3. Open an issue on GitHub
-4. Reference the Docling documentation for toolkit-specific questions
+4. Reference the chonkie documentation for toolkit-specific questions

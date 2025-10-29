@@ -97,7 +97,7 @@ make stop-dev
 | `README.md` | ✅ Accurate | Setup and development workflow |
 | `Plan.md` | 📋 Vision | Understand goals, NOT current state |
 | `BACKEND_IMPLEMENTATION_PLAN.md` | 📋 Blueprint | Architecture guide, many TODOs remain |
-| `decisions/*.md` | 📋 Future | Roadmap items (Docling, launch strategy) |
+| `decisions/*.md` | 📋 Future | Roadmap items (chonkie, launch strategy) |
 | This file (`CLAUDE.MD`) | ✅ Reality Check | Current implementation status |
 
 ### Key Principle for AI Assistants
@@ -1287,7 +1287,7 @@ This is where business logic lives. **Most services are currently TODO.**
 - `payment.py` - Stripe integration
 - `storage.py` - AWS S3 operations
 - `github_service.py` - GitHub REST API wrapper (inspect repos without cloning)
-- `docling_pipeline.py` - IBM Docling integration for advanced code parsing
+- `chonkie_pipeline.py` - IBM chonkie integration for advanced code parsing
 
 **Example Service Implementation Pattern:**
 
@@ -1694,7 +1694,7 @@ alembic -c backend/alembic.ini revision --autogenerate -m "Description"
 
 ### Low-Priority (Post-MVP)
 
-- Docling integration (IBM parser for richer AST)
+- chonkie integration (IBM parser for richer AST)
 - Code visualization in player
 - Transcript search
 - Offline downloads
@@ -2291,7 +2291,7 @@ tree = await gh.get_tree("owner", "repo", "main")
 
 ### Phase 2: Polish & Launch
 
-- Docling parser integration (richer code analysis)
+- chonkie parser integration (richer code analysis)
 - WebSocket real-time updates
 - Email notifications
 - Landing page and marketing site
@@ -2425,7 +2425,7 @@ backend/
 
 **Key points:**
 - `requirements.base.txt` contains only MVP-ready packages
-- Many optional deps are commented out (tree-sitter, docling, redis)
+- Many optional deps are commented out (tree-sitter, chonkie, redis)
 - Docker production builds use `requirements.base.txt` (smaller images)
 - Local development uses `requirements.txt` (includes all tools)
 - Python 3.14 compatible (no legacy dependencies)
@@ -2443,7 +2443,7 @@ pip install -r backend/requirements.base.txt
 **Uncommenting packages:**
 When implementing features, uncomment the relevant packages in `requirements.base.txt`:
 - Repository analysis: tree-sitter packages
-- Advanced parsing: docling-core (WARNING: 100+ deps!)
+- Advanced parsing: chonkie-core (WARNING: 100+ deps!)
 - Real-time updates: redis
 - Audio processing: pydub
 

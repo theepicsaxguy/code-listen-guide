@@ -6,7 +6,7 @@ from agent_framework import AIFunction, ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
 from pydantic import Field
 
-from backend.services.docling_pipeline import DoclingPipeline
+from backend.services.chonkie_pipeline import chonkiePipeline
 from backend.tools.git_tools import clone_repository, list_repository_files
 from . import build_responses_client_options
 
@@ -24,13 +24,13 @@ def _ai_list_files(
 def _ai_parse_repository(
     path: Annotated[str, Field(description="Path to cloned repository")],
 ) -> Dict[str, Any]:
-    """Parse repository using Docling pipeline."""
-    docling = DoclingPipeline()
+    """Parse repository using chonkie pipeline."""
+    chonkie = chonkiePipeline()
     # Run async function in sync context
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        result = loop.run_until_complete(docling.process_pipeline(Path(path)))
+        result = loop.run_until_complete(chonkie.process_pipeline(Path(path)))
         return result
     finally:
         loop.close()
@@ -45,8 +45,8 @@ async def create_analyzer_agent(chat_client: Any) -> ChatAgent:
     return chat_client.create_agent(
         name="RepositoryAnalyzer",
         instructions=(
-            "Clone the supplied repository, build a structural summary using Docling pipeline, and respond with JSON. "
-            "Use the available tools for git operations and advanced code parsing with Docling."
+            "Clone the supplied repository, build a structural summary using chonkie pipeline, and respond with JSON. "
+            "Use the available tools for git operations and advanced code parsing with chonkie."
         ),
         tools=tools,
     )
