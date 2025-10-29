@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Code2 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/error-utils';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,17 +20,27 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    const email = formData.get('email');
+    const password = formData.get('password');
+
+    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter email and password',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       toast({ title: 'Welcome back!', description: 'Successfully logged in.' });
       navigate('/dashboard');
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Login failed',
-        description: error.message || 'Invalid credentials',
+        description: getErrorMessage(error),
         variant: 'destructive',
       });
     } finally {
@@ -41,20 +52,30 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    const name = formData.get('name');
+    const email = formData.get('email');
+    const password = formData.get('password');
+
+    if (!name || typeof name !== 'string' || !email || typeof email !== 'string' || !password || typeof password !== 'string') {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill in all fields',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      await register(email, password, name);
+      await register(email.trim(), password, name.trim());
       toast({ title: 'Account created!', description: 'Welcome to Codebase Audiobook.' });
       navigate('/dashboard');
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Registration failed',
-        description: error.message || 'Could not create account',
+        description: getErrorMessage(error),
         variant: 'destructive',
-        duration: 6000, // Show longer for validation errors
+        duration: 6000,
       });
     } finally {
       setIsLoading(false);

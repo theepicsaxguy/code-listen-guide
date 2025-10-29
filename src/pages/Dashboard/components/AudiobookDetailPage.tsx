@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAudiobook, useAudiobookChapters } from '../hooks';
 import { formatTime, formatDuration } from '../utils';
+import { copyToClipboard } from '@/lib/error-utils';
 
 interface AudiobookDetailPageProps {
   audiobookId: string;
@@ -34,11 +35,13 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
   const { data: audiobook, isLoading: isLoadingJob } = useAudiobook(audiobookId);
   const { data: playerData, isLoading: isLoadingChapters } = useAudiobookChapters(audiobookId);
 
-  const handleCopyUrl = () => {
+  const handleCopyUrl = async () => {
     if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const success = await copyToClipboard(window.location.href);
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     }
   };
 

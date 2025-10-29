@@ -21,12 +21,12 @@ import {
 } from "@/components/ui/select";
 
 export default function AdminContent() {
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-jobs", statusFilter, page],
-    queryFn: () => apiClient.request(`/admin/jobs?page=${page}${statusFilter ? `&status=${statusFilter}` : ""}`),
+    queryFn: () => apiClient.getJobs(page, statusFilter === "all" ? undefined : statusFilter),
   });
 
   const getStatusColor = (status: string) => {
@@ -58,7 +58,7 @@ export default function AdminContent() {
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="analyzing">Analyzing</SelectItem>
                 <SelectItem value="scripting">Scripting</SelectItem>

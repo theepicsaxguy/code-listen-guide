@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -32,11 +33,12 @@ import AdminParse from "./pages/AdminParse";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
         <AuthProvider>
           <AdminAuthProvider>
             <Routes>
@@ -67,9 +69,10 @@ const App = () => (
             </Routes>
           </AdminAuthProvider>
         </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

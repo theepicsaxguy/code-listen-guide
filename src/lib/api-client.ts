@@ -27,7 +27,7 @@ export class ApiClient {
     localStorage.removeItem('admin_token');
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = this.getToken();
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
