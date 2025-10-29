@@ -93,6 +93,37 @@ export class ApiClient {
     });
   }
 
+  async getUserJobs(userId: string) {
+    return this.request<{ jobs: Array<{
+      id: string;
+      repo_url: string;
+      repo_name: string;
+      status: string;
+      depth_tier: string;
+      price_paid_cents: number;
+      created_at: string;
+    }> }>(`/admin/users/${userId}/jobs`);
+  }
+
+  async updateUserCredits(userId: string, amount: number, operation: 'add' | 'subtract') {
+    return this.request<{ success: boolean; new_balance: number }>(
+      `/admin/users/${userId}/credits`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ amount, operation }),
+      }
+    );
+  }
+
+  async cancelJob(jobId: string) {
+    return this.request<{ success: boolean; message: string; job_id: string }>(
+      `/jobs/${jobId}/cancel`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
   async getAuditLogs(page = 1, filters?: Record<string, string>) {
     const params = new URLSearchParams({ page: page.toString(), ...filters });
     return this.request<{ logs: import('@/types/admin').AuditLog[]; total: number }>(

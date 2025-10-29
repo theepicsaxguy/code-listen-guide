@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, MoreVertical, UserX, UserCheck } from "lucide-react";
+import { Search, MoreVertical, UserX, UserCheck, Eye } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +20,7 @@ import {
 import { apiClient } from "@/lib/api-client";
 import { AdminUser } from "@/types/admin";
 import { toast } from "sonner";
+import { UserDetailsDialog } from "./UserDetails";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -27,6 +28,7 @@ export default function AdminUsers() {
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async (pageToFetch: number, searchTerm: string) => {
     setIsLoading(true);
@@ -132,7 +134,13 @@ export default function AdminUsers() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+                        <DropdownMenuItem
+                          onSelect={(event) => {
+                            event.preventDefault();
+                            setSelectedUserId(user.id);
+                          }}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>
                         {user.status === "active" ? (
@@ -190,6 +198,12 @@ export default function AdminUsers() {
           Next
         </Button>
       </div>
+
+      <UserDetailsDialog
+        userId={selectedUserId || ""}
+        isOpen={Boolean(selectedUserId)}
+        onClose={() => setSelectedUserId(null)}
+      />
     </div>
   );
 }

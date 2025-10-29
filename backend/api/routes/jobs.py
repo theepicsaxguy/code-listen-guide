@@ -137,3 +137,45 @@ async def start_job(
         start_audiobook_workflow, str(job.id), job.repo_url, job.depth_tier
     )
     return {"accepted": True}
+
+
+@router.post("/{job_id}/cancel", status_code=status.HTTP_200_OK)
+async def cancel_job(
+    job_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Cancel a running job.
+    
+    Only the job owner can cancel their jobs.
+    Cannot cancel already completed or failed jobs.
+    """
+    job = get_job_record(db, job_id, current_user.id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Check if job is in a cancellable state
+    if job.status in {"completed", "failed"}:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot cancel job with status: {job.status}"
+        )
+    
+    # Update job status to failed with cancellation message
+    job.status = "failed"
+    job.error_message = "Job canceled by user"
+    
+    db.commit()
+    db.refresh(job)
+    
+    # TODO: Send signal to workflow to gracefully stop processing
+    # This would involve stopping any running agents and cleaning up resources
+    
+    logger.info(f"User {current_user.email} canceled job {job_id}")
+    
+    return {
+        "success": True,
+        "message": "Job canceled successfully",
+        "job_id": str(job.id)
+    }

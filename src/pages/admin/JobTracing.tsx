@@ -122,6 +122,29 @@ export default function JobTracing() {
         </CardContent>
       </Card>
 
+      {searchedJobId && !jobTrace && !isLoading && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-lg font-semibold mb-2">No job found</p>
+            <p className="text-sm text-muted-foreground">
+              Job ID "{searchedJobId}" not found. Please check the ID and try again.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+              <p className="text-muted-foreground">Loading job trace...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {jobTrace && (
         <>
           <Card>

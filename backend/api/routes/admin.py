@@ -207,6 +207,124 @@ async def update_user_status(
         )
 
 
+@router.get("/users/{user_id}/jobs")
+async def get_user_jobs(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get all jobs for a specific user.
+
+    Requires admin privileges.
+    """
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        jobs = db.query(Job).filter(Job.user_id == user_id).order_by(desc(Job.created_at)).all()
+
+        return {
+            "jobs": [
+                {
+                    "id": str(job.id),
+                    "repo_url": job.repo_url,
+                    "repo_name": job.repo_name,
+                    "status": job.status,
+                    "depth_tier": job.depth_tier,
+                    "price_paid_cents": job.price_paid_cents,
+                    "created_at": job.created_at.isoformat() if job.created_at else None,
+                }
+                for job in jobs
+            ]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching jobs for user {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch user jobs"
+        )
+
+
+@router.post("/users/{user_id}/credits")
+async def update_user_credits(
+    user_id: str,
+    credit_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Add or remove credits from a user's account.
+
+    Requires admin privileges.
+    
+    Request body:
+    {
+        "amount": 100,
+        "operation": "add" or "subtract"
+    }
+    """
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        amount = credit_data.get("amount")
+        operation = credit_data.get("operation")
+
+        if not isinstance(amount, int) or amount <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Amount must be a positive integer"
+            )
+
+        if operation not in ["add", "subtract"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Operation must be 'add' or 'subtract'"
+            )
+
+        # Update credits
+        if operation == "add":
+            user.credits_remaining = (user.credits_remaining or 0) + amount
+        else:  # subtract
+            new_balance = (user.credits_remaining or 0) - amount
+            if new_balance < 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Insufficient credits"
+                )
+            user.credits_remaining = new_balance
+
+        db.commit()
+        db.refresh(user)
+
+        logger.info(f"Admin {current_user.email} {operation}ed {amount} credits for user {user.email}")
+
+        return {
+            "success": True,
+            "new_balance": user.credits_remaining
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating credits for user {user_id}: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update credits"
+        )
+
+
 @router.get("/jobs")
 async def get_all_jobs(
     page: int = Query(1, ge=1),

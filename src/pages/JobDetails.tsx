@@ -1,21 +1,32 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '@/lib/api';
-import { Job, Chapter } from '@/lib/types';
+import { Job } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle, Download } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle, Download, XCircle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function JobDetails() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [job, setJob] = useState<Job | null>(null);
-  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     if (!jobId) return;
@@ -31,7 +42,6 @@ export default function JobDetails() {
     try {
       const response = await apiClient.getJob(jobId);
       setJob(response as Job);
-      setChapters(response.chapters || []);
     } catch (error: any) {
       toast({
         title: 'Failed to load job',
@@ -40,6 +50,28 @@ export default function JobDetails() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCancelJob = async () => {
+    if (!jobId) return;
+    
+    setIsCancelling(true);
+    try {
+      await apiClient.cancelJob(jobId);
+      toast({
+        title: 'Job cancelled',
+        description: 'The job has been cancelled successfully.',
+      });
+      loadJob(); // Reload to get updated status
+    } catch (error: any) {
+      toast({
+        title: 'Failed to cancel job',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -58,6 +90,7 @@ export default function JobDetails() {
           <CardContent className="text-center py-12">
             <p>Job not found</p>
             <Button onClick={() => navigate('/dashboard')} className="mt-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dashboard
             </Button>
           </CardContent>
@@ -66,12 +99,12 @@ export default function JobDetails() {
     );
   }
 
-  const isProcessing = !['completed', 'failed'].includes(job.status);
+  const isProcessing = job.status !== 'completed' && job.status !== 'failed';
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 max-w-5xl">
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
@@ -86,14 +119,49 @@ export default function JobDetails() {
               <h1 className="text-3xl font-bold mb-2">{job.repo_name}</h1>
               <p className="text-muted-foreground">{job.repo_url}</p>
             </div>
-            {job.status === 'completed' && (
-              <Button onClick={() => navigate(`/player/${job.id}`)}>
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Open Player
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {isProcessing && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isCancelling}>
+                      {isCancelling ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Cancelling...
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Cancel Job
+                        </>
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will stop the audiobook generation process. Any progress will be lost and this action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>No, keep processing</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleCancelJob} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Yes, cancel job
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              {job.status === 'completed' && (
+                <Button onClick={() => navigate(`/player/${job.id}`)}>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open Player
+                </Button>
+              )}
+            </div>
           </div>
-          <Badge variant={job.status === 'completed' ? 'default' : 'secondary'} className="text-sm">
+          <Badge variant={job.status === 'completed' ? 'default' : job.status === 'failed' ? 'destructive' : 'secondary'} className="text-sm">
             {job.status}
           </Badge>
         </div>
@@ -131,56 +199,6 @@ export default function JobDetails() {
             </CardContent>
           </Card>
         )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Chapters {chapters.length > 0 && `(${chapters.length})`}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {chapters.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                Chapters will appear here as they are generated
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {chapters.map((chapter) => (
-                  <div
-                    key={chapter.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <span className="text-sm text-muted-foreground font-mono">
-                        Ch. {chapter.chapter_number}
-                      </span>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{chapter.title}</h4>
-                        {chapter.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {chapter.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {chapter.audio_duration_seconds && (
-                        <span className="text-sm text-muted-foreground">
-                          {Math.floor(chapter.audio_duration_seconds / 60)}m
-                        </span>
-                      )}
-                      {chapter.status === 'completed' ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         {job.status === 'completed' && (
           <Card className="mt-8">

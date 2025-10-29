@@ -4,68 +4,83 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Settings as SettingsIcon, Zap, Shield } from "lucide-react";
 
+interface SystemSettings {
+  rate_limits: {
+    enabled: boolean;
+    requests_per_minute: number;
+  };
+  features: {
+    user_registration: boolean;
+    payment_processing: boolean;
+  };
+  system: {
+    version: string;
+    environment: string;
+  };
+}
+
 export default function AdminSettings() {
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings, isLoading } = useQuery<SystemSettings>({
     queryKey: ["admin-settings"],
-    queryFn: () => apiClient.request("/admin/settings"),
+    queryFn: () => apiClient.request<SystemSettings>("/admin/settings"),
   });
 
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Settings</h1>
-        <p className="text-gray-400 mt-1">
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground mt-1">
           Configure system settings, rate limits, and feature toggles
         </p>
       </div>
 
       {isLoading ? (
-        <Card className="bg-gray-900 border-gray-800">
+        <Card>
           <CardContent className="p-12 text-center">
-            <p className="text-gray-400">Loading settings...</p>
+            <p className="text-muted-foreground">Loading settings...</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-6">
-          <Card className="bg-gray-900 border-gray-800">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
+              <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
                 Rate Limits
               </CardTitle>
-              <CardDescription className="text-gray-400">API rate limiting configuration</CardDescription>
+              <CardDescription>API rate limiting configuration</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-white">Enabled</span>
+                <span className="text-sm">Enabled</span>
                 <Badge variant={settings?.rate_limits?.enabled ? "default" : "secondary"}>
                   {settings?.rate_limits?.enabled ? "Active" : "Disabled"}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-white">Requests per minute</span>
-                <span className="font-mono text-sm text-gray-300">{settings?.rate_limits?.requests_per_minute || "N/A"}</span>
+                <span className="text-sm">Requests per minute</span>
+                <span className="font-mono text-sm">{settings?.rate_limits?.requests_per_minute || "N/A"}</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
+              <CardTitle className="flex items-center gap-2">
                 <Zap className="h-5 w-5" />
                 Features
               </CardTitle>
-              <CardDescription className="text-gray-400">System feature toggles</CardDescription>
+              <CardDescription>System feature toggles</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-white">User Registration</span>
+                <span className="text-sm">User Registration</span>
                 <Badge variant={settings?.features?.user_registration ? "default" : "secondary"}>
                   {settings?.features?.user_registration ? "Enabled" : "Disabled"}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-white">Payment Processing</span>
+                <span className="text-sm">Payment Processing</span>
                 <Badge variant={settings?.features?.payment_processing ? "default" : "secondary"}>
                   {settings?.features?.payment_processing ? "Enabled" : "Disabled"}
                 </Badge>
@@ -73,22 +88,22 @@ export default function AdminSettings() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
+              <CardTitle className="flex items-center gap-2">
                 <SettingsIcon className="h-5 w-5" />
                 System Information
               </CardTitle>
-              <CardDescription className="text-gray-400">Current system configuration</CardDescription>
+              <CardDescription>Current system configuration</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-white">Version</span>
-                <span className="font-mono text-sm text-gray-300">{settings?.system?.version || "N/A"}</span>
+                <span className="text-sm">Version</span>
+                <span className="font-mono text-sm">{settings?.system?.version || "N/A"}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-white">Environment</span>
-                <Badge variant="outline" className="border-gray-700">{settings?.system?.environment || "N/A"}</Badge>
+                <span className="text-sm">Environment</span>
+                <Badge variant="outline">{settings?.system?.environment || "N/A"}</Badge>
               </div>
             </CardContent>
           </Card>

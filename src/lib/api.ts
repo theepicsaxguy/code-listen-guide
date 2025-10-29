@@ -217,6 +217,10 @@ export class ApiClient {
     await this.request<void>(`/jobs/${jobId}`, { method: 'DELETE' });
   }
 
+  async cancelJob(jobId: string): Promise<{ success: boolean; message: string; job_id: string }> {
+    return this.request(`/jobs/${jobId}/cancel`, { method: 'POST' });
+  }
+
   async estimateJobCost(repoUrl: string, depthTier: string) {
     return this.request<{ estimated_cost_cents: number; estimated_duration_minutes: number }>('/jobs/estimate', {
       method: 'POST',

@@ -902,6 +902,20 @@ export default function AdminAgents() {
         </div>
       </div>
 
+      <Card className="mt-6 border-yellow-500/20 bg-yellow-500/5">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
+            <div>
+              <p className="font-semibold text-yellow-500">Demo Mode - Mock Data</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                This page currently displays sample agent conversations. Real agent monitoring and workflow visualization will be connected to the backend in a future update.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="agents" className="mt-8">
         <TabsList className="grid grid-cols-3 lg:w-[420px]">
           <TabsTrigger value="agents" className="gap-2">

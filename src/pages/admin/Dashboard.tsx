@@ -29,10 +29,10 @@ export default function AdminDashboard() {
     return (
       <div className="p-8">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-800 rounded w-1/4" />
+          <div className="h-8 bg-muted rounded w-1/4" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-32 bg-gray-800 rounded" />
+              <div key={i} className="h-32 bg-muted rounded" />
             ))}
           </div>
         </div>
@@ -43,8 +43,8 @@ export default function AdminDashboard() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-gray-400 mt-1">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-muted-foreground mt-1">
           Welcome back! Here's an overview of your system.
         </p>
       </div>
@@ -79,64 +79,45 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 shadow-lg">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-purple-500" />
+        <div className="bg-card border border-border rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
             Recent Activity
           </h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <div>
-                <p className="font-medium text-white">New user registration</p>
-                <p className="text-sm text-gray-400">2 minutes ago</p>
-              </div>
-              <div className="w-2 h-2 bg-cyan-500 rounded-full" />
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <div>
-                <p className="font-medium text-white">Audiobook completed</p>
-                <p className="text-sm text-gray-400">15 minutes ago</p>
-              </div>
-              <div className="w-2 h-2 bg-purple-500 rounded-full" />
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <div>
-                <p className="font-medium text-white">Payment received</p>
-                <p className="text-sm text-gray-400">1 hour ago</p>
-              </div>
-              <div className="w-2 h-2 bg-cyan-500 rounded-full" />
-            </div>
+          <div className="text-center py-8 text-muted-foreground">
+            <p>Activity tracking coming soon</p>
+            <p className="text-sm mt-2">Check the Content and Users pages for detailed information</p>
           </div>
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 shadow-lg">
-          <h3 className="text-lg font-semibold text-white mb-4">System Status</h3>
+        <div className="bg-card border border-border rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">System Status</h3>
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-white">API Health</span>
-                <span className="text-sm text-cyan-500">Operational</span>
+                <span className="text-sm font-medium">API Health</span>
+                <span className="text-sm text-green-500">Operational</span>
               </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div className="bg-cyan-500 h-2 rounded-full w-[100%]" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-white">Agent Activity</span>
-                <span className="text-sm text-purple-500">High</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div className="bg-purple-500 h-2 rounded-full w-[85%]" />
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-green-500 h-2 rounded-full w-[100%]" />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-white">Queue Length</span>
-                <span className="text-sm text-yellow-500">Moderate</span>
+                <span className="text-sm font-medium">Active Jobs</span>
+                <span className="text-sm text-primary">{stats?.active_jobs || 0}</span>
               </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div className="bg-yellow-500 h-2 rounded-full w-[45%]" />
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-primary h-2 rounded-full w-[{Math.min(100, (stats?.active_jobs || 0) * 10)}%]" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Total Users</span>
+                <span className="text-sm text-primary">{stats?.total_users || 0}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-primary h-2 rounded-full w-[{Math.min(100, (stats?.total_users || 0))}%]" />
               </div>
             </div>
           </div>
