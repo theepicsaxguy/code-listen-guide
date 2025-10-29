@@ -18,6 +18,7 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedAudiobookId, setSelectedAudiobookId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const { data: user } = useUser();
 
@@ -62,7 +63,13 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-950">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={user ?? null} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        user={user ?? null}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
       <div className="flex-1 overflow-auto">
         <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-10 backdrop-blur-sm bg-gray-900/95">
           <div className="px-8 py-4 flex items-center justify-between">

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation, Outlet, Navigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -11,6 +12,8 @@ import {
   History,
   Activity as ActivityIcon,
   MessageSquare,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,6 +36,7 @@ const navItems = [
 export const AdminLayout = () => {
   const location = useLocation();
   const { user, isLoading: isAuthLoading, logout: mainLogout } = useAuth();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Fetch user data to check admin status
   const { data: userData, isLoading: isUserDataLoading } = useQuery({
@@ -67,13 +71,30 @@ export const AdminLayout = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-background">
-      <aside className="w-64 bg-card border-r border-border flex flex-col">
-        <div className="p-6 border-b border-border">
-          <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Codebase Audiobook
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">Admin Dashboard</p>
+    <div className="min-h-screen flex bg-gray-950">
+      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300`}>
+        <div className="p-6 border-b border-gray-800 relative">
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="absolute -right-3 top-6 bg-gray-800 border border-gray-700 rounded-full p-1 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors z-10"
+            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+          {!isSidebarCollapsed ? (
+            <>
+              <h1 className="text-xl font-bold text-white">
+                Codebase Audiobook
+              </h1>
+              <p className="text-xs text-gray-400 mt-1">Admin Dashboard</p>
+            </>
+          ) : (
+            <div className="flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-xs font-bold text-white">
+                CA
+              </div>
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -87,31 +108,35 @@ export const AdminLayout = () => {
               <Link key={item.path} to={item.path}>
                 <Button
                   variant={isActive ? "secondary" : "ghost"}
-                  className={`w-full justify-start ${
-                    isActive ? "bg-primary/10 text-primary hover:bg-primary/20" : ""
+                  className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} ${
+                    isActive
+                      ? "bg-gray-800 text-white shadow-lg hover:bg-gray-800"
+                      : "text-gray-400 hover:bg-gray-800/50 hover:text-white"
                   }`}
+                  title={isSidebarCollapsed ? item.label : undefined}
                 >
-                  <Icon className="mr-3 h-4 w-4" />
-                  {item.label}
+                  <Icon className={`h-4 w-4 ${!isSidebarCollapsed ? 'mr-3' : ''}`} />
+                  {!isSidebarCollapsed && item.label}
                 </Button>
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-gray-800">
           <Button
             variant="ghost"
-            className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+            className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} text-red-400 hover:text-red-300 hover:bg-red-500/10`}
             onClick={handleLogout}
+            title={isSidebarCollapsed ? "Logout" : undefined}
           >
-            <LogOut className="mr-3 h-4 w-4" />
-            Logout
+            <LogOut className={`h-4 w-4 ${!isSidebarCollapsed ? 'mr-3' : ''}`} />
+            {!isSidebarCollapsed && "Logout"}
           </Button>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-gray-950">
         <Outlet />
       </main>
     </div>

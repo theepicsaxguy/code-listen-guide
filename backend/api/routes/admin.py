@@ -205,3 +205,123 @@ async def update_user_status(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update user status"
         )
+
+
+@router.get("/jobs")
+async def get_all_jobs(
+    page: int = Query(1, ge=1),
+    status_filter: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get all jobs with admin view.
+
+    Requires admin privileges.
+    """
+    try:
+        per_page = 20
+        offset = (page - 1) * per_page
+
+        query = db.query(Job)
+
+        if status_filter:
+            query = query.filter(Job.status == status_filter)
+
+        total = query.count()
+        jobs = query.order_by(desc(Job.created_at)).offset(offset).limit(per_page).all()
+
+        job_list = []
+        for job in jobs:
+            job_list.append({
+                "id": str(job.id),
+                "user_id": str(job.user_id),
+                "repo_url": job.repo_url,
+                "repo_name": job.repo_name,
+                "status": job.status,
+                "progress_percentage": job.progress_percentage,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "started_at": job.started_at.isoformat() if job.started_at else None,
+                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                "error_message": job.error_message,
+            })
+
+        return {
+            "jobs": job_list,
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching jobs: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch jobs"
+        )
+
+
+@router.get("/audit-logs")
+async def get_audit_logs(
+    page: int = Query(1, ge=1),
+    action: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get audit logs for admin actions.
+
+    Requires admin privileges.
+
+    Note: This is a placeholder. Implement proper audit logging model.
+    """
+    # Placeholder implementation
+    return {
+        "logs": [],
+        "total": 0,
+        "page": page,
+        "per_page": 20,
+    }
+
+
+@router.get("/settings")
+async def get_settings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get system settings.
+
+    Requires admin privileges.
+    """
+    # Placeholder - return basic system info
+    return {
+        "rate_limits": {
+            "enabled": True,
+            "requests_per_minute": 60,
+        },
+        "features": {
+            "user_registration": True,
+            "payment_processing": True,
+        },
+        "system": {
+            "version": "1.0.0",
+            "environment": "production",
+        }
+    }
+
+
+@router.patch("/settings")
+async def update_settings(
+    settings_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Update system settings.
+
+    Requires admin privileges.
+    """
+    # Placeholder implementation
+    logger.info(f"Admin {current_user.email} updated settings: {settings_data}")
+    return {"success": True}
