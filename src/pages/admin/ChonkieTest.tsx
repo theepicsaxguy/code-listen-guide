@@ -22,7 +22,7 @@ interface ParseResult {
 }
 
 export default function ChonkieTest() {
-  const [repoUrl, setRepoUrl] = useState("https://github.com/pallets/click");
+  const [repoUrl, setRepoUrl] = useState("https://github.com/microsoft/agent-framework/tree/main/workflow-samples");
   const [gitRef, setGitRef] = useState("main");
   const [maxFileSizeKb, setMaxFileSizeKb] = useState(500);
   const [enableCodeEnrichment, setEnableCodeEnrichment] = useState(true);

@@ -57,5 +57,5 @@ boto3==1.40.60
 # Audio Processing
 # pydub==0.25.1
 
-# Advanced Parsing (has HUGE deps)
-chonkie==1.4.0
+# Advanced Parsing (chonkie for semantic chunking)
+chonkie[model2vec]==1.4.0

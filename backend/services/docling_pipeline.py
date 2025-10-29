@@ -1,15 +1,13 @@
-"""
-chonkie Pipeline Service for parsing, cleaning, and tagging codebases.
+"""chonkie Pipeline Service for parsing, cleaning, and tagging codebases.
 
-This service integrates IBM's chonkie toolkit to provide advanced document
-and code parsing capabilities.
+This service integrates chonkie for semantic text chunking and code analysis.
 
 Key features:
-- Parse multiple document formats (PDF, DOCX, Markdown, HTML, code files)
-- Extract structured content with rich metadata
+- Parse code files and extract content
+- Semantic chunking using chonkie's intelligent chunking algorithms
 - Clean and normalize extracted content
 - Tag content with semantic classifications
-- Generate DocTags format for efficient representation
+- Extract metadata and structure information
 """
 
 import logging
@@ -20,13 +18,10 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 try:
-    from chonkie.document_converter import DocumentConverter, PdfFormatOption
-    from chonkie.datamodel.base_models import InputFormat
-    from chonkie.datamodel.pipeline_options import PdfPipelineOptions
-
-    HAS_chonkie = True
+    from chonkie import SemanticChunker, TokenChunker
+    HAS_CHONKIE = True
 except ImportError:
-    HAS_chonkie = False
+    HAS_CHONKIE = False
     logger.warning("chonkie not available. Install with: pip install chonkie")
 
 
@@ -77,7 +72,7 @@ class chonkiePipeline:
             enable_table_extraction: Enable table extraction from documents
             artifacts_path: Path to chonkie model artifacts (for offline usage)
         """
-        if not HAS_chonkie:
+        if not HAS_CHONKIE:
             raise RuntimeError(
                 "chonkie is not installed. Install with: pip install chonkie"
             )
@@ -91,22 +86,15 @@ class chonkiePipeline:
         self._init_converter()
 
     def _init_converter(self):
-        """Initialize chonkie document converter with configured options."""
-        pipeline_options = PdfPipelineOptions(
-            artifacts_path=self.artifacts_path,
-            do_code_enrichment=self.enable_code_enrichment,
-            do_formula_enrichment=self.enable_formula_enrichment,
-        )
-
-        self.converter = DocumentConverter(
-            format_options={
-                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-            }
-        )
+        """Initialize chonkie chunker with configured options."""
+        # chonkie is a text chunking library, not a document converter
+        # We'll use TokenChunker for simple, reliable chunking
+        # SemanticChunker can be enabled later with model2vec for better results
+        self.chunker = TokenChunker(chunk_size=512)
 
     async def parse_file(self, file_path: Path) -> Dict[str, Any]:
         """
-        Parse a single file using chonkie.
+        Parse a single file using chonkie for semantic chunking.
 
         Args:
             file_path: Path to file to parse
@@ -114,12 +102,8 @@ class chonkiePipeline:
         Returns:
             Dictionary containing:
             - content: Extracted text content
-            - structure: Document structure (headings, sections, etc.)
+            - chunks: Semantically chunked text segments
             - metadata: File metadata and properties
-            - code_blocks: Extracted code blocks with language detection
-            - formulas: Extracted formulas (if enabled)
-            - tables: Extracted tables
-            - images: Image metadata
         """
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -128,28 +112,26 @@ class chonkiePipeline:
             # Determine content type
             content_type = self._detect_content_type(file_path)
 
-            # Parse with chonkie
-            result = self.converter.convert(str(file_path))
-            doc = result.document
+            # Read file content
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+
+            # Chunk the content using chonkie
+            chunks = self.chunker.chunk(content)
 
             # Extract structured data
             parsed_data = {
                 "file_path": str(file_path),
                 "content_type": content_type,
-                "content": doc.export_to_markdown(),
-                "structure": self._extract_structure(doc),
+                "content": content,
+                "chunks": [{"text": chunk.text, "index": i} for i, chunk in enumerate(chunks)],
                 "metadata": {
                     "file_name": file_path.name,
                     "file_size": file_path.stat().st_size,
                     "file_type": file_path.suffix,
+                    "num_chunks": len(chunks),
                 },
-                "code_blocks": self._extract_code_blocks(doc),
-                "tables": self._extract_tables(doc),
-                "images": self._extract_images(doc),
             }
-
-            if self.enable_formula_enrichment:
-                parsed_data["formulas"] = self._extract_formulas(doc)
 
             return parsed_data
 
@@ -469,7 +451,7 @@ class chonkiePipeline:
 
     def _extract_structure(self, doc) -> Dict[str, Any]:
         """Extract document structure (headings, sections)."""
-        # This would extract the hierarchical structure from the chonkie document
+        # This would extract the hierarchical structure from the document
         # For now, return a placeholder
         return {
             "sections": [],

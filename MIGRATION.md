@@ -107,7 +107,7 @@ This release introduces major improvements to parsing capabilities and authentic
 
 4. **Test parse endpoint:**
    - Visit `/admin/chonkie-test`
-   - Enter a small public repo URL (e.g., `https://github.com/pallets/click`)
+   - Enter a small public repo URL (e.g., `https://github.com/microsoft/agent-framework/tree/main/workflow-samples`)
    - Click "Parse Repository"
    - Review summary statistics and detected languages/frameworks
 
@@ -265,7 +265,7 @@ pytest -v
      -H "Authorization: Bearer <token>" \
      -H "Content-Type: application/json" \
      -d '{
-       "repo_url": "https://github.com/pallets/click",
+       "repo_url": "https://github.com/microsoft/agent-framework/tree/main/workflow-samples",
        "git_ref": "main"
      }'
    ```
