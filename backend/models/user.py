@@ -8,7 +8,7 @@ Provides:
 - Stripe customer integration
 """
 
-from sqlalchemy import Column, String, Integer, DateTime, Enum, Boolean
+from sqlalchemy import Column, String, Integer, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -27,6 +27,7 @@ class User(Base):
         email: User email address (unique, indexed)
         hashed_password: Bcrypt hashed password
         name: User display name
+        is_admin: Flag indicating whether the user can access admin features
         stripe_customer_id: Stripe customer ID for billing
         subscription_tier: Subscription level (free, professional, team, enterprise)
         subscription_status: Subscription state (active, canceled, past_due)

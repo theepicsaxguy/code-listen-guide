@@ -1,4 +1,6 @@
+import argparse
 import math
+import sys
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
@@ -12,6 +14,7 @@ from backend.models.chapter import Chapter
 from backend.models.deliverable import Deliverable
 from backend.models.job import Job
 from backend.models.outline import Outline
+from backend.models.user import User
 
 
 def _session() -> Session:
@@ -186,3 +189,77 @@ def estimate_job_cost(repo_url: str, depth_tier: str) -> Dict[str, Any]:
         "estimated_chapters": chapters,
         "depth_tier": depth_tier,
     }
+
+
+def set_user_admin_status(
+    user_identifier: Union[str, UUID], is_admin: bool, db: Optional[Session] = None
+) -> bool:
+    session_owner = db is None
+    session = db or _session()
+    try:
+        target: Optional[User] = None
+        if isinstance(user_identifier, UUID):
+            target = session.query(User).filter(User.id == user_identifier).first()
+        else:
+            try:
+                normalized = UUID(str(user_identifier))
+                target = (
+                    session.query(User)
+                    .filter(User.id == normalized)
+                    .first()
+                )
+            except (TypeError, ValueError):
+                target = None
+        if target is None and isinstance(user_identifier, str):
+            target = (
+                session.query(User)
+                .filter(User.email == user_identifier.strip())
+                .first()
+            )
+        if target is None:
+            return False
+        target.is_admin = is_admin
+        session.commit()
+        if session_owner:
+            session.refresh(target)
+        return True
+    finally:
+        if session_owner:
+            session.close()
+
+
+def _build_cli_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Database maintenance utilities."
+    )
+    subcommands = parser.add_subparsers(dest="command")
+    set_admin = subcommands.add_parser(
+        "set-admin", help="Set administrator access by email or user ID."
+    )
+    set_admin.add_argument("identifier", help="User email address or UUID.")
+    set_admin.add_argument(
+        "--remove",
+        action="store_true",
+        help="Revoke administrator access for the user.",
+    )
+    return parser
+
+
+def _run_cli() -> None:
+    parser = _build_cli_parser()
+    args = parser.parse_args()
+    if args.command == "set-admin":
+        desired = not args.remove
+        success = set_user_admin_status(args.identifier, desired)
+        if not success:
+            print("User not found.", file=sys.stderr)
+            sys.exit(1)
+        action = "granted" if desired else "revoked"
+        print(f"Administrator access {action} for {args.identifier}.")
+        return
+    parser.print_help()
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+    _run_cli()

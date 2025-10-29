@@ -145,6 +145,7 @@ class TestUserResponse:
             "id": uuid.uuid4(),
             "email": "test@example.com",
             "name": "Test User",
+            "is_admin": False,
             "subscription_tier": "free",
             "subscription_status": "active",
             "credits_remaining": 100,
@@ -153,6 +154,7 @@ class TestUserResponse:
         response = UserResponse(**response_dict)
         assert response.email == "test@example.com"
         assert response.subscription_tier == "free"
+        assert response.is_admin is False
 
     def test_user_response_no_password_field(self):
         """Test that password is not in response schema."""
@@ -167,6 +169,7 @@ class TestUserResponse:
         }
         response = UserResponse(**response_dict)
         assert not hasattr(response, "password")
+        assert response.is_admin is False
 
 
 class TestUserUpdate:

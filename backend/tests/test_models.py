@@ -40,6 +40,7 @@ class TestUserModel:
         assert user.id is not None
         assert user.email == "test@example.com"
         assert user.subscription_tier == "free"
+        assert user.is_admin is False
 
     def test_user_email_unique(self, test_db):
         """Test user email must be unique."""
@@ -81,6 +82,34 @@ class TestUserModel:
         # All should be created successfully
         users = test_db.query(User).all()
         assert len(users) >= len(tiers)
+
+    def test_set_user_admin_status(self, test_db):
+        """Test promoting and demoting a user as administrator."""
+        from backend.models.user import User
+        from backend.tools.db_tools import set_user_admin_status
+
+        user = User(
+            email="admin-toggle@example.com",
+            name="Toggle User",
+            hashed_password="hashed_password_456",
+        )
+        test_db.add(user)
+        test_db.commit()
+        test_db.refresh(user)
+
+        assert user.is_admin is False
+
+        promoted = set_user_admin_status(user.id, True, db=test_db)
+        test_db.refresh(user)
+
+        assert promoted is True
+        assert user.is_admin is True
+
+        demoted = set_user_admin_status(user.email, False, db=test_db)
+        test_db.refresh(user)
+
+        assert demoted is True
+        assert user.is_admin is False
 
 
 @pytest.mark.models

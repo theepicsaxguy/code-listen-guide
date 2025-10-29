@@ -156,6 +156,21 @@ Only the `workflow_checkpoints` table is created in this revision. To back it ou
 alembic -c backend/alembic.ini downgrade 20241010_initial_schema
 ```
 
+### Administrator role management
+
+Granting an existing account access to the admin dashboard now happens through a dedicated helper. Run the `20241028_add_is_admin` migration if you have not already, then toggle the flag with the CLI below:
+
+```bash
+alembic -c backend/alembic.ini upgrade 20241028_add_is_admin
+python -m backend.tools.db_tools set-admin user@example.com
+```
+
+Pass a UUID or an email address to identify the user. Add the `--remove` flag to revoke access:
+
+```bash
+python -m backend.tools.db_tools set-admin user@example.com --remove
+```
+
 ### Running the Application
 
 **Development mode:**
