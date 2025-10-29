@@ -131,3 +131,32 @@ def require_subscription(tier: str):
         return current_user
 
     return _require_subscription
+
+
+async def require_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """
+    Dependency for requiring admin privileges.
+
+    Usage:
+        @app.get("/admin/users")
+        def list_all_users(user: User = Depends(require_admin)):
+            ...
+
+    Args:
+        current_user: Authenticated user from get_current_user
+
+    Returns:
+        User object if user is admin
+
+    Raises:
+        HTTPException: 403 if user is not an admin
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required",
+        )
+
+    return current_user

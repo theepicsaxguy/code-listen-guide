@@ -12,7 +12,7 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login, activateDemoMode } = useAdminAuth();
+  const { login } = useAdminAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -29,13 +29,6 @@ export default function AdminLogin() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleDemoMode = () => {
-    activateDemoMode();
-    toast.success("Demo mode activated");
-    navigate("/admin");
-    window.location.reload();
   };
 
   return (
@@ -75,17 +68,6 @@ export default function AdminLogin() {
             </div>
             <Button type="submit" className="w-full bg-gradient-primary" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
-            </Button>
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Preview Mode</span>
-              </div>
-            </div>
-            <Button type="button" variant="outline" className="w-full" onClick={handleDemoMode}>
-              Enter Demo Mode
             </Button>
           </form>
         </CardContent>
