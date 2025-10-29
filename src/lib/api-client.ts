@@ -38,6 +38,7 @@ export class ApiClient {
     const response = await fetch(`${this.basePath}${endpoint}`, {
       ...options,
       headers,
+      credentials: 'include',  // Send cookies with requests
     });
 
     if (response.status === 401) {

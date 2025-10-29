@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.models import OAuthFlows, OAuthFlowPassword
 from starlette.responses import FileResponse
 from contextlib import asynccontextmanager
 import logging
@@ -67,9 +68,16 @@ async def lifespan(app: FastAPI):
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
+
+        # Allow Swagger UI and ReDoc resources for API documentation
+        # For API-first development, documentation should be accessible
         csp_directives = " ".join(
             [
                 "default-src 'none';",
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;",
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com;",
+                "img-src 'self' data: https://fastapi.tiangolo.com https://cdn.jsdelivr.net;",
+                "font-src 'self' https://fonts.gstatic.com;",
                 "frame-ancestors 'none';",
                 "base-uri 'none';",
                 "form-action 'self';",
@@ -184,6 +192,51 @@ app.include_router(payments.router)
 app.include_router(player.router)
 app.include_router(admin.router)
 app.include_router(ws_router)
+
+
+def custom_openapi():
+    """Customize OpenAPI schema to include OAuth2 security scheme for Swagger UI."""
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    from fastapi.openapi.utils import get_openapi
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+
+    # Add OAuth2 Password Flow security scheme
+    openapi_schema["components"]["securitySchemes"] = {
+        "OAuth2PasswordBearer": {
+            "type": "oauth2",
+            "flows": {
+                "password": {
+                    "tokenUrl": "/api/v1/auth/login",
+                    "scopes": {},
+                }
+            },
+        }
+    }
+
+    # Apply security globally to all endpoints (except auth endpoints)
+    for path, path_item in openapi_schema["paths"].items():
+        # Don't require auth for login, register, and docs endpoints
+        if path in ["/api/v1/auth/login", "/api/v1/auth/register"]:
+            continue
+
+        for method in path_item:
+            if method in ["get", "post", "put", "delete", "patch", "options"]:
+                if "security" not in path_item[method]:
+                    path_item[method]["security"] = [{"OAuth2PasswordBearer": []}]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 
 @app.exception_handler(RequestValidationError)

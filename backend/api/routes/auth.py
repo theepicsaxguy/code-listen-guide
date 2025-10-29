@@ -9,12 +9,12 @@ Provides endpoints for:
 - Logout (token invalidation placeholder)
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.api.dependencies import get_current_user, limiter
+from backend.api.dependencies import get_current_user, limiter, oauth2_scheme
 from backend.api.schemas.user import (
     TokenRefreshRequest,
     UserCreate,
@@ -35,8 +35,6 @@ from backend.utils.auth import (
 from backend.utils.validators import validate_email_format, validate_password_strength
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 @router.post(
@@ -110,6 +108,7 @@ async def register(
 @limiter.limit("10/minute")
 async def login(
     request: Request,
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
@@ -117,10 +116,12 @@ async def login(
     Login user and return JWT tokens.
 
     Authenticates user with email and password, returns access and refresh tokens.
+    Also sets tokens in httpOnly cookies for browser-based authentication.
 
     Args:
         form_data: OAuth2 form data with username (email) and password
         db: Database session
+        response: Response object to set cookies
 
     Returns:
         TokenResponse with access_token, refresh_token, and metadata
@@ -151,6 +152,24 @@ async def login(
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
+    # Set tokens in httpOnly cookies for browser-based authentication
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,  # Set to True in production with HTTPS
+        samesite="lax",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60,  # 7 days
+    )
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -160,16 +179,19 @@ async def login(
 
 
 @router.post("/logout")
-async def logout(request: Request, token: str = Depends(oauth2_scheme)):
+async def logout(
+    request: Request,
+    response: Response,
+    token: str = Depends(oauth2_scheme),
+):
     """
     Logout user (invalidate token).
 
-    Note: Currently a placeholder. In production, you would:
-    1. Add token to Redis blacklist
-    2. Set expiration to match token expiration
+    Clears authentication cookies and optionally blacklists the token.
 
     Args:
         token: JWT access token
+        response: Response object to clear cookies
 
     Returns:
         Success message
@@ -178,6 +200,10 @@ async def logout(request: Request, token: str = Depends(oauth2_scheme)):
     """
     # Optional: Implement token blacklisting with Redis
     # redis_client.setex(f"blacklist:{token}", ACCESS_TOKEN_EXPIRE_MINUTES * 60, "1")
+
+    # Clear authentication cookies
+    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="refresh_token")
 
     return {"message": "Successfully logged out"}
 

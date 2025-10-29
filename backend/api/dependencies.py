@@ -8,8 +8,9 @@ Provides:
 """
 
 import uuid
+from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -21,7 +22,35 @@ from backend.db.session import get_db
 from backend.models.user import User
 from backend.utils.auth import decode_access_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
+    """
+    OAuth2 scheme that accepts tokens from both Authorization header and cookies.
+
+    This allows Swagger UI to work seamlessly with browser-based authentication
+    while still supporting API clients using Authorization headers.
+    """
+    async def __call__(self, request: Request) -> Optional[str]:
+        # First try to get token from Authorization header
+        authorization: str = request.headers.get("Authorization")
+        if authorization:
+            scheme, param = authorization.split()
+            if scheme.lower() == "bearer":
+                return param
+
+        # Fall back to cookie if no Authorization header
+        token = request.cookies.get("access_token")
+        if token:
+            return token
+
+        # If neither found, raise exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/api/v1/auth/login")
 
 settings = get_settings()
 
