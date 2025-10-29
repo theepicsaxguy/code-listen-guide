@@ -18,7 +18,7 @@ from backend.models.user import User
 from backend.models.job import Job
 from backend.api.dependencies import require_admin
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 logger = logging.getLogger(__name__)
 
 
@@ -325,3 +325,219 @@ async def update_settings(
     # Placeholder implementation
     logger.info(f"Admin {current_user.email} updated settings: {settings_data}")
     return {"success": True}
+
+
+@router.get("/payments")
+async def get_payments(
+    page: int = Query(1, ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get all payments with pagination.
+
+    Requires admin privileges.
+    """
+    try:
+        per_page = 20
+        offset = (page - 1) * per_page
+
+        # TODO: Implement Payment model and queries
+        # For now, return empty list
+        return {
+            "payments": [],
+            "total": 0,
+            "page": page,
+            "per_page": per_page,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching payments: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch payments"
+        )
+
+
+@router.get("/content")
+async def get_content(
+    page: int = Query(1, ge=1),
+    status_filter: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get content (jobs) for admin content management.
+
+    This endpoint is an alias for /admin/jobs used by the content management page.
+
+    Requires admin privileges.
+    """
+    # Delegate to the jobs endpoint
+    return await get_all_jobs(page=page, status_filter=status_filter, db=db, current_user=current_user)
+
+
+@router.get("/support/tickets")
+async def get_support_tickets(
+    page: int = Query(1, ge=1),
+    status_filter: Optional[str] = Query(None, alias="status"),
+    priority_filter: Optional[str] = Query(None, alias="priority"),
+    category_filter: Optional[str] = Query(None, alias="category"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get support tickets with pagination and filtering.
+
+    Requires admin privileges.
+
+    Note: This is a placeholder. Implement proper SupportTicket model.
+    """
+    try:
+        # Placeholder implementation
+        return {
+            "tickets": [],
+            "total": 0,
+            "page": page,
+            "per_page": 20,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching support tickets: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch support tickets"
+        )
+
+
+@router.get("/support/tickets/{ticket_id}")
+async def get_support_ticket(
+    ticket_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get a specific support ticket with all messages.
+
+    Requires admin privileges.
+    """
+    try:
+        # Placeholder implementation
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ticket not found"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching ticket {ticket_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch ticket"
+        )
+
+
+@router.post("/support/tickets/{ticket_id}/reply")
+async def reply_to_ticket(
+    ticket_id: str,
+    reply_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Reply to a support ticket.
+
+    Requires admin privileges.
+    """
+    try:
+        content = reply_data.get("content")
+        if not content:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Content is required"
+            )
+
+        # Placeholder implementation
+        logger.info(f"Admin {current_user.email} replied to ticket {ticket_id}")
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error replying to ticket {ticket_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reply to ticket"
+        )
+
+
+@router.patch("/support/tickets/{ticket_id}/status")
+async def update_ticket_status(
+    ticket_id: str,
+    status_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Update support ticket status.
+
+    Requires admin privileges.
+    """
+    try:
+        new_status = status_data.get("status")
+        if new_status not in ["open", "in_progress", "waiting", "resolved", "closed"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid status value"
+            )
+
+        # Placeholder implementation
+        logger.info(f"Admin {current_user.email} updated ticket {ticket_id} status to {new_status}")
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating ticket status: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update ticket status"
+        )
+
+
+@router.get("/support/canned-replies")
+async def get_canned_replies(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get canned reply templates for support tickets.
+
+    Requires admin privileges.
+    """
+    try:
+        # Placeholder implementation with some common replies
+        return {
+            "replies": [
+                {
+                    "id": "1",
+                    "title": "Job Processing",
+                    "content": "Your audiobook is currently being processed. This typically takes 15-30 minutes depending on repository size. We'll notify you when it's complete.",
+                    "category": "technical"
+                },
+                {
+                    "id": "2",
+                    "title": "Payment Confirmation",
+                    "content": "We've received your payment successfully. Your credits have been added to your account.",
+                    "category": "billing"
+                },
+                {
+                    "id": "3",
+                    "title": "General Thanks",
+                    "content": "Thank you for contacting support. We're here to help! Is there anything else we can assist you with?",
+                    "category": "other"
+                }
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error fetching canned replies: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch canned replies"
+        )
