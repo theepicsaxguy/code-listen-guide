@@ -2,7 +2,7 @@
 Docling Pipeline Service for parsing, cleaning, and tagging codebases.
 
 This service integrates IBM's Docling toolkit to provide advanced document
-and code parsing capabilities beyond basic tree-sitter parsing.
+and code parsing capabilities.
 
 Key features:
 - Parse multiple document formats (PDF, DOCX, Markdown, HTML, code files)
@@ -65,6 +65,7 @@ class DoclingPipeline:
         self,
         enable_code_enrichment: bool = True,
         enable_formula_enrichment: bool = False,
+        enable_table_extraction: bool = True,
         artifacts_path: Optional[str] = None,
     ):
         """
@@ -73,6 +74,7 @@ class DoclingPipeline:
         Args:
             enable_code_enrichment: Enable advanced code understanding
             enable_formula_enrichment: Enable formula/equation parsing
+            enable_table_extraction: Enable table extraction from documents
             artifacts_path: Path to Docling model artifacts (for offline usage)
         """
         if not HAS_DOCLING:
@@ -82,6 +84,7 @@ class DoclingPipeline:
 
         self.enable_code_enrichment = enable_code_enrichment
         self.enable_formula_enrichment = enable_formula_enrichment
+        self.enable_table_extraction = enable_table_extraction
         self.artifacts_path = artifacts_path
 
         # Initialize converter with options

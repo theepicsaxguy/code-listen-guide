@@ -1,11 +1,7 @@
 """
-Repository analysis service for code structure extraction.
+Repository analysis service for code structure extraction using Docling.
 
-This service provides two analysis modes:
-1. Docling Pipeline (recommended): Advanced parsing with Docling
-2. Tree-sitter Parser (fallback): Basic parsing for unsupported files
-
-The Docling pipeline provides:
+This service uses the Docling Pipeline for advanced parsing:
 - Rich document parsing (code, markdown, JSON, YAML)
 - Content cleaning and normalization
 - Semantic tagging and classification
@@ -26,32 +22,22 @@ try:
 except ImportError:
     HAS_GIT = False
 
-try:
-    from backend.services.docling_pipeline import DoclingPipeline
-
-    HAS_DOCLING_PIPELINE = True
-except ImportError:
-    HAS_DOCLING_PIPELINE = False
-
-from backend.tools.code_parser_tools import build_code_map
+from backend.services.docling_pipeline import DoclingPipeline
 
 logger = logging.getLogger(__name__)
 
 
 class RepositoryAnalyzer:
     """
-    Analyzes GitHub repositories to extract code structure.
+    Analyzes GitHub repositories to extract code structure using Docling Pipeline.
 
-    Supports two analysis modes:
-    1. Docling Pipeline (default): Advanced parsing with content cleaning and tagging
-    2. Tree-sitter (fallback): Basic AST parsing
+    Provides advanced parsing with content cleaning, tagging, and semantic analysis.
     """
 
     def __init__(
         self,
         repo_url: str,
         git_ref: str = "main",
-        use_docling: bool = True,
         max_repo_size_mb: int = 500,
     ):
         """
@@ -60,28 +46,19 @@ class RepositoryAnalyzer:
         Args:
             repo_url: GitHub repository URL
             git_ref: Git branch or tag to analyze
-            use_docling: Use Docling pipeline if available
             max_repo_size_mb: Maximum repository size to analyze
         """
         self.repo_url = repo_url
         self.git_ref = git_ref
-        self.use_docling = use_docling and HAS_DOCLING_PIPELINE
         self.max_repo_size_mb = max_repo_size_mb
         self.temp_dir: Optional[Path] = None
 
-        # Initialize Docling pipeline if requested
-        if self.use_docling:
-            try:
-                self.docling_pipeline = DoclingPipeline(
-                    enable_code_enrichment=True,
-                    enable_formula_enrichment=False,
-                )
-                logger.info("Initialized Docling pipeline for analysis")
-            except Exception as e:
-                logger.warning(
-                    f"Failed to initialize Docling: {e}. Falling back to tree-sitter"
-                )
-                self.use_docling = False
+        # Initialize Docling pipeline
+        self.docling_pipeline = DoclingPipeline(
+            enable_code_enrichment=True,
+            enable_formula_enrichment=False,
+        )
+        logger.info("Initialized Docling pipeline for analysis")
 
     async def clone_repository(self) -> Path:
         """
@@ -181,19 +158,13 @@ class RepositoryAnalyzer:
 
     async def parse_codebase(self, repo_path: Path) -> Dict:
         """
-        Parse codebase to extract code structure.
-
-        Uses Docling pipeline if available, otherwise falls back to tree-sitter.
+        Parse codebase to extract code structure using Docling pipeline.
 
         Returns:
             Comprehensive analysis with parsed code, dependencies, and tags
         """
-        if self.use_docling:
-            logger.info("Parsing codebase with Docling pipeline")
-            return await self.docling_pipeline.process_pipeline(repo_path)
-        else:
-            logger.info("Parsing codebase with tree-sitter (fallback)")
-            return build_code_map(str(repo_path))
+        logger.info("Parsing codebase with Docling pipeline")
+        return await self.docling_pipeline.process_pipeline(repo_path)
 
     async def analyze_full(self) -> Dict:
         """
@@ -221,7 +192,7 @@ class RepositoryAnalyzer:
             return {
                 "repository_url": self.repo_url,
                 "git_ref": self.git_ref,
-                "analysis_mode": "docling" if self.use_docling else "tree-sitter",
+                "analysis_mode": "docling",
                 "structure": structure,
                 "parsed": parsed,
             }

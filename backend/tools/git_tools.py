@@ -70,7 +70,8 @@ def _validate_repository_url(url: str) -> Tuple[str, str]:
     if host not in allowed_hosts:
         raise ValueError(f"Git host '{host}' is not in the allow list")
     allowed_orgs = _allowed_git_organizations()
-    if owner not in allowed_orgs:
+    # Support wildcard "*" to allow all organizations
+    if "*" not in allowed_orgs and owner not in allowed_orgs:
         raise ValueError(f"Git organization '{owner}' is not in the allow list")
     return host, owner
 
@@ -111,7 +112,7 @@ def _allowed_git_hosts() -> Tuple[str, ...]:
 
 
 def _allowed_git_organizations() -> Tuple[str, ...]:
-    return _read_env_csv("CBA_GIT_ALLOWED_ORGS", ("codebase-audiobooks", "user"))
+    return _read_env_csv("CBA_GIT_ALLOWED_ORGS", ("*",))
 
 
 def _clone_timeout_seconds() -> int:

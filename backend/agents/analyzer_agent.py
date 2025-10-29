@@ -1,10 +1,12 @@
+import asyncio
+from pathlib import Path
 from typing import Annotated, Any, Dict, List
 
 from agent_framework import AIFunction, ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
 from pydantic import Field
 
-from backend.tools.code_parser_tools import build_code_map
+from backend.services.docling_pipeline import DoclingPipeline
 from backend.tools.git_tools import clone_repository, list_repository_files
 from . import build_responses_client_options
 
@@ -19,23 +21,32 @@ def _ai_list_files(
     return list_repository_files(path)
 
 
-def _ai_build_code_map(
+def _ai_parse_repository(
     path: Annotated[str, Field(description="Path to cloned repository")],
 ) -> Dict[str, Any]:
-    return build_code_map(path)
+    """Parse repository using Docling pipeline."""
+    docling = DoclingPipeline()
+    # Run async function in sync context
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        result = loop.run_until_complete(docling.process_pipeline(Path(path)))
+        return result
+    finally:
+        loop.close()
 
 
 async def create_analyzer_agent(chat_client: Any) -> ChatAgent:
     tools = [
         AIFunction(_ai_clone_repo),
         AIFunction(_ai_list_files),
-        AIFunction(_ai_build_code_map),
+        AIFunction(_ai_parse_repository),
     ]
     return chat_client.create_agent(
         name="RepositoryAnalyzer",
         instructions=(
-            "Clone the supplied repository, build a structural summary, and respond with JSON. "
-            "Use the available tools for git operations and code parsing."
+            "Clone the supplied repository, build a structural summary using Docling pipeline, and respond with JSON. "
+            "Use the available tools for git operations and advanced code parsing with Docling."
         ),
         tools=tools,
     )

@@ -14,6 +14,7 @@ import {
   MessageSquare,
   ChevronLeft,
   ChevronRight,
+  FileCode2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +29,7 @@ const navItems = [
   { path: "/admin/versioning", label: "Versioning", icon: History },
   { path: "/admin/agents", label: "Agents", icon: Activity },
   { path: "/admin/tracing", label: "Job Tracing", icon: ActivityIcon },
+  { path: "/admin/docling-test", label: "Docling Test", icon: FileCode2 },
   { path: "/admin/support", label: "Support", icon: MessageSquare },
   { path: "/admin/audit", label: "Audit Logs", icon: FileText },
   { path: "/admin/settings", label: "Settings", icon: Settings },

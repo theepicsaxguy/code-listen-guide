@@ -180,6 +180,22 @@ export class ApiClient {
       '/admin/support/canned-replies'
     );
   }
+
+  async parseRepository(params: {
+    repo_url: string;
+    git_ref?: string;
+    max_file_size_kb?: number;
+    enable_code_enrichment?: boolean;
+    enable_formula_enrichment?: boolean;
+    enable_table_extraction?: boolean;
+    include_patterns?: string[] | null;
+    exclude_patterns?: string[] | null;
+  }) {
+    return this.request<any>('/parse/repository', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

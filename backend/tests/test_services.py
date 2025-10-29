@@ -116,30 +116,6 @@ class TestRepositoryAnalyzer:
         assert result == docling_output
 
     @pytest.mark.asyncio
-    async def test_parse_codebase_uses_tree_sitter_when_docling_unavailable(self):
-        """Test fallback parser is used when Docling pipeline is unavailable."""
-        from backend.services.repository_analyzer import RepositoryAnalyzer
-
-        fallback_result = {
-            "files": [{"path": "main.py", "language": "python"}],
-            "summary": {"total_files": 1, "successfully_parsed": 1},
-        }
-
-        with patch("backend.services.repository_analyzer.HAS_DOCLING_PIPELINE", False):
-            analyzer = RepositoryAnalyzer(
-                repo_url="https://github.com/user/repo", use_docling=True
-            )
-
-        with patch(
-            "backend.services.repository_analyzer.build_code_map",
-            return_value=fallback_result,
-        ) as mock_build_code_map:
-            result = await analyzer.parse_codebase(Path("/tmp/repo"))
-
-        mock_build_code_map.assert_called_once_with("/tmp/repo")
-        assert result == fallback_result
-
-    @pytest.mark.asyncio
     async def test_clone_repository(self):
         """Test repository cloning."""
         from backend.services.repository_analyzer import RepositoryAnalyzer
