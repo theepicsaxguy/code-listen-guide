@@ -22,7 +22,7 @@ import AdminUsers from "./pages/admin/Users";
 import AdminPayments from "./pages/admin/Payments";
 import AdminContent from "./pages/admin/Content";
 import ContentVersioning from "./pages/admin/ContentVersioning";
-import AdminAgents from "./pages/admin/Agents";
+import AgentMonitoring from "./pages/admin/AgentMonitoring";
 import JobTracing from "./pages/admin/JobTracing";
 import Support from "./pages/admin/Support";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
@@ -57,7 +57,7 @@ const App = () => (
                 <Route path="payments" element={<AdminPayments />} />
                 <Route path="content" element={<AdminContent />} />
                 <Route path="versioning" element={<ContentVersioning />} />
-                <Route path="agents" element={<AdminAgents />} />
+                <Route path="agents" element={<AgentMonitoring />} />
                 <Route path="tracing" element={<JobTracing />} />
                 <Route path="chonkie-test" element={<ChonkieTest />} />
                 <Route path="parse" element={<AdminParse />} />

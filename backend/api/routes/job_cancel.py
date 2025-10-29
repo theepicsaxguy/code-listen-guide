@@ -2,10 +2,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from backend.api.dependencies import get_current_user
+from backend.api.schemas.job import JobStatus
 from backend.db.session import get_db
-from backend.models.job import Job, JobStatus
+from backend.models.job import Job
 from backend.models.user import User
-from backend.utils.auth import get_current_user
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -27,14 +28,14 @@ async def cancel_job(
         raise HTTPException(status_code=403, detail="Not authorized to cancel this job")
     
     # Check if job can be cancelled
-    if job.status in [JobStatus.COMPLETED, JobStatus.FAILED]:
+    if job.status in ["completed", "failed"]:
         raise HTTPException(
             status_code=400,
             detail=f"Cannot cancel job with status: {job.status}"
         )
     
     # Update job status to cancelled
-    job.status = JobStatus.FAILED
+    job.status = "failed"
     job.error_message = "Job cancelled by user"
     job.progress_percentage = 0.0
     
