@@ -25,6 +25,13 @@ class PaymentIntentResult:
     raw: Any
 
 
+@dataclass
+class CheckoutSessionResult:
+    id: str
+    url: str
+    raw: Any
+
+
 class StripeService:
     """Asynchronous wrapper around Stripe SDK operations."""
 
@@ -97,6 +104,48 @@ class StripeService:
 
         return await asyncio.to_thread(_refund)
 
+    async def create_checkout_session(
+        self,
+        *,
+        plan_id: str,
+        success_url: str,
+        cancel_url: str,
+        customer_id: Optional[str] = None,
+    ) -> CheckoutSessionResult:
+        def _list_prices() -> Any:
+            return stripe.Price.list(lookup_keys=[plan_id], expand=["data.product"])
+
+        prices = await asyncio.to_thread(_list_prices)
+        if not prices.data:
+            raise ValueError(f"Invalid plan_id: {plan_id}")
+
+        price_id = prices.data[0].id
+
+        payload: Dict[str, Any] = {
+            "payment_method_types": ["card"],
+            "line_items": [
+                {
+                    "price": price_id,
+                    "quantity": 1,
+                },
+            ],
+            "mode": "subscription",
+            "success_url": success_url,
+            "cancel_url": cancel_url,
+        }
+        if customer_id:
+            payload["customer"] = customer_id
+
+        def _create() -> Any:
+            return stripe.checkout.Session.create(**payload)
+
+        session = await asyncio.to_thread(_create)
+        return CheckoutSessionResult(
+            id=getattr(session, "id", session["id"]),
+            url=getattr(session, "url", session["url"]),
+            raw=session,
+        )
+
 
 _stripe_service: Optional[StripeService] = None
 
@@ -131,6 +180,26 @@ async def create_payment_intent(
         currency=currency,
         customer_id=customer_id,
         metadata=metadata,
+    )
+
+
+async def create_checkout_session(
+    *,
+    plan_id: str,
+    success_url: str,
+    cancel_url: str,
+    customer_id: Optional[str] = None,
+) -> CheckoutSessionResult:
+    service = get_stripe_service()
+    logger.info(
+        "Creating Stripe checkout session",
+        extra={"plan_id": plan_id, "customer_id": customer_id},
+    )
+    return await service.create_checkout_session(
+        plan_id=plan_id,
+        success_url=success_url,
+        cancel_url=cancel_url,
+        customer_id=customer_id,
     )
 
 

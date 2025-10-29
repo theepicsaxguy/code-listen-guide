@@ -21,13 +21,19 @@ from backend.api.schemas.payment import (
     PaymentIntentCreate,
     PaymentIntentResponse,
     PaymentResponse,
+    CheckoutSessionCreate,
+    CheckoutSessionResponse,
 )
 from backend.config import get_settings
 from backend.db.session import get_db
 from backend.models.job import Job
 from backend.models.payment import Payment
 from backend.models.user import User
-from backend.services.payment import create_payment_intent, get_stripe_service
+from backend.services.payment import (
+    create_payment_intent,
+    get_stripe_service,
+    create_checkout_session,
+)
 from backend.tasks.audiobook_tasks import start_audiobook_workflow
 from backend.tools.db_tools import estimate_job_cost
 
@@ -182,4 +188,22 @@ async def get_payment_history(
     return PaymentHistoryResponse(
         payments=[PaymentResponse.from_orm(payment) for payment in payments],
         total=len(payments),
+    )
+
+
+@router.post("/create-checkout-session", response_model=CheckoutSessionResponse)
+async def create_checkout_session_route(
+    checkout_data: CheckoutSessionCreate,
+    current_user: User = Depends(get_current_user),
+):
+    """Create a Stripe checkout session for the given plan."""
+    session = await create_checkout_session(
+        plan_id=checkout_data.plan_id,
+        success_url=checkout_data.success_url,
+        cancel_url=checkout_data.cancel_url,
+        customer_id=current_user.stripe_customer_id,
+    )
+    return CheckoutSessionResponse(
+        session_id=session.id,
+        url=session.url,
     )

@@ -268,6 +268,13 @@ export class ApiClient {
     return this.request('/payments/history');
   }
 
+  async createCheckoutSession(planId: string, successUrl: string, cancelUrl: string) {
+    return this.request<{ session_id: string; url: string }>('/payments/create-checkout-session', {
+      method: 'POST',
+      body: JSON.stringify({ plan_id: planId, success_url: successUrl, cancel_url: cancelUrl }),
+    });
+  }
+
   // Player endpoints (public)
   async getPlayerData(jobId: string) {
     return this.request(`/player/${jobId}`);

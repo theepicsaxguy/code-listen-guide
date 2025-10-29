@@ -85,6 +85,21 @@ class PaymentHistoryResponse(BaseModel):
     total: int
 
 
+class CheckoutSessionCreate(BaseModel):
+    """Schema for creating a Stripe checkout session."""
+
+    plan_id: str
+    success_url: str
+    cancel_url: str
+
+
+class CheckoutSessionResponse(BaseModel):
+    """Schema for the response of a Stripe checkout session."""
+
+    session_id: str
+    url: str
+
+
 class StripeWebhookEvent(BaseModel):
     """
     Schema for Stripe webhook events.

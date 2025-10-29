@@ -2,18 +2,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/admin/StatCard";
+import { StatusBadge } from "@/components/admin/StatusBadge";
+import { DataTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, DataTableEmpty } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -48,6 +43,7 @@ import {
   GitBranch,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { formatCurrency } from "@/lib/theme";
 
 interface AgentJob {
   id: string;
@@ -178,45 +174,6 @@ export default function AgentMonitoring() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case "failed":
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case "analyzing":
-      case "scripting":
-      case "synthesizing":
-      case "post_processing":
-        return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
-      case "waiting_approval":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-        return "bg-green-500/10 text-green-500 border-green-500/20";
-      case "failed":
-        return "bg-red-500/10 text-red-500 border-red-500/20";
-      case "analyzing":
-      case "scripting":
-      case "synthesizing":
-      case "post_processing":
-        return "bg-blue-500/10 text-blue-500 border-blue-500/20";
-      case "waiting_approval":
-        return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
-      default:
-        return "bg-gray-500/10 text-gray-500 border-gray-500/20";
-    }
-  };
-
-  const formatCost = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
-  };
 
   const filteredJobs = jobsData?.jobs.filter((job) =>
     searchTerm === "" ||
@@ -227,131 +184,80 @@ export default function AgentMonitoring() {
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          Agent Execution Monitoring
-        </h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-3xl font-bold text-white">Agent Execution Monitoring</h1>
+        <p className="text-gray-400 mt-1">
           Real-time monitoring of agent workflows and job execution
         </p>
       </div>
 
       {/* Stats Cards */}
-      {statsLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <div className="animate-pulse h-20 bg-muted rounded" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : stats ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Jobs</p>
-                  <p className="text-2xl font-bold">{stats.total_jobs}</p>
-                </div>
-                <Activity className="h-8 w-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Running</p>
-                  <p className="text-2xl font-bold text-blue-500">{stats.running_jobs}</p>
-                </div>
-                <Loader2 className="h-8 w-8 text-blue-500 opacity-50 animate-spin" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold text-green-500">{stats.completed_jobs}</p>
-                </div>
-                <CheckCircle2 className="h-8 w-8 text-green-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Failed</p>
-                  <p className="text-2xl font-bold text-red-500">{stats.failed_jobs}</p>
-                </div>
-                <XCircle className="h-8 w-8 text-red-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Recent (24h)</p>
-                  <p className="text-2xl font-bold">{stats.recent_jobs_24h}</p>
-                </div>
-                {stats.recent_jobs_24h > stats.total_jobs / 10 ? (
-                  <TrendingUp className="h-8 w-8 text-green-500 opacity-50" />
-                ) : (
-                  <TrendingDown className="h-8 w-8 text-gray-500 opacity-50" />
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg LLM Cost</p>
-                  <p className="text-2xl font-bold">{formatCost(stats.avg_llm_cost_cents)}</p>
-                </div>
-                <DollarSign className="h-8 w-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg TTS Cost</p>
-                  <p className="text-2xl font-bold">{formatCost(stats.avg_tts_cost_cents)}</p>
-                </div>
-                <Zap className="h-8 w-8 text-accent opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Checkpoints</p>
-                  <p className="text-2xl font-bold">{stats.total_checkpoints}</p>
-                </div>
-                <GitBranch className="h-8 w-8 text-muted-foreground opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {statsLoading ? (
+          <>
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <div className="animate-pulse h-20 bg-muted rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </>
+        ) : stats ? (
+          <>
+            <StatCard
+              title="Total Jobs"
+              value={stats.total_jobs}
+              icon={Activity}
+              description="All time"
+            />
+            <StatCard
+              title="Running Jobs"
+              value={stats.running_jobs}
+              icon={Loader2}
+              description="Currently active"
+            />
+            <StatCard
+              title="Completed"
+              value={stats.completed_jobs}
+              icon={CheckCircle2}
+              description="Successfully finished"
+            />
+            <StatCard
+              title="Failed"
+              value={stats.failed_jobs}
+              icon={XCircle}
+              description="Requires attention"
+            />
+            <StatCard
+              title="Recent (24h)"
+              value={stats.recent_jobs_24h}
+              icon={stats.recent_jobs_24h > stats.total_jobs / 10 ? TrendingUp : TrendingDown}
+              description="Last 24 hours"
+            />
+            <StatCard
+              title="Avg LLM Cost"
+              value={formatCurrency(stats.avg_llm_cost_cents)}
+              icon={DollarSign}
+              description="Per job"
+            />
+            <StatCard
+              title="Avg TTS Cost"
+              value={formatCurrency(stats.avg_tts_cost_cents)}
+              icon={Zap}
+              description="Per job"
+            />
+            <StatCard
+              title="Checkpoints"
+              value={stats.total_checkpoints}
+              icon={GitBranch}
+              description="Total saved states"
+            />
+          </>
+        ) : null}
+      </div>
 
       {/* Filters and Controls */}
-      <Card>
+      <Card className="shadow-card">
         <CardHeader>
           <CardTitle>Active Jobs</CardTitle>
           <CardDescription>Monitor and manage agent execution in real-time</CardDescription>
@@ -392,15 +298,12 @@ export default function AgentMonitoring() {
               <p className="text-muted-foreground mt-2">Loading jobs...</p>
             </div>
           ) : filteredJobs.length === 0 ? (
-            <div className="text-center py-12">
-              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-lg font-semibold">No jobs found</p>
-              <p className="text-sm text-muted-foreground">
-                Try adjusting your filters or search term
-              </p>
-            </div>
+            <DataTableEmpty
+              title="No jobs found"
+              description="Try adjusting your filters or search term"
+            />
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <DataTable>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -430,12 +333,7 @@ export default function AgentMonitoring() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={getStatusColor(job.status)}>
-                          <span className="flex items-center gap-1">
-                            {getStatusIcon(job.status)}
-                            {job.status}
-                          </span>
-                        </Badge>
+                        <StatusBadge status={job.status} />
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
@@ -450,8 +348,8 @@ export default function AgentMonitoring() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm space-y-1">
-                          <p>LLM: {formatCost(job.llm_cost_cents)}</p>
-                          <p>TTS: {formatCost(job.tts_cost_cents)}</p>
+                          <p>LLM: {formatCurrency(job.llm_cost_cents)}</p>
+                          <p>TTS: {formatCurrency(job.tts_cost_cents)}</p>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -509,9 +407,7 @@ export default function AgentMonitoring() {
                                     </div>
                                     <div>
                                       <p className="text-sm text-muted-foreground">Status</p>
-                                      <Badge variant="outline" className={getStatusColor(jobDetails.status)}>
-                                        {jobDetails.status}
-                                      </Badge>
+                                      <StatusBadge status={jobDetails.status} />
                                     </div>
                                     <div>
                                       <p className="text-sm text-muted-foreground">User</p>
@@ -519,7 +415,7 @@ export default function AgentMonitoring() {
                                     </div>
                                     <div>
                                       <p className="text-sm text-muted-foreground">Price Paid</p>
-                                      <p className="font-medium">{formatCost(jobDetails.price_paid_cents)}</p>
+                                      <p className="font-medium">{formatCurrency(jobDetails.price_paid_cents)}</p>
                                     </div>
                                   </div>
 
@@ -650,7 +546,7 @@ export default function AgentMonitoring() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            </DataTable>
           )}
         </CardContent>
       </Card>

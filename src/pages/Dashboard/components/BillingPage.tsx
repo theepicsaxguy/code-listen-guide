@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+import { apiClient } from '../../../lib/api';
+
 export const BillingPage: React.FC = () => {
   const { data: user } = useUser();
   const { data: paymentHistory, isLoading } = usePaymentHistory();
@@ -24,7 +26,7 @@ export const BillingPage: React.FC = () => {
     );
   }
 
-  const payments = (paymentHistory as Payment[]) || [];
+  const payments = (paymentHistory?.payments as Payment[]) || [];
 
   // Calculate usage statistics
   const totalSpent = payments
@@ -75,11 +77,21 @@ export const BillingPage: React.FC = () => {
 
   const currentPlan = plans.find(p => p.id === user.subscription_tier) || plans[0];
 
-  const handleUpgrade = () => {
-    // TODO: Implement Stripe checkout integration
-    console.log('Upgrading to:', selectedPlan);
-    setShowUpgradeDialog(false);
-    // This would typically create a Stripe checkout session
+  const handleUpgrade = async () => {
+    if (selectedPlan === 'enterprise') {
+      // Handle enterprise contact form
+      return;
+    }
+    try {
+      const successUrl = new URL('/dashboard/billing?upgrade=success', window.location.origin).toString();
+      const cancelUrl = new URL('/dashboard/billing', window.location.origin).toString();
+      const session = await apiClient.createCheckoutSession(selectedPlan, successUrl, cancelUrl);
+      if (session.url) {
+        window.location.href = session.url;
+      }
+    } catch (error) {
+      console.error("Failed to create checkout session", error);
+    }
   };
 
   return (
