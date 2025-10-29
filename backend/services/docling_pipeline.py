@@ -320,30 +320,43 @@ class chonkiePipeline:
             Tagged version of cleaned_data with "tags" field added
         """
         tagged = cleaned_data.copy()
-        tags = {}
+        tags = []
 
         file_path = Path(tagged.get("file_path", ""))
         content = tagged.get("content", "")
 
         # Language detection
-        tags[TagCategory.LANGUAGE] = self._detect_language(file_path, content)
+        languages = self._detect_language(file_path, content)
+        tags.extend([f"language:{lang}" for lang in languages])
 
         # Framework detection
-        tags[TagCategory.FRAMEWORK] = self._detect_frameworks(content)
+        frameworks = self._detect_frameworks(content)
+        tags.extend([f"framework:{fw}" for fw in frameworks])
 
         # Pattern detection
-        tags[TagCategory.PATTERN] = self._detect_patterns(content)
+        patterns = self._detect_patterns(content)
+        tags.extend([f"pattern:{p}" for p in patterns])
 
         # Complexity assessment
-        tags[TagCategory.COMPLEXITY] = self._assess_complexity(content)
+        complexity = self._assess_complexity(content)
+        tags.append(f"complexity:{complexity}")
 
         # Visibility classification
-        tags[TagCategory.VISIBILITY] = self._classify_visibility(file_path, content)
+        visibility = self._classify_visibility(file_path, content)
+        tags.append(f"visibility:{visibility}")
 
         # Purpose classification
-        tags[TagCategory.PURPOSE] = self._classify_purpose(file_path, content)
+        purpose = self._classify_purpose(file_path, content)
+        tags.append(f"purpose:{purpose}")
 
         tagged["tags"] = tags
+        
+        # Also store individual fields for easier access
+        tagged["language"] = languages[0] if languages else None
+        tagged["summary"] = f"{purpose.capitalize()} file"
+        tagged["complexity"] = complexity
+        tagged["visibility"] = visibility
+        
         return tagged
 
     async def process_pipeline(
@@ -396,6 +409,21 @@ class chonkiePipeline:
         # Update result
         result = parsed.copy()
         result["files"] = tagged_files
+
+        # Convert files array to modules dict for API compatibility
+        modules = {}
+        for file_data in tagged_files:
+            if "error" not in file_data:
+                file_path = file_data.get("file_path", "")
+                # Make path relative to repo_path
+                try:
+                    rel_path = str(Path(file_path).relative_to(repo_path))
+                except ValueError:
+                    rel_path = file_path
+                
+                modules[rel_path] = file_data
+        
+        result["modules"] = modules
 
         logger.info(
             f"Pipeline complete. Processed {result['summary']['successfully_parsed']} "

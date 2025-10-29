@@ -141,7 +141,7 @@ def main():
     """Main test function."""
     # Use a small public repository for testing
     test_repos = [
-        "https://github.com/microsoft/agent-framework/tree/main/workflow-samples",  # Small, well-structured Python project
+        "https://github.com/microsoft/agent-framework/",  # Small, well-structured Python project
     ]
 
     try:
