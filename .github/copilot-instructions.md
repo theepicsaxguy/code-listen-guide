@@ -1005,6 +1005,109 @@ const { theme, setTheme } = useTheme();
 setTheme('dark'); // or 'light' or 'system'
 ```
 
+### CRITICAL: Semantic Design Tokens (Theme System)
+
+**⚠️ NEVER replace semantic design tokens with hardcoded values!**
+
+This project uses a **semantic, theme-aware design system** built on Tailwind CSS and CSS variables. The design tokens allow components to adapt dynamically to theme changes.
+
+#### ✅ ALWAYS Use Semantic Tokens
+
+```typescript
+// ✅ CORRECT - Uses semantic tokens
+<div className="bg-background text-foreground">
+  <input className="bg-input border-input focus:ring-ring" />
+  <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+    Click me
+  </Button>
+</div>
+
+// ❌ WRONG - Hardcoded gray values break the theme system
+<div className="bg-gray-950 text-white">
+  <input className="bg-gray-800 border-gray-700 focus:ring-purple-500" />
+  <Button className="bg-gray-800 text-foreground hover:bg-gray-700">
+    Click me
+  </Button>
+</div>
+```
+
+#### Key Semantic Tokens
+
+**Backgrounds:**
+- `bg-background` - Main app background
+- `bg-card` - Card/panel backgrounds
+- `bg-popover` - Dropdown/menu backgrounds
+- `bg-muted` - Subtle backgrounds
+- `bg-accent` - Highlighted/selected states
+
+**Text:**
+- `text-foreground` - Primary text
+- `text-muted-foreground` - Secondary text
+- `text-accent-foreground` - Text on accent backgrounds
+- `text-popover-foreground` - Text in popovers
+
+**Borders & Inputs:**
+- `border-border` - Standard borders
+- `border-input` - Form input borders
+- `bg-input` - Form input backgrounds
+
+**Interactive States:**
+- `focus:ring-ring` - Focus ring color
+- `hover:bg-accent` - Hover states
+- `data-[state=open]:bg-accent` - Active/open states
+
+#### Why This Matters
+
+1. **Theme Flexibility**: Semantic tokens map to CSS variables defined in your theme. When you change your theme configuration, all components update automatically.
+
+2. **Visual Hierarchy**: Tokens like `accent`, `muted`, and `popover` create consistent visual patterns across the entire UI.
+
+3. **Maintainability**: Updating your theme means changing CSS variables once, not hunting through hundreds of hardcoded `gray-800` values.
+
+4. **Accessibility**: Semantic tokens ensure proper contrast ratios are maintained when themes change.
+
+#### When Making Changes
+
+**Before changing any className:**
+1. Check if a semantic token exists for your use case
+2. If unsure, check `tailwind.config.ts` and `src/index.css` for available tokens
+3. Only use hardcoded colors (like `purple-500`, `gray-800`) for specific branding elements that should NOT change with the theme
+
+**To update the theme itself:**
+- Modify CSS variables in `src/index.css` (`:root` and `.dark` selectors)
+- Update `tailwind.config.ts` color mappings
+- DO NOT replace semantic tokens throughout components
+
+**Example - Wrong Approach:**
+```typescript
+// ❌ NEVER DO THIS - Breaks the entire theme system
+// Replacing bg-accent with bg-gray-800 everywhere
+<button className="bg-gray-800">  // Lost semantic meaning
+```
+
+**Example - Right Approach:**
+```typescript
+// ✅ DO THIS - Update the theme definition instead
+// In src/index.css or tailwind.config.ts:
+:root {
+  --accent: 220 13% 18%;  /* Now accent maps to gray-800 */
+}
+
+// Components continue using semantic tokens:
+<button className="bg-accent">  // Still theme-aware
+```
+
+#### shadcn/ui Component Tokens
+
+The `src/components/ui/` directory contains auto-generated shadcn/ui components. These ALWAYS use semantic tokens:
+
+- Context menus: `bg-popover`, `text-popover-foreground`, `focus:bg-accent`
+- Dropdowns: `bg-popover`, `focus:bg-accent`, `focus:text-accent-foreground`
+- Inputs/Selects: `border-input`, `bg-background`, `ring-ring`
+- Tables: `bg-muted`, `hover:bg-muted/50`
+
+**Never edit these to use hardcoded colors unless you have a very specific reason and understand the consequences.**
+
 ---
 
 ## Backend Architecture

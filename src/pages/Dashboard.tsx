@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
             {activeTab !== 'audiobook-detail' && (
               <button
                 onClick={handleCreateNewAudiobook}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all shadow-lg shadow-purple-500/25"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all shadow-lg"
                 aria-label="Create New Audiobook"
               >
                 <Plus size={18} />

@@ -217,7 +217,7 @@ export default function AgentMonitoring() {
               </Card>
             ))}
           </>
-        ) : stats ? (
+        ) : (
           <>
             <StatCard
               title="Total Jobs"
@@ -278,7 +278,7 @@ export default function AgentMonitoring() {
           <CardDescription>Monitor and manage agent execution in real-time</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex gap-3">
             <Input
               placeholder="Search by repo name or user email..."
               value={searchTerm}
