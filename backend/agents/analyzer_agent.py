@@ -2,7 +2,7 @@ import asyncio
 from pathlib import Path
 from typing import Annotated, Any, Dict, List
 
-from agent_framework import AIFunction, ChatAgent
+from agent_framework import ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
 from pydantic import Field
 
@@ -38,9 +38,9 @@ def _ai_parse_repository(
 
 async def create_analyzer_agent(chat_client: Any) -> ChatAgent:
     tools = [
-        AIFunction(_ai_clone_repo),
-        AIFunction(_ai_list_files),
-        AIFunction(_ai_parse_repository),
+        _ai_clone_repo,
+        _ai_list_files,
+        _ai_parse_repository,
     ]
     return chat_client.create_agent(
         name="RepositoryAnalyzer",

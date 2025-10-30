@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from agent_framework import AIFunction, ChatAgent
+from agent_framework import ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
 
 from backend.tools.audio_tools import concat_audio_with_chapters
@@ -22,7 +22,7 @@ async def create_postprocess_agent(chat_client: Any) -> ChatAgent:
         instructions=(
             "Merge chapter audio, publish the final files, and return JSON describing deliverables."
         ),
-        tools=[AIFunction(_ai_concat), AIFunction(_ai_upload)],
+        tools=[_ai_concat, _ai_upload],
     )
 
 

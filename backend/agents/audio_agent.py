@@ -1,6 +1,6 @@
 from typing import Any
 
-from agent_framework import AIFunction, ChatAgent
+from agent_framework import ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
 
 from backend.tools.audio_tools import synthesize_speech
@@ -24,7 +24,7 @@ async def create_audio_agent(chat_client: Any) -> ChatAgent:
             "Turn scripts into MP3 files, upload them to storage, and return the remote URL. "
             "Use the provided tools for text-to-speech and uploads."
         ),
-        tools=[AIFunction(_ai_tts), AIFunction(_ai_upload)],
+        tools=[_ai_tts, _ai_upload],
         response_format=AudioAgentResponse,
     )
 

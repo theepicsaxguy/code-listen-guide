@@ -71,25 +71,33 @@ const Dashboard: React.FC = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div className="flex-1 overflow-auto">
-        <header className="bg-card sticky top-0 z-10">
-          <div className="px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4 flex-1">
-              <h1 className="text-2xl font-semibold text-foreground">
-                {activeTab === 'home' && 'Overview'}
-                {activeTab === 'audiobooks' && 'Audiobooks'}
-                {activeTab === 'audiobook-detail' && 'Player'}
-                {activeTab === 'settings' && 'Settings'}
-                {activeTab === 'billing' && 'Billing'}
-              </h1>
+        <header className="bg-card/50 backdrop-blur-sm sticky top-0 z-10 border-b border-border/50">
+          <div className="px-8 py-5 flex items-center justify-between">
+            <div className="flex items-center gap-6 flex-1">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                  {activeTab === 'home' && 'Overview'}
+                  {activeTab === 'audiobooks' && 'Audiobooks'}
+                  {activeTab === 'audiobook-detail' && 'Player'}
+                  {activeTab === 'settings' && 'Settings'}
+                  {activeTab === 'billing' && 'Billing'}
+                </h1>
+                {(activeTab === 'home' || activeTab === 'audiobooks') && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {activeTab === 'home' && 'Your audiobook overview and activity'}
+                    {activeTab === 'audiobooks' && 'Manage your audiobook collection'}
+                  </p>
+                )}
+              </div>
               {(activeTab === 'home' || activeTab === 'audiobooks') && (
                 <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                   <input
                     type="text"
                     placeholder="Search repositories..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-input border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full pl-11 pr-4 py-2.5 bg-card border border-border/50 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:cursor-not-allowed disabled:opacity-50 transition-all hover:border-border"
                   />
                 </div>
               )}
@@ -97,7 +105,7 @@ const Dashboard: React.FC = () => {
             {activeTab !== 'audiobook-detail' && (
               <button
                 onClick={handleCreateNewAudiobook}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all shadow-lg"
+                className="bg-gradient-primary hover:opacity-90 text-primary-foreground px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
                 aria-label="Create New Audiobook"
               >
                 <Plus size={18} />
@@ -106,7 +114,7 @@ const Dashboard: React.FC = () => {
             )}
           </div>
         </header>
-        <main className="p-8">
+        <main className="p-8 animate-slide-up">
           {activeTab === 'home' && <OverviewPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
           {activeTab === 'audiobooks' && <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
           {activeTab === 'audiobook-detail' && selectedAudiobookId && (

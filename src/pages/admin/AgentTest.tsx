@@ -168,14 +168,16 @@ export default function AgentTest() {
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-8 space-y-8 max-w-7xl mx-auto animate-slide-up">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-          <Activity className="w-8 h-8" />
-          Agent Framework Test & Trace
+        <h1 className="text-4xl font-bold text-foreground flex items-center gap-3 mb-2">
+          <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/20">
+            <Activity className="w-7 h-7 text-primary-foreground" />
+          </div>
+          <span className="gradient-text-primary">Agent Framework Test & Trace</span>
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-muted-foreground mt-2 text-lg">
           Test individual agents and workflows with full tracing and modification capabilities
         </p>
       </div>
@@ -195,13 +197,15 @@ export default function AgentTest() {
         {/* Agent Test Tab */}
         <TabsContent value="agent" className="space-y-6">
           {/* Configuration Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
+          <Card className="bg-gradient-card border border-border/50 card-elevation">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 border-b border-border/30">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="w-10 h-10 rounded-xl bg-gradient-primary/20 flex items-center justify-center shadow-md shadow-primary/10">
+                  <Settings className="w-5 h-5 icon-gradient" />
+                </div>
                 Agent Configuration
               </CardTitle>
-              <CardDescription>Configure and test a single agent</CardDescription>
+              <CardDescription className="text-base mt-2">Configure and test a single agent</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Agent Selection */}
@@ -220,12 +224,12 @@ export default function AgentTest() {
                   </SelectContent>
                 </Select>
                 {selectedAgentInfo && (
-                  <div className="mt-2 p-3 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">{selectedAgentInfo.description}</p>
+                  <div className="mt-3 p-4 bg-card border border-border/50 rounded-xl">
+                    <p className="text-sm text-foreground font-medium mb-3">{selectedAgentInfo.description}</p>
                     {selectedAgentInfo.tools.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-2">
                         {selectedAgentInfo.tools.map((tool) => (
-                          <Badge key={tool} variant="outline" className="text-xs">
+                          <Badge key={tool} variant="outline" className="text-xs bg-primary/10 border-primary/30 text-primary font-semibold px-3 py-1">
                             {tool}
                           </Badge>
                         ))}
@@ -280,15 +284,19 @@ export default function AgentTest() {
               )}
 
               {/* Test Button */}
-              <Button onClick={handleTestAgent} disabled={isTestingAgent} className="w-full">
+              <Button 
+                onClick={handleTestAgent} 
+                disabled={isTestingAgent} 
+                className="w-full bg-gradient-primary hover:opacity-90 text-primary-foreground rounded-xl font-bold py-6 text-lg shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
+              >
                 {isTestingAgent ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Testing Agent...
                   </>
                 ) : (
                   <>
-                    <Play className="w-4 h-4 mr-2" />
+                    <Play className="w-5 h-5 mr-2" />
                     Test Agent
                   </>
                 )}
@@ -298,14 +306,29 @@ export default function AgentTest() {
 
           {/* Results Card */}
           {agentResult && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5" />
+            <Card className="bg-gradient-card border border-border/50 card-elevation">
+              <CardHeader className={`bg-gradient-to-r border-b border-border/30 ${
+                agentResult.error 
+                  ? 'from-destructive/10 to-destructive/5' 
+                  : 'from-success/10 to-success/5'
+              }`}>
+                <CardTitle className="flex items-center justify-between text-xl">
+                  <span className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md ${
+                      agentResult.error 
+                        ? 'bg-destructive/20 shadow-destructive/10' 
+                        : 'bg-success/20 shadow-success/10'
+                    }`}>
+                      <MessageSquare className={`w-5 h-5 ${
+                        agentResult.error ? 'text-destructive' : 'text-success'
+                      }`} />
+                    </div>
                     Agent Test Results
                   </span>
-                  <Badge variant={agentResult.error ? "destructive" : "default"}>
+                  <Badge 
+                    variant={agentResult.error ? "destructive" : "default"}
+                    className="text-sm font-bold px-4 py-1.5"
+                  >
                     {agentResult.error ? "Error" : "Success"}
                   </Badge>
                 </CardTitle>
@@ -313,20 +336,20 @@ export default function AgentTest() {
               <CardContent className="space-y-4">
                 {/* Summary */}
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="text-sm text-muted-foreground">Execution Time</div>
-                    <div className="text-lg font-semibold flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
+                  <div className="p-4 bg-gradient-stat border border-border/50 rounded-xl hover-card">
+                    <div className="text-sm text-muted-foreground font-medium mb-2">Execution Time</div>
+                    <div className="text-2xl font-bold text-foreground flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-primary" />
                       {agentResult.execution_time_seconds.toFixed(2)}s
                     </div>
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="text-sm text-muted-foreground">Messages</div>
-                    <div className="text-lg font-semibold">{agentResult.messages.length}</div>
+                  <div className="p-4 bg-gradient-stat border border-border/50 rounded-xl hover-card">
+                    <div className="text-sm text-muted-foreground font-medium mb-2">Messages</div>
+                    <div className="text-2xl font-bold text-foreground">{agentResult.messages.length}</div>
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="text-sm text-muted-foreground">Tools Called</div>
-                    <div className="text-lg font-semibold">{agentResult.tools_called.length}</div>
+                  <div className="p-4 bg-gradient-stat border border-border/50 rounded-xl hover-card">
+                    <div className="text-sm text-muted-foreground font-medium mb-2">Tools Called</div>
+                    <div className="text-2xl font-bold text-foreground">{agentResult.tools_called.length}</div>
                   </div>
                 </div>
 
@@ -358,15 +381,26 @@ export default function AgentTest() {
                       {agentResult.messages.map((msg, idx) => (
                         <div
                           key={idx}
-                          className={`p-3 rounded-lg border ${
-                            msg.role === "user" ? "bg-blue-500/10" : "bg-green-500/10"
+                          className={`p-4 rounded-xl border ${
+                            msg.role === "user" 
+                              ? "bg-primary/10 border-primary/30" 
+                              : "bg-success/10 border-success/30"
                           }`}
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            <Badge variant={msg.role === "user" ? "default" : "secondary"}>{msg.role}</Badge>
-                            <span className="text-xs text-muted-foreground">{formatTimestamp(msg.timestamp)}</span>
+                          <div className="flex items-center justify-between mb-2">
+                            <Badge 
+                              variant={msg.role === "user" ? "default" : "secondary"}
+                              className={`font-semibold ${
+                                msg.role === "user" 
+                                  ? "bg-primary text-primary-foreground" 
+                                  : "bg-success text-success-foreground"
+                              }`}
+                            >
+                              {msg.role}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground font-medium">{formatTimestamp(msg.timestamp)}</span>
                           </div>
-                          <pre className="text-sm whitespace-pre-wrap font-mono">{msg.content}</pre>
+                          <pre className="text-sm whitespace-pre-wrap font-mono text-foreground bg-card/50 p-3 rounded-lg border border-border/30">{msg.content}</pre>
                         </div>
                       ))}
                     </div>

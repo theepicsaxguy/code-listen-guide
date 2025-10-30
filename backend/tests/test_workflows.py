@@ -54,10 +54,10 @@ class TestAudiobookWorkflow:
         class FakeWorkflowRunner:
             def __init__(self, events):
                 self._events = events
-                self.messages = None
+                self.message = None
 
-            async def run_streaming(self, messages):
-                self.messages = messages
+            async def run_stream(self, message):
+                self.message = message
                 for event in self._events:
                     yield event
 
@@ -131,9 +131,9 @@ class TestAudiobookWorkflow:
             "job-42", {"stage": "outline", "message": outline_text}
         )
         runner = FakeWorkflowBuilder.runners[0]
-        assert runner.messages is not None
-        assert all(isinstance(message, ChatMessage) for message in runner.messages)
-        assert all(message.role == Role.USER for message in runner.messages)
+        assert runner.message is not None
+        assert isinstance(runner.message, ChatMessage)
+        assert runner.message.role == Role.USER
 
     @pytest.mark.asyncio
     async def test_workflow_execute_full_pipeline(self, mock_workflow):
@@ -160,10 +160,10 @@ class TestAudiobookWorkflow:
         class FakeWorkflowRunner:
             def __init__(self, events):
                 self._events = events
-                self.messages = None
+                self.message = None
 
-            async def run_streaming(self, messages):
-                self.messages = messages
+            async def run_stream(self, message):
+                self.message = message
                 for event in self._events:
                     yield event
 

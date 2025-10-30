@@ -41,10 +41,10 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-8 space-y-8 animate-slide-up">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground mt-2 text-base">
           Welcome back! Here's an overview of your system.
         </p>
       </div>
@@ -79,49 +79,54 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            Recent Activity
-          </h3>
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Activity tracking coming soon</p>
-            <p className="text-sm mt-2">Check the Content and Users pages for detailed information</p>
+        <div className="bg-gradient-card rounded-xl p-6 border border-border/50 card-elevation">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-primary/20 flex items-center justify-center shadow-md shadow-primary/10">
+              <TrendingUp className="h-5 w-5 icon-gradient" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Recent Activity</h3>
+              <p className="text-xs text-muted-foreground">System activity overview</p>
+            </div>
+          </div>
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="font-medium mb-1">Activity tracking coming soon</p>
+            <p className="text-sm">Check the Content and Users pages for detailed information</p>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">System Status</h3>
-          <div className="space-y-4">
+        <div className="bg-gradient-card rounded-xl p-6 border border-border/50 card-elevation">
+          <h3 className="text-lg font-bold text-foreground mb-6">System Status</h3>
+          <div className="space-y-5">
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-foreground">API Health</span>
-                <span className="text-sm text-success">Operational</span>
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-sm font-semibold text-foreground">API Health</span>
+                <span className="text-sm font-bold text-success bg-success/10 px-2.5 py-1 rounded-full">Operational</span>
               </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div className="bg-success h-2 rounded-full w-[100%]" />
+              <div className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
+                <div className="bg-gradient-to-r from-success to-success/80 h-full rounded-full w-[100%] shadow-sm shadow-success/30" />
               </div>
             </div>
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Active Jobs</span>
-                <span className="text-sm text-primary">{stats?.active_jobs || 0}</span>
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-sm font-semibold text-foreground">Active Jobs</span>
+                <span className="text-sm font-bold text-primary">{stats?.active_jobs || 0}</span>
               </div>
-              <div className="w-full bg-muted rounded-full h-2">
+              <div className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
                 <div 
-                  className="bg-primary h-2 rounded-full transition-all duration-300" 
+                  className="bg-gradient-to-r from-primary to-accent h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" 
                   style={{ width: `${Math.min(100, (stats?.active_jobs || 0) * 10)}%` }}
                 />
               </div>
             </div>
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Total Users</span>
-                <span className="text-sm text-primary">{stats?.total_users || 0}</span>
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-sm font-semibold text-foreground">Total Users</span>
+                <span className="text-sm font-bold text-primary">{stats?.total_users || 0}</span>
               </div>
-              <div className="w-full bg-muted rounded-full h-2">
+              <div className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
                 <div 
-                  className="bg-primary h-2 rounded-full transition-all duration-300" 
+                  className="bg-gradient-to-r from-primary to-accent h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" 
                   style={{ width: `${Math.min(100, (stats?.total_users || 0))}%` }}
                 />
               </div>

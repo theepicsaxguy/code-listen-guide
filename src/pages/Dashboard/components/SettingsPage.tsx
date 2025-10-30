@@ -27,74 +27,96 @@ export const SettingsPage: React.FC = () => {
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-white">Profile Settings</h2>
+      <div className="bg-gradient-card border border-border/50 rounded-xl overflow-hidden card-elevation">
+        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-primary/20 flex items-center justify-center shadow-md shadow-primary/10">
+              <Check className="h-5 w-5 icon-gradient" size={20} />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground">Profile Settings</h2>
+          </div>
         </div>
         <div className="p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+            <label className="block text-sm font-semibold text-foreground mb-2.5">Full Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-900 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 bg-card border border-border/50 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 hover:border-border transition-all"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+            <label className="block text-sm font-semibold text-foreground mb-2.5">Email Address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-900 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 bg-card border border-border/50 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 hover:border-border transition-all"
             />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-4 border-t border-border/30">
             <div>
-              <div className="text-sm font-medium text-gray-300 mb-1">Current Plan</div>
+              <div className="text-sm font-semibold text-foreground mb-2">Current Plan</div>
               <PlanBadge plan={user.subscription_tier} />
             </div>
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-muted-foreground font-medium">
               Member since {new Date(user.created_at).toLocaleDateString()}
             </div>
           </div>
         </div>
       </div>
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-white">Notification Preferences</h2>
+      <div className="bg-gradient-card border border-border/50 rounded-xl overflow-hidden card-elevation">
+        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-accent/5 to-primary/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-accent/20 flex items-center justify-center shadow-md shadow-accent/10">
+              <Check className="h-5 w-5 icon-gradient-accent" size={20} />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground">Notification Preferences</h2>
+          </div>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="p-6 space-y-5">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-card/50 border border-border/30 hover:border-primary/30 transition-all">
             <div>
-              <div className="text-sm font-medium text-white mb-1">Email Notifications</div>
-              <div className="text-xs text-gray-400">Receive updates about your account</div>
+              <div className="text-sm font-bold text-foreground mb-1">Email Notifications</div>
+              <div className="text-xs text-muted-foreground">Receive updates about your account</div>
             </div>
             <button
               onClick={() => setEmailNotifications(!emailNotifications)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${emailNotifications ? 'bg-purple-500' : 'bg-gray-700'}`}
+              className={`relative w-14 h-7 rounded-full transition-all shadow-lg ${
+                emailNotifications 
+                  ? 'bg-gradient-primary shadow-primary/30' 
+                  : 'bg-muted border border-border'
+              }`}
             >
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${emailNotifications ? 'translate-x-7' : 'translate-x-1'}`} />
+              <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full transition-transform shadow-md ${
+                emailNotifications ? 'translate-x-7' : 'translate-x-0'
+              }`} />
             </button>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-card/50 border border-border/30 hover:border-primary/30 transition-all">
             <div>
-              <div className="text-sm font-medium text-white mb-1">Processing Notifications</div>
-              <div className="text-xs text-gray-400">Get notified when audiobooks are complete</div>
+              <div className="text-sm font-bold text-foreground mb-1">Processing Notifications</div>
+              <div className="text-xs text-muted-foreground">Get notified when audiobooks are complete</div>
             </div>
             <button
               onClick={() => setProcessingNotifications(!processingNotifications)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${processingNotifications ? 'bg-purple-500' : 'bg-gray-700'}`}
+              className={`relative w-14 h-7 rounded-full transition-all shadow-lg ${
+                processingNotifications 
+                  ? 'bg-gradient-accent shadow-accent/30' 
+                  : 'bg-muted border border-border'
+              }`}
             >
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${processingNotifications ? 'translate-x-7' : 'translate-x-1'}`} />
+              <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full transition-transform shadow-md ${
+                processingNotifications ? 'translate-x-7' : 'translate-x-0'
+              }`} />
             </button>
           </div>
         </div>
@@ -102,7 +124,7 @@ export const SettingsPage: React.FC = () => {
       <div className="flex justify-end">
         <button
           onClick={handleSave}
-          className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+          className="px-8 py-3 bg-gradient-primary hover:opacity-90 text-primary-foreground rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
         >
           {saved ? (
             <>

@@ -47,102 +47,124 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
   const maxCount = Math.max(...usageData.map(d => d.count));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card rounded-xl p-6 transition-colors">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-muted-foreground">
-              <Library size={24} />
+        <div className="bg-gradient-stat rounded-xl p-6 transition-all border border-border/50 hover-card card-elevation group relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity" />
+          <div className="flex items-center justify-between mb-4 relative z-10">
+            <div className="w-12 h-12 rounded-xl bg-gradient-primary/20 flex items-center justify-center shadow-lg shadow-primary/10">
+              <Library className="icon-gradient" size={24} />
             </div>
-            <div className="text-sm text-success flex items-center gap-1">
+            <div className="text-sm text-success flex items-center gap-1.5 font-semibold bg-success/10 px-2.5 py-1 rounded-full">
               <CheckCircle size={14} />
               +12%
             </div>
           </div>
-          <div className="text-3xl font-bold text-foreground mb-1">{audiobooks.length}</div>
-          <div className="text-sm text-muted-foreground">Total Audiobooks</div>
-          <div className="text-xs text-muted-foreground/70 mt-1">{completedBooks.length} completed</div>
+          <div className="text-4xl font-bold text-foreground mb-1 relative z-10">{audiobooks.length}</div>
+          <div className="text-sm font-semibold text-foreground mb-1 relative z-10">Total Audiobooks</div>
+          <div className="text-xs text-muted-foreground relative z-10">{completedBooks.length} completed</div>
         </div>
-        <div className="bg-card rounded-xl p-6 transition-colors">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-muted-foreground">
-              <Clock size={24} />
+        <div className="bg-gradient-stat rounded-xl p-6 transition-all border border-border/50 hover-card card-elevation group relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity" />
+          <div className="flex items-center justify-between mb-4 relative z-10">
+            <div className="w-12 h-12 rounded-xl bg-gradient-accent/20 flex items-center justify-center shadow-lg shadow-accent/10">
+              <Clock className="icon-gradient-accent" size={24} />
             </div>
           </div>
-          <div className="text-3xl font-bold text-foreground mb-1">{totalHours.toFixed(1)}h</div>
-          <div className="text-sm text-muted-foreground">Hours Generated</div>
-          <div className="text-xs text-muted-foreground/70 mt-1">Total audio content</div>
+          <div className="text-4xl font-bold text-foreground mb-1 relative z-10">{totalHours.toFixed(1)}h</div>
+          <div className="text-sm font-semibold text-foreground mb-1 relative z-10">Hours Generated</div>
+          <div className="text-xs text-muted-foreground relative z-10">Total audio content</div>
         </div>
-        <div className="bg-card rounded-xl p-6 transition-colors">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-muted-foreground">
-              <Headphones size={24} />
+        <div className="bg-gradient-stat rounded-xl p-6 transition-all border border-border/50 hover-card card-elevation group relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity" />
+          <div className="flex items-center justify-between mb-4 relative z-10">
+            <div className="w-12 h-12 rounded-xl bg-gradient-accent/20 flex items-center justify-center shadow-lg shadow-accent/10">
+              <Headphones className="icon-gradient-accent" size={24} />
             </div>
           </div>
-          <div className="text-3xl font-bold text-foreground mb-1">{user?.credits_remaining || 0}</div>
-          <div className="text-sm text-muted-foreground">Credits Remaining</div>
-          <div className="text-xs text-muted-foreground/70 mt-1">Available to use</div>
+          <div className="text-4xl font-bold text-foreground mb-1 relative z-10">{user?.credits_remaining || 0}</div>
+          <div className="text-sm font-semibold text-foreground mb-1 relative z-10">Credits Remaining</div>
+          <div className="text-xs text-muted-foreground relative z-10">Available to use</div>
         </div>
       </div>
-      <div className="bg-card rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-6">Usage This Week</h3>
-        <div className="flex items-end justify-between gap-3 h-40">
+      <div className="bg-gradient-card rounded-xl p-8 border border-border/50 card-elevation">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h3 className="text-xl font-bold text-foreground mb-1">Usage This Week</h3>
+            <p className="text-sm text-muted-foreground">Daily audiobook generation activity</p>
+          </div>
+        </div>
+        <div className="flex items-end justify-between gap-4 h-48">
           {usageData.map((data, index) => (
-            <div key={index} className="flex-1 flex flex-col items-center gap-3">
-              <div
-                className="w-full bg-gradient-to-t from-primary to-accent rounded-t hover:from-primary/90 hover:to-accent/90 transition-all cursor-pointer relative group"
-                style={{ height: `${(data.count / maxCount) * 100}%`, minHeight: '12px' }}
-              >
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-card text-foreground text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
-                  {data.count} audiobooks
+            <div key={index} className="flex-1 flex flex-col items-center gap-4 group">
+              <div className="relative w-full flex items-end justify-center">
+                <div
+                  className="w-full bg-gradient-to-t from-primary via-primary/90 to-accent rounded-t-xl hover:from-primary/95 hover:to-accent/95 transition-all cursor-pointer relative group/bar min-h-[8px] shadow-lg shadow-primary/20"
+                  style={{ height: `${(data.count / maxCount) * 100}%`, minHeight: '8px' }}
+                >
+                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-card border border-border/50 text-foreground text-xs font-semibold px-3 py-1.5 rounded-lg opacity-0 group-hover/bar:opacity-100 transition-all whitespace-nowrap shadow-xl card-elevation pointer-events-none z-20">
+                    {data.count} audiobooks
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-card border-r border-b border-border/50 rotate-45" />
+                  </div>
                 </div>
               </div>
-              <div className="text-xs text-muted-foreground">{data.date}</div>
+              <div className="text-xs font-medium text-muted-foreground">{data.date}</div>
             </div>
           ))}
         </div>
       </div>
-      <div className="bg-card rounded-xl overflow-hidden">
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
+      <div className="bg-gradient-card rounded-xl border border-border/50 overflow-hidden card-elevation">
+        <div className="p-6 border-b border-border/30 bg-card/50">
+          <h2 className="text-xl font-bold text-foreground">Recent Activity</h2>
+          <p className="text-sm text-muted-foreground mt-1">Your latest audiobook projects</p>
         </div>
         <div>
-          {audiobooks.slice(0, 5).map((job: Job) => (
+          {audiobooks.slice(0, 5).map((job: Job, index: number) => (
             <div
               key={job.id}
-              className="p-6 hover:bg-muted/30 transition-colors cursor-pointer"
+              className="p-6 hover:bg-card/50 transition-all cursor-pointer border-b border-border/20 last:border-b-0 group hover-card"
               onClick={() => onNavigateToAudiobook(job.id)}
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center flex-shrink-0">
-                  <FileCode className="text-primary-foreground" size={24} />
+                <div className="w-14 h-14 bg-gradient-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
+                  <FileCode className="text-primary-foreground" size={28} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-medium text-foreground truncate">{job.repo_name}</h3>
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <h3 className="font-bold text-foreground truncate text-lg">{job.repo_name}</h3>
                     <StatusBadge status={job.status} />
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                    <span className="flex items-center gap-1.5 font-medium">
                       <Clock size={14} />
                       {formatDate(job.created_at)}
                     </span>
-                    {job.estimated_chapters && <span>{job.estimated_chapters} chapters</span>}
-                    {job.metadata?.language && <span className="px-2 py-0.5 bg-muted rounded text-xs">{job.metadata.language}</span>}
+                    {job.estimated_chapters && (
+                      <span className="px-2.5 py-1 bg-muted/50 rounded-md font-medium">
+                        {job.estimated_chapters} chapters
+                      </span>
+                    )}
+                    {job.metadata?.language && (
+                      <span className="px-2.5 py-1 bg-primary/10 text-primary rounded-md text-xs font-semibold border border-primary/20">
+                        {job.metadata.language}
+                      </span>
+                    )}
                   </div>
                   {job.status !== 'completed' && job.status !== 'failed' && (
-                    <div className="mt-3 w-full bg-muted rounded-full h-2">
-                      <div className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-300" style={{ width: `${job.progress_percentage}%` }} />
+                    <div className="mt-4 w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
+                      <div className="bg-gradient-to-r from-primary to-accent h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" style={{ width: `${job.progress_percentage}%` }} />
                     </div>
                   )}
                   {job.status === 'failed' && job.error_message && (
-                    <div className="mt-2 text-xs text-destructive flex items-center gap-1">
-                      <AlertCircle size={12} />
-                      {job.error_message}
+                    <div className="mt-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                      <div className="text-xs text-destructive flex items-center gap-2 font-medium">
+                        <AlertCircle size={14} />
+                        {job.error_message}
+                      </div>
                     </div>
                   )}
                 </div>
-                <ChevronRight className="text-muted-foreground flex-shrink-0" size={20} />
+                <ChevronRight className="text-muted-foreground flex-shrink-0 group-hover:text-foreground group-hover:translate-x-1 transition-all" size={20} />
               </div>
             </div>
           ))}

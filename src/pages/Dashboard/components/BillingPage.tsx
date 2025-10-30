@@ -91,69 +91,75 @@ export const BillingPage: React.FC = () => {
   return (
     <div className="max-w-6xl space-y-6">
       {/* Current Plan Overview */}
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
-        <div className="p-6">
+      <div className="bg-gradient-card border border-border/50 rounded-xl overflow-hidden card-elevation">
+        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-white">
-                {currentPlan.name} Plan
-              </h2>
-              <p className="text-sm text-gray-400">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-primary/20 flex items-center justify-center shadow-md shadow-primary/10">
+                  <CreditCard className="h-5 w-5 icon-gradient" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">
+                  {currentPlan.name} Plan
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground font-medium ml-[52px]">
                 {user.subscription_status === 'active' ? 'Active subscription' : user.subscription_status}
               </p>
             </div>
             {user.subscription_tier !== 'enterprise' && (
-              <button onClick={() => setShowUpgradeDialog(true)} className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
-                <Plus className="mr-2 h-4 w-4" />
+              <button 
+                onClick={() => setShowUpgradeDialog(true)} 
+                className="px-6 py-3 bg-gradient-primary hover:opacity-90 text-primary-foreground rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
+              >
+                <Plus className="h-5 w-5" />
                 Upgrade Plan
               </button>
             )}
           </div>
         </div>
         <div className="p-6 space-y-6">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-400">Credits Remaining</span>
-              <span className="font-medium text-white">{user.credits_remaining}</span>
+              <span className="text-muted-foreground font-semibold">Credits Remaining</span>
+              <span className="font-bold text-foreground text-lg">{user.credits_remaining}</span>
             </div>
-            <div className="w-full bg-gray-700 rounded-full h-3">
+            <div className="w-full bg-muted/50 rounded-full h-3 overflow-hidden">
               <div
-                className="bg-purple-500 h-3 rounded-full transition-all duration-300"
+                className="bg-gradient-primary h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30"
                 style={{ width: `${Math.min((user.credits_remaining / (typeof currentPlan.credits === 'number' ? currentPlan.credits : 100)) * 100, 100)}%` }}
               />
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground font-medium">
               {typeof currentPlan.credits === 'number' ? `${currentPlan.credits} credits per month` : 'Unlimited credits'}
             </p>
           </div>
 
-          <hr className="opacity-0" />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-gray-800 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <CreditCard className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-400">Monthly Credits</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-border/30">
+            <div className="p-5 bg-gradient-stat border border-border/50 rounded-xl hover-card">
+              <div className="flex items-center gap-2.5 mb-3">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <span className="text-sm text-muted-foreground font-semibold">Monthly Credits</span>
               </div>
-              <div className="text-2xl font-bold text-white">
-                {typeof currentPlan.credits === 'number' ? currentPlan.credits : 'Unlimited'}
+              <div className="text-3xl font-bold text-foreground">
+                {typeof currentPlan.credits === 'number' ? currentPlan.credits : '∞'}
               </div>
             </div>
-            <div className="p-4 bg-gray-800 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-400">This Month</span>
+            <div className="p-5 bg-gradient-stat border border-border/50 rounded-xl hover-card">
+              <div className="flex items-center gap-2.5 mb-3">
+                <DollarSign className="h-5 w-5 text-success" />
+                <span className="text-sm text-muted-foreground font-semibold">This Month</span>
               </div>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-3xl font-bold text-foreground">
                 ${(monthlySpend / 100).toFixed(2)}
               </div>
             </div>
-            <div className="p-4 bg-gray-800 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-400">Total Spent</span>
+            <div className="p-5 bg-gradient-stat border border-border/50 rounded-xl hover-card">
+              <div className="flex items-center gap-2.5 mb-3">
+                <FileText className="h-5 w-5 text-accent" />
+                <span className="text-sm text-muted-foreground font-semibold">Total Spent</span>
               </div>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-3xl font-bold text-foreground">
                 ${(totalSpent / 100).toFixed(2)}
               </div>
             </div>
@@ -161,27 +167,34 @@ export const BillingPage: React.FC = () => {
       </div>
 
       {/* Payment History */}
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-white">Payment History</h2>
-          <p className="text-sm text-gray-400">View and download past invoices</p>
+      <div className="bg-gradient-card border border-border/50 rounded-xl overflow-hidden card-elevation">
+        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-accent/5 to-primary/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-accent/20 flex items-center justify-center shadow-md shadow-accent/10">
+              <Calendar className="h-5 w-5 icon-gradient-accent" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Payment History</h2>
+              <p className="text-sm text-muted-foreground font-medium mt-1">View and download past invoices</p>
+            </div>
+          </div>
         </div>
         <div className="p-6">
           {isLoading ? (
             <div className="flex items-center justify-center p-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : payments.length > 0 ? (
-            <div className="divide-y divide-gray-700">
+            <div className="divide-y divide-border/30">
               {payments.map((payment) => (
-                <div key={payment.id} className="py-4 flex items-center justify-between hover:bg-gray-700 px-2 rounded transition-colors">
+                <div key={payment.id} className="py-4 flex items-center justify-between hover:bg-card/50 px-3 rounded-xl transition-all hover-card">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-gray-400" />
+                    <div className="w-12 h-12 bg-gradient-primary/20 rounded-xl flex items-center justify-center border border-primary/30">
+                      <Calendar className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-white">Invoice #{payment.id.slice(0, 8)}</div>
-                      <div className="text-xs text-gray-400">
+                      <div className="text-sm font-bold text-foreground">Invoice #{payment.id.slice(0, 8)}</div>
+                      <div className="text-xs text-muted-foreground font-medium mt-1">
                         {new Date(payment.created_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
@@ -191,15 +204,19 @@ export const BillingPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="text-sm font-medium text-white">
+                    <div className="text-base font-bold text-foreground">
                       ${(payment.amount_cents / 100).toFixed(2)}
                     </div>
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${payment.status === 'succeeded' ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-300'}`}
+                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${
+                        payment.status === 'succeeded' 
+                          ? 'bg-success/10 text-success border border-success/30' 
+                          : 'bg-destructive/10 text-destructive border border-destructive/30'
+                      }`}
                     >
                       {payment.status}
                     </span>
-                    <button className="p-2 rounded-md text-gray-400 hover:bg-gray-700">
+                    <button className="p-2.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
                       <Download className="h-4 w-4" />
                     </button>
                   </div>
@@ -207,10 +224,12 @@ export const BillingPage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="p-12 text-center">
-              <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">No payment history</h3>
-              <p className="text-sm text-gray-400">Your payments will appear here</p>
+            <div className="p-12 text-center bg-card/30 rounded-xl border border-border/30">
+              <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">No payment history</h3>
+              <p className="text-sm text-muted-foreground">Your payments will appear here</p>
             </div>
           )}
         </div>
@@ -219,18 +238,18 @@ export const BillingPage: React.FC = () => {
 
       {/* Upgrade Dialog */}
       {showUpgradeDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-800 rounded-xl shadow-lg">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-white">Upgrade Your Plan</h2>
-              <p className="text-sm text-gray-400">Choose a plan that fits your needs</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-card border border-border/50 rounded-xl shadow-2xl card-elevation">
+            <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
+              <h2 className="text-2xl font-bold text-foreground">Upgrade Your Plan</h2>
+              <p className="text-sm text-muted-foreground mt-1 font-medium">Choose a plan that fits your needs</p>
             </div>
 
             <div className="p-6 grid gap-4">
               {plans.filter(p => p.id !== 'free').map((plan) => (
                 <label
                   key={plan.id}
-                  className="flex items-start p-4 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
+                  className="flex items-start p-5 rounded-xl cursor-pointer border-2 border-border/30 hover:border-primary/50 bg-card/50 hover:bg-card transition-all hover-card"
                   htmlFor={plan.id}
                 >
                   <input
@@ -240,22 +259,22 @@ export const BillingPage: React.FC = () => {
                     value={plan.id}
                     checked={selectedPlan === plan.id}
                     onChange={() => setSelectedPlan(plan.id)}
-                    className="mt-1 h-4 w-4 text-purple-500 focus:ring-purple-500 border-gray-600"
+                    className="mt-1 h-5 w-5 text-primary focus:ring-primary border-border accent-primary"
                   />
                   <div className="ml-4 flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="font-semibold text-lg text-white">{plan.name}</div>
-                      <div className="text-2xl font-bold text-white">
+                      <div className="font-bold text-xl text-foreground">{plan.name}</div>
+                      <div className="text-3xl font-bold gradient-text-primary">
                         {plan.price ? `$${plan.price}/mo` : 'Contact us'}
                       </div>
                     </div>
-                    <p className="text-sm text-gray-400 mb-3">
+                    <p className="text-sm text-muted-foreground mb-3 font-medium">
                       {typeof plan.credits === 'number' ? `${plan.credits} credits per month` : 'Unlimited credits'}
                     </p>
-                    <ul className="space-y-1">
+                    <ul className="space-y-2">
                       {plan.features.map((feature, idx) => (
-                        <li key={idx} className="text-sm flex items-center gap-2 text-gray-300">
-                          <span className="text-purple-500">✓</span>
+                        <li key={idx} className="text-sm flex items-center gap-2 text-foreground font-medium">
+                          <span className="text-success text-lg">✓</span>
                           {feature}
                         </li>
                       ))}
@@ -265,11 +284,17 @@ export const BillingPage: React.FC = () => {
               ))}
             </div>
 
-            <div className="p-6 flex justify-end space-x-2">
-              <button onClick={() => setShowUpgradeDialog(false)} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors">
+            <div className="p-6 flex justify-end space-x-3 border-t border-border/30">
+              <button 
+                onClick={() => setShowUpgradeDialog(false)} 
+                className="px-6 py-3 bg-card border border-border/50 hover:bg-muted text-foreground rounded-xl font-semibold transition-all"
+              >
                 Cancel
               </button>
-              <button onClick={handleUpgrade} className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors">
+              <button 
+                onClick={handleUpgrade} 
+                className="px-6 py-3 bg-gradient-primary hover:opacity-90 text-primary-foreground rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30"
+              >
                 {selectedPlan === 'enterprise' ? 'Contact Sales' : 'Upgrade Now'}
               </button>
             </div>

@@ -45,28 +45,20 @@ class AudiobookWorkflow:
             .with_checkpointing(self.checkpoints)
             .build()
         )
-        messages = [
-            ChatMessage(
-                role=Role.USER,
-                contents=[
-                    TextContent(
-                        text=f"Analyze the repository at {self.repo_url} and respond with JSON."
+        # Combine both instructions into a single message for the sequential workflow
+        initial_message = ChatMessage(
+            role=Role.USER,
+            contents=[
+                TextContent(
+                    text=(
+                        f"Analyze the repository at {self.repo_url} and respond with JSON. "
+                        f"Then generate a {self.depth_tier} outline from the analysis and respond with JSON."
                     )
-                ],
-            ),
-            ChatMessage(
-                role=Role.USER,
-                contents=[
-                    TextContent(
-                        text=(
-                            f"Generate a {self.depth_tier} outline from the analysis and respond with JSON."
-                        )
-                    )
-                ],
-            ),
-        ]
+                )
+            ],
+        )
         outline_message: ChatMessage | None = None
-        async for event in workflow.run_streaming(messages):
+        async for event in workflow.run_stream(initial_message):
             if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                 outline_message = event.message
                 emit_job_event(
@@ -94,21 +86,16 @@ class AudiobookWorkflow:
             .build()
         )
         scripts: List[str] = []
-        async for event in scripts_workflow.run_streaming(
-            [
-                ChatMessage(
-                    role=Role.USER,
-                    contents=[
-                        TextContent(
-                            text=(
-                                f"Write the narration for chapter {chapter.get('number')}."
-                            )
-                        )
-                    ],
+        # For concurrent workflow, send initial message and process all chapters
+        initial_script_message = ChatMessage(
+            role=Role.USER,
+            contents=[
+                TextContent(
+                    text=f"Write narration scripts for all {len(chapters)} chapters."
                 )
-                for chapter in chapters
-            ]
-        ):
+            ],
+        )
+        async for event in scripts_workflow.run_stream(initial_script_message):
             if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                 scripts.append(event.message.text or "")
                 emit_job_event(
@@ -132,15 +119,13 @@ class AudiobookWorkflow:
                 .with_checkpointing(self.checkpoints)
                 .build()
             )
-            async for event in audio_workflow.run_streaming(
-                [
-                    ChatMessage(
-                        role=Role.USER,
-                        contents=[TextContent(text=text)],
-                    )
-                    for text in batch
-                ]
-            ):
+            # Process audio in batches - combine batch texts into single message
+            batch_text = "\n\n".join(batch)
+            batch_message = ChatMessage(
+                role=Role.USER,
+                contents=[TextContent(text=batch_text)],
+            )
+            async for event in audio_workflow.run_stream(batch_message):
                 if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                     audio_urls.append(event.message.text or "")
                     emit_job_event(
@@ -160,20 +145,15 @@ class AudiobookWorkflow:
             .build()
         )
         final_payload: str | None = None
-        async for event in post_workflow.run_streaming(
-            [
-                ChatMessage(
-                    role=Role.USER,
-                    contents=[
-                        TextContent(
-                            text=(
-                                "Create the final audiobook bundle and return JSON metadata."
-                            )
-                        )
-                    ],
-                ),
-            ]
-        ):
+        post_message = ChatMessage(
+            role=Role.USER,
+            contents=[
+                TextContent(
+                    text="Create the final audiobook bundle and return JSON metadata."
+                )
+            ],
+        )
+        async for event in post_workflow.run_stream(post_message):
             if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                 final_payload = event.message.text or ""
                 emit_job_event(self.job_id, {"stage": "postprocess"})

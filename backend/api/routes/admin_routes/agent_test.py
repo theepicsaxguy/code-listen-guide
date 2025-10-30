@@ -125,7 +125,7 @@ async def run_agent_with_tracing(
             "timestamp": time.time(),
         })
 
-        async for event in workflow.run_streaming([user_message]):
+        async for event in workflow.run_stream(user_message):
             # Capture different event types
             if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                 content = event.message.text or ""
@@ -211,19 +211,17 @@ async def test_workflow(
             executor = AgentExecutor(analyzer)
             workflow = WorkflowBuilder().set_start_executor(executor).build()
 
-            messages = [
-                ChatMessage(
-                    role=Role.USER,
-                    contents=[
-                        TextContent(
-                            text=f"Analyze the repository at {request.repo_url} (ref: {request.git_ref}) and respond with JSON."
-                        )
-                    ],
-                )
-            ]
+            message = ChatMessage(
+                role=Role.USER,
+                contents=[
+                    TextContent(
+                        text=f"Analyze the repository at {request.repo_url} (ref: {request.git_ref}) and respond with JSON."
+                    )
+                ],
+            )
 
             result_text = ""
-            async for event in workflow.run_streaming(messages):
+            async for event in workflow.run_stream(message):
                 if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                     result_text += event.message.text or ""
 
@@ -246,27 +244,21 @@ async def test_workflow(
             )
             workflow = WorkflowBuilder().set_start_executor(start_executor).build()
 
-            messages = [
-                ChatMessage(
-                    role=Role.USER,
-                    contents=[
-                        TextContent(
-                            text=f"Analyze the repository at {request.repo_url} and respond with JSON."
+            # Combine both instructions into a single message
+            message = ChatMessage(
+                role=Role.USER,
+                contents=[
+                    TextContent(
+                        text=(
+                            f"Analyze the repository at {request.repo_url} and respond with JSON. "
+                            f"Then generate a {request.depth_tier} outline from the analysis and respond with JSON."
                         )
-                    ],
-                ),
-                ChatMessage(
-                    role=Role.USER,
-                    contents=[
-                        TextContent(
-                            text=f"Generate a {request.depth_tier} outline from the analysis and respond with JSON."
-                        )
-                    ],
-                ),
-            ]
+                    )
+                ],
+            )
 
             outline_text = ""
-            async for event in workflow.run_streaming(messages):
+            async for event in workflow.run_stream(message):
                 if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                     outline_text += event.message.text or ""
 
@@ -295,27 +287,21 @@ async def test_workflow(
             )
             workflow = WorkflowBuilder().set_start_executor(start_executor).build()
 
-            messages = [
-                ChatMessage(
-                    role=Role.USER,
-                    contents=[
-                        TextContent(
-                            text=f"Analyze the repository at {request.repo_url} and respond with JSON."
+            # Combine both instructions into a single message
+            message = ChatMessage(
+                role=Role.USER,
+                contents=[
+                    TextContent(
+                        text=(
+                            f"Analyze the repository at {request.repo_url} and respond with JSON. "
+                            f"Then generate a {request.depth_tier} outline from the analysis and respond with JSON."
                         )
-                    ],
-                ),
-                ChatMessage(
-                    role=Role.USER,
-                    contents=[
-                        TextContent(
-                            text=f"Generate a {request.depth_tier} outline from the analysis and respond with JSON."
-                        )
-                    ],
-                ),
-            ]
+                    )
+                ],
+            )
 
             outline_text = ""
-            async for event in workflow.run_streaming(messages):
+            async for event in workflow.run_stream(message):
                 if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                     outline_text += event.message.text or ""
 

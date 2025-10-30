@@ -19,7 +19,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -45,20 +45,20 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
           <input
             type="text"
             placeholder="Search audiobooks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-11 pr-4 py-3 bg-card border border-border/50 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all hover:border-border"
           />
         </div>
         <div className="flex gap-3">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-4 py-3 bg-card border border-border/50 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all hover:border-border"
           >
             <option value="all">All Status</option>
             <option value="completed">Completed</option>
@@ -68,7 +68,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-4 py-3 bg-card border border-border/50 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all hover:border-border"
           >
             <option value="date">Sort by Date</option>
             <option value="name">Sort by Name</option>
@@ -80,66 +80,92 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
         {filteredAudiobooks.map((book: Job) => (
           <div
             key={book.id}
-            className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-all cursor-pointer group"
+            className="bg-gradient-card border border-border/50 rounded-xl p-6 transition-all cursor-pointer group hover-card card-elevation relative overflow-hidden"
             onClick={() => onNavigateToAudiobook(book.id)}
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                  <GitBranch className="text-white" size={24} />
+            <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-3 transition-opacity" />
+            <div className="relative z-10">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
+                    <GitBranch className="text-primary-foreground" size={28} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors mb-1">{book.repo_name}</h3>
+                    <p className="text-sm text-muted-foreground font-medium">{book.metadata?.language || 'Unknown'}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-white group-hover:text-purple-400 transition-colors">{book.repo_name}</h3>
-                  <p className="text-sm text-gray-400">{book.metadata?.language || 'Unknown'}</p>
-                </div>
+                <StatusBadge status={book.status} />
               </div>
-              <StatusBadge status={book.status} />
-            </div>
-            {book.metadata?.frameworks && book.metadata.frameworks.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {book.metadata.frameworks.map((framework: string, idx: number) => (
-                  <span key={idx} className="px-2 py-1 bg-gray-700 rounded text-xs text-gray-300">{framework}</span>
-                ))}
-              </div>
-            )}
-            {book.status !== 'completed' && book.status !== 'failed' && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2 text-sm">
-                  <span className="text-gray-400">Processing...</span>
-                  <span className="text-white font-medium">{book.progress_percentage}%</span>
+              {book.metadata?.frameworks && book.metadata.frameworks.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {book.metadata.frameworks.map((framework: string, idx: number) => (
+                    <span key={idx} className="px-2.5 py-1 bg-muted/50 rounded-md text-xs font-semibold text-muted-foreground border border-border/30">{framework}</span>
+                  ))}
                 </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300" style={{ width: `${book.progress_percentage}%` }} />
+              )}
+              {book.status !== 'completed' && book.status !== 'failed' && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2 text-sm">
+                    <span className="text-muted-foreground font-medium">Processing...</span>
+                    <span className="text-foreground font-bold">{book.progress_percentage}%</span>
+                  </div>
+                  <div className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
+                    <div className="bg-gradient-to-r from-primary to-accent h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" style={{ width: `${book.progress_percentage}%` }} />
+                  </div>
                 </div>
-              </div>
-            )}
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-4 text-gray-400">
-                {book.estimated_duration_minutes && (
-                  <span className="flex items-center gap-1"><Clock size={14} />{Math.floor(book.estimated_duration_minutes / 60)}h {book.estimated_duration_minutes % 60}m</span>
+              )}
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-4 text-muted-foreground flex-wrap">
+                  {book.estimated_duration_minutes && (
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Clock size={14} />
+                      {Math.floor(book.estimated_duration_minutes / 60)}h {book.estimated_duration_minutes % 60}m
+                    </span>
+                  )}
+                  {book.estimated_chapters && (
+                    <span className="px-2.5 py-1 bg-muted/50 rounded-md font-medium">
+                      {book.estimated_chapters} chapters
+                    </span>
+                  )}
+                  {book.repo_size_bytes && (
+                    <span className="text-xs">
+                      {(book.repo_size_bytes / (1024 * 1024)).toFixed(0)} MB
+                    </span>
+                  )}
+                </div>
+                {book.status === 'completed' && (
+                  <button 
+                    className="p-2.5 hover:bg-accent/20 rounded-xl transition-all group/play hover:scale-110" 
+                    aria-label="Play audiobook"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNavigateToAudiobook(book.id);
+                    }}
+                  >
+                    <Play size={18} className="text-primary group-hover/play:text-accent transition-colors" />
+                  </button>
                 )}
-                {book.estimated_chapters && <span>{book.estimated_chapters} chapters</span>}
-                {book.repo_size_bytes && <span>{(book.repo_size_bytes / (1024 * 1024)).toFixed(0)} MB</span>}
               </div>
-              {book.status === 'completed' && (
-                <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors" aria-label="Play audiobook">
-                  <Play size={16} className="text-purple-400" />
-                </button>
+              {book.status === 'failed' && book.error_message && (
+                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                  <p className="text-xs text-destructive flex items-center gap-2 font-medium">
+                    <AlertCircle size={14} />
+                    {book.error_message}
+                  </p>
+                </div>
               )}
             </div>
-            {book.status === 'failed' && book.error_message && (
-              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <p className="text-xs text-red-400 flex items-center gap-2"><AlertCircle size={14} />{book.error_message}</p>
-              </div>
-            )}
           </div>
         ))}
       </div>
       {filteredAudiobooks.length === 0 && (
-        <div className="text-center py-12">
-          <Library size={48} className="text-gray-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-400 mb-2">No audiobooks found</h3>
-          <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
+        <div className="text-center py-16 bg-gradient-card border border-border/50 rounded-xl card-elevation">
+          <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Library size={40} className="text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-bold text-foreground mb-2">No audiobooks found</h3>
+          <p className="text-sm text-muted-foreground">Try adjusting your search or filters</p>
         </div>
       )}
     </div>
