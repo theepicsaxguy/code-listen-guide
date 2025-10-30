@@ -28,6 +28,14 @@ except ImportError:
     TracerProvider = None
     BatchSpanProcessor = None
 
+# Add project root to Python path when running as a script
+# This allows 'python3 backend/main.py' to work without PYTHONPATH
+import sys
+if __name__ == "__main__":
+    project_root = Path(__file__).resolve().parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
 from backend.api.dependencies import limiter
 from backend.api.routes import auth, jobs, outlines, payments, player, admin, parse, agents_admin
 from backend.api.routes.admin import agent_test as agent_test_router

@@ -40,8 +40,9 @@ services:
       FRONTEND_URL: http://frontend:8080
       DATABASE_URL: postgresql://audiobook:audiobook_dev_password@postgres:5432/audiobook
       CHECKPOINT_DATABASE_URL: postgresql://audiobook:audiobook_dev_password@postgres:5432/audiobook
+      REDIS_URL: redis://redis:6379/0
     env_file:
-      - ${BACKEND_ENV_FILE:-backend/.env.docker}
+      - ${BACKEND_ENV_FILE:-backend/.env}
     depends_on:
       postgres:
         condition: service_healthy

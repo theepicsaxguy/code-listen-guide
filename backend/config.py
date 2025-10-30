@@ -1,17 +1,22 @@
 """Application configuration helpers."""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Get the directory where this config file is located
+_CONFIG_DIR = Path(__file__).resolve().parent
+_ENV_FILE = _CONFIG_DIR / ".env"
 
 
 class Settings(BaseSettings):
     """Runtime configuration with sensible defaults for local development."""
 
     model_config = SettingsConfigDict(
-        env_file=[".env.docker", ".env"], case_sensitive=False, extra="ignore"
+        env_file=str(_ENV_FILE), case_sensitive=False, extra="ignore"
     )
 
     database_url: str = Field(..., min_length=1)
