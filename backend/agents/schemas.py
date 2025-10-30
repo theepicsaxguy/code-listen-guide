@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -19,6 +19,15 @@ class OutlineChapterPayload(BaseModel):
     topics: List[str] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="allow")
+    
+    @classmethod
+    def __get_pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
+        """Override JSON schema generation to enforce additionalProperties: false for OpenAI structured outputs."""
+        json_schema = handler(core_schema)
+        # Recursively set additionalProperties: false for all object schemas
+        if isinstance(json_schema, dict):
+            _set_additional_properties_false(json_schema)
+        return json_schema
 
     @model_validator(mode="before")
     @classmethod
@@ -51,6 +60,14 @@ class OutlineAgentResponse(BaseModel):
     raw_outline: Optional[str] = None
 
     model_config = ConfigDict(extra="allow")
+    
+    @classmethod
+    def __pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
+        """Override JSON schema generation to enforce additionalProperties: false for OpenAI structured outputs."""
+        json_schema = handler(core_schema)
+        if isinstance(json_schema, dict):
+            _set_additional_properties_false(json_schema)
+        return json_schema
 
     @model_validator(mode="after")
     def _populate_totals(self) -> "OutlineAgentResponse":
@@ -77,6 +94,14 @@ class ScriptAgentResponse(BaseModel):
     summary: Optional[str] = None
 
     model_config = ConfigDict(extra="allow")
+    
+    @classmethod
+    def __pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
+        """Override JSON schema generation to enforce additionalProperties: false for OpenAI structured outputs."""
+        json_schema = handler(core_schema)
+        if isinstance(json_schema, dict):
+            _set_additional_properties_false(json_schema)
+        return json_schema
 
     @model_validator(mode="after")
     def _trim_script(self) -> "ScriptAgentResponse":
@@ -94,3 +119,40 @@ class AudioAgentResponse(BaseModel):
     voice: Optional[str] = None
 
     model_config = ConfigDict(extra="allow")
+    
+    @classmethod
+    def __pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
+        """Override JSON schema generation to enforce additionalProperties: false for OpenAI structured outputs."""
+        json_schema = handler(core_schema)
+        if isinstance(json_schema, dict):
+            _set_additional_properties_false(json_schema)
+        return json_schema
+
+
+def _set_additional_properties_false(schema: Dict[str, Any]) -> None:
+    """Recursively set additionalProperties: false for all object schemas."""
+    if schema.get("type") == "object":
+        schema["additionalProperties"] = False
+    
+    # Handle nested objects in properties
+    if "properties" in schema:
+        for prop_schema in schema["properties"].values():
+            if isinstance(prop_schema, dict):
+                _set_additional_properties_false(prop_schema)
+    
+    # Handle nested objects in items (for arrays)
+    if "items" in schema and isinstance(schema["items"], dict):
+        _set_additional_properties_false(schema["items"])
+    
+    # Handle nested objects in definitions/oneOf/allOf/anyOf
+    for key in ["oneOf", "allOf", "anyOf"]:
+        if key in schema:
+            for item in schema[key]:
+                if isinstance(item, dict):
+                    _set_additional_properties_false(item)
+    
+    # Handle $ref definitions
+    if "$defs" in schema:
+        for def_schema in schema["$defs"].values():
+            if isinstance(def_schema, dict):
+                _set_additional_properties_false(def_schema)
