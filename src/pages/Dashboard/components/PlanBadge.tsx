@@ -7,10 +7,10 @@ interface PlanBadgeProps {
 
 export const PlanBadge: React.FC<PlanBadgeProps> = ({ plan }) => {
   const styles = {
-    free: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-    professional: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-    team: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    enterprise: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+    free: 'bg-muted/50 text-muted-foreground border-border',
+    professional: 'bg-primary/20 text-primary border-primary/30',
+    team: 'bg-accent/20 text-accent border-accent/30',
+    enterprise: 'bg-warning/20 text-warning border-warning/30'
   } as const;
 
   const labels = {

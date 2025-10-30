@@ -24,7 +24,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -49,100 +49,100 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-colors">
+        <div className="bg-card border border-border rounded-xl p-6 hover:border-border/80 transition-colors">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-gray-400">
+            <div className="text-muted-foreground">
               <Library size={24} />
             </div>
-            <div className="text-sm text-green-400 flex items-center gap-1">
+            <div className="text-sm text-success flex items-center gap-1">
               <CheckCircle size={14} />
               +12%
             </div>
           </div>
-          <div className="text-3xl font-bold text-white mb-1">{audiobooks.length}</div>
-          <div className="text-sm text-gray-400">Total Audiobooks</div>
-          <div className="text-xs text-gray-500 mt-1">{completedBooks.length} completed</div>
+          <div className="text-3xl font-bold text-foreground mb-1">{audiobooks.length}</div>
+          <div className="text-sm text-muted-foreground">Total Audiobooks</div>
+          <div className="text-xs text-muted-foreground/70 mt-1">{completedBooks.length} completed</div>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-colors">
+        <div className="bg-card border border-border rounded-xl p-6 hover:border-border/80 transition-colors">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-gray-400">
+            <div className="text-muted-foreground">
               <Clock size={24} />
             </div>
           </div>
-          <div className="text-3xl font-bold text-white mb-1">{totalHours.toFixed(1)}h</div>
-          <div className="text-sm text-gray-400">Hours Generated</div>
-          <div className="text-xs text-gray-500 mt-1">Total audio content</div>
+          <div className="text-3xl font-bold text-foreground mb-1">{totalHours.toFixed(1)}h</div>
+          <div className="text-sm text-muted-foreground">Hours Generated</div>
+          <div className="text-xs text-muted-foreground/70 mt-1">Total audio content</div>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-colors">
+        <div className="bg-card border border-border rounded-xl p-6 hover:border-border/80 transition-colors">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-gray-400">
+            <div className="text-muted-foreground">
               <Headphones size={24} />
             </div>
           </div>
-          <div className="text-3xl font-bold text-white mb-1">{user?.credits_remaining || 0}</div>
-          <div className="text-sm text-gray-400">Credits Remaining</div>
-          <div className="text-xs text-gray-500 mt-1">Available to use</div>
+          <div className="text-3xl font-bold text-foreground mb-1">{user?.credits_remaining || 0}</div>
+          <div className="text-sm text-muted-foreground">Credits Remaining</div>
+          <div className="text-xs text-muted-foreground/70 mt-1">Available to use</div>
         </div>
       </div>
-      <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-6">Usage This Week</h3>
+      <div className="bg-card border border-border rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-6">Usage This Week</h3>
         <div className="flex items-end justify-between gap-3 h-40">
           {usageData.map((data, index) => (
             <div key={index} className="flex-1 flex flex-col items-center gap-3">
               <div
-                className="w-full bg-gradient-to-t from-purple-500 to-blue-500 rounded-t hover:from-purple-600 hover:to-blue-600 transition-all cursor-pointer relative group"
+                className="w-full bg-gradient-to-t from-primary to-accent rounded-t hover:from-primary/90 hover:to-accent/90 transition-all cursor-pointer relative group"
                 style={{ height: `${(data.count / maxCount) * 100}%`, minHeight: '12px' }}
               >
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 border border-gray-700 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-card border border-border text-foreground text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
                   {data.count} audiobooks
                 </div>
               </div>
-              <div className="text-xs text-gray-400">{data.date}</div>
+              <div className="text-xs text-muted-foreground">{data.date}</div>
             </div>
           ))}
         </div>
       </div>
-      <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-gray-700">
-          <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="p-6 border-b border-border">
+          <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
         </div>
-        <div className="divide-y divide-gray-700">
+        <div className="divide-y divide-border">
           {audiobooks.slice(0, 5).map((job: Job) => (
             <div
               key={job.id}
-              className="p-6 hover:bg-gray-700 transition-colors cursor-pointer"
+              className="p-6 hover:bg-muted/30 transition-colors cursor-pointer"
               onClick={() => onNavigateToAudiobook(job.id)}
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <FileCode className="text-white" size={24} />
+                <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center flex-shrink-0">
+                  <FileCode className="text-primary-foreground" size={24} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-medium text-white truncate">{job.repo_name}</h3>
+                    <h3 className="font-medium text-foreground truncate">{job.repo_name}</h3>
                     <StatusBadge status={job.status} />
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Clock size={14} />
                       {formatDate(job.created_at)}
                     </span>
                     {job.estimated_chapters && <span>{job.estimated_chapters} chapters</span>}
-                    {job.metadata?.language && <span className="px-2 py-0.5 bg-gray-700 rounded text-xs">{job.metadata.language}</span>}
+                    {job.metadata?.language && <span className="px-2 py-0.5 bg-muted rounded text-xs">{job.metadata.language}</span>}
                   </div>
                   {job.status !== 'completed' && job.status !== 'failed' && (
-                    <div className="mt-3 w-full bg-gray-700 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300" style={{ width: `${job.progress_percentage}%` }} />
+                    <div className="mt-3 w-full bg-muted rounded-full h-2">
+                      <div className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-300" style={{ width: `${job.progress_percentage}%` }} />
                     </div>
                   )}
                   {job.status === 'failed' && job.error_message && (
-                    <div className="mt-2 text-xs text-red-400 flex items-center gap-1">
+                    <div className="mt-2 text-xs text-destructive flex items-center gap-1">
                       <AlertCircle size={12} />
                       {job.error_message}
                     </div>
                   )}
                 </div>
-                <ChevronRight className="text-gray-600 flex-shrink-0" size={20} />
+                <ChevronRight className="text-muted-foreground flex-shrink-0" size={20} />
               </div>
             </div>
           ))}

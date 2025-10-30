@@ -1,57 +1,57 @@
 /**
  * Centralized theme configuration for Codebase Audiobook
  *
- * Brand colors: Electric Purple & Cyan on dark background
- * All admin pages and components should use these constants for consistency
+ * Uses token-based Tailwind classes from src/index.css.
+ * All colors reference CSS variables for consistency.
  */
 
 export const theme = {
-  // Status colors - used for badges, indicators, etc.
+  // Status colors - using semantic token classes
   status: {
     success: {
-      bg: "bg-green-500/10",
-      text: "text-green-500",
-      border: "border-green-500/20",
-      icon: "text-green-500",
+      bg: "bg-success/10",
+      text: "text-success",
+      border: "border-success/20",
+      icon: "text-success",
     },
     error: {
-      bg: "bg-red-500/10",
-      text: "text-red-500",
-      border: "border-red-500/20",
-      icon: "text-red-500",
+      bg: "bg-destructive/10",
+      text: "text-destructive",
+      border: "border-destructive/20",
+      icon: "text-destructive",
     },
     warning: {
-      bg: "bg-yellow-500/10",
-      text: "text-yellow-500",
-      border: "border-yellow-500/20",
-      icon: "text-yellow-500",
+      bg: "bg-warning/10",
+      text: "text-warning",
+      border: "border-warning/20",
+      icon: "text-warning",
     },
     info: {
-      bg: "bg-blue-500/10",
-      text: "text-blue-500",
-      border: "border-blue-500/20",
-      icon: "text-blue-500",
+      bg: "bg-primary/10",
+      text: "text-primary",
+      border: "border-primary/20",
+      icon: "text-primary",
     },
     pending: {
-      bg: "bg-gray-500/10",
-      text: "text-gray-400",
-      border: "border-gray-500/20",
-      icon: "text-gray-500",
+      bg: "bg-muted/50",
+      text: "text-muted-foreground",
+      border: "border-muted",
+      icon: "text-muted-foreground",
     },
   },
 
-  // Card variants - using explicit gray colors for consistency
+  // Card variants - using token-based classes
   card: {
-    default: "bg-gray-900 border border-gray-800 shadow-sm",
-    elevated: "bg-gray-900 border border-gray-800 shadow-lg hover:shadow-purple-500/10 transition-shadow duration-300",
+    default: "bg-card border border-border shadow-sm",
+    elevated: "bg-card border border-border shadow-md hover:shadow-lg transition-shadow duration-300",
     ghost: "bg-transparent border-0",
   },
 
-  // Table styling - using explicit gray colors
+  // Table styling - using token-based classes
   table: {
-    container: "bg-gray-900 border border-gray-800 rounded-lg shadow-sm overflow-hidden",
-    header: "bg-gray-800/50",
-    row: "border-b border-gray-800 transition-colors hover:bg-gray-800/30",
+    container: "bg-card border border-border rounded-lg shadow-sm overflow-hidden",
+    header: "bg-muted/50",
+    row: "border-b border-border transition-colors hover:bg-muted/30",
   },
 
   // Input styling
@@ -59,25 +59,25 @@ export const theme = {
     default: "bg-input border-border text-foreground",
   },
 
-  // Typography
+  // Typography - using token-based foreground
   heading: {
-    h1: "text-3xl font-bold text-white",
-    h2: "text-2xl font-semibold text-white",
-    h3: "text-xl font-semibold text-white",
-    description: "text-gray-400 mt-1",
+    h1: "text-3xl font-bold text-foreground",
+    h2: "text-2xl font-semibold text-foreground",
+    h3: "text-xl font-semibold text-foreground",
+    description: "text-muted-foreground mt-1",
   },
 
-  // Background colors
+  // Background colors - using token-based classes
   background: {
-    page: "bg-gray-950",
-    card: "bg-gray-900",
-    sidebar: "bg-gray-900",
+    page: "bg-background",
+    card: "bg-card",
+    sidebar: "bg-card",
   },
 
-  // Border colors
+  // Border colors - using token-based classes
   border: {
-    default: "border-gray-800",
-    subtle: "border-gray-800/50",
+    default: "border-border",
+    subtle: "border-border/50",
   },
 } as const;
 
