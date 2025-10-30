@@ -35,10 +35,10 @@ export function DataTableEmpty({
   icon,
 }: DataTableEmptyProps) {
   return (
-    <div className="text-center py-12 text-gray-400">
-      {icon || <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-500" />}
-      <p className="font-semibold text-white">{title}</p>
-      {description && <p className="text-sm mt-2">{description}</p>}
+    <div className="text-center py-12 text-muted-foreground">
+      {icon || <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />}
+      <p className="font-semibold text-foreground">{title}</p>
+      {description && <p className="text-sm mt-2 text-muted-foreground">{description}</p>}
     </div>
   );
 }

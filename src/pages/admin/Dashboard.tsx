@@ -43,7 +43,7 @@ export default function AdminDashboard() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
           Welcome back! Here's an overview of your system.
         </p>
@@ -80,8 +80,8 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-purple-500" />
+          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
             Recent Activity
           </h3>
           <div className="text-center py-8 text-muted-foreground">
@@ -91,15 +91,15 @@ export default function AdminDashboard() {
         </div>
 
         <div className="bg-card border border-border rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">System Status</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">System Status</h3>
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">API Health</span>
-                <span className="text-sm text-green-500">Operational</span>
+                <span className="text-sm font-medium text-foreground">API Health</span>
+                <span className="text-sm text-success">Operational</span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full w-[100%]" />
+                <div className="bg-success h-2 rounded-full w-[100%]" />
               </div>
             </div>
             <div>
