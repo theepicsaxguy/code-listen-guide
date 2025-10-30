@@ -80,8 +80,8 @@ export default function ChonkieTest() {
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-          <FileCode2 className="w-8 h-8" />
+        <h1 className="text-3xl font-bold gradient-text-primary flex items-center gap-3">
+          <FileCode2 className="w-8 h-8 icon-gradient" />
           Chonkie Parse Test
         </h1>
         <p className="text-muted-foreground mt-1">
@@ -90,9 +90,9 @@ export default function ChonkieTest() {
       </div>
 
       {/* Configuration Form */}
-      <div className="bg-muted rounded-lg p-6 space-y-6">
-        <div className="flex items-center gap-2 text-foreground font-semibold mb-4">
-          <Settings className="w-5 h-5" />
+      <div className="bg-gradient-card rounded-xl border border-primary/20 p-6 space-y-6 shadow-lg hover:shadow-xl transition-all">
+        <div className="flex items-center gap-2 text-primary font-semibold mb-4">
+          <Settings className="w-5 h-5 icon-gradient" />
           Configuration
         </div>
 
@@ -227,7 +227,7 @@ export default function ChonkieTest() {
           <button
             onClick={handleParse}
             disabled={isLoading || !repoUrl}
-            className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground font-medium rounded-lg transition-colors"
+            className="flex items-center gap-2 px-8 py-4 bg-gradient-primary hover:opacity-90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground font-semibold rounded-xl transition-all shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-lg"
           >
             {isLoading ? (
               <>

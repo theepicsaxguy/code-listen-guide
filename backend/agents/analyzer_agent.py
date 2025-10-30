@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import Path
 from typing import Annotated, Any, Dict, List
 
@@ -24,16 +23,15 @@ def _ai_list_files(
 def _ai_parse_repository(
     path: Annotated[str, Field(description="Path to cloned repository")],
 ) -> Dict[str, Any]:
-    """Parse repository using chonkie pipeline."""
+    """Parse repository using chonkie pipeline.
+    
+    Note: This is a synchronous tool function that needs to call async code.
+    Uses run_async_from_sync utility to safely handle event loop conflicts.
+    """
+    from backend.utils.async_runner import run_async_from_sync
+    
     chonkie = chonkiePipeline()
-    # Run async function in sync context
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        result = loop.run_until_complete(chonkie.process_pipeline(Path(path)))
-        return result
-    finally:
-        loop.close()
+    return run_async_from_sync(chonkie.process_pipeline, Path(path))
 
 
 async def create_analyzer_agent(chat_client: Any) -> ChatAgent:

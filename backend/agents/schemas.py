@@ -26,6 +26,9 @@ class OutlineChapterPayload(BaseModel):
         json_schema = handler(core_schema)
         # Recursively set additionalProperties: false for all object schemas
         if isinstance(json_schema, dict):
+            # Ensure root schema has type: "object" if it has properties
+            if "properties" in json_schema and json_schema.get("type") != "object":
+                json_schema["type"] = "object"
             _set_additional_properties_false(json_schema)
         return json_schema
 
@@ -62,10 +65,14 @@ class OutlineAgentResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
     
     @classmethod
-    def __pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
+    def __get_pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
         """Override JSON schema generation to enforce additionalProperties: false for OpenAI structured outputs."""
         json_schema = handler(core_schema)
+        # Recursively set additionalProperties: false for all object schemas
         if isinstance(json_schema, dict):
+            # Ensure root schema has type: "object" if it has properties
+            if "properties" in json_schema and json_schema.get("type") != "object":
+                json_schema["type"] = "object"
             _set_additional_properties_false(json_schema)
         return json_schema
 
@@ -96,10 +103,14 @@ class ScriptAgentResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
     
     @classmethod
-    def __pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
+    def __get_pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
         """Override JSON schema generation to enforce additionalProperties: false for OpenAI structured outputs."""
         json_schema = handler(core_schema)
+        # Recursively set additionalProperties: false for all object schemas
         if isinstance(json_schema, dict):
+            # Ensure root schema has type: "object" if it has properties
+            if "properties" in json_schema and json_schema.get("type") != "object":
+                json_schema["type"] = "object"
             _set_additional_properties_false(json_schema)
         return json_schema
 
@@ -121,17 +132,25 @@ class AudioAgentResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
     
     @classmethod
-    def __pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
+    def __get_pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
         """Override JSON schema generation to enforce additionalProperties: false for OpenAI structured outputs."""
         json_schema = handler(core_schema)
+        # Recursively set additionalProperties: false for all object schemas
         if isinstance(json_schema, dict):
+            # Ensure root schema has type: "object" if it has properties
+            if "properties" in json_schema and json_schema.get("type") != "object":
+                json_schema["type"] = "object"
             _set_additional_properties_false(json_schema)
         return json_schema
 
 
 def _set_additional_properties_false(schema: Dict[str, Any]) -> None:
     """Recursively set additionalProperties: false for all object schemas."""
-    if schema.get("type") == "object":
+    # Set additionalProperties: false for objects (either explicit type or implicit via properties)
+    schema_type = schema.get("type")
+    has_properties = "properties" in schema
+    
+    if schema_type == "object" or (has_properties and schema_type is None):
         schema["additionalProperties"] = False
     
     # Handle nested objects in properties
@@ -141,8 +160,13 @@ def _set_additional_properties_false(schema: Dict[str, Any]) -> None:
                 _set_additional_properties_false(prop_schema)
     
     # Handle nested objects in items (for arrays)
-    if "items" in schema and isinstance(schema["items"], dict):
-        _set_additional_properties_false(schema["items"])
+    if "items" in schema:
+        if isinstance(schema["items"], dict):
+            _set_additional_properties_false(schema["items"])
+        elif isinstance(schema["items"], list):
+            for item in schema["items"]:
+                if isinstance(item, dict):
+                    _set_additional_properties_false(item)
     
     # Handle nested objects in definitions/oneOf/allOf/anyOf
     for key in ["oneOf", "allOf", "anyOf"]:

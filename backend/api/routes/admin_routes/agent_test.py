@@ -109,37 +109,100 @@ async def run_agent_with_tracing(
             # We'll need to recreate the agent with new instructions
             logger.warning("Custom instructions override may not work with current agent framework version")
 
-        # Create a simple workflow to run the agent
-        executor = AgentExecutor(agent)
-        workflow = WorkflowBuilder().set_start_executor(executor).build()
+        # Create a thread for the agent
+        thread = agent.get_new_thread()
 
-        # Run with message capture
-        user_message = ChatMessage(
-            role=Role.USER,
-            contents=[TextContent(text=input_message)],
-        )
-
+        # Store user message
         messages_trace.append({
             "role": "user",
             "content": input_message,
             "timestamp": time.time(),
         })
 
-        async for event in workflow.run_stream(user_message):
-            # Capture different event types
-            if hasattr(event, "message") and isinstance(event.message, ChatMessage):
-                content = event.message.text or ""
-                output_message += content
+        # Run agent and capture response
+        # Try both streaming and direct run to capture all outputs
+        response = None
+        
+        # First, try streaming to capture incremental updates
+        async for update in agent.run_stream(input_message, thread=thread):
+            # Capture streaming text updates
+            if hasattr(update, "text") and update.text:
+                output_message += update.text
                 messages_trace.append({
                     "role": "assistant",
-                    "content": content,
+                    "content": update.text,
                     "timestamp": time.time(),
+                    "type": "stream_chunk",
                 })
-            elif hasattr(event, "tool_call"):
-                tools_trace.append({
-                    "tool": getattr(event.tool_call, "name", "unknown"),
-                    "arguments": getattr(event.tool_call, "arguments", {}),
+            # Capture final response
+            if hasattr(update, "result"):
+                response = update.result
+            elif hasattr(update, "message"):
+                response = update.message
+            elif hasattr(update, "delta") and hasattr(update.delta, "text"):
+                # Handle delta updates
+                delta_text = update.delta.text
+                if delta_text:
+                    output_message += delta_text
+                    messages_trace.append({
+                        "role": "assistant",
+                        "content": delta_text,
+                        "timestamp": time.time(),
+                        "type": "delta_chunk",
+                    })
+        
+        # If streaming didn't give us the response, run directly
+        if not response:
+            response = await agent.run(input_message, thread=thread)
+        
+        # Extract the actual response content
+        # Follow the same pattern as services/outline_generator.py
+        if response:
+            import json
+            
+            # Check if response is a structured model (Pydantic)
+            if hasattr(response, "model_dump"):
+                output_message = json.dumps(response.model_dump(mode="json", exclude_none=True), indent=2)
+            # Check if response has a "result" attribute (common pattern)
+            elif hasattr(response, "result"):
+                candidate = response.result
+                if hasattr(candidate, "model_dump"):
+                    output_message = json.dumps(candidate.model_dump(mode="json", exclude_none=True), indent=2)
+                elif isinstance(candidate, dict):
+                    output_message = json.dumps(candidate, indent=2)
+                elif isinstance(candidate, str):
+                    output_message = candidate
+                else:
+                    output_message = str(candidate)
+            # Check if response is a dict
+            elif isinstance(response, dict):
+                output_message = json.dumps(response, indent=2)
+            # Check if response has "text" attribute
+            elif hasattr(response, "text") and response.text:
+                output_message = response.text
+            # Check if response is a string
+            elif isinstance(response, str):
+                output_message = response
+            # Check if response has "contents" (ChatMessage)
+            elif hasattr(response, "contents"):
+                text_parts = []
+                for content in response.contents:
+                    if hasattr(content, "text"):
+                        text_parts.append(content.text)
+                    elif isinstance(content, str):
+                        text_parts.append(content)
+                output_message = "".join(text_parts) or str(response)
+            else:
+                # Fallback: convert to string
+                output_message = str(response)
+            
+            # Add final response to trace
+            if output_message:
+                messages_trace.append({
+                    "role": "assistant",
+                    "content": output_message,
                     "timestamp": time.time(),
+                    "type": "final_response",
                 })
 
     except Exception as e:

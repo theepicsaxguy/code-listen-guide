@@ -20,8 +20,15 @@ export const PlanBadge: React.FC<PlanBadgeProps> = ({ plan }) => {
     enterprise: 'Enterprise'
   } as const;
 
+  const borderStyles = {
+    free: 'border-primary/30',
+    professional: 'border-primary/50',
+    team: 'border-accent/50',
+    enterprise: 'border-warning/50'
+  } as const;
+
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${styles[plan]}`}>
+    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border-2 shadow-md ${styles[plan]} ${borderStyles[plan]}`}>
       {labels[plan]}
     </span>
   );

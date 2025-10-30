@@ -88,6 +88,7 @@ class AudiobookWorkflow:
                 )
             ],
         )
+        scripts: List[str] = []
         async for event in scripts_workflow.run_stream(initial_script_message):
             if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                 scripts.append(event.message.text or "")

@@ -107,25 +107,25 @@ export default function AdminParse() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Microscope className="h-8 w-8" />
+            <h1 className="text-3xl font-bold gradient-text-primary flex items-center gap-2">
+              <Microscope className="h-8 w-8 icon-gradient" />
               Repository Parser Admin
             </h1>
             <p className="text-muted-foreground mt-1">
               Test chonkie configurations and analyze repository parsing
             </p>
           </div>
-          <Badge variant="outline" className="text-lg px-4 py-2">
+          <Badge variant="default" className="text-lg px-4 py-2 bg-gradient-primary text-primary-foreground shadow-md shadow-primary/20">
             <Zap className="h-4 w-4 mr-2" />
             Admin Mode
           </Badge>
         </div>
 
         {/* Configuration Panel */}
-        <Card>
+        <Card className="border-primary/20 hover:border-primary/40 transition-all">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-primary">
+              <Settings className="h-5 w-5 icon-gradient" />
               Parse Configuration
             </CardTitle>
             <CardDescription>
@@ -260,7 +260,7 @@ export default function AdminParse() {
             <Button 
               onClick={handleParse} 
               disabled={isLoading || !repoUrl}
-              className="w-full"
+              className="w-full bg-gradient-primary hover:opacity-90 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 disabled:hover:translate-y-0"
               size="lg"
             >
               {isLoading ? (
@@ -283,36 +283,36 @@ export default function AdminParse() {
           <>
             {/* Summary Statistics */}
             <div className="grid lg:grid-cols-5 gap-4">
-              <Card>
+              <Card className="bg-gradient-card-primary border-primary/20 hover:border-primary/40 transition-all hover-card">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Total Files</CardTitle>
+                  <CardTitle className="text-sm font-medium text-primary">Total Files</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{parseResults.summary.total_files}</div>
+                  <div className="text-3xl font-bold gradient-text-primary">{parseResults.summary.total_files}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {formatBytes(parseResults.summary.total_size_bytes)}
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-gradient-card-accent border-accent/20 hover:border-accent/40 transition-all hover-card">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Languages</CardTitle>
+                  <CardTitle className="text-sm font-medium text-accent">Languages</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{parseResults.summary.languages.length}</div>
+                  <div className="text-3xl font-bold gradient-text-accent">{parseResults.summary.languages.length}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {parseResults.summary.languages.slice(0, 3).join(', ')}
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-gradient-card-secondary border-secondary/30 hover:border-secondary/50 transition-all hover-card">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                  <CardTitle className="text-sm font-medium text-success">Success Rate</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">
+                  <div className="text-3xl font-bold text-success">
                     {parseResults.summary.parse_success_rate.toFixed(1)}%
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -321,24 +321,24 @@ export default function AdminParse() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-gradient-card-primary border-primary/20 hover:border-primary/40 transition-all hover-card">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Frameworks</CardTitle>
+                  <CardTitle className="text-sm font-medium text-primary">Frameworks</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{parseResults.summary.frameworks.length}</div>
+                  <div className="text-3xl font-bold gradient-text-primary">{parseResults.summary.frameworks.length}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {parseResults.summary.frameworks.slice(0, 2).join(', ') || 'None detected'}
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-gradient-card-accent border-accent/20 hover:border-accent/40 transition-all hover-card">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Parse Time</CardTitle>
+                  <CardTitle className="text-sm font-medium text-accent">Parse Time</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">
+                  <div className="text-3xl font-bold gradient-text-accent">
                     {parseResults.execution_time_seconds.toFixed(1)}s
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">

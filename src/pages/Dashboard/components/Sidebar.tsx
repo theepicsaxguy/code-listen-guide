@@ -53,21 +53,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
         </div>
       </div>
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
+        {navItems.map((item, idx) => {
+          // Rotate colors for variety
+          const colorVariants = ['primary', 'accent', 'secondary'] as const;
+          const colorVariant = colorVariants[idx % colorVariants.length];
+          
           const IconComponent = React.cloneElement(item.icon, {
             className: `${
-              activeTab === item.id ? 'text-primary' : 'text-muted-foreground'
+              activeTab === item.id 
+                ? colorVariant === 'primary' ? 'text-primary' : colorVariant === 'accent' ? 'text-accent' : 'text-foreground'
+                : 'text-muted-foreground'
             } transition-colors ${activeTab === item.id ? 'icon-gradient' : ''}`
           });
+          
+          const activeStyles = {
+            primary: 'bg-gradient-primary text-primary-foreground shadow-lg shadow-primary/30 border-2 border-primary/40',
+            accent: 'bg-gradient-accent text-accent-foreground shadow-lg shadow-accent/30 border-2 border-accent/40',
+            secondary: 'bg-gradient-secondary text-secondary-foreground shadow-lg shadow-secondary/20 border-2 border-secondary/40'
+          }[colorVariant];
+          
+          const hoverStyles = {
+            primary: 'hover:bg-primary/15 hover:border-primary/30 hover:text-primary',
+            accent: 'hover:bg-accent/15 hover:border-accent/30 hover:text-accent',
+            secondary: 'hover:bg-secondary/15 hover:border-secondary/30 hover:text-foreground'
+          }[colorVariant];
           
           return (
             <button
               key={item.id}
               onClick={() => handleNavClick(item.id)}
-              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl mb-1 transition-all relative group ${
+              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl mb-1 transition-all relative group border-2 ${
                 activeTab === item.id
-                  ? 'bg-gradient-primary text-primary-foreground shadow-lg shadow-primary/30'
-                  : 'text-muted-foreground hover:bg-primary/10 hover:text-foreground'
+                  ? activeStyles
+                  : `text-muted-foreground border-transparent ${hoverStyles}`
               }`}
               title={isCollapsed ? item.label : undefined}
             >

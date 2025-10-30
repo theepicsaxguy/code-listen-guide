@@ -224,15 +224,20 @@ export default function AgentTest() {
                   </SelectContent>
                 </Select>
                 {selectedAgentInfo && (
-                  <div className="mt-3 p-4 bg-secondary/30 rounded-xl">
+                  <div className="mt-3 p-4 bg-gradient-card-accent border border-accent/30 rounded-xl hover-card">
                     <p className="text-sm text-foreground font-medium mb-3">{selectedAgentInfo.description}</p>
                     {selectedAgentInfo.tools.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {selectedAgentInfo.tools.map((tool) => (
-                          <Badge key={tool} variant="outline" className="text-xs bg-primary/20 text-primary font-semibold px-3 py-1">
-                            {tool}
-                          </Badge>
-                        ))}
+                        {selectedAgentInfo.tools.map((tool, idx) => {
+                          const variants = ['default', 'outline', 'secondary'] as const;
+                          const variant = variants[idx % variants.length];
+                          return (
+                            <Badge key={tool} variant={variant} className="text-xs font-semibold px-3 py-1 hover:scale-105 transition-transform cursor-pointer">
+                              <Code2 className="w-3 h-3 mr-1" />
+                              {tool}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -368,12 +373,15 @@ export default function AgentTest() {
 
                 {/* Messages Trace */}
                 <Collapsible open={expandedSections.has("messages")} onOpenChange={() => toggleSection("messages")}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80">
-                    <span className="font-semibold">Message Trace ({agentResult.messages.length})</span>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gradient-primary/10 border border-primary/30 rounded-xl hover:bg-gradient-primary/20 hover:border-primary/50 transition-all hover-card">
+                    <span className="font-semibold text-primary flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" />
+                      Message Trace ({agentResult.messages.length})
+                    </span>
                     {expandedSections.has("messages") ? (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-4 h-4 text-primary" />
                     ) : (
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-4 h-4 text-primary" />
                     )}
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -410,12 +418,15 @@ export default function AgentTest() {
                 {/* Tools Called */}
                 {agentResult.tools_called.length > 0 && (
                   <Collapsible open={expandedSections.has("tools")} onOpenChange={() => toggleSection("tools")}>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80">
-                      <span className="font-semibold">Tools Called ({agentResult.tools_called.length})</span>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gradient-accent/10 border border-accent/30 rounded-xl hover:bg-gradient-accent/20 hover:border-accent/50 transition-all hover-card">
+                      <span className="font-semibold text-accent flex items-center gap-2">
+                        <Code2 className="w-4 h-4" />
+                        Tools Called ({agentResult.tools_called.length})
+                      </span>
                       {expandedSections.has("tools") ? (
-                        <ChevronDown className="w-4 h-4" />
+                        <ChevronDown className="w-4 h-4 text-accent" />
                       ) : (
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-4 h-4 text-accent" />
                       )}
                     </CollapsibleTrigger>
                     <CollapsibleContent>
@@ -442,8 +453,11 @@ export default function AgentTest() {
                 {/* Output Message */}
                 {agentResult.output_message && (
                   <Collapsible open={expandedSections.has("output")} onOpenChange={() => toggleSection("output")}>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80">
-                      <span className="font-semibold">Output Message</span>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gradient-secondary/10 border border-secondary/30 rounded-xl hover:bg-gradient-secondary/20 hover:border-secondary/50 transition-all hover-card">
+                      <span className="font-semibold text-foreground flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-success" />
+                        Output Message
+                      </span>
                       {expandedSections.has("output") ? (
                         <ChevronDown className="w-4 h-4" />
                       ) : (
@@ -465,13 +479,15 @@ export default function AgentTest() {
         {/* Workflow Test Tab */}
         <TabsContent value="workflow" className="space-y-6">
           {/* Configuration Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Workflow className="w-5 h-5" />
+          <Card className="bg-gradient-card-accent border-accent/20 card-elevation">
+            <CardHeader className="bg-gradient-to-r from-accent/15 to-primary/12">
+              <CardTitle className="flex items-center gap-3 text-xl text-accent">
+                <div className="w-10 h-10 rounded-xl bg-gradient-accent/20 flex items-center justify-center shadow-md shadow-accent/10">
+                  <Workflow className="w-5 h-5 icon-gradient-accent" />
+                </div>
                 Workflow Configuration
               </CardTitle>
-              <CardDescription>Test complete or partial workflows</CardDescription>
+              <CardDescription className="text-base mt-2">Test complete or partial workflows</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Workflow Type */}
@@ -527,15 +543,19 @@ export default function AgentTest() {
               </div>
 
               {/* Test Button */}
-              <Button onClick={handleTestWorkflow} disabled={isTestingWorkflow} className="w-full">
+              <Button 
+                onClick={handleTestWorkflow} 
+                disabled={isTestingWorkflow} 
+                className="w-full bg-gradient-accent hover:opacity-90 text-accent-foreground rounded-xl font-bold py-6 text-lg shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30 transition-all"
+              >
                 {isTestingWorkflow ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Testing Workflow...
                   </>
                 ) : (
                   <>
-                    <Workflow className="w-4 h-4 mr-2" />
+                    <Workflow className="w-5 h-5 mr-2" />
                     Test Workflow
                   </>
                 )}

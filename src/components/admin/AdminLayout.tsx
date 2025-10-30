@@ -92,20 +92,36 @@ export const AdminLayout = () => {
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItems.map((item, idx) => {
             const Icon = item.icon;
             const isActive =
               location.pathname === item.path ||
               (item.path !== "/admin" && location.pathname.startsWith(item.path));
 
+            // Rotate colors for variety
+            const colorVariants = ['primary', 'accent', 'secondary'] as const;
+            const colorVariant = colorVariants[idx % colorVariants.length];
+            
+            const activeStyles = {
+              primary: "bg-gradient-primary text-primary-foreground shadow-lg shadow-primary/30 border-2 border-primary/40",
+              accent: "bg-gradient-accent text-accent-foreground shadow-lg shadow-accent/30 border-2 border-accent/40",
+              secondary: "bg-gradient-secondary text-secondary-foreground shadow-lg shadow-secondary/20 border-2 border-secondary/40"
+            }[colorVariant];
+            
+            const hoverStyles = {
+              primary: "hover:bg-primary/15 hover:border-primary/30 hover:text-primary",
+              accent: "hover:bg-accent/15 hover:border-accent/30 hover:text-accent",
+              secondary: "hover:bg-secondary/15 hover:border-secondary/30 hover:text-foreground"
+            }[colorVariant];
+
             return (
               <Link key={item.path} to={item.path}>
                 <Button
                   variant={isActive ? "secondary" : "ghost"}
-                  className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} rounded-xl transition-all relative ${
+                  className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} rounded-xl transition-all relative border-2 ${
                     isActive
-                      ? "bg-gradient-primary text-primary-foreground shadow-lg shadow-primary/30"
-                      : "text-muted-foreground hover:bg-primary/10 hover:text-foreground"
+                      ? activeStyles
+                      : `text-muted-foreground border-transparent ${hoverStyles}`
                   }`}
                   title={isSidebarCollapsed ? item.label : undefined}
                 >
@@ -120,7 +136,7 @@ export const AdminLayout = () => {
         <div className="p-4 bg-gradient-to-r from-destructive/5 to-muted/5">
           <Button
             variant="ghost"
-            className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} text-destructive hover:text-destructive hover:bg-destructive/20 rounded-xl transition-all`}
+            className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} text-destructive hover:text-destructive hover:bg-destructive/20 hover:border-destructive/30 border-2 border-transparent rounded-xl transition-all`}
             onClick={handleLogout}
             title={isSidebarCollapsed ? "Logout" : undefined}
           >

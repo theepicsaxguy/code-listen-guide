@@ -55,32 +55,32 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
     <div className="space-y-6">
       {/* Overview */}
       <div className="grid lg:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-gradient-card-primary border-primary/20 hover:border-primary/40 transition-all hover-card">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Entry Points</CardTitle>
+            <CardTitle className="text-sm font-medium text-primary">Entry Points</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{entryPoints.length}</div>
+            <div className="text-3xl font-bold gradient-text-primary">{entryPoints.length}</div>
             <p className="text-xs text-muted-foreground mt-1">Starting files</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-card-accent border-accent/20 hover:border-accent/40 transition-all hover-card">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Directories</CardTitle>
+            <CardTitle className="text-sm font-medium text-accent">Directories</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{Object.keys(filesByDirectory).length}</div>
+            <div className="text-3xl font-bold gradient-text-accent">{Object.keys(filesByDirectory).length}</div>
             <p className="text-xs text-muted-foreground mt-1">File groups</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-card-secondary border-secondary/30 hover:border-secondary/50 transition-all hover-card">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Frameworks</CardTitle>
+            <CardTitle className="text-sm font-medium text-primary">Frameworks</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{Object.keys(filesByFramework).length}</div>
+            <div className="text-3xl font-bold text-primary">{Object.keys(filesByFramework).length}</div>
             <p className="text-xs text-muted-foreground mt-1">Detected</p>
           </CardContent>
         </Card>
@@ -90,7 +90,7 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <GitBranch className="h-5 w-5" />
+            <GitBranch className="h-5 w-5 text-primary" />
             Entry Points
           </CardTitle>
           <CardDescription>
@@ -100,24 +100,42 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
         <CardContent>
           {entryPoints.length > 0 ? (
             <div className="space-y-2">
-              {entryPoints.map((path, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 border rounded">
-                  <File className="h-4 w-4 text-primary" />
-                  <code className="text-sm">{path}</code>
-                  {modules[path]?.metadata?.tags && (
-                    <div className="ml-auto flex gap-1">
-                      {modules[path].metadata.tags
-                        .filter((t: string) => t !== 'entry_point' && t !== 'purpose:entry_point')
-                        .slice(0, 3)
-                        .map((tag: string, i: number) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {tag.split(':')[1] || tag}
-                          </Badge>
-                        ))}
+              {entryPoints.map((path, index) => {
+                // Rotate colors for variety
+                const colorVariants = [
+                  'bg-gradient-primary/20 border-primary/40 hover:bg-gradient-primary/30 hover:border-primary/60',
+                  'bg-gradient-accent/20 border-accent/40 hover:bg-gradient-accent/30 hover:border-accent/60',
+                  'bg-gradient-secondary/30 border-secondary/50 hover:bg-gradient-secondary/40 hover:border-secondary/70',
+                ];
+                const colorClass = colorVariants[index % colorVariants.length];
+                
+                return (
+                  <div 
+                    key={index} 
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all hover-card cursor-pointer ${colorClass}`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center shadow-md shadow-primary/20">
+                      <File className="h-4 w-4 text-primary-foreground" />
                     </div>
-                  )}
-                </div>
-              ))}
+                    <code className="text-sm font-medium text-foreground flex-1">{path}</code>
+                    {modules[path]?.metadata?.tags && (
+                      <div className="ml-auto flex gap-1 flex-wrap">
+                        {modules[path].metadata.tags
+                          .filter((t: string) => t !== 'entry_point' && t !== 'purpose:entry_point')
+                          .slice(0, 3)
+                          .map((tag: string, i: number) => {
+                            const badgeVariants = ['default', 'outline', 'secondary'] as const;
+                            return (
+                              <Badge key={i} variant={badgeVariants[i % badgeVariants.length]} className="text-xs font-semibold">
+                                {tag.split(':')[1] || tag}
+                              </Badge>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">No entry points detected</p>
