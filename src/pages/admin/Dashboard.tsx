@@ -108,7 +108,10 @@ export default function AdminDashboard() {
                 <span className="text-sm text-primary">{stats?.active_jobs || 0}</span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full w-[{Math.min(100, (stats?.active_jobs || 0) * 10)}%]" />
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${Math.min(100, (stats?.active_jobs || 0) * 10)}%` }}
+                />
               </div>
             </div>
             <div>
@@ -117,7 +120,10 @@ export default function AdminDashboard() {
                 <span className="text-sm text-primary">{stats?.total_users || 0}</span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full w-[{Math.min(100, (stats?.total_users || 0))}%]" />
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${Math.min(100, (stats?.total_users || 0))}%` }}
+                />
               </div>
             </div>
           </div>
