@@ -123,7 +123,7 @@ export function UserDetailsDialog({ userId, isOpen, onClose }: UserDetailsDialog
 
         <div className="space-y-6">
           {/* User Information */}
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
@@ -169,7 +169,7 @@ export function UserDetailsDialog({ userId, isOpen, onClose }: UserDetailsDialog
           </Card>
 
           {/* Credits Management */}
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
@@ -212,7 +212,7 @@ export function UserDetailsDialog({ userId, isOpen, onClose }: UserDetailsDialog
           </Card>
 
           {/* Job History */}
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <History className="h-5 w-5" />

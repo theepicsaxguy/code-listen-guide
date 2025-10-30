@@ -60,7 +60,7 @@ const getStatusColor = (status: string) => {
     case "waiting":
       return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
     default:
-      return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+      return "bg-gray-500/10 text-muted-foreground border-gray-500/20";
   }
 };
 
@@ -200,7 +200,7 @@ export default function AgentMonitoring() {
     <div className="p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-white">Agent Execution Monitoring</h1>
-        <p className="text-gray-400 mt-1">
+        <p className="text-muted-foreground mt-1">
           Real-time monitoring of agent workflows and job execution
         </p>
       </div>
@@ -210,7 +210,7 @@ export default function AgentMonitoring() {
         {statsLoading ? (
           <>
             {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="bg-gray-900 border-gray-800">
+              <Card key={i} className="bg-card border-border">
                 <CardContent className="p-6">
                   <div className="animate-pulse h-20 bg-muted rounded" />
                 </CardContent>
@@ -268,11 +268,11 @@ export default function AgentMonitoring() {
               description="Total saved states"
             />
           </>
-        ) : null}
+        )}
       </div>
 
       {/* Filters and Controls */}
-      <Card className="bg-gray-900 border-gray-800 shadow-card">
+      <Card className="bg-card border-border shadow-card">
         <CardHeader>
           <CardTitle>Active Jobs</CardTitle>
           <CardDescription>Monitor and manage agent execution in real-time</CardDescription>
@@ -462,7 +462,7 @@ export default function AgentMonitoring() {
                                     <div className="space-y-4">
                                       {jobDetails.stages && jobDetails.stages.length > 0 ? (
                                         jobDetails.stages.map((stage, index) => (
-                                          <Card key={index} className="bg-gray-900 border-gray-800">
+                                          <Card key={index} className="bg-card border-border">
                                             <CardContent className="p-4">
                                               <div className="flex items-center justify-between">
                                                 <div>
@@ -497,7 +497,7 @@ export default function AgentMonitoring() {
                                     <div className="space-y-2">
                                       {jobDetails.checkpoints && jobDetails.checkpoints.length > 0 ? (
                                         jobDetails.checkpoints.map((checkpoint, index) => (
-                                          <Card key={index} className="bg-gray-900 border-gray-800">
+                                          <Card key={index} className="bg-card border-border">
                                             <CardContent className="p-3">
                                               <div className="flex items-center justify-between">
                                                 <div>

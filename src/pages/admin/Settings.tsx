@@ -35,14 +35,14 @@ export default function AdminSettings() {
       </div>
 
       {isLoading ? (
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="bg-card border-border">
           <CardContent className="p-12 text-center">
             <p className="text-muted-foreground">Loading settings...</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-6">
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
@@ -64,7 +64,7 @@ export default function AdminSettings() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="h-5 w-5" />
@@ -88,7 +88,7 @@ export default function AdminSettings() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <SettingsIcon className="h-5 w-5" />

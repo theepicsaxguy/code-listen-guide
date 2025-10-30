@@ -20,16 +20,16 @@ export default function AdminAuditLogs() {
     <div className="p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-white">Audit Logs</h1>
-        <p className="text-gray-400 mt-1">
+        <p className="text-muted-foreground mt-1">
           View all admin actions and system events
         </p>
       </div>
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="bg-card border-border">
         <CardContent className="p-6">
           {isLoading ? (
-            <p className="text-center text-gray-400">Loading audit logs...</p>
+            <p className="text-center text-muted-foreground">Loading audit logs...</p>
           ) : data?.logs?.length === 0 ? (
-            <div className="text-center text-gray-400">
+            <div className="text-center text-muted-foreground">
               <p>No audit logs found</p>
               <p className="text-sm mt-2">Admin actions will be logged here</p>
             </div>

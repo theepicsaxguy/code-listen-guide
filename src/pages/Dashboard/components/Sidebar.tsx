@@ -31,23 +31,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
   };
 
   return (
-    <div className={`${isCollapsed ? 'w-20' : 'w-64'} bg-gray-900 border-r border-gray-800 h-screen flex flex-col transition-all duration-300`}>
-      <div className="p-6 border-b border-gray-800 relative">
+    <div className={`${isCollapsed ? 'w-20' : 'w-64'} bg-card border-r border-border h-screen flex flex-col transition-all duration-300`}>
+      <div className="p-6 border-b border-border relative">
         <button
           onClick={onToggleCollapse}
-          className="absolute -right-3 top-6 bg-gray-800 border border-gray-700 rounded-full p-1 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors z-10"
+          className="absolute -right-3 top-6 bg-background border border-border rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors z-10"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Mic className="text-white" size={24} />
+          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Mic className="text-primary-foreground" size={24} />
           </div>
           {!isCollapsed && (
             <div>
-              <div className="font-semibold text-white">Codebase Audio</div>
-              <div className="text-xs text-gray-400">Dashboard</div>
+              <div className="font-semibold text-foreground">Codebase Audio</div>
+              <div className="text-xs text-muted-foreground">Dashboard</div>
             </div>
           )}
         </div>
@@ -59,8 +59,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
             onClick={() => handleNavClick(item.id)}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-lg mb-1 transition-all ${
               activeTab === item.id
-                ? 'bg-gray-800 text-white shadow-lg'
-                : 'text-gray-400 hover:bg-gray-800/50 hover:text-white'
+                ? 'bg-accent text-accent-foreground shadow-lg'
+                : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
             }`}
             title={isCollapsed ? item.label : undefined}
           >
@@ -70,15 +70,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
         ))}
       </nav>
       {user && (
-        <div className="p-4 border-t border-gray-800">
-          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-lg bg-gray-800/50`}>
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-medium text-white flex-shrink-0">
+        <div className="p-4 border-t border-border">
+          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-lg bg-muted`}>
+            <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-sm font-medium text-primary-foreground flex-shrink-0">
               {user.name.split(' ').map(n => n[0]).join('')}
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white truncate">{user.name}</div>
-                <div className="text-xs text-gray-400">{user.subscription_tier} Plan</div>
+                <div className="text-sm font-medium text-foreground truncate">{user.name}</div>
+                <div className="text-xs text-muted-foreground">{user.subscription_tier} Plan</div>
               </div>
             )}
           </div>

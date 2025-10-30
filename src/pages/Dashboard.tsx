@@ -32,10 +32,10 @@ const Dashboard: React.FC = () => {
   // Show loading while checking auth
   if (isAuthLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-950">
+      <div className="flex items-center justify-center h-screen bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -62,7 +62,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-950">
+    <div className="flex h-screen bg-background">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -71,10 +71,10 @@ const Dashboard: React.FC = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div className="flex-1 overflow-auto">
-        <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-10 backdrop-blur-sm bg-gray-900/95">
+        <header className="bg-card border-b border-border sticky top-0 z-10 backdrop-blur-sm bg-card/95">
           <div className="px-8 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4 flex-1">
-              <h1 className="text-2xl font-semibold text-white">
+              <h1 className="text-2xl font-semibold text-foreground">
                 {activeTab === 'home' && 'Overview'}
                 {activeTab === 'audiobooks' && 'Audiobooks'}
                 {activeTab === 'audiobook-detail' && 'Player'}
@@ -83,13 +83,13 @@ const Dashboard: React.FC = () => {
               </h1>
               {(activeTab === 'home' || activeTab === 'audiobooks') && (
                 <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                   <input
                     type="text"
                     placeholder="Search repositories..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 bg-input border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
               )}

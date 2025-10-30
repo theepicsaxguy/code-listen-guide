@@ -70,13 +70,13 @@ export default function chonkieTest() {
           <FileCode2 className="w-8 h-8" />
           chonkie Parse Test
         </h1>
-        <p className="text-gray-400 mt-1">
+        <p className="text-muted-foreground mt-1">
           Test the chonkie parsing pipeline with configurable settings
         </p>
       </div>
 
       {/* Configuration Form */}
-      <div className="bg-gray-800 rounded-lg p-6 space-y-6">
+      <div className="bg-muted rounded-lg p-6 space-y-6">
         <div className="flex items-center gap-2 text-white font-semibold mb-4">
           <Settings className="w-5 h-5" />
           Configuration
@@ -85,7 +85,7 @@ export default function chonkieTest() {
         {/* Repository Settings */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Repository URL *
             </label>
             <input
@@ -93,12 +93,12 @@ export default function chonkieTest() {
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               placeholder="https://github.com/user/repo"
-              className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Git Ref (branch/tag)
             </label>
             <input
@@ -106,7 +106,7 @@ export default function chonkieTest() {
               value={gitRef}
               onChange={(e) => setGitRef(e.target.value)}
               placeholder="main"
-              className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
           </div>
         </div>
@@ -114,7 +114,7 @@ export default function chonkieTest() {
         {/* File Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Include Patterns (comma-separated)
             </label>
             <input
@@ -122,13 +122,13 @@ export default function chonkieTest() {
               value={includePatterns}
               onChange={(e) => setIncludePatterns(e.target.value)}
               placeholder="*.py, *.ts, src/**/*"
-              className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
-            <p className="text-xs text-gray-500 mt-1">Leave empty to include all files</p>
+            <p className="text-xs text-muted-foreground mt-1">Leave empty to include all files</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Exclude Patterns (comma-separated)
             </label>
             <input
@@ -136,15 +136,15 @@ export default function chonkieTest() {
               value={excludePatterns}
               onChange={(e) => setExcludePatterns(e.target.value)}
               placeholder="*test*.py, *.min.js"
-              className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
-            <p className="text-xs text-gray-500 mt-1">Leave empty to exclude nothing</p>
+            <p className="text-xs text-muted-foreground mt-1">Leave empty to exclude nothing</p>
           </div>
         </div>
 
         {/* Size Limit */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Max File Size (KB)
           </label>
           <input
@@ -153,12 +153,12 @@ export default function chonkieTest() {
             onChange={(e) => setMaxFileSizeKb(Number(e.target.value))}
             min="1"
             max="5000"
-            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white focus:outline-none focus:border-blue-500"
           />
         </div>
 
         {/* chonkie Options */}
-        <div className="border-t border-gray-700 pt-6">
+        <div className="border-t border-input pt-6">
           <h3 className="text-white font-medium mb-4">chonkie Features</h3>
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
@@ -166,11 +166,11 @@ export default function chonkieTest() {
                 type="checkbox"
                 checked={enableCodeEnrichment}
                 onChange={(e) => setEnableCodeEnrichment(e.target.checked)}
-                className="w-5 h-5 rounded bg-gray-900 border-gray-700 text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-white">Code Enrichment</div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-muted-foreground">
                   Extract functions, classes, imports, and code structure
                 </div>
               </div>
@@ -181,11 +181,11 @@ export default function chonkieTest() {
                 type="checkbox"
                 checked={enableFormulaEnrichment}
                 onChange={(e) => setEnableFormulaEnrichment(e.target.checked)}
-                className="w-5 h-5 rounded bg-gray-900 border-gray-700 text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-white">Formula Enrichment</div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-muted-foreground">
                   Parse mathematical formulas (useful for scientific papers)
                 </div>
               </div>
@@ -196,11 +196,11 @@ export default function chonkieTest() {
                 type="checkbox"
                 checked={enableTableExtraction}
                 onChange={(e) => setEnableTableExtraction(e.target.checked)}
-                className="w-5 h-5 rounded bg-gray-900 border-gray-700 text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-white">Table Extraction</div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-muted-foreground">
                   Extract tables from documents and markdown files
                 </div>
               </div>
@@ -246,53 +246,53 @@ export default function chonkieTest() {
         <div className="space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gray-800 rounded-lg p-6">
+            <div className="bg-muted rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400 text-sm">Files Parsed</span>
+                <span className="text-muted-foreground text-sm">Files Parsed</span>
                 <CheckCircle className="w-5 h-5 text-green-500" />
               </div>
               <div className="text-3xl font-bold text-white">
                 {result.summary.total_files}
               </div>
-              <div className="text-sm text-gray-400 mt-1">
+              <div className="text-sm text-muted-foreground mt-1">
                 {(result.summary.total_size_bytes / 1024).toFixed(1)} KB total
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-6">
+            <div className="bg-muted rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400 text-sm">Success Rate</span>
+                <span className="text-muted-foreground text-sm">Success Rate</span>
                 <CheckCircle className="w-5 h-5 text-green-500" />
               </div>
               <div className="text-3xl font-bold text-white">
                 {result.summary.parse_success_rate}%
               </div>
-              <div className="text-sm text-gray-400 mt-1">
+              <div className="text-sm text-muted-foreground mt-1">
                 {result.summary.languages.length} languages detected
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-6">
+            <div className="bg-muted rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-400 text-sm">Execution Time</span>
+                <span className="text-muted-foreground text-sm">Execution Time</span>
                 <Activity className="w-5 h-5 text-blue-500" />
               </div>
               <div className="text-3xl font-bold text-white">
                 {result.execution_time_seconds}s
               </div>
-              <div className="text-sm text-gray-400 mt-1">
+              <div className="text-sm text-muted-foreground mt-1">
                 {(result.summary.total_size_bytes / result.execution_time_seconds / 1024).toFixed(1)} KB/s
               </div>
             </div>
           </div>
 
           {/* Details */}
-          <div className="bg-gray-800 rounded-lg p-6 space-y-4">
+          <div className="bg-muted rounded-lg p-6 space-y-4">
             <h3 className="text-white font-semibold text-lg">Details</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="text-gray-400 text-sm mb-2">Languages</h4>
+                <h4 className="text-muted-foreground text-sm mb-2">Languages</h4>
                 <div className="flex flex-wrap gap-2">
                   {result.summary.languages.length > 0 ? (
                     result.summary.languages.map((lang) => (
@@ -304,13 +304,13 @@ export default function chonkieTest() {
                       </span>
                     ))
                   ) : (
-                    <span className="text-gray-500">None detected</span>
+                    <span className="text-muted-foreground">None detected</span>
                   )}
                 </div>
               </div>
 
               <div>
-                <h4 className="text-gray-400 text-sm mb-2">Frameworks</h4>
+                <h4 className="text-muted-foreground text-sm mb-2">Frameworks</h4>
                 <div className="flex flex-wrap gap-2">
                   {result.summary.frameworks.length > 0 ? (
                     result.summary.frameworks.map((fw) => (
@@ -322,13 +322,13 @@ export default function chonkieTest() {
                       </span>
                     ))
                   ) : (
-                    <span className="text-gray-500">None detected</span>
+                    <span className="text-muted-foreground">None detected</span>
                   )}
                 </div>
               </div>
 
               <div>
-                <h4 className="text-gray-400 text-sm mb-2">Patterns</h4>
+                <h4 className="text-muted-foreground text-sm mb-2">Patterns</h4>
                 <div className="flex flex-wrap gap-2">
                   {result.summary.patterns.length > 0 ? (
                     result.summary.patterns.map((pattern) => (
@@ -340,29 +340,29 @@ export default function chonkieTest() {
                       </span>
                     ))
                   ) : (
-                    <span className="text-gray-500">None detected</span>
+                    <span className="text-muted-foreground">None detected</span>
                   )}
                 </div>
               </div>
 
               <div>
-                <h4 className="text-gray-400 text-sm mb-2">Entry Points</h4>
+                <h4 className="text-muted-foreground text-sm mb-2">Entry Points</h4>
                 <div className="space-y-1">
                   {result.summary.entry_points.length > 0 ? (
                     result.summary.entry_points.map((entry) => (
-                      <div key={entry} className="text-sm text-gray-300 font-mono">
+                      <div key={entry} className="text-sm text-foreground font-mono">
                         {entry}
                       </div>
                     ))
                   ) : (
-                    <span className="text-gray-500">None detected</span>
+                    <span className="text-muted-foreground">None detected</span>
                   )}
                 </div>
               </div>
             </div>
 
             {result.summary.warnings.length > 0 && (
-              <div className="border-t border-gray-700 pt-4">
+              <div className="border-t border-input pt-4">
                 <h4 className="text-yellow-400 text-sm mb-2">Warnings</h4>
                 <div className="space-y-1">
                   {result.summary.warnings.map((warning, idx) => (
@@ -376,7 +376,7 @@ export default function chonkieTest() {
           </div>
 
           {/* Sample Files */}
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="bg-muted rounded-lg p-6">
             <h3 className="text-white font-semibold text-lg mb-4">
               Sample Files ({Math.min(5, Object.keys(result.modules).length)} of {Object.keys(result.modules).length})
             </h3>
@@ -384,15 +384,15 @@ export default function chonkieTest() {
               {Object.entries(result.modules)
                 .slice(0, 5)
                 .map(([path, data]: [string, any]) => (
-                  <div key={path} className="border border-gray-700 rounded-lg p-4">
+                  <div key={path} className="border border-input rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="font-mono text-sm text-blue-400">{path}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground">
                         {data.metadata.size_bytes} bytes
                       </div>
                     </div>
                     {data.language && (
-                      <div className="text-xs text-gray-400 mb-2">
+                      <div className="text-xs text-muted-foreground mb-2">
                         Language: {data.language}
                       </div>
                     )}
@@ -401,7 +401,7 @@ export default function chonkieTest() {
                         {data.metadata.tags.slice(0, 5).map((tag: string) => (
                           <span
                             key={tag}
-                            className="px-2 py-0.5 bg-gray-900 text-gray-400 rounded text-xs"
+                            className="px-2 py-0.5 bg-card text-muted-foreground rounded text-xs"
                           >
                             {tag}
                           </span>
@@ -409,8 +409,8 @@ export default function chonkieTest() {
                       </div>
                     )}
                     {data.content && (
-                      <div className="mt-2 bg-gray-900 rounded p-3 overflow-auto max-h-40">
-                        <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">
+                      <div className="mt-2 bg-card rounded p-3 overflow-auto max-h-40">
+                        <pre className="text-xs text-foreground font-mono whitespace-pre-wrap">
                           {data.content.substring(0, 300)}
                           {data.content.length > 300 && "..."}
                         </pre>

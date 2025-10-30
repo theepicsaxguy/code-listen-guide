@@ -84,13 +84,13 @@ export default function ChonkieTest() {
           <FileCode2 className="w-8 h-8" />
           Chonkie Parse Test
         </h1>
-        <p className="text-gray-400 mt-1">
+        <p className="text-muted-foreground mt-1">
           Test the chonkie parsing pipeline with configurable settings
         </p>
       </div>
 
       {/* Configuration Form */}
-      <div className="bg-gray-800 rounded-lg p-6 space-y-6">
+      <div className="bg-muted rounded-lg p-6 space-y-6">
         <div className="flex items-center gap-2 text-white font-semibold mb-4">
           <Settings className="w-5 h-5" />
           Configuration
@@ -99,7 +99,7 @@ export default function ChonkieTest() {
         {/* Repository Settings */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Repository URL *
             </label>
             <input
@@ -107,12 +107,12 @@ export default function ChonkieTest() {
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               placeholder="https://github.com/user/repo"
-              className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Git Ref (branch/tag)
             </label>
             <input
@@ -120,7 +120,7 @@ export default function ChonkieTest() {
               value={gitRef}
               onChange={(e) => setGitRef(e.target.value)}
               placeholder="main"
-              className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
           </div>
         </div>
@@ -128,7 +128,7 @@ export default function ChonkieTest() {
         {/* File Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Include Patterns (comma-separated)
             </label>
             <input
@@ -136,13 +136,13 @@ export default function ChonkieTest() {
               value={includePatterns}
               onChange={(e) => setIncludePatterns(e.target.value)}
               placeholder="*.py, *.ts, src/**/*"
-              className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
-            <p className="text-xs text-gray-500 mt-1">Leave empty to include all files</p>
+            <p className="text-xs text-muted-foreground mt-1">Leave empty to include all files</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Exclude Patterns (comma-separated)
             </label>
             <input
@@ -150,15 +150,15 @@ export default function ChonkieTest() {
               value={excludePatterns}
               onChange={(e) => setExcludePatterns(e.target.value)}
               placeholder="*test*.py, *.min.js"
-              className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
-            <p className="text-xs text-gray-500 mt-1">Leave empty to exclude nothing</p>
+            <p className="text-xs text-muted-foreground mt-1">Leave empty to exclude nothing</p>
           </div>
         </div>
 
         {/* Size Limit */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Max File Size (KB)
           </label>
           <input
@@ -167,12 +167,12 @@ export default function ChonkieTest() {
             onChange={(e) => setMaxFileSizeKb(Number(e.target.value))}
             min="1"
             max="5000"
-            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white focus:outline-none focus:border-blue-500"
           />
         </div>
 
         {/* Chonkie Options */}
-        <div className="border-t border-gray-700 pt-6">
+        <div className="border-t border-input pt-6">
           <h3 className="text-white font-medium mb-4">Chonkie Features</h3>
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
@@ -180,11 +180,11 @@ export default function ChonkieTest() {
                 type="checkbox"
                 checked={enableCodeEnrichment}
                 onChange={(e) => setEnableCodeEnrichment(e.target.checked)}
-                className="w-5 h-5 rounded bg-gray-900 border-gray-700 text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-white">Code Enrichment</div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-muted-foreground">
                   Extract functions, classes, imports, and code structure
                 </div>
               </div>
@@ -195,11 +195,11 @@ export default function ChonkieTest() {
                 type="checkbox"
                 checked={enableFormulaEnrichment}
                 onChange={(e) => setEnableFormulaEnrichment(e.target.checked)}
-                className="w-5 h-5 rounded bg-gray-900 border-gray-700 text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-white">Formula Enrichment</div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-muted-foreground">
                   Parse mathematical formulas (useful for scientific papers)
                 </div>
               </div>
@@ -210,11 +210,11 @@ export default function ChonkieTest() {
                 type="checkbox"
                 checked={enableTableExtraction}
                 onChange={(e) => setEnableTableExtraction(e.target.checked)}
-                className="w-5 h-5 rounded bg-gray-900 border-gray-700 text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-white">Table Extraction</div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-muted-foreground">
                   Extract tables from documents and markdown files
                 </div>
               </div>

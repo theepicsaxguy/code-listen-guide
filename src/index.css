@@ -7,7 +7,7 @@ All colors MUST be HSL.
 @theme {
   /* Modern vibrant color palette - Electric Purple & Cyan */
   --color-border: 240 15% 20%;
-  --color-input: 240 10% 16%;
+  --color-input: 240 10% 20%;
   --color-ring: 270 85% 68%;
   --color-background: 240 15% 8%;
   --color-foreground: 240 5% 98%;
@@ -85,7 +85,7 @@ All colors MUST be HSL.
     --warning-foreground: 240 10% 98%;
 
     --border: 240 15% 20%;
-    --input: 240 10% 16%;
+    --input: 240 10% 20%;
     --ring: 270 85% 68%;
 
     --radius: 1rem;
@@ -152,7 +152,7 @@ All colors MUST be HSL.
     --warning: 25 95% 58%;
 
     --border: 240 15% 20%;
-    --input: 240 10% 16%;
+    --input: 240 10% 20%;
     --ring: 270 85% 68%;
   }
 }

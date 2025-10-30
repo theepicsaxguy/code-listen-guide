@@ -52,7 +52,7 @@ export default function ContentVersioning() {
     const colors: Record<string, string> = {
       published: "bg-green-500/10 text-green-500 border-green-500/20",
       draft: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-      archived: "bg-gray-500/10 text-gray-500 border-gray-500/20",
+      archived: "bg-gray-500/10 text-muted-foreground border-gray-500/20",
     };
     return colors[status] || colors.draft;
   };
@@ -66,7 +66,7 @@ export default function ContentVersioning() {
         <p className="text-muted-foreground mt-2">Manage content versions and rollback when needed</p>
       </div>
 
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -85,7 +85,7 @@ export default function ContentVersioning() {
 
       <div className="grid gap-4">
         {contentList?.content?.map((content: ContentSummary) => (
-          <Card key={content.id} className="bg-gray-900 border-gray-800 hover:shadow-glow transition-shadow">
+          <Card key={content.id} className="bg-card border-border hover:shadow-glow transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -112,7 +112,7 @@ export default function ContentVersioning() {
 
           <div className="space-y-4 mt-4">
             {versions?.versions?.map((version: ContentVersion, index: number) => (
-              <Card key={version.id} className="bg-gray-900 border-gray-800">
+              <Card key={version.id} className="bg-card border-border">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 flex-1">

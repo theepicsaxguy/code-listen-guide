@@ -99,7 +99,7 @@ export default function JobTracing() {
         </p>
       </div>
 
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -123,7 +123,7 @@ export default function JobTracing() {
       </Card>
 
       {searchedJobId && !jobTrace && !isLoading && (
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="bg-card border-border">
           <CardContent className="text-center py-12">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-lg font-semibold mb-2">No job found</p>
@@ -135,7 +135,7 @@ export default function JobTracing() {
       )}
 
       {isLoading && (
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="bg-card border-border">
           <CardContent className="text-center py-12">
             <div className="flex flex-col items-center gap-4">
               <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
@@ -147,7 +147,7 @@ export default function JobTracing() {
 
       {jobTrace && (
         <>
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle>Job Overview</CardTitle>
             </CardHeader>
@@ -207,7 +207,7 @@ export default function JobTracing() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle>Stage Timeline</CardTitle>
             </CardHeader>

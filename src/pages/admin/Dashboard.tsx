@@ -44,7 +44,7 @@ export default function AdminDashboard() {
     <div className="p-8 space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-gray-400 mt-1">
+        <p className="text-muted-foreground mt-1">
           Welcome back! Here's an overview of your system.
         </p>
       </div>
@@ -79,18 +79,18 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+        <div className="bg-card border border-border rounded-lg p-6">
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-purple-500" />
             Recent Activity
           </h3>
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-muted-foreground">
             <p>Activity tracking coming soon</p>
             <p className="text-sm mt-2">Check the Content and Users pages for detailed information</p>
           </div>
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+        <div className="bg-card border border-border rounded-lg p-6">
           <h3 className="text-lg font-semibold text-white mb-4">System Status</h3>
           <div className="space-y-4">
             <div>
