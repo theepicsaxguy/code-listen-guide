@@ -22,7 +22,7 @@ from backend.api.schemas.parse import (
     RepositorySummary,
 )
 from backend.models.user import User
-from backend.services.docling_pipeline import chonkiePipeline
+from backend.services.chonkie_pipeline import chonkiePipeline
 from backend.tools.git_tools import clone_repository
 
 logger = logging.getLogger(__name__)
