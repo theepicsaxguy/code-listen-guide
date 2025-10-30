@@ -79,10 +79,10 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-gradient-card rounded-xl p-6 border border-border/50 card-elevation">
+        <div className="bg-gradient-card-primary rounded-xl p-6 card-elevation">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary/20 flex items-center justify-center shadow-md shadow-primary/10">
-              <TrendingUp className="h-5 w-5 icon-gradient" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-md shadow-primary/20">
+              <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground">Recent Activity</h3>
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-gradient-card rounded-xl p-6 border border-border/50 card-elevation">
+        <div className="bg-gradient-card-accent rounded-xl p-6 card-elevation">
           <h3 className="text-lg font-bold text-foreground mb-6">System Status</h3>
           <div className="space-y-5">
             <div>
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
                 <span className="text-sm font-semibold text-foreground">API Health</span>
                 <span className="text-sm font-bold text-success bg-success/10 px-2.5 py-1 rounded-full">Operational</span>
               </div>
-              <div className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-secondary/30 rounded-full h-2.5 overflow-hidden">
                 <div className="bg-gradient-to-r from-success to-success/80 h-full rounded-full w-[100%] shadow-sm shadow-success/30" />
               </div>
             </div>
@@ -112,9 +112,9 @@ export default function AdminDashboard() {
                 <span className="text-sm font-semibold text-foreground">Active Jobs</span>
                 <span className="text-sm font-bold text-primary">{stats?.active_jobs || 0}</span>
               </div>
-              <div className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-secondary/30 rounded-full h-2.5 overflow-hidden">
                 <div 
-                  className="bg-gradient-to-r from-primary to-accent h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" 
+                  className="bg-gradient-primary h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" 
                   style={{ width: `${Math.min(100, (stats?.active_jobs || 0) * 10)}%` }}
                 />
               </div>
@@ -124,9 +124,9 @@ export default function AdminDashboard() {
                 <span className="text-sm font-semibold text-foreground">Total Users</span>
                 <span className="text-sm font-bold text-primary">{stats?.total_users || 0}</span>
               </div>
-              <div className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-secondary/30 rounded-full h-2.5 overflow-hidden">
                 <div 
-                  className="bg-gradient-to-r from-primary to-accent h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" 
+                  className="bg-gradient-accent h-full rounded-full transition-all duration-500 shadow-sm shadow-accent/30" 
                   style={{ width: `${Math.min(100, (stats?.total_users || 0))}%` }}
                 />
               </div>

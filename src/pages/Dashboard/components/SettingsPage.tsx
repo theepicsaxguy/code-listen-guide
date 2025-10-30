@@ -34,8 +34,8 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="bg-gradient-card border border-border/50 rounded-xl overflow-hidden card-elevation">
-        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
+      <div className="bg-gradient-card-primary rounded-xl overflow-hidden card-elevation">
+        <div className="p-6 bg-gradient-to-r from-primary/15 to-accent/12">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-primary/20 flex items-center justify-center shadow-md shadow-primary/10">
               <Check className="h-5 w-5 icon-gradient" size={20} />
@@ -50,7 +50,7 @@ export const SettingsPage: React.FC = () => {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 bg-card border border-border/50 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 hover:border-border transition-all"
+              className="w-full px-4 py-3 bg-card rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:bg-primary/5 transition-all"
             />
           </div>
           <div>
@@ -59,10 +59,10 @@ export const SettingsPage: React.FC = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-card border border-border/50 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 hover:border-border transition-all"
+              className="w-full px-4 py-3 bg-card rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:bg-primary/5 transition-all"
             />
           </div>
-          <div className="flex items-center justify-between pt-4 border-t border-border/30">
+          <div className="flex items-center justify-between pt-6 bg-gradient-to-r from-transparent via-primary/5 to-transparent">
             <div>
               <div className="text-sm font-semibold text-foreground mb-2">Current Plan</div>
               <PlanBadge plan={user.subscription_tier} />
@@ -73,8 +73,8 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="bg-gradient-card border border-border/50 rounded-xl overflow-hidden card-elevation">
-        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-accent/5 to-primary/5">
+      <div className="bg-gradient-card-accent rounded-xl overflow-hidden card-elevation">
+        <div className="p-6 bg-gradient-to-r from-accent/15 to-primary/12">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-accent/20 flex items-center justify-center shadow-md shadow-accent/10">
               <Check className="h-5 w-5 icon-gradient-accent" size={20} />
@@ -83,7 +83,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
         <div className="p-6 space-y-5">
-          <div className="flex items-center justify-between p-4 rounded-xl bg-card/50 border border-border/30 hover:border-primary/30 transition-all">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-card/70 hover:bg-primary/10 transition-all hover-card">
             <div>
               <div className="text-sm font-bold text-foreground mb-1">Email Notifications</div>
               <div className="text-xs text-muted-foreground">Receive updates about your account</div>
@@ -93,7 +93,7 @@ export const SettingsPage: React.FC = () => {
               className={`relative w-14 h-7 rounded-full transition-all shadow-lg ${
                 emailNotifications 
                   ? 'bg-gradient-primary shadow-primary/30' 
-                  : 'bg-muted border border-border'
+                  : 'bg-muted'
               }`}
             >
               <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full transition-transform shadow-md ${
@@ -101,7 +101,7 @@ export const SettingsPage: React.FC = () => {
               }`} />
             </button>
           </div>
-          <div className="flex items-center justify-between p-4 rounded-xl bg-card/50 border border-border/30 hover:border-primary/30 transition-all">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-card/70 hover:bg-primary/10 transition-all hover-card">
             <div>
               <div className="text-sm font-bold text-foreground mb-1">Processing Notifications</div>
               <div className="text-xs text-muted-foreground">Get notified when audiobooks are complete</div>
@@ -111,7 +111,7 @@ export const SettingsPage: React.FC = () => {
               className={`relative w-14 h-7 rounded-full transition-all shadow-lg ${
                 processingNotifications 
                   ? 'bg-gradient-accent shadow-accent/30' 
-                  : 'bg-muted border border-border'
+                  : 'bg-muted'
               }`}
             >
               <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full transition-transform shadow-md ${

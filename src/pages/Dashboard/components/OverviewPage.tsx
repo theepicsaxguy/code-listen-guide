@@ -49,7 +49,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-stat rounded-xl p-6 transition-all border border-border/50 hover-card card-elevation group relative overflow-hidden">
+        <div className="bg-gradient-stat rounded-xl p-6 transition-all hover-card card-elevation group relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity" />
           <div className="flex items-center justify-between mb-4 relative z-10">
             <div className="w-12 h-12 rounded-xl bg-gradient-primary/20 flex items-center justify-center shadow-lg shadow-primary/10">
@@ -64,7 +64,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           <div className="text-sm font-semibold text-foreground mb-1 relative z-10">Total Audiobooks</div>
           <div className="text-xs text-muted-foreground relative z-10">{completedBooks.length} completed</div>
         </div>
-        <div className="bg-gradient-stat rounded-xl p-6 transition-all border border-border/50 hover-card card-elevation group relative overflow-hidden">
+        <div className="bg-gradient-stat rounded-xl p-6 transition-all hover-card card-elevation group relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity" />
           <div className="flex items-center justify-between mb-4 relative z-10">
             <div className="w-12 h-12 rounded-xl bg-gradient-accent/20 flex items-center justify-center shadow-lg shadow-accent/10">
@@ -75,7 +75,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           <div className="text-sm font-semibold text-foreground mb-1 relative z-10">Hours Generated</div>
           <div className="text-xs text-muted-foreground relative z-10">Total audio content</div>
         </div>
-        <div className="bg-gradient-stat rounded-xl p-6 transition-all border border-border/50 hover-card card-elevation group relative overflow-hidden">
+        <div className="bg-gradient-stat rounded-xl p-6 transition-all hover-card card-elevation group relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity" />
           <div className="flex items-center justify-between mb-4 relative z-10">
             <div className="w-12 h-12 rounded-xl bg-gradient-accent/20 flex items-center justify-center shadow-lg shadow-accent/10">
@@ -87,7 +87,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           <div className="text-xs text-muted-foreground relative z-10">Available to use</div>
         </div>
       </div>
-      <div className="bg-gradient-card rounded-xl p-8 border border-border/50 card-elevation">
+      <div className="bg-gradient-card-accent rounded-xl p-8 card-elevation">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h3 className="text-xl font-bold text-foreground mb-1">Usage This Week</h3>
@@ -102,9 +102,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
                   className="w-full bg-gradient-to-t from-primary via-primary/90 to-accent rounded-t-xl hover:from-primary/95 hover:to-accent/95 transition-all cursor-pointer relative group/bar min-h-[8px] shadow-lg shadow-primary/20"
                   style={{ height: `${(data.count / maxCount) * 100}%`, minHeight: '8px' }}
                 >
-                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-card border border-border/50 text-foreground text-xs font-semibold px-3 py-1.5 rounded-lg opacity-0 group-hover/bar:opacity-100 transition-all whitespace-nowrap shadow-xl card-elevation pointer-events-none z-20">
+                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-card text-foreground text-xs font-semibold px-3 py-1.5 rounded-lg opacity-0 group-hover/bar:opacity-100 transition-all whitespace-nowrap shadow-xl card-elevation pointer-events-none z-20">
                     {data.count} audiobooks
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-card border-r border-b border-border/50 rotate-45" />
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-card rotate-45" />
                   </div>
                 </div>
               </div>
@@ -113,8 +113,8 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           ))}
         </div>
       </div>
-      <div className="bg-gradient-card rounded-xl border border-border/50 overflow-hidden card-elevation">
-        <div className="p-6 border-b border-border/30 bg-card/50">
+      <div className="bg-gradient-card-secondary rounded-xl overflow-hidden card-elevation">
+        <div className="p-6 bg-gradient-to-r from-secondary/10 to-muted/10">
           <h2 className="text-xl font-bold text-foreground">Recent Activity</h2>
           <p className="text-sm text-muted-foreground mt-1">Your latest audiobook projects</p>
         </div>
@@ -122,7 +122,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           {audiobooks.slice(0, 5).map((job: Job, index: number) => (
             <div
               key={job.id}
-              className="p-6 hover:bg-card/50 transition-all cursor-pointer border-b border-border/20 last:border-b-0 group hover-card"
+              className="p-6 hover:bg-primary/5 transition-all cursor-pointer group hover-card"
               onClick={() => onNavigateToAudiobook(job.id)}
             >
               <div className="flex items-center gap-4">
@@ -140,23 +140,23 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
                       {formatDate(job.created_at)}
                     </span>
                     {job.estimated_chapters && (
-                      <span className="px-2.5 py-1 bg-muted/50 rounded-md font-medium">
+                      <span className="px-2.5 py-1 bg-primary/10 text-primary rounded-md font-semibold">
                         {job.estimated_chapters} chapters
                       </span>
                     )}
                     {job.metadata?.language && (
-                      <span className="px-2.5 py-1 bg-primary/10 text-primary rounded-md text-xs font-semibold border border-primary/20">
+                      <span className="px-2.5 py-1 bg-accent/10 text-accent rounded-md text-xs font-semibold">
                         {job.metadata.language}
                       </span>
                     )}
                   </div>
                   {job.status !== 'completed' && job.status !== 'failed' && (
-                    <div className="mt-4 w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
-                      <div className="bg-gradient-to-r from-primary to-accent h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" style={{ width: `${job.progress_percentage}%` }} />
+                    <div className="mt-4 w-full bg-secondary/30 rounded-full h-2.5 overflow-hidden">
+                      <div className="bg-gradient-primary h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" style={{ width: `${job.progress_percentage}%` }} />
                     </div>
                   )}
                   {job.status === 'failed' && job.error_message && (
-                    <div className="mt-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                    <div className="mt-3 p-3 bg-destructive/20 rounded-lg">
                       <div className="text-xs text-destructive flex items-center gap-2 font-medium">
                         <AlertCircle size={14} />
                         {job.error_message}

@@ -51,14 +51,14 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
             placeholder="Search audiobooks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-card border border-border/50 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all hover:border-border"
+            className="w-full pl-11 pr-4 py-3 bg-card rounded-xl text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:bg-primary/5 transition-all"
           />
         </div>
         <div className="flex gap-3">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="px-4 py-3 bg-card border border-border/50 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all hover:border-border"
+            className="px-4 py-3 bg-card rounded-xl text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:bg-primary/5 transition-all"
           >
             <option value="all">All Status</option>
             <option value="completed">Completed</option>
@@ -68,7 +68,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-4 py-3 bg-card border border-border/50 rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all hover:border-border"
+            className="px-4 py-3 bg-card rounded-xl text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:bg-primary/5 transition-all"
           >
             <option value="date">Sort by Date</option>
             <option value="name">Sort by Name</option>
@@ -80,7 +80,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
         {filteredAudiobooks.map((book: Job) => (
           <div
             key={book.id}
-            className="bg-gradient-card border border-border/50 rounded-xl p-6 transition-all cursor-pointer group hover-card card-elevation relative overflow-hidden"
+            className="bg-gradient-card-primary rounded-xl p-6 transition-all cursor-pointer group hover-card card-elevation relative overflow-hidden"
             onClick={() => onNavigateToAudiobook(book.id)}
           >
             <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-3 transition-opacity" />
@@ -100,7 +100,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
               {book.metadata?.frameworks && book.metadata.frameworks.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
                   {book.metadata.frameworks.map((framework: string, idx: number) => (
-                    <span key={idx} className="px-2.5 py-1 bg-muted/50 rounded-md text-xs font-semibold text-muted-foreground border border-border/30">{framework}</span>
+                    <span key={idx} className="px-2.5 py-1 bg-secondary/30 rounded-md text-xs font-semibold text-foreground">{framework}</span>
                   ))}
                 </div>
               )}
@@ -110,8 +110,8 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
                     <span className="text-muted-foreground font-medium">Processing...</span>
                     <span className="text-foreground font-bold">{book.progress_percentage}%</span>
                   </div>
-                  <div className="w-full bg-muted/50 rounded-full h-2.5 overflow-hidden">
-                    <div className="bg-gradient-to-r from-primary to-accent h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" style={{ width: `${book.progress_percentage}%` }} />
+                  <div className="w-full bg-secondary/30 rounded-full h-2.5 overflow-hidden">
+                    <div className="bg-gradient-primary h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" style={{ width: `${book.progress_percentage}%` }} />
                   </div>
                 </div>
               )}
@@ -124,7 +124,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
                     </span>
                   )}
                   {book.estimated_chapters && (
-                    <span className="px-2.5 py-1 bg-muted/50 rounded-md font-medium">
+                    <span className="px-2.5 py-1 bg-primary/10 text-primary rounded-md font-semibold">
                       {book.estimated_chapters} chapters
                     </span>
                   )}
@@ -160,7 +160,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
         ))}
       </div>
       {filteredAudiobooks.length === 0 && (
-        <div className="text-center py-16 bg-gradient-card border border-border/50 rounded-xl card-elevation">
+        <div className="text-center py-16 bg-gradient-card-secondary rounded-xl card-elevation">
           <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <Library size={40} className="text-muted-foreground" />
           </div>

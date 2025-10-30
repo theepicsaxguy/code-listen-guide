@@ -169,17 +169,42 @@ async def create_payment_intent(
     user_email: str,
     customer_id: Optional[str] = None,
     currency: str = "usd",
+    create_customer_if_missing: bool = True,
 ) -> PaymentIntentResult:
+    """
+    Create a Stripe payment intent for a job.
+    
+    If customer_id is None and create_customer_if_missing is True,
+    creates a Stripe customer first.
+    """
     service = get_stripe_service()
+    
+    # Create customer if missing and requested
+    final_customer_id = customer_id
+    if not final_customer_id and create_customer_if_missing:
+        try:
+            final_customer_id = await service.create_customer(email=user_email)
+            logger.info(
+                "Created new Stripe customer",
+                extra={"customer_id": final_customer_id, "email": user_email},
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to create Stripe customer",
+                extra={"email": user_email, "error": str(e)},
+                exc_info=True,
+            )
+            # Continue without customer_id - Stripe will create one automatically
+    
     metadata = {"job_id": job_id, "user_email": user_email}
     logger.info(
         "Creating Stripe payment intent",
-        extra={"job_id": job_id, "amount": amount_cents},
+        extra={"job_id": job_id, "amount": amount_cents, "customer_id": final_customer_id},
     )
     return await service.create_payment_intent(
         amount_cents=amount_cents,
         currency=currency,
-        customer_id=customer_id,
+        customer_id=final_customer_id,
         metadata=metadata,
     )
 

@@ -91,8 +91,8 @@ export const BillingPage: React.FC = () => {
   return (
     <div className="max-w-6xl space-y-6">
       {/* Current Plan Overview */}
-      <div className="bg-gradient-card border border-border/50 rounded-xl overflow-hidden card-elevation">
-        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
+      <div className="bg-gradient-card-primary rounded-xl overflow-hidden card-elevation">
+        <div className="p-6 bg-gradient-to-r from-primary/10 to-accent/8">
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -135,8 +135,8 @@ export const BillingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-border/30">
-            <div className="p-5 bg-gradient-stat border border-border/50 rounded-xl hover-card">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
+            <div className="p-5 bg-gradient-stat rounded-xl hover-card">
               <div className="flex items-center gap-2.5 mb-3">
                 <CreditCard className="h-5 w-5 text-primary" />
                 <span className="text-sm text-muted-foreground font-semibold">Monthly Credits</span>
@@ -145,7 +145,7 @@ export const BillingPage: React.FC = () => {
                 {typeof currentPlan.credits === 'number' ? currentPlan.credits : '∞'}
               </div>
             </div>
-            <div className="p-5 bg-gradient-stat border border-border/50 rounded-xl hover-card">
+            <div className="p-5 bg-gradient-stat rounded-xl hover-card">
               <div className="flex items-center gap-2.5 mb-3">
                 <DollarSign className="h-5 w-5 text-success" />
                 <span className="text-sm text-muted-foreground font-semibold">This Month</span>
@@ -154,7 +154,7 @@ export const BillingPage: React.FC = () => {
                 ${(monthlySpend / 100).toFixed(2)}
               </div>
             </div>
-            <div className="p-5 bg-gradient-stat border border-border/50 rounded-xl hover-card">
+            <div className="p-5 bg-gradient-stat rounded-xl hover-card">
               <div className="flex items-center gap-2.5 mb-3">
                 <FileText className="h-5 w-5 text-accent" />
                 <span className="text-sm text-muted-foreground font-semibold">Total Spent</span>
@@ -167,8 +167,8 @@ export const BillingPage: React.FC = () => {
       </div>
 
       {/* Payment History */}
-      <div className="bg-gradient-card border border-border/50 rounded-xl overflow-hidden card-elevation">
-        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-accent/5 to-primary/5">
+      <div className="bg-gradient-card-accent rounded-xl overflow-hidden card-elevation">
+        <div className="p-6 bg-gradient-to-r from-accent/10 to-primary/8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-accent/20 flex items-center justify-center shadow-md shadow-accent/10">
               <Calendar className="h-5 w-5 icon-gradient-accent" />
@@ -185,11 +185,11 @@ export const BillingPage: React.FC = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : payments.length > 0 ? (
-            <div className="divide-y divide-border/30">
+            <div className="space-y-2">
               {payments.map((payment) => (
-                <div key={payment.id} className="py-4 flex items-center justify-between hover:bg-card/50 px-3 rounded-xl transition-all hover-card">
+                <div key={payment.id} className="py-4 flex items-center justify-between hover:bg-primary/5 px-3 rounded-xl transition-all hover-card">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-primary/20 rounded-xl flex items-center justify-center border border-primary/30">
+                    <div className="w-12 h-12 bg-gradient-primary/30 rounded-xl flex items-center justify-center">
                       <Calendar className="h-6 w-6 text-primary" />
                     </div>
                     <div>
@@ -210,8 +210,8 @@ export const BillingPage: React.FC = () => {
                     <span
                       className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${
                         payment.status === 'succeeded' 
-                          ? 'bg-success/10 text-success border border-success/30' 
-                          : 'bg-destructive/10 text-destructive border border-destructive/30'
+                          ? 'bg-success/20 text-success' 
+                          : 'bg-destructive/20 text-destructive'
                       }`}
                     >
                       {payment.status}
@@ -224,8 +224,8 @@ export const BillingPage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="p-12 text-center bg-card/30 rounded-xl border border-border/30">
-              <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="p-12 text-center bg-secondary/30 rounded-xl">
+              <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">No payment history</h3>
@@ -239,8 +239,8 @@ export const BillingPage: React.FC = () => {
       {/* Upgrade Dialog */}
       {showUpgradeDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-card border border-border/50 rounded-xl shadow-2xl card-elevation">
-            <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-card-primary rounded-xl shadow-2xl card-elevation">
+            <div className="p-6 bg-gradient-to-r from-primary/15 to-accent/12">
               <h2 className="text-2xl font-bold text-foreground">Upgrade Your Plan</h2>
               <p className="text-sm text-muted-foreground mt-1 font-medium">Choose a plan that fits your needs</p>
             </div>
@@ -249,7 +249,9 @@ export const BillingPage: React.FC = () => {
               {plans.filter(p => p.id !== 'free').map((plan) => (
                 <label
                   key={plan.id}
-                  className="flex items-start p-5 rounded-xl cursor-pointer border-2 border-border/30 hover:border-primary/50 bg-card/50 hover:bg-card transition-all hover-card"
+                  className={`flex items-start p-5 rounded-xl cursor-pointer bg-card/70 hover:bg-primary/10 transition-all hover-card ${
+                    selectedPlan === plan.id ? 'bg-primary/10 ring-2 ring-primary' : ''
+                  }`}
                   htmlFor={plan.id}
                 >
                   <input
@@ -259,7 +261,7 @@ export const BillingPage: React.FC = () => {
                     value={plan.id}
                     checked={selectedPlan === plan.id}
                     onChange={() => setSelectedPlan(plan.id)}
-                    className="mt-1 h-5 w-5 text-primary focus:ring-primary border-border accent-primary"
+                    className="mt-1 h-5 w-5 text-primary focus:ring-primary accent-primary"
                   />
                   <div className="ml-4 flex-1">
                     <div className="flex items-center justify-between mb-2">
@@ -284,10 +286,10 @@ export const BillingPage: React.FC = () => {
               ))}
             </div>
 
-            <div className="p-6 flex justify-end space-x-3 border-t border-border/30">
+            <div className="p-6 flex justify-end space-x-3 bg-gradient-to-r from-secondary/5 to-muted/5">
               <button 
                 onClick={() => setShowUpgradeDialog(false)} 
-                className="px-6 py-3 bg-card border border-border/50 hover:bg-muted text-foreground rounded-xl font-semibold transition-all"
+                className="px-6 py-3 bg-secondary/50 hover:bg-secondary text-foreground rounded-xl font-semibold transition-all"
               >
                 Cancel
               </button>

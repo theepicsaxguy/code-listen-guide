@@ -197,8 +197,8 @@ export default function AgentTest() {
         {/* Agent Test Tab */}
         <TabsContent value="agent" className="space-y-6">
           {/* Configuration Card */}
-          <Card className="bg-gradient-card border border-border/50 card-elevation">
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 border-b border-border/30">
+          <Card className="bg-gradient-card-primary card-elevation">
+            <CardHeader className="bg-gradient-to-r from-primary/15 to-accent/12">
               <CardTitle className="flex items-center gap-3 text-xl">
                 <div className="w-10 h-10 rounded-xl bg-gradient-primary/20 flex items-center justify-center shadow-md shadow-primary/10">
                   <Settings className="w-5 h-5 icon-gradient" />
@@ -224,12 +224,12 @@ export default function AgentTest() {
                   </SelectContent>
                 </Select>
                 {selectedAgentInfo && (
-                  <div className="mt-3 p-4 bg-card border border-border/50 rounded-xl">
+                  <div className="mt-3 p-4 bg-secondary/30 rounded-xl">
                     <p className="text-sm text-foreground font-medium mb-3">{selectedAgentInfo.description}</p>
                     {selectedAgentInfo.tools.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {selectedAgentInfo.tools.map((tool) => (
-                          <Badge key={tool} variant="outline" className="text-xs bg-primary/10 border-primary/30 text-primary font-semibold px-3 py-1">
+                          <Badge key={tool} variant="outline" className="text-xs bg-primary/20 text-primary font-semibold px-3 py-1">
                             {tool}
                           </Badge>
                         ))}
@@ -306,11 +306,11 @@ export default function AgentTest() {
 
           {/* Results Card */}
           {agentResult && (
-            <Card className="bg-gradient-card border border-border/50 card-elevation">
-              <CardHeader className={`bg-gradient-to-r border-b border-border/30 ${
+            <Card className="bg-gradient-card-secondary card-elevation">
+              <CardHeader className={`bg-gradient-to-r ${
                 agentResult.error 
-                  ? 'from-destructive/10 to-destructive/5' 
-                  : 'from-success/10 to-success/5'
+                  ? 'from-destructive/20 to-destructive/10' 
+                  : 'from-success/20 to-success/10'
               }`}>
                 <CardTitle className="flex items-center justify-between text-xl">
                   <span className="flex items-center gap-3">
@@ -400,7 +400,7 @@ export default function AgentTest() {
                             </Badge>
                             <span className="text-xs text-muted-foreground font-medium">{formatTimestamp(msg.timestamp)}</span>
                           </div>
-                          <pre className="text-sm whitespace-pre-wrap font-mono text-foreground bg-card/50 p-3 rounded-lg border border-border/30">{msg.content}</pre>
+                          <pre className="text-sm whitespace-pre-wrap font-mono text-foreground bg-secondary/20 p-3 rounded-lg">{msg.content}</pre>
                         </div>
                       ))}
                     </div>

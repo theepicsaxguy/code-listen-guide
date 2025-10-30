@@ -18,7 +18,7 @@ interface StatCardProps {
  */
 export const StatCard = ({ title, value, icon: Icon, description, trend }: StatCardProps) => {
   return (
-    <Card className="bg-gradient-stat border border-border/50 shadow-sm hover:shadow-lg transition-all duration-300 group relative overflow-hidden hover-card card-elevation">
+    <Card className="bg-gradient-stat shadow-sm hover:shadow-lg transition-all duration-300 group relative overflow-hidden hover-card card-elevation">
       <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity" />
       <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0 relative z-10">
         <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{title}</CardTitle>

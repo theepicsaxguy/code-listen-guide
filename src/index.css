@@ -6,11 +6,11 @@ All colors MUST be HSL.
 
 @theme {
   /* Modern vibrant color palette - Electric Purple & Cyan */
-  --color-border: 240 15% 20%;
-  --color-input: 240 10% 20%;
-  --color-ring: 270 85% 68%;
-  --color-background: 240 15% 8%;
-  --color-foreground: 240 5% 98%;
+    --color-border: 240 15% 20%;
+    --color-input: 240 12% 12%;
+    --color-ring: 270 85% 68%;
+    --color-background: 240 15% 8%;
+    --color-foreground: 240 5% 98%;
 
   /* Primary - Vibrant Electric Purple */
   --color-primary: 270 85% 68%;
@@ -23,8 +23,8 @@ All colors MUST be HSL.
   --color-destructive: 0 84% 60%;
   --color-destructive-foreground: 240 10% 98%;
 
-  --color-muted: 240 12% 14%;
-  --color-muted-foreground: 240 5% 72%;
+    --color-muted: 240 12% 16%;
+    --color-muted-foreground: 240 5% 75%;
 
   /* Accent - Electric Cyan/Teal */
   --color-accent: 180 100% 55%;
@@ -41,8 +41,8 @@ All colors MUST be HSL.
   --color-popover: 240 12% 10%;
   --color-popover-foreground: 240 5% 98%;
 
-  --color-card: 240 12% 10%;
-  --color-card-foreground: 240 5% 98%;
+    --color-card: 240 12% 11%;
+    --color-card-foreground: 240 5% 98%;
 
   --radius: 1rem;
 }
@@ -106,16 +106,21 @@ All colors MUST be HSL.
     --gradient-success: linear-gradient(135deg, hsl(142 76% 56%), hsl(160 80% 50%));
     --gradient-hero: linear-gradient(160deg, hsl(270 85% 68% / 0.2), hsl(180 100% 55% / 0.15));
     
-    /* Card and surface gradients - More vibrant */
-    --gradient-card: linear-gradient(135deg, hsl(240 12% 10% / 0.98), hsl(240 12% 8% / 0.98));
-    --gradient-card-hover: linear-gradient(135deg, hsl(240 12% 12% / 1), hsl(240 12% 10% / 1));
-    --gradient-sidebar: linear-gradient(180deg, hsl(240 12% 10%), hsl(240 12% 8%));
-    --gradient-stat-card: linear-gradient(135deg, hsl(240 12% 11%), hsl(260 40% 16% / 0.6));
+    /* Card and surface gradients - More vibrant with colors */
+    --gradient-card: linear-gradient(135deg, hsl(240 12% 10%), hsl(260 30% 12%));
+    --gradient-card-hover: linear-gradient(135deg, hsl(240 12% 12%), hsl(260 30% 14%));
+    --gradient-sidebar: linear-gradient(180deg, hsl(240 12% 10%), hsl(260 30% 10%));
+    --gradient-stat-card: linear-gradient(135deg, hsl(260 30% 12%), hsl(270 40% 14%));
     
-    /* Vibrant accent gradients for headers */
-    --gradient-header-primary: linear-gradient(135deg, hsl(270 85% 68% / 0.15), hsl(290 85% 60% / 0.1));
-    --gradient-header-accent: linear-gradient(135deg, hsl(180 100% 55% / 0.15), hsl(270 85% 68% / 0.1));
-    --gradient-header-success: linear-gradient(135deg, hsl(142 76% 56% / 0.15), hsl(160 80% 50% / 0.1));
+    /* Vibrant accent gradients for headers - More color */
+    --gradient-header-primary: linear-gradient(135deg, hsl(270 85% 68% / 0.2), hsl(290 85% 60% / 0.15));
+    --gradient-header-accent: linear-gradient(135deg, hsl(180 100% 55% / 0.2), hsl(270 85% 68% / 0.15));
+    --gradient-header-success: linear-gradient(135deg, hsl(142 76% 56% / 0.2), hsl(160 80% 50% / 0.15));
+    
+    /* Colorful card variations */
+    --gradient-card-primary: linear-gradient(135deg, hsl(270 85% 68% / 0.12), hsl(290 85% 60% / 0.08));
+    --gradient-card-accent: linear-gradient(135deg, hsl(180 100% 55% / 0.12), hsl(270 85% 68% / 0.08));
+    --gradient-card-secondary: linear-gradient(135deg, hsl(260 40% 16% / 0.8), hsl(240 30% 14% / 0.8));
     
     /* Subtle background gradients */
     --gradient-mesh: radial-gradient(at 40% 20%, hsl(270 85% 68% / 0.3) 0px, transparent 50%),

@@ -76,11 +76,11 @@ export const AdminLayout = () => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-gradient-sidebar flex flex-col transition-all duration-300 border-r border-border/50`}>
-        <div className="p-6 relative border-b border-border/30">
+      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-gradient-sidebar flex flex-col transition-all duration-300`}>
+        <div className="p-6 relative bg-gradient-to-r from-primary/5 to-accent/5">
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="absolute -right-3 top-6 bg-card border border-border/50 rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent/20 hover:border-primary/30 transition-all z-10 shadow-sm hover:shadow-md"
+            className="absolute -right-3 top-6 bg-card rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-primary/20 transition-all z-10 shadow-lg hover:shadow-xl shadow-primary/20"
             aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -114,26 +114,23 @@ export const AdminLayout = () => {
                   variant={isActive ? "secondary" : "ghost"}
                   className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} rounded-xl transition-all relative ${
                     isActive
-                      ? "bg-accent/20 text-accent-foreground shadow-md shadow-primary/10 border border-primary/20 hover:bg-accent/30"
-                      : "text-muted-foreground hover:bg-accent/10 hover:text-foreground border border-transparent"
+                      ? "bg-gradient-primary text-primary-foreground shadow-lg shadow-primary/30"
+                      : "text-muted-foreground hover:bg-primary/10 hover:text-foreground"
                   }`}
                   title={isSidebarCollapsed ? item.label : undefined}
                 >
                   <Icon className={`h-4 w-4 ${isActive ? 'icon-gradient' : ''} ${!isSidebarCollapsed ? 'mr-3' : ''}`} />
                   {!isSidebarCollapsed && <span className="font-medium">{item.label}</span>}
-                  {isActive && !isSidebarCollapsed && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gradient-primary rounded-r-full" />
-                  )}
                 </Button>
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-border/30">
+        <div className="p-4 bg-gradient-to-r from-destructive/5 to-muted/5">
           <Button
             variant="ghost"
-            className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all`}
+            className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} text-destructive hover:text-destructive hover:bg-destructive/20 rounded-xl transition-all`}
             onClick={handleLogout}
             title={isSidebarCollapsed ? "Logout" : undefined}
           >

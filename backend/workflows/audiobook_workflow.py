@@ -34,15 +34,10 @@ class AudiobookWorkflow:
         mark_job_status(self.job_id, "running", "analysis")
         analyzer = await analyzer_agent(settings)
         outliner = await outline_agent(settings)
-        start_executor = (
+        # SequentialBuilder builds a workflow directly, use it without wrapping in WorkflowBuilder
+        workflow = (
             SequentialBuilder()
             .participants([AgentExecutor(analyzer), AgentExecutor(outliner)])
-            .build()
-        )
-        workflow = (
-            WorkflowBuilder()
-            .set_start_executor(start_executor)
-            .with_checkpointing(self.checkpoints)
             .build()
         )
         # Combine both instructions into a single message for the sequential workflow
@@ -78,14 +73,12 @@ class AudiobookWorkflow:
         mark_job_status(self.job_id, "running", "scripting")
         script_agents = [await script_agent(settings, chapter) for chapter in chapters]
         script_executors = [AgentExecutor(agent) for agent in script_agents]
-        scripts_flow = ConcurrentBuilder().participants(script_executors).build()
+        # ConcurrentBuilder builds a workflow directly, use it without wrapping in WorkflowBuilder
         scripts_workflow = (
-            WorkflowBuilder()
-            .set_start_executor(scripts_flow)
-            .with_checkpointing(self.checkpoints)
+            ConcurrentBuilder()
+            .participants(script_executors)
             .build()
         )
-        scripts: List[str] = []
         # For concurrent workflow, send initial message and process all chapters
         initial_script_message = ChatMessage(
             role=Role.USER,

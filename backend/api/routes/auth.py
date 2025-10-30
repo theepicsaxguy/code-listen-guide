@@ -30,7 +30,7 @@ from backend.utils.auth import (
     get_password_hash,
     decode_access_token,
     verify_token_type,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
+    ACCESS_TOKEN_EXPIRE_DAYS,
 )
 from backend.utils.validators import validate_email_format, validate_password_strength
 
@@ -159,7 +159,7 @@ async def login(
         httponly=True,
         secure=True,  # Set to True in production with HTTPS
         samesite="lax",
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        max_age=ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # 7 days
     )
     response.set_cookie(
         key="refresh_token",
@@ -167,14 +167,14 @@ async def login(
         httponly=True,
         secure=True,
         samesite="lax",
-        max_age=7 * 24 * 60 * 60,  # 7 days
+        max_age=30 * 24 * 60 * 60,  # 30 days
     )
 
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
-        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert to seconds
+        expires_in=ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # Convert to seconds
     )
 
 
@@ -279,7 +279,7 @@ async def refresh_token(
             access_token=new_access_token,
             refresh_token=new_refresh_token,
             token_type="bearer",
-            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            expires_in=ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         )
 
     except Exception:

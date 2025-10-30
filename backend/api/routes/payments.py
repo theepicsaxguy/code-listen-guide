@@ -1,6 +1,8 @@
 """Payment routes for Stripe integration."""
 
+import logging
 from datetime import datetime
+from typing import Optional
 import uuid
 
 from fastapi import (
@@ -35,10 +37,11 @@ from backend.services.payment import (
     create_checkout_session,
 )
 from backend.tasks.audiobook_tasks import start_audiobook_workflow
-from backend.tools.db_tools import estimate_job_cost
+from backend.api.schemas.job import calculate_price_for_tier, DepthTier
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/create-intent", response_model=PaymentIntentResponse)
@@ -76,22 +79,54 @@ async def create_payment_intent_route(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Job already paid"
         )
 
+    # Calculate amount based on tier or use provided amount
     if payment_data.amount_cents is not None:
         amount_cents = payment_data.amount_cents
     else:
-        estimate = estimate_job_cost(job.repo_url, job.depth_tier)
-        amount_cents = estimate["estimated_cost_cents"]
+        # Use tier-based pricing from job schema
+        try:
+            depth_tier = DepthTier(job.depth_tier)
+            amount_cents = calculate_price_for_tier(depth_tier)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid depth tier: {job.depth_tier}",
+            )
 
     if amount_cents <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payment amount"
         )
 
+    # Create or get Stripe customer
+    customer_id = current_user.stripe_customer_id
+    if not customer_id:
+        # Create Stripe customer if user doesn't have one
+        stripe_service = get_stripe_service()
+        try:
+            customer_id = await stripe_service.create_customer(
+                email=current_user.email, name=current_user.name
+            )
+            current_user.stripe_customer_id = customer_id
+            db.commit()
+            logger.info(
+                "Created Stripe customer for user",
+                extra={"user_id": str(current_user.id), "customer_id": customer_id},
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to create Stripe customer",
+                extra={"user_id": str(current_user.id), "error": str(e)},
+                exc_info=True,
+            )
+            # Continue without customer_id - Stripe will create one automatically
+
     intent = await create_payment_intent(
         job_id=str(job.id),
         amount_cents=amount_cents,
         user_email=current_user.email,
-        customer_id=current_user.stripe_customer_id,
+        customer_id=customer_id,
+        create_customer_if_missing=False,  # We handle customer creation above
     )
 
     payment_record = Payment(
@@ -121,24 +156,38 @@ async def stripe_webhook(
     stripe_signature: str = Header(None),
     db: Session = Depends(get_db),
 ):
-    """Process Stripe webhook events and trigger workflows when payments succeed."""
+    """
+    Process Stripe webhook events and trigger workflows when payments succeed.
+    
+    Handles:
+    - payment_intent.succeeded: Mark payment as succeeded, trigger workflow
+    - payment_intent.payment_failed: Mark payment as failed, update job status
+    - charge.refunded: Mark payment as refunded, update job if needed
+    """
     payload = await request.body()
+    event_type = None
     try:
         event = get_stripe_service().verify_webhook_signature(payload, stripe_signature)
+        event_type = event.get("type")
+        logger.info("Received Stripe webhook", extra={"event_type": event_type})
     except ValueError as exc:
+        logger.error("Invalid webhook payload", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload"
         ) from exc
     except stripe.error.SignatureVerificationError as exc:
+        logger.error("Invalid webhook signature", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature"
         ) from exc
 
-    if event.get("type") == "payment_intent.succeeded":
-        data = event.get("data", {}).get("object", {})
-        intent_id = data.get("id")
-        metadata = data.get("metadata", {})
-        job_id = metadata.get("job_id")
+    data = event.get("data", {}).get("object", {})
+    intent_id = data.get("id")
+    metadata = data.get("metadata", {})
+    job_id = metadata.get("job_id")
+
+    # Handle payment_intent.succeeded
+    if event_type == "payment_intent.succeeded":
         payment_record = None
         if intent_id:
             payment_record = (
@@ -154,11 +203,17 @@ async def stripe_webhook(
                     methods[0] if methods else payment_record.payment_method_type
                 )
                 payment_record.completed_at = datetime.utcnow()
+                logger.info(
+                    "Payment marked as succeeded",
+                    extra={"payment_id": str(payment_record.id), "intent_id": intent_id},
+                )
+
         job = None
         if job_id:
             try:
                 job_uuid = uuid.UUID(job_id)
             except ValueError:
+                logger.warning("Invalid job_id in webhook metadata", extra={"job_id": job_id})
                 job_uuid = None
             if job_uuid:
                 job = db.query(Job).filter(Job.id == job_uuid).first()
@@ -166,11 +221,101 @@ async def stripe_webhook(
                     job.status = "paid"
                     if payment_record:
                         job.price_paid_cents = payment_record.amount_cents
+                    logger.info(
+                        "Job marked as paid, triggering workflow",
+                        extra={"job_id": str(job.id)},
+                    )
+
         db.commit()
         if job:
             background.add_task(
                 start_audiobook_workflow, str(job.id), job.repo_url, job.depth_tier
             )
+
+    # Handle payment_intent.payment_failed
+    elif event_type == "payment_intent.payment_failed":
+        if intent_id:
+            payment_record = (
+                db.query(Payment)
+                .filter(Payment.stripe_payment_intent_id == intent_id)
+                .first()
+            )
+            if payment_record:
+                payment_record.status = "failed"
+                # Store failure information if available
+                last_payment_error = data.get("last_payment_error", {})
+                if last_payment_error:
+                    error_code = last_payment_error.get("code")
+                    error_message = last_payment_error.get("message")
+                    logger.warning(
+                        "Payment failed",
+                        extra={
+                            "payment_id": str(payment_record.id),
+                            "intent_id": intent_id,
+                            "error_code": error_code,
+                            "error_message": error_message,
+                        },
+                    )
+
+        if job_id:
+            try:
+                job_uuid = uuid.UUID(job_id)
+                job = db.query(Job).filter(Job.id == job_uuid).first()
+                if job:
+                    job.status = "failed"
+                    job.error_message = "Payment failed"
+                    logger.info(
+                        "Job marked as failed due to payment failure",
+                        extra={"job_id": str(job.id)},
+                    )
+            except ValueError:
+                pass
+
+        db.commit()
+
+    # Handle charge.refunded
+    elif event_type == "charge.refunded":
+        charge_id = data.get("id")
+        payment_intent_id = data.get("payment_intent")
+        
+        if payment_intent_id:
+            payment_record = (
+                db.query(Payment)
+                .filter(Payment.stripe_payment_intent_id == payment_intent_id)
+                .first()
+            )
+            if payment_record:
+                payment_record.status = "refunded"
+                # Calculate refunded amount
+                amount_refunded = data.get("amount_refunded", 0)
+                if amount_refunded > 0:
+                    # Store refund information (we may want to add a refunds table later)
+                    logger.info(
+                        "Payment refunded",
+                        extra={
+                            "payment_id": str(payment_record.id),
+                            "amount_refunded_cents": amount_refunded,
+                        },
+                    )
+
+        if job_id:
+            try:
+                job_uuid = uuid.UUID(job_id)
+                job = db.query(Job).filter(Job.id == job_uuid).first()
+                if job and job.status == "completed":
+                    # If job was completed, we may want to handle refunds differently
+                    logger.info(
+                        "Refund processed for completed job",
+                        extra={"job_id": str(job.id)},
+                    )
+            except ValueError:
+                pass
+
+        db.commit()
+
+    else:
+        logger.debug("Unhandled webhook event type", extra={"event_type": event_type})
+
     return {"received": True}
 
 
@@ -186,7 +331,7 @@ async def get_payment_history(
         .all()
     )
     return PaymentHistoryResponse(
-        payments=[PaymentResponse.from_orm(payment) for payment in payments],
+        payments=[PaymentResponse.model_validate(payment) for payment in payments],
         total=len(payments),
     )
 
@@ -195,15 +340,131 @@ async def get_payment_history(
 async def create_checkout_session_route(
     checkout_data: CheckoutSessionCreate,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Create a Stripe checkout session for the given plan."""
+    # Ensure user has a Stripe customer ID
+    customer_id = current_user.stripe_customer_id
+    if not customer_id:
+        stripe_service = get_stripe_service()
+        try:
+            customer_id = await stripe_service.create_customer(
+                email=current_user.email, name=current_user.name
+            )
+            current_user.stripe_customer_id = customer_id
+            db.commit()
+            logger.info(
+                "Created Stripe customer for checkout session",
+                extra={"user_id": str(current_user.id), "customer_id": customer_id},
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to create Stripe customer for checkout",
+                extra={"user_id": str(current_user.id), "error": str(e)},
+                exc_info=True,
+            )
+            # Continue without customer_id
+
     session = await create_checkout_session(
         plan_id=checkout_data.plan_id,
         success_url=checkout_data.success_url,
         cancel_url=checkout_data.cancel_url,
-        customer_id=current_user.stripe_customer_id,
+        customer_id=customer_id,
     )
     return CheckoutSessionResponse(
         session_id=session.id,
         url=session.url,
     )
+
+
+@router.post("/refund")
+async def create_refund(
+    payment_intent_id: str,
+    amount_cents: Optional[int] = None,
+    reason: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Create a refund for a payment.
+    
+    Only the user who made the payment can request a refund.
+    Refunds can be full or partial.
+    """
+    # Find the payment record
+    payment = (
+        db.query(Payment)
+        .filter(
+            Payment.stripe_payment_intent_id == payment_intent_id,
+            Payment.user_id == current_user.id,
+        )
+        .first()
+    )
+    
+    if not payment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Payment not found",
+        )
+    
+    # Verify payment was successful
+    if payment.status != "succeeded":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot refund payment with status: {payment.status}",
+        )
+    
+    # Verify amount if provided
+    if amount_cents is not None:
+        if amount_cents <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Refund amount must be positive",
+            )
+        if amount_cents > payment.amount_cents:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Refund amount cannot exceed payment amount",
+            )
+    
+    try:
+        # Process refund via Stripe
+        from backend.services.payment import process_refund
+        
+        refund = await process_refund(
+            payment_intent_id=payment_intent_id,
+            amount_cents=amount_cents,
+            reason=reason,
+        )
+        
+        # Update payment status
+        payment.status = "refunded"
+        db.commit()
+        
+        logger.info(
+            "Refund processed successfully",
+            extra={
+                "payment_id": str(payment.id),
+                "payment_intent_id": payment_intent_id,
+                "amount_cents": amount_cents or payment.amount_cents,
+            },
+        )
+        
+        return {
+            "refund_id": getattr(refund, "id", refund.get("id") if isinstance(refund, dict) else None),
+            "amount_refunded_cents": amount_cents or payment.amount_cents,
+            "status": "refunded",
+        }
+    except Exception as e:
+        logger.error(
+            "Failed to process refund",
+            extra={
+                "payment_intent_id": payment_intent_id,
+                "error": str(e),
+            },
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process refund: {str(e)}",
+        )

@@ -45,24 +45,24 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { formatCurrency } from "@/lib/theme";
 
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "completed":
-    case "active":
-      return "bg-green-500/10 text-green-500";
-    case "running":
-    case "in_progress":
-      return "bg-blue-500/10 text-blue-500";
-    case "failed":
-    case "error":
-      return "bg-red-500/10 text-red-500";
-    case "pending":
-    case "waiting":
-      return "bg-yellow-500/10 text-yellow-500";
-    default:
-      return "bg-gray-500/10 text-muted-foreground";
-  }
-};
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+      case "active":
+        return "bg-success/20 text-success";
+      case "running":
+      case "in_progress":
+        return "bg-primary/20 text-primary";
+      case "failed":
+      case "error":
+        return "bg-destructive/20 text-destructive";
+      case "pending":
+      case "waiting":
+        return "bg-warning/20 text-warning";
+      default:
+        return "bg-secondary/20 text-muted-foreground";
+    }
+  };
 
 interface AgentJob {
   id: string;
@@ -272,10 +272,10 @@ export default function AgentMonitoring() {
       </div>
 
       {/* Filters and Controls */}
-      <Card className="bg-card shadow-card">
-        <CardHeader>
-          <CardTitle>Active Jobs</CardTitle>
-          <CardDescription>Monitor and manage agent execution in real-time</CardDescription>
+      <Card className="bg-gradient-card-secondary shadow-card">
+        <CardHeader className="bg-gradient-to-r from-secondary/10 to-accent/10">
+          <CardTitle className="text-xl">Active Jobs</CardTitle>
+          <CardDescription className="text-base">Monitor and manage agent execution in real-time</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-3">

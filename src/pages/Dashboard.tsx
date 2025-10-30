@@ -71,7 +71,7 @@ const Dashboard: React.FC = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div className="flex-1 overflow-auto">
-        <header className="bg-card/50 backdrop-blur-sm sticky top-0 z-10 border-b border-border/50">
+        <header className="bg-gradient-to-r from-card via-primary/5 to-card backdrop-blur-sm sticky top-0 z-10">
           <div className="px-8 py-5 flex items-center justify-between">
             <div className="flex items-center gap-6 flex-1">
               <div>
@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
                     placeholder="Search repositories..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-11 pr-4 py-2.5 bg-card border border-border/50 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:cursor-not-allowed disabled:opacity-50 transition-all hover:border-border"
+                    className="w-full pl-11 pr-4 py-2.5 bg-card rounded-xl text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
                   />
                 </div>
               )}

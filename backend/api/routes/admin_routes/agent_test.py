@@ -237,12 +237,12 @@ async def test_workflow(
             # Analysis + Outline
             analyzer = await analyzer_agent(settings)
             outliner = await outline_agent(settings)
-            start_executor = (
+            # SequentialBuilder builds a workflow directly, use it without wrapping in WorkflowBuilder
+            workflow = (
                 SequentialBuilder()
                 .participants([AgentExecutor(analyzer), AgentExecutor(outliner)])
                 .build()
             )
-            workflow = WorkflowBuilder().set_start_executor(start_executor).build()
 
             # Combine both instructions into a single message
             message = ChatMessage(
@@ -280,12 +280,12 @@ async def test_workflow(
             # We'll run just the first few stages
             analyzer = await analyzer_agent(settings)
             outliner = await outline_agent(settings)
-            start_executor = (
+            # SequentialBuilder builds a workflow directly, use it without wrapping in WorkflowBuilder
+            workflow = (
                 SequentialBuilder()
                 .participants([AgentExecutor(analyzer), AgentExecutor(outliner)])
                 .build()
             )
-            workflow = WorkflowBuilder().set_start_executor(start_executor).build()
 
             # Combine both instructions into a single message
             message = ChatMessage(
