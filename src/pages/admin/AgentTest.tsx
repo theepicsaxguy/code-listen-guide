@@ -1,0 +1,604 @@
+import { useState, useMemo, useEffect } from "react";
+import { Activity, Loader2, Settings, Play, Workflow, MessageSquare, Code2, Clock, CheckCircle2, XCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
+import { apiClient } from "@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+interface AgentInfo {
+  name: string;
+  description: string;
+  requires_input: boolean;
+  requires_chapter_data?: boolean;
+  tools: string[];
+}
+
+interface AgentTestResult {
+  agent_name: string;
+  input_message: string;
+  output_message: string;
+  messages: Array<{ role: string; content: string; timestamp: number }>;
+  tools_called: Array<{ tool: string; arguments: any; timestamp: number }>;
+  execution_time_seconds: number;
+  error?: string;
+}
+
+interface WorkflowTestResult {
+  workflow_id: string;
+  stages: Array<{ name: string; status: string; output?: string }>;
+  final_result: Record<string, any>;
+  execution_time_seconds: number;
+  error?: string;
+}
+
+export default function AgentTest() {
+  // Agent test state
+  const [selectedAgent, setSelectedAgent] = useState<string>("analyzer");
+  const [agentInput, setAgentInput] = useState<string>("Analyze the repository at https://github.com/microsoft/agent-framework and respond with JSON.");
+  const [customInstructions, setCustomInstructions] = useState<string>("");
+  const [chapterDataJson, setChapterDataJson] = useState<string>("{}");
+  const [agentResult, setAgentResult] = useState<AgentTestResult | null>(null);
+  const [isTestingAgent, setIsTestingAgent] = useState(false);
+
+  // Workflow test state
+  const [workflowType, setWorkflowType] = useState<"full" | "analysis_only" | "outline_only">("outline_only");
+  const [repoUrl, setRepoUrl] = useState<string>("https://github.com/microsoft/agent-framework");
+  const [gitRef, setGitRef] = useState<string>("main");
+  const [depthTier, setDepthTier] = useState<string>("standard");
+  const [workflowResult, setWorkflowResult] = useState<WorkflowTestResult | null>(null);
+  const [isTestingWorkflow, setIsTestingWorkflow] = useState(false);
+
+  // Available agents
+  const [availableAgents, setAvailableAgents] = useState<AgentInfo[]>([]);
+  const [loadingAgents, setLoadingAgents] = useState(false);
+
+  // UI state
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["messages"]));
+
+  useEffect(() => {
+    loadAvailableAgents();
+  }, []);
+
+  const loadAvailableAgents = async () => {
+    setLoadingAgents(true);
+    try {
+      const response = await apiClient.listAvailableAgents();
+      setAvailableAgents(response.agents);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load agents");
+    } finally {
+      setLoadingAgents(false);
+    }
+  };
+
+  const selectedAgentInfo = useMemo(() => {
+    return availableAgents.find((a) => a.name === selectedAgent);
+  }, [availableAgents, selectedAgent]);
+
+  const toggleSection = (section: string) => {
+    const newExpanded = new Set(expandedSections);
+    if (newExpanded.has(section)) {
+      newExpanded.delete(section);
+    } else {
+      newExpanded.add(section);
+    }
+    setExpandedSections(newExpanded);
+  };
+
+  const handleTestAgent = async () => {
+    if (!agentInput.trim()) {
+      toast.error("Please provide an input message");
+      return;
+    }
+
+    setIsTestingAgent(true);
+    setAgentResult(null);
+
+    try {
+      let chapterData = undefined;
+      if (selectedAgent === "script") {
+        try {
+          chapterData = JSON.parse(chapterDataJson);
+        } catch {
+          toast.error("Invalid chapter data JSON");
+          setIsTestingAgent(false);
+          return;
+        }
+      }
+
+      const result = await apiClient.testAgent({
+        agent_name: selectedAgent,
+        input_message: agentInput,
+        custom_instructions: customInstructions || undefined,
+        chapter_data: chapterData,
+      });
+
+      setAgentResult(result);
+      if (result.error) {
+        toast.error(`Agent test failed: ${result.error}`);
+      } else {
+        toast.success(`Agent test completed in ${result.execution_time_seconds.toFixed(2)}s`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to test agent");
+    } finally {
+      setIsTestingAgent(false);
+    }
+  };
+
+  const handleTestWorkflow = async () => {
+    if (!repoUrl.trim()) {
+      toast.error("Please provide a repository URL");
+      return;
+    }
+
+    setIsTestingWorkflow(true);
+    setWorkflowResult(null);
+
+    try {
+      const result = await apiClient.testWorkflow({
+        workflow_type: workflowType,
+        repo_url: repoUrl,
+        depth_tier: depthTier,
+        git_ref: gitRef,
+      });
+
+      setWorkflowResult(result);
+      if (result.error) {
+        toast.error(`Workflow test failed: ${result.error}`);
+      } else {
+        toast.success(`Workflow completed in ${result.execution_time_seconds.toFixed(2)}s`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to test workflow");
+    } finally {
+      setIsTestingWorkflow(false);
+    }
+  };
+
+  const formatTimestamp = (timestamp: number) => {
+    return new Date(timestamp * 1000).toLocaleTimeString();
+  };
+
+  return (
+    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+          <Activity className="w-8 h-8" />
+          Agent Framework Test & Trace
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Test individual agents and workflows with full tracing and modification capabilities
+        </p>
+      </div>
+
+      <Tabs defaultValue="agent" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="agent">
+            <Play className="w-4 h-4 mr-2" />
+            Test Agent
+          </TabsTrigger>
+          <TabsTrigger value="workflow">
+            <Workflow className="w-4 h-4 mr-2" />
+            Test Workflow
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Agent Test Tab */}
+        <TabsContent value="agent" className="space-y-6">
+          {/* Configuration Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Agent Configuration
+              </CardTitle>
+              <CardDescription>Configure and test a single agent</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Agent Selection */}
+              <div>
+                <Label htmlFor="agent-select">Agent</Label>
+                <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                  <SelectTrigger id="agent-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableAgents.map((agent) => (
+                      <SelectItem key={agent.name} value={agent.name}>
+                        {agent.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedAgentInfo && (
+                  <div className="mt-2 p-3 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">{selectedAgentInfo.description}</p>
+                    {selectedAgentInfo.tools.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {selectedAgentInfo.tools.map((tool) => (
+                          <Badge key={tool} variant="outline" className="text-xs">
+                            {tool}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Input Message */}
+              <div>
+                <Label htmlFor="agent-input">Input Message</Label>
+                <Textarea
+                  id="agent-input"
+                  value={agentInput}
+                  onChange={(e) => setAgentInput(e.target.value)}
+                  placeholder="Enter the message or prompt for the agent..."
+                  rows={4}
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              {/* Custom Instructions (Optional) */}
+              <div>
+                <Label htmlFor="custom-instructions">Custom Instructions (Optional)</Label>
+                <Textarea
+                  id="custom-instructions"
+                  value={customInstructions}
+                  onChange={(e) => setCustomInstructions(e.target.value)}
+                  placeholder="Override default agent instructions..."
+                  rows={3}
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Note: Custom instructions may not work with all agent framework versions
+                </p>
+              </div>
+
+              {/* Chapter Data (for script agent) */}
+              {selectedAgent === "script" && (
+                <div>
+                  <Label htmlFor="chapter-data">Chapter Data (JSON)</Label>
+                  <Textarea
+                    id="chapter-data"
+                    value={chapterDataJson}
+                    onChange={(e) => setChapterDataJson(e.target.value)}
+                    placeholder='{"number": 1, "title": "Introduction", ...}'
+                    rows={4}
+                    className="font-mono text-sm"
+                  />
+                </div>
+              )}
+
+              {/* Test Button */}
+              <Button onClick={handleTestAgent} disabled={isTestingAgent} className="w-full">
+                {isTestingAgent ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Testing Agent...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    Test Agent
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Results Card */}
+          {agentResult && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5" />
+                    Agent Test Results
+                  </span>
+                  <Badge variant={agentResult.error ? "destructive" : "default"}>
+                    {agentResult.error ? "Error" : "Success"}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Summary */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-3 bg-muted rounded-lg">
+                    <div className="text-sm text-muted-foreground">Execution Time</div>
+                    <div className="text-lg font-semibold flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {agentResult.execution_time_seconds.toFixed(2)}s
+                    </div>
+                  </div>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <div className="text-sm text-muted-foreground">Messages</div>
+                    <div className="text-lg font-semibold">{agentResult.messages.length}</div>
+                  </div>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <div className="text-sm text-muted-foreground">Tools Called</div>
+                    <div className="text-lg font-semibold">{agentResult.tools_called.length}</div>
+                  </div>
+                </div>
+
+                {/* Error Display */}
+                {agentResult.error && (
+                  <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <XCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-semibold text-destructive">Error</div>
+                        <div className="text-sm text-muted-foreground mt-1">{agentResult.error}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Messages Trace */}
+                <Collapsible open={expandedSections.has("messages")} onOpenChange={() => toggleSection("messages")}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80">
+                    <span className="font-semibold">Message Trace ({agentResult.messages.length})</span>
+                    {expandedSections.has("messages") ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="mt-2 space-y-2 max-h-96 overflow-y-auto">
+                      {agentResult.messages.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-3 rounded-lg border ${
+                            msg.role === "user" ? "bg-blue-500/10 border-blue-500/20" : "bg-green-500/10 border-green-500/20"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <Badge variant={msg.role === "user" ? "default" : "secondary"}>{msg.role}</Badge>
+                            <span className="text-xs text-muted-foreground">{formatTimestamp(msg.timestamp)}</span>
+                          </div>
+                          <pre className="text-sm whitespace-pre-wrap font-mono">{msg.content}</pre>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* Tools Called */}
+                {agentResult.tools_called.length > 0 && (
+                  <Collapsible open={expandedSections.has("tools")} onOpenChange={() => toggleSection("tools")}>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80">
+                      <span className="font-semibold">Tools Called ({agentResult.tools_called.length})</span>
+                      {expandedSections.has("tools") ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
+                      )}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-2 space-y-2 max-h-96 overflow-y-auto">
+                        {agentResult.tools_called.map((tool, idx) => (
+                          <div key={idx} className="p-3 bg-muted rounded-lg border">
+                            <div className="flex items-center justify-between mb-2">
+                              <Badge>
+                                <Code2 className="w-3 h-3 mr-1" />
+                                {tool.tool}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">{formatTimestamp(tool.timestamp)}</span>
+                            </div>
+                            <pre className="text-xs font-mono bg-background p-2 rounded overflow-x-auto">
+                              {JSON.stringify(tool.arguments, null, 2)}
+                            </pre>
+                          </div>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {/* Output Message */}
+                {agentResult.output_message && (
+                  <Collapsible open={expandedSections.has("output")} onOpenChange={() => toggleSection("output")}>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80">
+                      <span className="font-semibold">Output Message</span>
+                      {expandedSections.has("output") ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
+                      )}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-2 p-4 bg-background rounded-lg border max-h-96 overflow-y-auto">
+                        <pre className="text-sm whitespace-pre-wrap font-mono">{agentResult.output_message}</pre>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Workflow Test Tab */}
+        <TabsContent value="workflow" className="space-y-6">
+          {/* Configuration Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Workflow className="w-5 h-5" />
+                Workflow Configuration
+              </CardTitle>
+              <CardDescription>Test complete or partial workflows</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Workflow Type */}
+              <div>
+                <Label htmlFor="workflow-type">Workflow Type</Label>
+                <Select value={workflowType} onValueChange={(v: any) => setWorkflowType(v)}>
+                  <SelectTrigger id="workflow-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="analysis_only">Analysis Only</SelectItem>
+                    <SelectItem value="outline_only">Analysis + Outline</SelectItem>
+                    <SelectItem value="full">Full Workflow (truncated)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Repository URL */}
+              <div>
+                <Label htmlFor="repo-url">Repository URL</Label>
+                <Input
+                  id="repo-url"
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  placeholder="https://github.com/user/repo"
+                />
+              </div>
+
+              {/* Git Ref */}
+              <div>
+                <Label htmlFor="git-ref">Git Ref</Label>
+                <Input
+                  id="git-ref"
+                  value={gitRef}
+                  onChange={(e) => setGitRef(e.target.value)}
+                  placeholder="main"
+                />
+              </div>
+
+              {/* Depth Tier */}
+              <div>
+                <Label htmlFor="depth-tier">Depth Tier</Label>
+                <Select value={depthTier} onValueChange={setDepthTier}>
+                  <SelectTrigger id="depth-tier">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="survey">Survey</SelectItem>
+                    <SelectItem value="standard">Standard</SelectItem>
+                    <SelectItem value="comprehensive">Comprehensive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Test Button */}
+              <Button onClick={handleTestWorkflow} disabled={isTestingWorkflow} className="w-full">
+                {isTestingWorkflow ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Testing Workflow...
+                  </>
+                ) : (
+                  <>
+                    <Workflow className="w-4 h-4 mr-2" />
+                    Test Workflow
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Workflow Results */}
+          {workflowResult && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Workflow className="w-5 h-5" />
+                    Workflow Test Results
+                  </span>
+                  <Badge variant={workflowResult.error ? "destructive" : "default"}>
+                    {workflowResult.error ? "Error" : "Success"}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Summary */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-muted rounded-lg">
+                    <div className="text-sm text-muted-foreground">Execution Time</div>
+                    <div className="text-lg font-semibold flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {workflowResult.execution_time_seconds.toFixed(2)}s
+                    </div>
+                  </div>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <div className="text-sm text-muted-foreground">Stages Completed</div>
+                    <div className="text-lg font-semibold">{workflowResult.stages.length}</div>
+                  </div>
+                </div>
+
+                {/* Error Display */}
+                {workflowResult.error && (
+                  <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <XCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-semibold text-destructive">Error</div>
+                        <div className="text-sm text-muted-foreground mt-1">{workflowResult.error}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Stages */}
+                <div>
+                  <h3 className="font-semibold mb-3">Stages</h3>
+                  <div className="space-y-2">
+                    {workflowResult.stages.map((stage, idx) => (
+                      <div key={idx} className="p-3 bg-muted rounded-lg border flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          {stage.status === "completed" ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                          )}
+                          <div>
+                            <div className="font-semibold">{stage.name}</div>
+                            <Badge variant="outline" className="mt-1">
+                              {stage.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Final Result */}
+                <Collapsible open={expandedSections.has("workflow-output")} onOpenChange={() => toggleSection("workflow-output")}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80">
+                    <span className="font-semibold">Final Result</span>
+                    {expandedSections.has("workflow-output") ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="mt-2 p-4 bg-background rounded-lg border max-h-96 overflow-y-auto">
+                      <pre className="text-sm whitespace-pre-wrap font-mono">
+                        {JSON.stringify(workflowResult.final_result, null, 2)}
+                      </pre>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

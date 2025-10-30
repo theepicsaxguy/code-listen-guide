@@ -27,6 +27,7 @@ import Support from "./pages/admin/Support";
 import AdminAuditLogs from "./pages/admin/AuditLogs";
 import AdminSettings from "./pages/admin/Settings";
 import ChonkieTest from "./pages/admin/ChonkieTest";
+import AgentTest from "./pages/admin/AgentTest";
 import AdminParse from "./pages/AdminParse";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
                 <Route path="agents" element={<AgentMonitoring />} />
                 <Route path="tracing" element={<JobTracing />} />
                 <Route path="chonkie-test" element={<ChonkieTest />} />
+                <Route path="agent-test" element={<AgentTest />} />
                 <Route path="parse" element={<AdminParse />} />
                 <Route path="support" element={<Support />} />
                 <Route path="audit" element={<AdminAuditLogs />} />

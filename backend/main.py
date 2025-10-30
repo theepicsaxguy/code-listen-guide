@@ -30,6 +30,7 @@ except ImportError:
 
 from backend.api.dependencies import limiter
 from backend.api.routes import auth, jobs, outlines, payments, player, admin, parse, agents_admin
+from backend.api.routes.admin import agent_test as agent_test_router
 from backend.api.ws import router as ws_router
 from backend.config import get_settings
 from backend.db.session import init_db
@@ -191,6 +192,7 @@ app.include_router(payments.router)
 app.include_router(player.router)
 app.include_router(admin.router)
 app.include_router(agents_admin.router)
+app.include_router(agent_test_router.router)
 app.include_router(parse.router)
 app.include_router(ws_router)
 

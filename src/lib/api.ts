@@ -332,6 +332,58 @@ export class ApiClient {
           method: 'POST',
         });
       }
+
+      // Agent testing endpoints
+      async testAgent(params: {
+        agent_name: string;
+        input_message: string;
+        custom_instructions?: string;
+        chapter_data?: Record<string, any>;
+      }) {
+        return this.request<{
+          agent_name: string;
+          input_message: string;
+          output_message: string;
+          messages: Array<{ role: string; content: string; timestamp: number }>;
+          tools_called: Array<{ tool: string; arguments: any; timestamp: number }>;
+          execution_time_seconds: number;
+          error?: string;
+        }>('/admin/agent-test/agent', {
+          method: 'POST',
+          body: JSON.stringify(params),
+        });
+      }
+
+      async testWorkflow(params: {
+        workflow_type: 'full' | 'analysis_only' | 'outline_only';
+        repo_url: string;
+        depth_tier?: string;
+        git_ref?: string;
+        custom_agent_instructions?: Record<string, string>;
+      }) {
+        return this.request<{
+          workflow_id: string;
+          stages: Array<{ name: string; status: string; output?: string }>;
+          final_result: Record<string, any>;
+          execution_time_seconds: number;
+          error?: string;
+        }>('/admin/agent-test/workflow', {
+          method: 'POST',
+          body: JSON.stringify(params),
+        });
+      }
+
+      async listAvailableAgents() {
+        return this.request<{
+          agents: Array<{
+            name: string;
+            description: string;
+            requires_input: boolean;
+            requires_chapter_data?: boolean;
+            tools: string[];
+          }>;
+        }>('/admin/agent-test/agents/list');
+      }
     }
     
     export const apiClient = new ApiClient(API_BASE_PATH);
