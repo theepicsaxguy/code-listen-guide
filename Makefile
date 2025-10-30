@@ -46,7 +46,7 @@ dev-backend: dev-services ## Start backend server (with auto-reload)
 		echo "$(YELLOW)Installing backend dependencies...$(NC)"; \
 		. .venv/bin/activate && pip install -U pip setuptools wheel && pip install -r backend/requirements.txt; \
 	fi
-	cd backend && . ../.venv/bin/activate && PYTHONPATH=$(PWD) python3 main.py
+	cd backend && source ../.venv/bin/activate && set -a && source ../.env.development && set +a && PYTHONPATH=$(PWD) python3 main.py
 
 dev-frontend: ## Start frontend dev server (with hot reload)
 	@echo "$(BLUE)Starting frontend dev server...$(NC)"

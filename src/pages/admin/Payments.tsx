@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { apiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api";
 import { Payment } from "@/types/admin";
 import { toast } from "sonner";
 

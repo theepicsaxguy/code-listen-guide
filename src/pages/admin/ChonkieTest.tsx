@@ -5,7 +5,7 @@ import { RelationshipGraph } from '@/components/RelationshipGraph';
 import { RepositoryBrowser, FileNode } from '@/components/RepositoryBrowser';
 import { FileCode2, Loader2, CheckCircle, XCircle, Settings, Activity } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api";
 
 interface ParseResult {
   repository_url: string;

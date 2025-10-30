@@ -62,7 +62,7 @@ def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -
     Create JWT access token.
 
     Args:
-        data: Dictionary with user data (must include 'sub' for user ID)
+        data: Dictionary with user data (must include 'sub' for user ID and optionally 'is_admin')
         expires_delta: Optional expiration time delta
 
     Returns:

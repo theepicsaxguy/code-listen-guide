@@ -8,7 +8,7 @@ export interface User {
   subscription_status?: string;
   credits_remaining: number;
   created_at: string;
-  is_admin?: boolean;
+  is_admin: boolean;
 }
 
 export interface Job {

@@ -6,10 +6,8 @@ services:
   postgres:
     image: postgres:18.0-alpine
     container_name: audiobook-postgres-dev
-    environment:
-      POSTGRES_USER: audiobook
-      POSTGRES_PASSWORD: audiobook_dev_password
-      POSTGRES_DB: audiobook
+    env_file:
+      - ./.env.development
     ports:
       - "5433:5432"
     volumes:

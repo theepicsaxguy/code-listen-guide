@@ -178,7 +178,7 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
                   <button
                     key={chapter.id}
                     onClick={() => setCurrentChapter(idx)}
-                    className={`w-full p-4 text-left hover:bg-gray-750 transition-colors ${idx === currentChapter ? 'bg-gray-750' : ''}`}
+                    className={`w-full p-4 text-left hover:bg-gray-700 transition-colors ${idx === currentChapter ? 'bg-gray-700' : ''}`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${idx === currentChapter ? 'bg-purple-500 text-white' : 'bg-gray-700 text-gray-400'}`}>
@@ -199,7 +199,7 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
               </div>
               <div className="p-6 space-y-3 max-h-96 overflow-y-auto">
                 {chapters[currentChapter].files_covered?.map((file, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 bg-gray-750 rounded-lg">
+                  <div key={idx} className="flex items-center gap-3 p-3 bg-gray-700 rounded-lg">
                     <FileCode size={16} className="text-purple-400 flex-shrink-0" />
                     <span className="text-sm text-gray-300 font-mono truncate">{file}</span>
                   </div>

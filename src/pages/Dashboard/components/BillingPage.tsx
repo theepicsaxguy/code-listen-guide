@@ -2,13 +2,7 @@ import React, { useState } from 'react';
 import { CreditCard, Calendar, Download, Plus, FileText, DollarSign } from 'lucide-react';
 import { useUser, usePaymentHistory } from '../hooks';
 import type { Payment } from '../../../lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
 
 import { apiClient } from '../../../lib/api';
 
@@ -97,98 +91,97 @@ export const BillingPage: React.FC = () => {
   return (
     <div className="max-w-6xl space-y-6">
       {/* Current Plan Overview */}
-      <Card>
-        <CardHeader>
+      <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+        <div className="p-6 border-b border-gray-700">
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-2xl">
+              <h2 className="text-xl font-semibold text-white">
                 {currentPlan.name} Plan
-              </CardTitle>
-              <CardDescription>
+              </h2>
+              <p className="text-sm text-gray-400">
                 {user.subscription_status === 'active' ? 'Active subscription' : user.subscription_status}
-              </CardDescription>
+              </p>
             </div>
             {user.subscription_tier !== 'enterprise' && (
-              <Button onClick={() => setShowUpgradeDialog(true)}>
+              <button onClick={() => setShowUpgradeDialog(true)} className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
                 <Plus className="mr-2 h-4 w-4" />
                 Upgrade Plan
-              </Button>
+              </button>
             )}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
+        </div>
+        <div className="p-6 space-y-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Credits Remaining</span>
-              <span className="font-medium">{user.credits_remaining}</span>
+              <span className="text-gray-400">Credits Remaining</span>
+              <span className="font-medium text-white">{user.credits_remaining}</span>
             </div>
-            <div className="w-full bg-muted rounded-full h-3">
+            <div className="w-full bg-gray-700 rounded-full h-3">
               <div
-                className="bg-gradient-to-r from-primary to-primary/70 h-3 rounded-full transition-all duration-300"
+                className="bg-purple-500 h-3 rounded-full transition-all duration-300"
                 style={{ width: `${Math.min((user.credits_remaining / (typeof currentPlan.credits === 'number' ? currentPlan.credits : 100)) * 100, 100)}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-400">
               {typeof currentPlan.credits === 'number' ? `${currentPlan.credits} credits per month` : 'Unlimited credits'}
             </p>
           </div>
 
-          <Separator />
+          <hr className="border-gray-700" />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-muted/50 rounded-lg">
+            <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
               <div className="flex items-center gap-2 mb-2">
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Monthly Credits</span>
+                <CreditCard className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-400">Monthly Credits</span>
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-white">
                 {typeof currentPlan.credits === 'number' ? currentPlan.credits : 'Unlimited'}
               </div>
             </div>
-            <div className="p-4 bg-muted/50 rounded-lg">
+            <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">This Month</span>
+                <DollarSign className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-400">This Month</span>
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-white">
                 ${(monthlySpend / 100).toFixed(2)}
               </div>
             </div>
-            <div className="p-4 bg-muted/50 rounded-lg">
+            <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
               <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Total Spent</span>
+                <FileText className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-400">Total Spent</span>
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-white">
                 ${(totalSpent / 100).toFixed(2)}
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Payment History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment History</CardTitle>
-          <CardDescription>View and download past invoices</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+        <div className="p-6 border-b border-gray-700">
+          <h2 className="text-xl font-semibold text-white">Payment History</h2>
+          <p className="text-sm text-gray-400">View and download past invoices</p>
+        </div>
+        <div className="p-6">
           {isLoading ? (
             <div className="flex items-center justify-center p-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
             </div>
           ) : payments.length > 0 ? (
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-gray-700">
               {payments.map((payment) => (
-                <div key={payment.id} className="py-4 flex items-center justify-between hover:bg-muted/50 px-2 rounded transition-colors">
+                <div key={payment.id} className="py-4 flex items-center justify-between hover:bg-gray-700 px-2 rounded transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-gray-400" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium">Invoice #{payment.id.slice(0, 8)}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-sm font-medium text-white">Invoice #{payment.id.slice(0, 8)}</div>
+                      <div className="text-xs text-gray-400">
                         {new Date(payment.created_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
@@ -198,82 +191,91 @@ export const BillingPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="text-sm font-medium">
+                    <div className="text-sm font-medium text-white">
                       ${(payment.amount_cents / 100).toFixed(2)}
                     </div>
-                    <Badge
-                      variant={payment.status === 'succeeded' ? 'default' : 'secondary'}
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${payment.status === 'succeeded' ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-300'}`}
                     >
                       {payment.status}
-                    </Badge>
-                    <Button variant="ghost" size="sm">
+                    </span>
+                    <button className="p-2 rounded-md text-gray-400 hover:bg-gray-700">
                       <Download className="h-4 w-4" />
-                    </Button>
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="p-12 text-center">
-              <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No payment history</h3>
-              <p className="text-sm text-muted-foreground">Your payments will appear here</p>
+              <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-white mb-2">No payment history</h3>
+              <p className="text-sm text-gray-400">Your payments will appear here</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+        </div>
+      </div>
 
       {/* Upgrade Dialog */}
-      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Upgrade Your Plan</DialogTitle>
-            <DialogDescription>
-              Choose a plan that fits your needs
-            </DialogDescription>
-          </DialogHeader>
+      {showUpgradeDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-800 border border-gray-700 rounded-xl shadow-lg">
+            <div className="p-6 border-b border-gray-700">
+              <h2 className="text-xl font-semibold text-white">Upgrade Your Plan</h2>
+              <p className="text-sm text-gray-400">Choose a plan that fits your needs</p>
+            </div>
 
-          <RadioGroup value={selectedPlan} onValueChange={setSelectedPlan} className="grid gap-4">
-            {plans.filter(p => p.id !== 'free').map((plan) => (
-              <Label
-                key={plan.id}
-                className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                htmlFor={plan.id}
-              >
-                <RadioGroupItem value={plan.id} id={plan.id} className="mt-1" />
-                <div className="ml-4 flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-semibold text-lg">{plan.name}</div>
-                    <div className="text-2xl font-bold">
-                      {plan.price ? `$${plan.price}/mo` : 'Contact us'}
+            <div className="p-6 grid gap-4">
+              {plans.filter(p => p.id !== 'free').map((plan) => (
+                <label
+                  key={plan.id}
+                  className="flex items-start p-4 border border-gray-700 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
+                  htmlFor={plan.id}
+                >
+                  <input
+                    type="radio"
+                    id={plan.id}
+                    name="plan"
+                    value={plan.id}
+                    checked={selectedPlan === plan.id}
+                    onChange={() => setSelectedPlan(plan.id)}
+                    className="mt-1 h-4 w-4 text-purple-500 focus:ring-purple-500 border-gray-600"
+                  />
+                  <div className="ml-4 flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-semibold text-lg text-white">{plan.name}</div>
+                      <div className="text-2xl font-bold text-white">
+                        {plan.price ? `$${plan.price}/mo` : 'Contact us'}
+                      </div>
                     </div>
+                    <p className="text-sm text-gray-400 mb-3">
+                      {typeof plan.credits === 'number' ? `${plan.credits} credits per month` : 'Unlimited credits'}
+                    </p>
+                    <ul className="space-y-1">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="text-sm flex items-center gap-2 text-gray-300">
+                          <span className="text-purple-500">✓</span>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {typeof plan.credits === 'number' ? `${plan.credits} credits per month` : 'Unlimited credits'}
-                  </p>
-                  <ul className="space-y-1">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="text-sm flex items-center gap-2">
-                        <span className="text-primary">✓</span>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </Label>
-            ))}
-          </RadioGroup>
+                </label>
+              ))}
+            </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpgrade}>
-              {selectedPlan === 'enterprise' ? 'Contact Sales' : 'Upgrade Now'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div className="p-6 flex justify-end space-x-2 border-t border-gray-700">
+              <button onClick={() => setShowUpgradeDialog(false)} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleUpgrade} className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors">
+                {selectedPlan === 'enterprise' ? 'Contact Sales' : 'Upgrade Now'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

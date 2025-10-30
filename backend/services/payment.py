@@ -117,6 +117,7 @@ class StripeService:
 
         prices = await asyncio.to_thread(_list_prices)
         if not prices.data:
+            logger.error("Invalid plan_id provided for checkout session", extra={"plan_id": plan_id})
             raise ValueError(f"Invalid plan_id: {plan_id}")
 
         price_id = prices.data[0].id

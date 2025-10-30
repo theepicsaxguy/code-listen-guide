@@ -28,9 +28,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRefreshToken(storedRefreshToken);
       apiClient
         .getMe()
-        .then((userData) => setUser(userData as User))
+        .then((userData) => setUser(userData))
         .catch(() => {
           localStorage.removeItem('auth_token');
+          apiClient.setToken(null);
         })
         .finally(() => setIsLoading(false));
     } else {
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setRefreshToken(null);
     localStorage.removeItem('refresh_token');
+    apiClient.setToken(null);
   };
 
   useEffect(() => {
@@ -67,7 +69,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const interval = setInterval(async () => {
       try {
-        await apiClient.refreshToken(refreshToken);
+        const newTokens = await apiClient.refreshToken(refreshToken);
+        apiClient.setToken(newTokens.access_token);
+        setRefreshToken(newTokens.refresh_token);
+        localStorage.setItem('refresh_token', newTokens.refresh_token);
       } catch (error) {
         console.error('Failed to refresh token', error);
         // Optionally, logout the user if refresh fails

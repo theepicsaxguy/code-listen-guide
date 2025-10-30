@@ -87,6 +87,7 @@ async def get_current_user(
     try:
         payload = decode_access_token(token)
         user_id_value = payload.get("sub")
+        is_admin = payload.get("is_admin", False) # Extract is_admin from token
         if user_id_value is None:
             raise credentials_exception
         user_id = uuid.UUID(str(user_id_value))
@@ -97,6 +98,7 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
 
+    user.is_admin = is_admin # Set is_admin on the user object
     return user
 
 

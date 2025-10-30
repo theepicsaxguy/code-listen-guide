@@ -1,58 +1,64 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { apiClient } from "@/lib/api-client";
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiClient } from '@/lib/api';
+import { User } from '@/lib/types';
 
-interface AdminAuthContextValue {
-  token: string | null;
-  isAuthenticated: boolean;
+interface AdminAuthContextType {
+  admin: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  activateDemoMode: () => void;
+  logout: () => Promise<void>;
 }
 
-const AdminAuthContext = createContext<AdminAuthContextValue | undefined>(undefined);
+const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
+  const [admin, setAdmin] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const existingToken = apiClient.getToken();
-    setToken(existingToken);
-    setIsLoading(false);
+    // Check if admin is logged in on mount
+    const token = localStorage.getItem('admin_token');
+
+    if (token) {
+      apiClient.setToken(token);
+      apiClient
+        .getMe()
+        .then((userData) => {
+          // Verify user has admin privileges
+          // The backend should return is_admin or role information
+          setAdmin(userData);
+        })
+        .catch(() => {
+          localStorage.removeItem('admin_token');
+          apiClient.setToken(null);
+        })
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      await apiClient.login(email, password);
-      setToken(apiClient.getToken());
-    } finally {
-      setIsLoading(false);
-    }
+    const response = await apiClient.login(email, password);
+    
+    // Store token in admin-specific localStorage key
+    localStorage.setItem('admin_token', response.access_token);
+    apiClient.setToken(response.access_token);
+    
+    // Verify admin access by fetching user data
+    const userData = await apiClient.getMe();
+    setAdmin(userData);
   };
 
-  const logout = () => {
-    apiClient.clearToken();
-    setToken(null);
-  };
-
-  const activateDemoMode = () => {
-    apiClient.setToken("demo_token_preview_only");
-    setToken(apiClient.getToken());
+  const logout = async () => {
+    await apiClient.logout();
+    setAdmin(null);
+    localStorage.removeItem('admin_token');
+    apiClient.setToken(null);
   };
 
   return (
-    <AdminAuthContext.Provider
-      value={{
-        token,
-        isAuthenticated: Boolean(token),
-        isLoading,
-        login,
-        logout,
-        activateDemoMode,
-      }}
-    >
+    <AdminAuthContext.Provider value={{ admin, isLoading, login, logout }}>
       {children}
     </AdminAuthContext.Provider>
   );
@@ -60,8 +66,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
 export function useAdminAuth() {
   const context = useContext(AdminAuthContext);
-  if (!context) {
-    throw new Error("useAdminAuth must be used within an AdminAuthProvider");
+  if (context === undefined) {
+    throw new Error('useAdminAuth must be used within an AdminAuthProvider');
   }
   return context;
 }

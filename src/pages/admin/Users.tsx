@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { apiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api";
 import { AdminUser } from "@/types/admin";
 import { toast } from "sonner";
 import { UserDetailsDialog } from "./UserDetails";

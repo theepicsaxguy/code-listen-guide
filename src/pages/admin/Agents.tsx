@@ -59,6 +59,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 
 import { cn } from "@/lib/utils";
+import { AgentJob, AgentJobLog, AgentStats, Checkpoint, JobStage, ListAgentJobsResponse } from "@/types/agent";
 
 type AgentMessageRole = "user" | "assistant" | "system" | "function";
 
@@ -93,23 +94,6 @@ interface AgentMessage {
   attachments?: AgentAttachment[];
 }
 
-interface Conversation {
-  id: string;
-  title: string;
-  status: "active" | "archived" | "draft";
-  createdAt: string;
-  updatedAt: string;
-  model: string;
-  tools: string[];
-  environment: string[];
-  middleware: string[];
-  usage: {
-    totalTokens: number;
-    totalLatencyMs: number;
-  };
-  messages: AgentMessage[];
-}
-
 interface ViewOptions {
   showAttachments: boolean;
   autoScroll: boolean;
@@ -140,9 +124,6 @@ interface GalleryItem {
   description: string;
 }
 
-const STORAGE_KEY_CONVERSATIONS = "admin-agents-conversations";
-const STORAGE_KEY_SELECTED = "admin-agents-selected";
-const STORAGE_KEY_OPTIONS = "admin-agents-view-options";
 
 const defaultConversations: Conversation[] = [
   {

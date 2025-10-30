@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 
 const navItems = [

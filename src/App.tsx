@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import Index from "./pages/Index";
@@ -40,7 +39,6 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
         <AuthProvider>
-          <AdminAuthProvider>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/why-we-exist" element={<WhyWeExist />} />
@@ -66,10 +64,8 @@ const App = () => (
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
               <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AdminAuthProvider>
-        </AuthProvider>
-        </BrowserRouter>
+                            </Routes>
+                    </AuthProvider>        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>

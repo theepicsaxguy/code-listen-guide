@@ -149,7 +149,7 @@ async def login(
         )
 
     # Generate tokens
-    access_token = create_access_token(data={"sub": str(user.id)})
+    access_token = create_access_token(data={"sub": str(user.id), "is_admin": user.is_admin})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
     # Set tokens in httpOnly cookies for browser-based authentication
@@ -272,7 +272,7 @@ async def refresh_token(
             )
 
         # Generate new tokens
-        new_access_token = create_access_token(data={"sub": str(user.id)})
+        new_access_token = create_access_token(data={"sub": str(user.id), "is_admin": user.is_admin})
         new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
         return TokenResponse(

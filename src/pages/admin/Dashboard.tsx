@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Users, Activity, DollarSign, HardDrive, TrendingUp } from "lucide-react";
 import { StatCard } from "@/components/admin/StatCard";
-import { apiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api";
 import { DashboardStats } from "@/types/admin";
 import { toast } from "sonner";
 

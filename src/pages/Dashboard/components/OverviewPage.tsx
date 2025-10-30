@@ -110,7 +110,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           {audiobooks.slice(0, 5).map((job: Job) => (
             <div
               key={job.id}
-              className="p-6 hover:bg-gray-750 transition-colors cursor-pointer"
+              className="p-6 hover:bg-gray-700 transition-colors cursor-pointer"
               onClick={() => onNavigateToAudiobook(job.id)}
             >
               <div className="flex items-center gap-4">
