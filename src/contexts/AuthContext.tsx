@@ -13,39 +13,85 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_TOKEN_KEY = 'auth_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
+  // Restore session on mount
   useEffect(() => {
-    // Check if user is logged in on mount
-    const token = localStorage.getItem('auth_token');
-    const storedRefreshToken = localStorage.getItem('refresh_token');
+    const restoreSession = async () => {
+      try {
+        const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+        const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
 
-    if (token && storedRefreshToken) {
-      apiClient.setToken(token);
-      setRefreshToken(storedRefreshToken);
-      apiClient
-        .getMe()
-        .then((userData) => setUser(userData))
-        .catch(() => {
-          localStorage.removeItem('auth_token');
-          apiClient.setToken(null);
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
+        if (storedToken) {
+          apiClient.setToken(storedToken);
+          
+          // Try to get user data with stored token
+          try {
+            const userData = await apiClient.getMe();
+            setUser(userData);
+            if (storedRefreshToken) {
+              setRefreshToken(storedRefreshToken);
+            }
+            setIsLoading(false);
+            return;
+          } catch (error) {
+            // Token might be expired, try refresh
+            console.log('Access token expired, attempting refresh...');
+          }
+        }
+
+        // If no token or token expired, try refresh token
+        if (storedRefreshToken) {
+          try {
+            const newTokens = await apiClient.refreshToken(storedRefreshToken);
+            apiClient.setToken(newTokens.access_token);
+            localStorage.setItem(AUTH_TOKEN_KEY, newTokens.access_token);
+            localStorage.setItem(REFRESH_TOKEN_KEY, newTokens.refresh_token);
+            setRefreshToken(newTokens.refresh_token);
+            
+            // Get user data with new token
+            const userData = await apiClient.getMe();
+            setUser(userData);
+            setIsLoading(false);
+            return;
+          } catch (error) {
+            console.error('Failed to refresh token:', error);
+            // Clear invalid tokens
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            localStorage.removeItem(REFRESH_TOKEN_KEY);
+            apiClient.setToken(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error restoring session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    restoreSession();
   }, []);
 
   const login = async (email: string, password: string) => {
     const response = await apiClient.login(email, password);
-    setUser(response.user);
-    if (response.refresh_token) {
-      setRefreshToken(response.refresh_token);
-      localStorage.setItem('refresh_token', response.refresh_token);
+    
+    // Store tokens in localStorage for persistence
+    if (response.access_token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, response.access_token);
+      apiClient.setToken(response.access_token);
     }
+    if (response.refresh_token) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+      setRefreshToken(response.refresh_token);
+    }
+    
+    setUser(response.user);
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -57,30 +103,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await apiClient.logout();
-    setUser(null);
-    setRefreshToken(null);
-    localStorage.removeItem('refresh_token');
-    apiClient.setToken(null);
+    try {
+      await apiClient.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      setRefreshToken(null);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      apiClient.setToken(null);
+    }
   };
 
+  // Auto-refresh token before it expires (check every hour since tokens last 7 days)
   useEffect(() => {
     if (!refreshToken) return;
 
-    const interval = setInterval(async () => {
+    const refreshInterval = setInterval(async () => {
       try {
         const newTokens = await apiClient.refreshToken(refreshToken);
         apiClient.setToken(newTokens.access_token);
+        localStorage.setItem(AUTH_TOKEN_KEY, newTokens.access_token);
+        localStorage.setItem(REFRESH_TOKEN_KEY, newTokens.refresh_token);
         setRefreshToken(newTokens.refresh_token);
-        localStorage.setItem('refresh_token', newTokens.refresh_token);
+        console.log('Token refreshed successfully');
       } catch (error) {
-        console.error('Failed to refresh token', error);
-        // Optionally, logout the user if refresh fails
-        logout();
+        console.error('Failed to refresh token:', error);
+        // Don't logout automatically - let the next request handle it
       }
-    }, 15 * 60 * 1000); // 15 minutes
+    }, 60 * 60 * 1000); // Check every hour
 
-    return () => clearInterval(interval);
+    return () => clearInterval(refreshInterval);
   }, [refreshToken]);
 
   return (

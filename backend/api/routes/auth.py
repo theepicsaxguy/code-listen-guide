@@ -23,6 +23,7 @@ from backend.api.schemas.user import (
 )
 from backend.db.session import get_db
 from backend.models.user import User
+from backend.config import get_settings
 from backend.utils.auth import (
     create_access_token,
     create_refresh_token,
@@ -33,6 +34,8 @@ from backend.utils.auth import (
     ACCESS_TOKEN_EXPIRE_DAYS,
 )
 from backend.utils.validators import validate_email_format, validate_password_strength
+
+settings = get_settings()
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -153,11 +156,14 @@ async def login(
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
     # Set tokens in httpOnly cookies for browser-based authentication
+    # secure=True only in production (HTTPS), allow HTTP in development
+    is_production = settings.environment.lower() in ("production", "prod")
+    
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,  # Set to True in production with HTTPS
+        secure=is_production,
         samesite="lax",
         max_age=ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # 7 days
     )
@@ -165,7 +171,7 @@ async def login(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,
+        secure=is_production,
         samesite="lax",
         max_age=30 * 24 * 60 * 60,  # 30 days
     )

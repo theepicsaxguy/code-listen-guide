@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, Outlet, Navigate } from "react-router-dom";
+import { Link, useLocation, Outlet, Navigate, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -16,11 +16,10 @@ import {
   ChevronRight,
   FileCode2,
   Zap,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiClient } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
   { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -39,19 +38,11 @@ const navItems = [
 
 export const AdminLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, isLoading: isAuthLoading, logout: mainLogout } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Fetch user data to check admin status
-  const { data: userData, isLoading: isUserDataLoading } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => apiClient.getCurrentUser(),
-    enabled: !!user,
-  });
-
-  const isLoading = isAuthLoading || isUserDataLoading;
-
-  if (isLoading) {
+  if (isAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <span className="text-muted-foreground">Loading dashboard…</span>
@@ -65,13 +56,12 @@ export const AdminLayout = () => {
   }
 
   // Redirect to dashboard if not admin
-  if (!userData?.is_admin) {
+  if (!user.is_admin) {
     return <Navigate to="/dashboard" replace />;
   }
 
   const handleLogout = () => {
     mainLogout();
-    apiClient.clearToken();
   };
 
   return (
@@ -141,7 +131,20 @@ export const AdminLayout = () => {
       </aside>
 
       <main className="flex-1 overflow-auto bg-background">
-        <Outlet />
+        <div className="p-6">
+          <div className="mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/dashboard")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to User Dashboard
+            </Button>
+          </div>
+          <Outlet />
+        </div>
       </main>
     </div>
   );

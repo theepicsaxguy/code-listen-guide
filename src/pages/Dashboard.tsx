@@ -22,6 +22,20 @@ const Dashboard: React.FC = () => {
 
   const { data: user } = useUser();
 
+  // Check URL params for tab navigation
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && ['home', 'audiobooks', 'settings', 'billing'].includes(tabParam)) {
+      setActiveTab(tabParam);
+      // Clean up URL
+      params.delete('tab');
+      const newSearch = params.toString();
+      const newUrl = newSearch ? `?${newSearch}` : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthLoading && !authUser) {

@@ -11,6 +11,22 @@ export const BillingPage: React.FC = () => {
   const { data: paymentHistory, isLoading } = usePaymentHistory();
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('professional');
+  const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
+
+  // Check for upgrade success in URL
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('upgrade') === 'success') {
+      setShowUpgradeSuccess(true);
+      // Clean up URL
+      params.delete('upgrade');
+      const newSearch = params.toString();
+      const newUrl = newSearch ? `?${newSearch}` : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      // Hide success message after 5 seconds
+      setTimeout(() => setShowUpgradeSuccess(false), 5000);
+    }
+  }, []);
 
   if (!user) {
     return (
@@ -77,19 +93,51 @@ export const BillingPage: React.FC = () => {
       return;
     }
     try {
-      const successUrl = new URL('/dashboard/billing?upgrade=success', window.location.origin).toString();
-      const cancelUrl = new URL('/dashboard/billing', window.location.origin).toString();
-      const session = await apiClient.createCheckoutSession(selectedPlan, successUrl, cancelUrl);
+      // Ensure we're on the billing tab when upgrade is clicked
+      const successUrl = new URL(window.location.origin + '/dashboard');
+      successUrl.searchParams.set('tab', 'billing');
+      successUrl.searchParams.set('upgrade', 'success');
+      
+      const cancelUrl = new URL(window.location.origin + '/dashboard');
+      cancelUrl.searchParams.set('tab', 'billing');
+      
+      const session = await apiClient.createCheckoutSession(
+        selectedPlan,
+        successUrl.toString(),
+        cancelUrl.toString()
+      );
       if (session.url) {
         window.location.href = session.url;
       }
     } catch (error) {
       console.error("Failed to create checkout session", error);
+      alert("Failed to create checkout session. Please try again.");
     }
   };
 
   return (
     <div className="max-w-6xl space-y-6">
+      {/* Success Message */}
+      {showUpgradeSuccess && (
+        <div className="bg-success/20 border border-success/30 text-success px-6 py-4 rounded-xl flex items-center justify-between animate-slide-down">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-success/30 rounded-full flex items-center justify-center">
+              <span className="text-lg">✓</span>
+            </div>
+            <div>
+              <div className="font-bold">Upgrade Successful!</div>
+              <div className="text-sm opacity-90">Your subscription has been upgraded successfully.</div>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowUpgradeSuccess(false)}
+            className="text-success hover:text-success/80 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Current Plan Overview */}
       <div className="bg-gradient-card-primary rounded-xl overflow-hidden card-elevation">
         <div className="p-6 bg-gradient-to-r from-primary/10 to-accent/8">

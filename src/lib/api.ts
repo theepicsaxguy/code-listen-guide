@@ -26,7 +26,8 @@ export class ApiClient {
 
   private async request<T = unknown>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryOn401: boolean = true
   ): Promise<T> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -42,6 +43,26 @@ export class ApiClient {
       headers,
       credentials: 'include',  // Send cookies with requests
     });
+
+    // Auto-refresh token on 401 errors
+    if (response.status === 401 && retryOn401) {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (refreshToken) {
+        try {
+          const newTokens = await this.refreshToken(refreshToken);
+          localStorage.setItem('auth_token', newTokens.access_token);
+          localStorage.setItem('refresh_token', newTokens.refresh_token);
+          // Retry the request with new token
+          return this.request<T>(endpoint, options, false); // Don't retry again
+        } catch (refreshError) {
+          // Refresh failed, clear tokens
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('refresh_token');
+          this.setToken(null);
+          throw new Error('Session expired. Please log in again.');
+        }
+      }
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Request failed' }));
@@ -155,7 +176,41 @@ export class ApiClient {
       async getMe() {
         return this.request<import('./types').User>('/auth/me');
       }
-    
+
+      // Payment endpoints
+      async createPaymentIntent(jobId: string, amountCents?: number) {
+        return this.request<{
+          payment_intent_id: string;
+          client_secret: string;
+          amount_cents: number;
+          currency: string;
+        }>('/payments/create-intent', {
+          method: 'POST',
+          body: JSON.stringify({ job_id: jobId, amount_cents: amountCents }),
+        });
+      }
+
+      async getPaymentHistory() {
+        return this.request<{
+          payments: import('./types').Payment[];
+          total: number;
+        }>('/payments/history');
+      }
+
+      async createCheckoutSession(planId: string, successUrl: string, cancelUrl: string) {
+        return this.request<{
+          session_id: string;
+          url: string;
+        }>('/payments/create-checkout-session', {
+          method: 'POST',
+          body: JSON.stringify({
+            plan_id: planId,
+            success_url: successUrl,
+            cancel_url: cancelUrl,
+          }),
+        });
+      }
+
       // Admin endpoints (merged from api-client.ts)
       async getDashboardStats() {
         return this.request<import('@/types/admin').DashboardStats>('/admin/dashboard/stats');
