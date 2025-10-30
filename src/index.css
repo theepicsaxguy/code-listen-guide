@@ -158,10 +158,6 @@ All colors MUST be HSL.
 }
 
 @layer base {
-  * {
-    border-color: hsl(var(--border));
-  }
-
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -362,5 +358,36 @@ All colors MUST be HSL.
     );
     background-size: 1000px 100%;
     animation: shimmer 2s infinite linear;
+  }
+}
+
+@layer utilities {
+  /* Explicit border color utilities for Tailwind v4 compatibility */
+  .border-border {
+    border-color: hsl(var(--border) / 1);
+  }
+  
+  .border-border\/30 {
+    border-color: hsl(var(--border) / 0.3);
+  }
+  
+  .border-border\/50 {
+    border-color: hsl(var(--border) / 0.5);
+  }
+  
+  .border-primary\/30 {
+    border-color: hsl(var(--primary) / 0.3);
+  }
+  
+  .border-primary\/40 {
+    border-color: hsl(var(--primary) / 0.4);
+  }
+  
+  .border-primary\/50 {
+    border-color: hsl(var(--primary) / 0.5);
+  }
+  
+  .border-primary\/60 {
+    border-color: hsl(var(--primary) / 0.6);
   }
 }

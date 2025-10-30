@@ -87,8 +87,8 @@ export const Pricing = () => {
             return (
               <Card
                 key={index}
-                className={`p-8 glass hover:border-primary/50 transition-all duration-500 hover-lift relative overflow-hidden group ${
-                  tier.popular ? 'border-primary/60 scale-105' : ''
+                className={`p-8 glass transition-all duration-500 hover-lift relative overflow-hidden group ${
+                  tier.popular ? 'scale-105' : ''
                 }`}
               >
                 {/* Popular badge */}
@@ -116,7 +116,7 @@ export const Pricing = () => {
                   </div>
 
                   {/* Price */}
-                  <div className="py-4 border-y border-border/50">
+                  <div className="py-4">
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-bold gradient-text-primary">${tier.price}</span>
                       <span className="text-muted-foreground">/ audiobook</span>

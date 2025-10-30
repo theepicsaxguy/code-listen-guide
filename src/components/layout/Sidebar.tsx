@@ -53,13 +53,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`${isCollapsed ? 'w-20' : 'w-64'} bg-card border-r border-border h-screen flex flex-col transition-all duration-300 ${className}`}
+      className={`${isCollapsed ? 'w-20' : 'w-64'} bg-card h-screen flex flex-col transition-all duration-300 ${className}`}
     >
       {/* Brand Header */}
-      <div className="p-6 border-b border-border relative">
+      <div className="p-6 relative">
         <button
           onClick={onToggleCollapse}
-          className="absolute -right-3 top-6 bg-background border border-border rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors z-10"
+          className="absolute -right-3 top-6 bg-background rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors z-10"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -133,7 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Footer */}
-      {footer && <div className="p-4 border-t border-border">{footer}</div>}
+      {footer && <div className="p-4">{footer}</div>}
     </aside>
   );
 };

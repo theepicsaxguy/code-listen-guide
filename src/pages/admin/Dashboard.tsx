@@ -79,7 +79,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card border border-border rounded-lg p-6">
+        <div className="bg-card rounded-lg p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
             Recent Activity
@@ -90,7 +90,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-6">
+        <div className="bg-card rounded-lg p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">System Status</h3>
           <div className="space-y-4">
             <div>

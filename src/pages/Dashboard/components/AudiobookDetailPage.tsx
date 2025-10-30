@@ -73,7 +73,7 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
         <ChevronRight size={16} className="rotate-180" />
         Back to Audiobooks
       </button>
-      <div className="bg-gray-800 border border-gray-700 rounded-xl p-8">
+      <div className="bg-gray-800 rounded-xl p-8">
         <div className="flex items-start gap-6">
           <div className="w-32 h-32 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
             <GitBranch className="text-white" size={64} />
@@ -101,7 +101,7 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
             {audiobook.metadata?.frameworks && audiobook.metadata.frameworks.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {audiobook.metadata.frameworks.map((framework: string, idx: number) => (
-                  <span key={idx} className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs text-purple-400">{framework}</span>
+                  <span key={idx} className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-400">{framework}</span>
                 ))}
               </div>
             )}
@@ -110,7 +110,7 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
       </div>
       {chapters.length > 0 && (
         <>
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+          <div className="bg-gray-800 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-white mb-1">Chapter {currentChapter + 1}: {chapters[currentChapter].title}</h3>
@@ -169,8 +169,8 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-              <div className="p-6 border-b border-gray-700">
+            <div className="bg-gray-800 rounded-xl overflow-hidden">
+              <div className="p-6">
                 <h3 className="text-lg font-semibold text-white">Chapters</h3>
               </div>
               <div className="divide-y divide-gray-700 max-h-96 overflow-y-auto">
@@ -193,8 +193,8 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
                 ))}
               </div>
             </div>
-            <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-              <div className="p-6 border-b border-gray-700">
+            <div className="bg-gray-800 rounded-xl overflow-hidden">
+              <div className="p-6">
                 <h3 className="text-lg font-semibold text-white">Files Covered</h3>
               </div>
               <div className="p-6 space-y-3 max-h-96 overflow-y-auto">

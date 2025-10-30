@@ -31,11 +31,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
   };
 
   return (
-    <div className={`${isCollapsed ? 'w-20' : 'w-64'} bg-card border-r border-border h-screen flex flex-col transition-all duration-300`}>
-      <div className="p-6 border-b border-border relative">
+    <div className={`${isCollapsed ? 'w-20' : 'w-64'} bg-card h-screen flex flex-col transition-all duration-300`}>
+      <div className="p-6 relative">
         <button
           onClick={onToggleCollapse}
-          className="absolute -right-3 top-6 bg-background border border-border rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors z-10"
+          className="absolute -right-3 top-6 bg-background rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors z-10"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
         ))}
       </nav>
       {user && (
-        <div className="p-4 border-t border-border">
+        <div className="p-4">
           <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-lg bg-muted`}>
             <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-sm font-medium text-primary-foreground flex-shrink-0">
               {user.name.split(' ').map(n => n[0]).join('')}

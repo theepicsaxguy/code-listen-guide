@@ -66,7 +66,7 @@ export default function chonkieTest() {
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
           <FileCode2 className="w-8 h-8" />
           chonkie Parse Test
         </h1>
@@ -93,7 +93,7 @@ export default function chonkieTest() {
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               placeholder="https://github.com/user/repo"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
           </div>
 
@@ -106,7 +106,7 @@ export default function chonkieTest() {
               value={gitRef}
               onChange={(e) => setGitRef(e.target.value)}
               placeholder="main"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function chonkieTest() {
               value={includePatterns}
               onChange={(e) => setIncludePatterns(e.target.value)}
               placeholder="*.py, *.ts, src/**/*"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
             <p className="text-xs text-muted-foreground mt-1">Leave empty to include all files</p>
           </div>
@@ -136,7 +136,7 @@ export default function chonkieTest() {
               value={excludePatterns}
               onChange={(e) => setExcludePatterns(e.target.value)}
               placeholder="*test*.py, *.min.js"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
             />
             <p className="text-xs text-muted-foreground mt-1">Leave empty to exclude nothing</p>
           </div>
@@ -153,12 +153,12 @@ export default function chonkieTest() {
             onChange={(e) => setMaxFileSizeKb(Number(e.target.value))}
             min="1"
             max="5000"
-            className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-2 bg-card rounded-lg text-white focus:outline-none focus:border-blue-500"
           />
         </div>
 
         {/* chonkie Options */}
-        <div className="border-t border-input pt-6">
+        <div className="pt-6">
           <h3 className="text-white font-medium mb-4">chonkie Features</h3>
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">

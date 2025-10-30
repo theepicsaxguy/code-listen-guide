@@ -89,7 +89,7 @@ export const FAQ = () => {
               placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-14 bg-card/50 backdrop-blur-sm border-border/50 focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="pl-12 h-14 bg-card/50 backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-primary/50"
             />
           </div>
         </div>
@@ -100,7 +100,7 @@ export const FAQ = () => {
             filteredFaqs.map((faq, index) => (
               <div
                 key={index}
-                className="glass rounded-xl overflow-hidden transition-all duration-300 hover:border-primary/50"
+                className="glass rounded-xl overflow-hidden transition-all duration-300"
               >
                 <button
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}

@@ -110,7 +110,7 @@ export default function Support() {
       in_progress: "bg-purple-500/10 text-purple-500 border-purple-500/20",
       waiting: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
       resolved: "bg-green-500/10 text-green-500 border-green-500/20",
-      closed: "bg-gray-500/10 text-muted-foreground border-gray-500/20",
+      closed: "bg-gray-500/10 text-muted-foreground",
     };
     return colors[status] || colors.open;
   };
@@ -120,7 +120,7 @@ export default function Support() {
       urgent: "bg-red-500/10 text-red-500 border-red-500/20",
       high: "bg-orange-500/10 text-orange-500 border-orange-500/20",
       medium: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-      low: "bg-gray-500/10 text-muted-foreground border-gray-500/20",
+      low: "bg-gray-500/10 text-muted-foreground",
     };
     return colors[priority] || colors.medium;
   };
@@ -143,7 +143,7 @@ export default function Support() {
         <p className="text-muted-foreground mt-2">Manage customer tickets and provide support</p>
       </div>
 
-      <Card className="bg-card border-border">
+      <Card className="bg-card">
         <CardHeader>
           <CardTitle>Filters</CardTitle>
         </CardHeader>
@@ -204,13 +204,13 @@ export default function Support() {
 
       <div className="grid gap-4">
         {isTicketsLoading ? (
-          <Card className="bg-card border-border">
+          <Card className="bg-card">
             <CardContent className="p-6 text-center text-muted-foreground">
               Loading tickets...
             </CardContent>
           </Card>
         ) : tickets.length === 0 ? (
-          <Card className="bg-card border-border">
+          <Card className="bg-card">
             <CardContent className="p-6 text-center text-muted-foreground">
               No tickets found for the selected filters
             </CardContent>
@@ -219,7 +219,7 @@ export default function Support() {
           tickets.map((ticket: SupportTicket) => (
             <Card
               key={ticket.id}
-              className="bg-card border-border hover:shadow-glow transition-shadow cursor-pointer"
+              className="bg-card hover:shadow-glow transition-shadow cursor-pointer"
               onClick={() => setSelectedTicket(ticket.id)}
             >
               <CardContent className="p-6">
@@ -322,7 +322,7 @@ export default function Support() {
               </div>
 
               {ticketDetail.context && (
-                <Card className="bg-card border-border">
+                <Card className="bg-card">
                   <CardHeader>
                     <CardTitle className="text-sm">Context</CardTitle>
                   </CardHeader>

@@ -57,7 +57,7 @@ export default function AdminPayments() {
         <p className="text-muted-foreground mt-1">View and manage all payment transactions</p>
       </div>
 
-      <div className="bg-card border border-border rounded-lg shadow-card">
+      <div className="bg-card rounded-lg shadow-card">
         <Table>
           <TableHeader>
             <TableRow>

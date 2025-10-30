@@ -34,8 +34,8 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-gray-700">
+      <div className="bg-gray-800 rounded-xl overflow-hidden">
+        <div className="p-6">
           <h2 className="text-xl font-semibold text-white">Profile Settings</h2>
         </div>
         <div className="p-6 space-y-6">
@@ -45,7 +45,7 @@ export const SettingsPage: React.FC = () => {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 bg-gray-900 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
           <div>
@@ -54,7 +54,7 @@ export const SettingsPage: React.FC = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 bg-gray-900 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
           <div className="flex items-center justify-between">
@@ -68,8 +68,8 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-gray-700">
+      <div className="bg-gray-800 rounded-xl overflow-hidden">
+        <div className="p-6">
           <h2 className="text-xl font-semibold text-white">Notification Preferences</h2>
         </div>
         <div className="p-6 space-y-4">

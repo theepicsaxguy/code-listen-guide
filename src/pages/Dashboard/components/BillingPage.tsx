@@ -91,8 +91,8 @@ export const BillingPage: React.FC = () => {
   return (
     <div className="max-w-6xl space-y-6">
       {/* Current Plan Overview */}
-      <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-gray-700">
+      <div className="bg-gray-800 rounded-xl overflow-hidden">
+        <div className="p-6">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-xl font-semibold text-white">
@@ -130,7 +130,7 @@ export const BillingPage: React.FC = () => {
           <hr className="border-gray-700" />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="p-4 bg-gray-800 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <CreditCard className="h-4 w-4 text-gray-400" />
                 <span className="text-sm text-gray-400">Monthly Credits</span>
@@ -139,7 +139,7 @@ export const BillingPage: React.FC = () => {
                 {typeof currentPlan.credits === 'number' ? currentPlan.credits : 'Unlimited'}
               </div>
             </div>
-            <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="p-4 bg-gray-800 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="h-4 w-4 text-gray-400" />
                 <span className="text-sm text-gray-400">This Month</span>
@@ -148,7 +148,7 @@ export const BillingPage: React.FC = () => {
                 ${(monthlySpend / 100).toFixed(2)}
               </div>
             </div>
-            <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="p-4 bg-gray-800 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-4 w-4 text-gray-400" />
                 <span className="text-sm text-gray-400">Total Spent</span>
@@ -161,8 +161,8 @@ export const BillingPage: React.FC = () => {
       </div>
 
       {/* Payment History */}
-      <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-gray-700">
+      <div className="bg-gray-800 rounded-xl overflow-hidden">
+        <div className="p-6">
           <h2 className="text-xl font-semibold text-white">Payment History</h2>
           <p className="text-sm text-gray-400">View and download past invoices</p>
         </div>
@@ -220,8 +220,8 @@ export const BillingPage: React.FC = () => {
       {/* Upgrade Dialog */}
       {showUpgradeDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-800 border border-gray-700 rounded-xl shadow-lg">
-            <div className="p-6 border-b border-gray-700">
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-800 rounded-xl shadow-lg">
+            <div className="p-6">
               <h2 className="text-xl font-semibold text-white">Upgrade Your Plan</h2>
               <p className="text-sm text-gray-400">Choose a plan that fits your needs</p>
             </div>
@@ -230,7 +230,7 @@ export const BillingPage: React.FC = () => {
               {plans.filter(p => p.id !== 'free').map((plan) => (
                 <label
                   key={plan.id}
-                  className="flex items-start p-4 border border-gray-700 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
+                  className="flex items-start p-4 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
                   htmlFor={plan.id}
                 >
                   <input
@@ -265,7 +265,7 @@ export const BillingPage: React.FC = () => {
               ))}
             </div>
 
-            <div className="p-6 flex justify-end space-x-2 border-t border-gray-700">
+            <div className="p-6 flex justify-end space-x-2">
               <button onClick={() => setShowUpgradeDialog(false)} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors">
                 Cancel
               </button>

@@ -78,7 +78,7 @@ export const Testimonials = () => {
           {testimonials.map((testimonial, index) => (
             <Card
               key={index}
-              className="p-6 glass hover:border-primary/50 transition-all duration-300 hover-lift group relative overflow-hidden"
+              className="p-6 glass transition-all duration-300 hover-lift group relative overflow-hidden"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               {/* Quote icon background */}
@@ -100,7 +100,7 @@ export const Testimonials = () => {
                 </p>
 
                 {/* Author */}
-                <div className="flex items-center gap-3 pt-2 border-t border-border/50">
+                <div className="flex items-center gap-3 pt-2">
                   <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${testimonial.gradient} flex items-center justify-center font-bold text-sm`}>
                     {testimonial.avatar}
                   </div>
@@ -123,7 +123,7 @@ export const Testimonials = () => {
               {testimonials.slice(0, 5).map((t, i) => (
                 <div
                   key={i}
-                  className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center border-2 border-background font-bold text-xs`}
+                  className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center font-bold text-xs`}
                 >
                   {t.avatar}
                 </div>

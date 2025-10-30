@@ -11,7 +11,7 @@ export const theme = {
     success: {
       bg: "bg-success/10",
       text: "text-success",
-      border: "border-success/20",
+      border: "",
       icon: "text-success",
     },
     error: {
@@ -42,21 +42,21 @@ export const theme = {
 
   // Card variants - using token-based classes
   card: {
-    default: "bg-card border border-border shadow-sm",
-    elevated: "bg-card border border-border shadow-md hover:shadow-lg transition-shadow duration-300",
-    ghost: "bg-transparent border-0",
+    default: "bg-card shadow-sm",
+    elevated: "bg-card shadow-md hover:shadow-lg transition-shadow duration-300",
+    ghost: "bg-transparent",
   },
 
   // Table styling - using token-based classes
   table: {
-    container: "bg-card border border-border rounded-lg shadow-sm overflow-hidden",
+    container: "bg-card rounded-lg shadow-sm overflow-hidden",
     header: "bg-muted/50",
-    row: "border-b border-border transition-colors hover:bg-muted/30",
+    row: "transition-colors hover:bg-muted/30",
   },
 
   // Input styling
   input: {
-    default: "bg-input border-border text-foreground",
+    default: "bg-input text-foreground",
   },
 
   // Typography - using token-based foreground
@@ -76,8 +76,8 @@ export const theme = {
 
   // Border colors - using token-based classes
   border: {
-    default: "border-border",
-    subtle: "border-border/50",
+    default: "",
+    subtle: "",
   },
 } as const;
 

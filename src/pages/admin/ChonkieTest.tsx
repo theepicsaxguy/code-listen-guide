@@ -80,7 +80,7 @@ export default function ChonkieTest() {
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
           <FileCode2 className="w-8 h-8" />
           Chonkie Parse Test
         </h1>
@@ -91,7 +91,7 @@ export default function ChonkieTest() {
 
       {/* Configuration Form */}
       <div className="bg-muted rounded-lg p-6 space-y-6">
-        <div className="flex items-center gap-2 text-white font-semibold mb-4">
+        <div className="flex items-center gap-2 text-foreground font-semibold mb-4">
           <Settings className="w-5 h-5" />
           Configuration
         </div>
@@ -107,7 +107,7 @@ export default function ChonkieTest() {
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               placeholder="https://github.com/user/repo"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -120,7 +120,7 @@ export default function ChonkieTest() {
               value={gitRef}
               onChange={(e) => setGitRef(e.target.value)}
               placeholder="main"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function ChonkieTest() {
               value={includePatterns}
               onChange={(e) => setIncludePatterns(e.target.value)}
               placeholder="*.py, *.ts, src/**/*"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <p className="text-xs text-muted-foreground mt-1">Leave empty to include all files</p>
           </div>
@@ -150,7 +150,7 @@ export default function ChonkieTest() {
               value={excludePatterns}
               onChange={(e) => setExcludePatterns(e.target.value)}
               placeholder="*test*.py, *.min.js"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <p className="text-xs text-muted-foreground mt-1">Leave empty to exclude nothing</p>
           </div>
@@ -167,13 +167,13 @@ export default function ChonkieTest() {
             onChange={(e) => setMaxFileSizeKb(Number(e.target.value))}
             min="1"
             max="5000"
-            className="w-full px-4 py-2 bg-card border border-input rounded-lg text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-2 bg-card border border-input rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
         {/* Chonkie Options */}
-        <div className="border-t border-input pt-6">
-          <h3 className="text-white font-medium mb-4">Chonkie Features</h3>
+        <div className="pt-6">
+          <h3 className="text-foreground font-medium mb-4">Chonkie Features</h3>
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
@@ -183,7 +183,7 @@ export default function ChonkieTest() {
                 className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
               />
               <div>
-                <div className="text-white">Code Enrichment</div>
+                <div className="text-foreground">Code Enrichment</div>
                 <div className="text-sm text-muted-foreground">
                   Extract functions, classes, imports, and code structure
                 </div>
@@ -198,7 +198,7 @@ export default function ChonkieTest() {
                 className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
               />
               <div>
-                <div className="text-white">Formula Enrichment</div>
+                <div className="text-foreground">Formula Enrichment</div>
                 <div className="text-sm text-muted-foreground">
                   Parse mathematical formulas (useful for scientific papers)
                 </div>
@@ -213,7 +213,7 @@ export default function ChonkieTest() {
                 className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
               />
               <div>
-                <div className="text-white">Table Extraction</div>
+                <div className="text-foreground">Table Extraction</div>
                 <div className="text-sm text-muted-foreground">
                   Extract tables from documents and markdown files
                 </div>
@@ -227,7 +227,7 @@ export default function ChonkieTest() {
           <button
             onClick={handleParse}
             disabled={isLoading || !repoUrl}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground font-medium rounded-lg transition-colors"
           >
             {isLoading ? (
               <>

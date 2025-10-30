@@ -7,7 +7,7 @@ interface PlanBadgeProps {
 
 export const PlanBadge: React.FC<PlanBadgeProps> = ({ plan }) => {
   const styles = {
-    free: 'bg-muted/50 text-muted-foreground border-border',
+    free: 'bg-muted/50 text-muted-foreground',
     professional: 'bg-primary/20 text-primary border-primary/30',
     team: 'bg-accent/20 text-accent border-accent/30',
     enterprise: 'bg-warning/20 text-warning border-warning/30'

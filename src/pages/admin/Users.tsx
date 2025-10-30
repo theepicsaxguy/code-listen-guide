@@ -85,7 +85,7 @@ export default function AdminUsers() {
         <Button onClick={handleSearch}>Search</Button>
       </div>
 
-      <div className="bg-card border border-border rounded-lg shadow-card">
+      <div className="bg-card rounded-lg shadow-card">
         <Table>
           <TableHeader>
             <TableRow>

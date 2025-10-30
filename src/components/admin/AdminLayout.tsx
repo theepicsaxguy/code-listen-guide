@@ -75,26 +75,26 @@ export const AdminLayout = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-950">
-      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300`}>
-        <div className="p-6 border-b border-gray-800 relative">
+    <div className="min-h-screen flex bg-background">
+      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-card border-r border-border flex flex-col transition-all duration-300`}>
+        <div className="p-6 relative">
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="absolute -right-3 top-6 bg-gray-800 border border-gray-700 rounded-full p-1 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors z-10"
+            className="absolute -right-3 top-6 bg-secondary rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors z-10 border border-border"
             aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
           {!isSidebarCollapsed ? (
             <>
-              <h1 className="text-xl font-bold text-white">
+              <h1 className="text-xl font-bold text-foreground">
                 Codebase Audiobook
               </h1>
-              <p className="text-xs text-gray-400 mt-1">Admin Dashboard</p>
+              <p className="text-xs text-muted-foreground mt-1">Admin Dashboard</p>
             </>
           ) : (
             <div className="flex items-center justify-center">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-xs font-bold text-white">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-xs font-bold text-primary-foreground">
                 CA
               </div>
             </div>
@@ -114,8 +114,8 @@ export const AdminLayout = () => {
                   variant={isActive ? "secondary" : "ghost"}
                   className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} ${
                     isActive
-                      ? "bg-gray-800 text-white shadow-lg hover:bg-gray-800"
-                      : "text-gray-400 hover:bg-gray-800/50 hover:text-white"
+                      ? "bg-secondary text-secondary-foreground shadow-lg hover:bg-secondary/90"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                   title={isSidebarCollapsed ? item.label : undefined}
                 >
@@ -127,10 +127,10 @@ export const AdminLayout = () => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-800">
+        <div className="p-4">
           <Button
             variant="ghost"
-            className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} text-red-400 hover:text-red-300 hover:bg-red-500/10`}
+            className={`w-full ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'} text-destructive hover:text-destructive hover:bg-destructive/10`}
             onClick={handleLogout}
             title={isSidebarCollapsed ? "Logout" : undefined}
           >
@@ -140,7 +140,7 @@ export const AdminLayout = () => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto bg-gray-950">
+      <main className="flex-1 overflow-auto bg-background">
         <Outlet />
       </main>
     </div>

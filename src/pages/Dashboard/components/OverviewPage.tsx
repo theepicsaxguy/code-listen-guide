@@ -49,7 +49,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card border border-border rounded-xl p-6 hover:border-border/80 transition-colors">
+        <div className="bg-card rounded-xl p-6 transition-colors">
           <div className="flex items-center justify-between mb-4">
             <div className="text-muted-foreground">
               <Library size={24} />
@@ -63,7 +63,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           <div className="text-sm text-muted-foreground">Total Audiobooks</div>
           <div className="text-xs text-muted-foreground/70 mt-1">{completedBooks.length} completed</div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-6 hover:border-border/80 transition-colors">
+        <div className="bg-card rounded-xl p-6 transition-colors">
           <div className="flex items-center justify-between mb-4">
             <div className="text-muted-foreground">
               <Clock size={24} />
@@ -73,7 +73,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           <div className="text-sm text-muted-foreground">Hours Generated</div>
           <div className="text-xs text-muted-foreground/70 mt-1">Total audio content</div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-6 hover:border-border/80 transition-colors">
+        <div className="bg-card rounded-xl p-6 transition-colors">
           <div className="flex items-center justify-between mb-4">
             <div className="text-muted-foreground">
               <Headphones size={24} />
@@ -84,7 +84,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           <div className="text-xs text-muted-foreground/70 mt-1">Available to use</div>
         </div>
       </div>
-      <div className="bg-card border border-border rounded-xl p-6">
+      <div className="bg-card rounded-xl p-6">
         <h3 className="text-lg font-semibold text-foreground mb-6">Usage This Week</h3>
         <div className="flex items-end justify-between gap-3 h-40">
           {usageData.map((data, index) => (
@@ -93,7 +93,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
                 className="w-full bg-gradient-to-t from-primary to-accent rounded-t hover:from-primary/90 hover:to-accent/90 transition-all cursor-pointer relative group"
                 style={{ height: `${(data.count / maxCount) * 100}%`, minHeight: '12px' }}
               >
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-card border border-border text-foreground text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-card text-foreground text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
                   {data.count} audiobooks
                 </div>
               </div>
@@ -102,11 +102,11 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           ))}
         </div>
       </div>
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-border">
+      <div className="bg-card rounded-xl overflow-hidden">
+        <div className="p-6">
           <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
         </div>
-        <div className="divide-y divide-border">
+        <div>
           {audiobooks.slice(0, 5).map((job: Job) => (
             <div
               key={job.id}

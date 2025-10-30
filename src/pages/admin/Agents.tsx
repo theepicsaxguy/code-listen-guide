@@ -348,12 +348,12 @@ const roleLabelMap: Record<AgentMessageRole, string> = {
 
 const statusBadgeStyles: Record<Conversation["status"], string> = {
   active: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-  archived: "bg-muted text-muted-foreground border-border",
+  archived: "bg-muted text-muted-foreground",
   draft: "bg-sky-500/10 text-sky-500 border-sky-500/20",
 };
 
 const nodeStatusStyles: Record<WorkflowNode["status"], string> = {
-  pending: "bg-muted text-muted-foreground border-border",
+  pending: "bg-muted text-muted-foreground",
   running: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   completed: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
   failed: "bg-destructive/10 text-destructive border-destructive/20",
@@ -917,7 +917,7 @@ export default function AdminAgents() {
           <ResizablePanelGroup direction="vertical" className="min-h-[720px] rounded-lg border">
             <ResizablePanel defaultSize={65}>
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
-                <Card className="border-0 border-r border-border lg:border">
+                <Card className="border-0">
                   <CardHeader className="space-y-4">
                     <div>
                       <CardTitle className="flex items-center justify-between">
@@ -1111,7 +1111,7 @@ export default function AdminAgents() {
                               className={
                                 viewOptions.compactMessages
                                   ? "flex items-start gap-4"
-                                  : "space-y-3 rounded-lg border border-border p-4 shadow-sm"
+                                  : "space-y-3 rounded-lg p-4 shadow-sm"
                               }
                             >
                               <div className="flex items-center gap-3">
