@@ -45,6 +45,25 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { formatCurrency } from "@/lib/theme";
 
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "completed":
+    case "active":
+      return "bg-green-500/10 text-green-500 border-green-500/20";
+    case "running":
+    case "in_progress":
+      return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+    case "failed":
+    case "error":
+      return "bg-red-500/10 text-red-500 border-red-500/20";
+    case "pending":
+    case "waiting":
+      return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
+    default:
+      return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+  }
+};
+
 interface AgentJob {
   id: string;
   user_email: string;
@@ -123,7 +142,7 @@ export default function AgentMonitoring() {
   const { data: stats, isLoading: statsLoading } = useQuery<AgentStats>({
     queryKey: ["agent-stats"],
     queryFn: async () => {
-      const response = await apiClient.request("/admin/agents/stats");
+      const response = await apiClient.getAgentStats();
       return response as AgentStats;
     },
     refetchInterval: 5000, // Refresh every 5 seconds
@@ -133,10 +152,8 @@ export default function AgentMonitoring() {
   const { data: jobsData, isLoading: jobsLoading, refetch: refetchJobs } = useQuery({
     queryKey: ["agent-jobs", statusFilter],
     queryFn: async () => {
-      const url = statusFilter === "all" 
-        ? "/admin/agents/jobs"
-        : `/admin/agents/jobs?status=${statusFilter}`;
-      const response = await apiClient.request(url);
+      const status = statusFilter === "all" ? undefined : statusFilter;
+      const response = await apiClient.getAgentJobs(status);
       return response as { jobs: AgentJob[]; total: number };
     },
     refetchInterval: 3000, // Refresh every 3 seconds for real-time feel
@@ -146,7 +163,7 @@ export default function AgentMonitoring() {
   const { data: jobDetails } = useQuery<JobDetails>({
     queryKey: ["agent-job-details", selectedJobId],
     queryFn: async () => {
-      const response = await apiClient.request(`/admin/agents/jobs/${selectedJobId}`);
+      const response = await apiClient.getAgentJobDetails(selectedJobId!);
       return response as JobDetails;
     },
     enabled: !!selectedJobId,
@@ -156,7 +173,7 @@ export default function AgentMonitoring() {
   const { data: logsData } = useQuery({
     queryKey: ["agent-job-logs", selectedJobId],
     queryFn: async () => {
-      const response = await apiClient.request(`/admin/agents/jobs/${selectedJobId}/logs`);
+      const response = await apiClient.getAgentJobLogs(selectedJobId!);
       return response as { logs: JobLog[]; total: number };
     },
     enabled: !!selectedJobId && showLogs,
@@ -164,9 +181,7 @@ export default function AgentMonitoring() {
 
   const handleRetryJob = async (jobId: string) => {
     try {
-      await apiClient.request(`/admin/agents/jobs/${jobId}/retry`, {
-        method: "POST",
-      });
+      await apiClient.restartAgentJob(jobId);
       toast.success("Job queued for retry");
       refetchJobs();
     } catch (error: any) {
@@ -195,7 +210,7 @@ export default function AgentMonitoring() {
         {statsLoading ? (
           <>
             {[1, 2, 3, 4].map((i) => (
-              <Card key={i}>
+              <Card key={i} className="bg-gray-900 border-gray-800">
                 <CardContent className="p-6">
                   <div className="animate-pulse h-20 bg-muted rounded" />
                 </CardContent>
@@ -257,7 +272,7 @@ export default function AgentMonitoring() {
       </div>
 
       {/* Filters and Controls */}
-      <Card className="shadow-card">
+      <Card className="bg-gray-900 border-gray-800 shadow-card">
         <CardHeader>
           <CardTitle>Active Jobs</CardTitle>
           <CardDescription>Monitor and manage agent execution in real-time</CardDescription>
@@ -447,7 +462,7 @@ export default function AgentMonitoring() {
                                     <div className="space-y-4">
                                       {jobDetails.stages && jobDetails.stages.length > 0 ? (
                                         jobDetails.stages.map((stage, index) => (
-                                          <Card key={index}>
+                                          <Card key={index} className="bg-gray-900 border-gray-800">
                                             <CardContent className="p-4">
                                               <div className="flex items-center justify-between">
                                                 <div>
@@ -482,7 +497,7 @@ export default function AgentMonitoring() {
                                     <div className="space-y-2">
                                       {jobDetails.checkpoints && jobDetails.checkpoints.length > 0 ? (
                                         jobDetails.checkpoints.map((checkpoint, index) => (
-                                          <Card key={index}>
+                                          <Card key={index} className="bg-gray-900 border-gray-800">
                                             <CardContent className="p-3">
                                               <div className="flex items-center justify-between">
                                                 <div>

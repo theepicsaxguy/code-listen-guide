@@ -143,7 +143,7 @@ export default function Support() {
         <p className="text-muted-foreground mt-2">Manage customer tickets and provide support</p>
       </div>
 
-      <Card>
+      <Card className="bg-gray-900 border-gray-800">
         <CardHeader>
           <CardTitle>Filters</CardTitle>
         </CardHeader>
@@ -204,13 +204,13 @@ export default function Support() {
 
       <div className="grid gap-4">
         {isTicketsLoading ? (
-          <Card>
+          <Card className="bg-gray-900 border-gray-800">
             <CardContent className="p-6 text-center text-muted-foreground">
               Loading tickets...
             </CardContent>
           </Card>
         ) : tickets.length === 0 ? (
-          <Card>
+          <Card className="bg-gray-900 border-gray-800">
             <CardContent className="p-6 text-center text-muted-foreground">
               No tickets found for the selected filters
             </CardContent>
@@ -219,7 +219,7 @@ export default function Support() {
           tickets.map((ticket: SupportTicket) => (
             <Card
               key={ticket.id}
-              className="hover:shadow-glow transition-shadow cursor-pointer"
+              className="bg-gray-900 border-gray-800 hover:shadow-glow transition-shadow cursor-pointer"
               onClick={() => setSelectedTicket(ticket.id)}
             >
               <CardContent className="p-6">
@@ -322,7 +322,7 @@ export default function Support() {
               </div>
 
               {ticketDetail.context && (
-                <Card>
+                <Card className="bg-gray-900 border-gray-800">
                   <CardHeader>
                     <CardTitle className="text-sm">Context</CardTitle>
                   </CardHeader>

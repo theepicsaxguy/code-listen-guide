@@ -308,6 +308,30 @@ export class ApiClient {
           body: JSON.stringify(params),
         });
       }
+
+      // Agent monitoring endpoints
+      async getAgentStats() {
+        return this.request<any>('/admin/agents/stats');
+      }
+
+      async getAgentJobs(status?: string) {
+        const url = status ? `/admin/agents/jobs?status=${status}` : '/admin/agents/jobs';
+        return this.request<{ jobs: any[]; total: number }>(url);
+      }
+
+      async getAgentJobDetails(jobId: string) {
+        return this.request<any>(`/admin/agents/jobs/${jobId}`);
+      }
+
+      async getAgentJobLogs(jobId: string) {
+        return this.request<{ logs: any[]; total: number }>(`/admin/agents/jobs/${jobId}/logs`);
+      }
+
+      async restartAgentJob(jobId: string) {
+        return this.request<{ success: boolean }>(`/admin/agents/jobs/${jobId}/restart`, {
+          method: 'POST',
+        });
+      }
     }
     
     export const apiClient = new ApiClient(API_BASE_PATH);

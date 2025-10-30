@@ -56,7 +56,7 @@ export default function AdminContent() {
         </p>
       </div>
 
-      <Card>
+      <Card className="bg-gray-900 border-gray-800">
         <CardHeader>
           <CardTitle>Filters</CardTitle>
         </CardHeader>

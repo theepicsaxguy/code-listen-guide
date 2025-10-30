@@ -33,7 +33,7 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <Card className="w-full max-w-md shadow-glow">
+      <Card className="bg-gray-900 border-gray-800 w-full max-w-md shadow-glow">
         <CardHeader className="space-y-2 text-center">
           <div className="mx-auto w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-2">
             <Lock className="w-6 h-6 text-primary-foreground" />

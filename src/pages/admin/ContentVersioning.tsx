@@ -66,7 +66,7 @@ export default function ContentVersioning() {
         <p className="text-muted-foreground mt-2">Manage content versions and rollback when needed</p>
       </div>
 
-      <Card>
+      <Card className="bg-gray-900 border-gray-800">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -85,7 +85,7 @@ export default function ContentVersioning() {
 
       <div className="grid gap-4">
         {contentList?.content?.map((content: ContentSummary) => (
-          <Card key={content.id} className="hover:shadow-glow transition-shadow">
+          <Card key={content.id} className="bg-gray-900 border-gray-800 hover:shadow-glow transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -112,7 +112,7 @@ export default function ContentVersioning() {
 
           <div className="space-y-4 mt-4">
             {versions?.versions?.map((version: ContentVersion, index: number) => (
-              <Card key={version.id}>
+              <Card key={version.id} className="bg-gray-900 border-gray-800">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 flex-1">
