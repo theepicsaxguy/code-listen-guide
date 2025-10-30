@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,33 @@ import { getErrorMessage } from '@/lib/error-utils';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
-  const { login, register } = useAuth();
+  const { login, register, user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!isAuthLoading && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, isAuthLoading, navigate]);
+
+  // Show loading while checking authentication
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render login form if user is authenticated (redirect will happen)
+  if (user) {
+    return null;
+  }
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
