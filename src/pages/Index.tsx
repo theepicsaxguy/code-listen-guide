@@ -14,7 +14,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
-      <nav className="fixed top-0 w-full z-50 glass supports-[backdrop-filter]:bg-background/70">
+      <nav className="fixed top-0 w-full z-50 bg-card">
         <div className="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <h1 className="text-xl sm:text-2xl font-bold gradient-text-primary">
             Codebase Audiobook

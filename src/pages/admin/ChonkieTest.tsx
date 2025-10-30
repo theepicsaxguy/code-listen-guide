@@ -107,7 +107,7 @@ export default function ChonkieTest() {
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               placeholder="https://github.com/user/repo"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-4 py-2 bg-card rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -120,7 +120,7 @@ export default function ChonkieTest() {
               value={gitRef}
               onChange={(e) => setGitRef(e.target.value)}
               placeholder="main"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-4 py-2 bg-card rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function ChonkieTest() {
               value={includePatterns}
               onChange={(e) => setIncludePatterns(e.target.value)}
               placeholder="*.py, *.ts, src/**/*"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-4 py-2 bg-card rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <p className="text-xs text-muted-foreground mt-1">Leave empty to include all files</p>
           </div>
@@ -150,7 +150,7 @@ export default function ChonkieTest() {
               value={excludePatterns}
               onChange={(e) => setExcludePatterns(e.target.value)}
               placeholder="*test*.py, *.min.js"
-              className="w-full px-4 py-2 bg-card border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-4 py-2 bg-card rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <p className="text-xs text-muted-foreground mt-1">Leave empty to exclude nothing</p>
           </div>
@@ -167,7 +167,7 @@ export default function ChonkieTest() {
             onChange={(e) => setMaxFileSizeKb(Number(e.target.value))}
             min="1"
             max="5000"
-            className="w-full px-4 py-2 bg-card border border-input rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full px-4 py-2 bg-card rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -180,7 +180,7 @@ export default function ChonkieTest() {
                 type="checkbox"
                 checked={enableCodeEnrichment}
                 onChange={(e) => setEnableCodeEnrichment(e.target.checked)}
-                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-foreground">Code Enrichment</div>
@@ -195,7 +195,7 @@ export default function ChonkieTest() {
                 type="checkbox"
                 checked={enableFormulaEnrichment}
                 onChange={(e) => setEnableFormulaEnrichment(e.target.checked)}
-                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-foreground">Formula Enrichment</div>
@@ -210,7 +210,7 @@ export default function ChonkieTest() {
                 type="checkbox"
                 checked={enableTableExtraction}
                 onChange={(e) => setEnableTableExtraction(e.target.checked)}
-                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-foreground">Table Extraction</div>
@@ -246,7 +246,7 @@ export default function ChonkieTest() {
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 flex items-start gap-3">
+        <div className="bg-red-900/20 rounded-lg p-4 flex items-start gap-3">
           <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           <div>
             <h3 className="text-red-500 font-semibold">Error</h3>

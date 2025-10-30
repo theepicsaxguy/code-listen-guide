@@ -51,7 +51,7 @@ export const SampleShowcase = () => {
           {samples.map((sample, index) => (
             <Card
               key={index}
-              className="p-8 glass transition-all duration-300 hover-lift group overflow-hidden relative"
+              className="p-8 bg-card transition-all duration-300 hover-lift group overflow-hidden relative"
             >
               {/* Gradient overlay on hover */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

@@ -106,10 +106,10 @@ export default function Support() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      open: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-      in_progress: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-      waiting: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-      resolved: "bg-green-500/10 text-green-500 border-green-500/20",
+      open: "bg-blue-500/10 text-blue-500",
+      in_progress: "bg-purple-500/10 text-purple-500",
+      waiting: "bg-yellow-500/10 text-yellow-500",
+      resolved: "bg-green-500/10 text-green-500",
       closed: "bg-gray-500/10 text-muted-foreground",
     };
     return colors[status] || colors.open;
@@ -117,9 +117,9 @@ export default function Support() {
 
   const getPriorityColor = (priority: string) => {
     const colors: Record<string, string> = {
-      urgent: "bg-red-500/10 text-red-500 border-red-500/20",
-      high: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-      medium: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+      urgent: "bg-red-500/10 text-red-500",
+      high: "bg-orange-500/10 text-orange-500",
+      medium: "bg-yellow-500/10 text-yellow-500",
       low: "bg-gray-500/10 text-muted-foreground",
     };
     return colors[priority] || colors.medium;
@@ -373,7 +373,7 @@ export default function Support() {
                     key={message.id}
                     className={`p-4 rounded-lg ${
                       message.author_type === "admin"
-                        ? "bg-primary/5 border-l-2 border-primary"
+                        ? "bg-primary/5"
                         : "bg-muted"
                     }`}
                   >

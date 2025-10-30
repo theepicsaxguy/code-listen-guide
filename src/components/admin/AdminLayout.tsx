@@ -76,11 +76,11 @@ export const AdminLayout = () => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-card border-r border-border flex flex-col transition-all duration-300`}>
+      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-card flex flex-col transition-all duration-300`}>
         <div className="p-6 relative">
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="absolute -right-3 top-6 bg-secondary rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors z-10 border border-border"
+            className="absolute -right-3 top-6 bg-secondary rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors z-10"
             aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}

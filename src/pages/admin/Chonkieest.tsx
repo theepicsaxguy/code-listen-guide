@@ -166,7 +166,7 @@ export default function chonkieTest() {
                 type="checkbox"
                 checked={enableCodeEnrichment}
                 onChange={(e) => setEnableCodeEnrichment(e.target.checked)}
-                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-white">Code Enrichment</div>
@@ -181,7 +181,7 @@ export default function chonkieTest() {
                 type="checkbox"
                 checked={enableFormulaEnrichment}
                 onChange={(e) => setEnableFormulaEnrichment(e.target.checked)}
-                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-white">Formula Enrichment</div>
@@ -196,7 +196,7 @@ export default function chonkieTest() {
                 type="checkbox"
                 checked={enableTableExtraction}
                 onChange={(e) => setEnableTableExtraction(e.target.checked)}
-                className="w-5 h-5 rounded bg-card border-input text-blue-600 focus:ring-blue-500"
+                className="w-5 h-5 rounded bg-card text-blue-600 focus:ring-blue-500"
               />
               <div>
                 <div className="text-white">Table Extraction</div>
@@ -232,7 +232,7 @@ export default function chonkieTest() {
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 flex items-start gap-3">
+        <div className="bg-red-900/20 rounded-lg p-4 flex items-start gap-3">
           <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           <div>
             <h3 className="text-red-500 font-semibold">Error</h3>
@@ -384,7 +384,7 @@ export default function chonkieTest() {
               {Object.entries(result.modules)
                 .slice(0, 5)
                 .map(([path, data]: [string, any]) => (
-                  <div key={path} className="border border-input rounded-lg p-4">
+                  <div key={path} className="rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="font-mono text-sm text-blue-400">{path}</div>
                       <div className="text-xs text-muted-foreground">

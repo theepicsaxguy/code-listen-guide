@@ -50,8 +50,8 @@ export default function ContentVersioning() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      published: "bg-green-500/10 text-green-500 border-green-500/20",
-      draft: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+      published: "bg-green-500/10 text-green-500",
+      draft: "bg-yellow-500/10 text-yellow-500",
       archived: "bg-gray-500/10 text-muted-foreground",
     };
     return colors[status] || colors.draft;
@@ -120,7 +120,7 @@ export default function ContentVersioning() {
                         <Badge variant="outline">v{version.version}</Badge>
                         <Badge className={getStatusColor(version.status)}>{version.status}</Badge>
                         {index === 0 && (
-                          <Badge className="bg-primary/10 text-primary border-primary/20">Current</Badge>
+                          <Badge className="bg-primary/10 text-primary">Current</Badge>
                         )}
                       </div>
                       <h4 className="font-medium">{version.title}</h4>

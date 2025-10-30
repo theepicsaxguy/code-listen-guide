@@ -336,11 +336,9 @@ All colors MUST be HSL.
     -webkit-text-fill-color: transparent;
   }
 
-  /* Glass morphism utility */
+  /* Glass morphism utility - replaced with solid background for consistency */
   .glass {
-    background: hsl(var(--card) / 0.7);
-    backdrop-filter: blur(16px);
-    border: 1px solid hsl(var(--border) / 0.5);
+    background: hsl(var(--card));
   }
 
   /* Mesh gradient background */

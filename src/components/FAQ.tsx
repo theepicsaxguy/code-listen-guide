@@ -89,7 +89,7 @@ export const FAQ = () => {
               placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-14 bg-card/50 backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="pl-12 h-14 bg-card focus-visible:ring-2 focus-visible:ring-primary/50"
             />
           </div>
         </div>
@@ -100,7 +100,7 @@ export const FAQ = () => {
             filteredFaqs.map((faq, index) => (
               <div
                 key={index}
-                className="glass rounded-xl overflow-hidden transition-all duration-300"
+                className="bg-card rounded-xl overflow-hidden transition-all duration-300"
               >
                 <button
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}
@@ -132,7 +132,7 @@ export const FAQ = () => {
         </div>
 
         {/* Still have questions CTA */}
-        <div className="mt-12 text-center space-y-4 p-8 glass rounded-2xl">
+        <div className="mt-12 text-center space-y-4 p-8 bg-card rounded-2xl">
           <h3 className="text-2xl font-bold">Still have questions?</h3>
           <p className="text-muted-foreground">
             Can't find the answer you're looking for? Our support team is here to help.

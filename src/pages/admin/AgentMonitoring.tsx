@@ -49,16 +49,16 @@ const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case "completed":
     case "active":
-      return "bg-green-500/10 text-green-500 border-green-500/20";
+      return "bg-green-500/10 text-green-500";
     case "running":
     case "in_progress":
-      return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+      return "bg-blue-500/10 text-blue-500";
     case "failed":
     case "error":
-      return "bg-red-500/10 text-red-500 border-red-500/20";
+      return "bg-red-500/10 text-red-500";
     case "pending":
     case "waiting":
-      return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
+      return "bg-yellow-500/10 text-yellow-500";
     default:
       return "bg-gray-500/10 text-muted-foreground";
   }
@@ -435,7 +435,7 @@ export default function AgentMonitoring() {
                                   </div>
 
                                   {jobDetails.error_message && (
-                                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                                    <div className="bg-destructive/10 rounded-lg p-4">
                                       <div className="flex items-start gap-2">
                                         <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
                                         <div>

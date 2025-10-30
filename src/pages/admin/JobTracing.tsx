@@ -194,7 +194,7 @@ export default function JobTracing() {
               </div>
 
               {jobTrace.error && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <div className="bg-destructive/10 rounded-lg p-4">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
                     <div>
@@ -263,7 +263,7 @@ export default function JobTracing() {
                           </div>
                         </div>
                         {stage.error && (
-                          <div className="mt-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded p-2">
+                          <div className="mt-2 text-sm text-destructive bg-destructive/10 rounded p-2">
                             {stage.error}
                           </div>
                         )}

@@ -332,7 +332,7 @@ export default function AgentTest() {
 
                 {/* Error Display */}
                 {agentResult.error && (
-                  <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
+                  <div className="p-4 bg-destructive/10 rounded-lg">
                     <div className="flex items-start gap-2">
                       <XCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                       <div>
@@ -359,7 +359,7 @@ export default function AgentTest() {
                         <div
                           key={idx}
                           className={`p-3 rounded-lg border ${
-                            msg.role === "user" ? "bg-blue-500/10 border-blue-500/20" : "bg-green-500/10 border-green-500/20"
+                            msg.role === "user" ? "bg-blue-500/10" : "bg-green-500/10"
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1">
@@ -541,7 +541,7 @@ export default function AgentTest() {
 
                 {/* Error Display */}
                 {workflowResult.error && (
-                  <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
+                  <div className="p-4 bg-destructive/10 rounded-lg">
                     <div className="flex items-start gap-2">
                       <XCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                       <div>

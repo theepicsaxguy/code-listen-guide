@@ -71,7 +71,7 @@ const Dashboard: React.FC = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div className="flex-1 overflow-auto">
-        <header className="bg-card sticky top-0 z-10 backdrop-blur-sm bg-card/95">
+        <header className="bg-card sticky top-0 z-10">
           <div className="px-8 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4 flex-1">
               <h1 className="text-2xl font-semibold text-foreground">

@@ -127,7 +127,7 @@ export const BillingPage: React.FC = () => {
             </p>
           </div>
 
-          <hr className="border-gray-700" />
+          <hr className="opacity-0" />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-gray-800 rounded-lg">

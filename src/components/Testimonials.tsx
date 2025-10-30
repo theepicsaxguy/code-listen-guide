@@ -78,7 +78,7 @@ export const Testimonials = () => {
           {testimonials.map((testimonial, index) => (
             <Card
               key={index}
-              className="p-6 glass transition-all duration-300 hover-lift group relative overflow-hidden"
+              className="p-6 bg-card transition-all duration-300 hover-lift group relative overflow-hidden"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               {/* Quote icon background */}

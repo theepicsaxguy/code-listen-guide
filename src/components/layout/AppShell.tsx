@@ -22,7 +22,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       {sidebar && sidebar}
       <div className="flex-1 flex flex-col overflow-hidden">
         {header && (
-          <header className="bg-card sticky top-0 z-10 backdrop-blur-sm bg-card/95">
+          <header className="bg-card sticky top-0 z-10">
             {header}
           </header>
         )}

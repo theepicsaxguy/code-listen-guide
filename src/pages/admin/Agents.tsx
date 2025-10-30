@@ -347,22 +347,22 @@ const roleLabelMap: Record<AgentMessageRole, string> = {
 };
 
 const statusBadgeStyles: Record<Conversation["status"], string> = {
-  active: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  active: "bg-emerald-500/10 text-emerald-500",
   archived: "bg-muted text-muted-foreground",
-  draft: "bg-sky-500/10 text-sky-500 border-sky-500/20",
+  draft: "bg-sky-500/10 text-sky-500",
 };
 
 const nodeStatusStyles: Record<WorkflowNode["status"], string> = {
   pending: "bg-muted text-muted-foreground",
-  running: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  completed: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-  failed: "bg-destructive/10 text-destructive border-destructive/20",
+  running: "bg-blue-500/10 text-blue-500",
+  completed: "bg-emerald-500/10 text-emerald-500",
+  failed: "bg-destructive/10 text-destructive",
 };
 
 const difficultyStyles: Record<GalleryItem["difficulty"], string> = {
-  starter: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-  intermediate: "bg-sky-500/10 text-sky-500 border-sky-500/20",
-  advanced: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  starter: "bg-emerald-500/10 text-emerald-500",
+  intermediate: "bg-sky-500/10 text-sky-500",
+  advanced: "bg-amber-500/10 text-amber-500",
 };
 
 interface InlinePattern {
@@ -883,7 +883,7 @@ export default function AdminAgents() {
         </div>
       </div>
 
-      <Card className="mt-6 border-yellow-500/20 bg-yellow-500/5">
+      <Card className="mt-6 bg-yellow-500/5">
         <CardContent className="py-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
@@ -914,7 +914,7 @@ export default function AdminAgents() {
         </TabsList>
 
         <TabsContent value="agents" className="mt-6">
-          <ResizablePanelGroup direction="vertical" className="min-h-[720px] rounded-lg border">
+          <ResizablePanelGroup direction="vertical" className="min-h-[720px] rounded-lg">
             <ResizablePanel defaultSize={65}>
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
                 <Card className="border-0">
@@ -998,7 +998,7 @@ export default function AdminAgents() {
                       </div>
                     </ScrollArea>
                   </CardContent>
-                  <CardFooter className="flex flex-col gap-4 border-t bg-muted/40">
+                  <CardFooter className="flex flex-col gap-4 bg-muted/40">
                     <div className="w-full space-y-3">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="show-attachments" className="flex items-center gap-2 text-sm">
@@ -1037,7 +1037,7 @@ export default function AdminAgents() {
                   </CardFooter>
                 </Card>
 
-                <Card className="border-0 lg:border">
+                <Card className="border-0">
                   <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <CardTitle className="flex items-center gap-2 text-xl">
@@ -1138,7 +1138,7 @@ export default function AdminAgents() {
                               <div className={viewOptions.compactMessages ? "flex-1" : "ml-14"}>
                                 <div className="prose prose-sm max-w-none space-y-2 dark:prose-invert">{content}</div>
                                 {message.functionCall && (
-                                  <Card className="mt-4 border-dashed">
+                                  <Card className="mt-4">
                                     <CardHeader className="pb-2">
                                       <CardTitle className="flex items-center gap-2 text-sm">
                                         <ServerCog className="h-4 w-4" />
@@ -1169,7 +1169,7 @@ export default function AdminAgents() {
                                   </Card>
                                 )}
                                 {message.approval && (
-                                  <Card className="mt-4 border-dashed border-emerald-500/40 bg-emerald-500/5">
+                                  <Card className="mt-4 bg-emerald-500/5">
                                     <CardHeader className="pb-2">
                                       <CardTitle className="flex items-center gap-2 text-sm text-emerald-600">
                                         <CheckCircle2 className="h-4 w-4" />
@@ -1187,7 +1187,7 @@ export default function AdminAgents() {
                                   </Card>
                                 )}
                                 {viewOptions.showAttachments && message.attachments && message.attachments.length > 0 && (
-                                  <Collapsible className="mt-4 rounded-lg border">
+                                  <Collapsible className="mt-4 rounded-lg">
                                     <CollapsibleTrigger asChild>
                                       <Button variant="ghost" className="w-full justify-between">
                                         Attachments
@@ -1258,7 +1258,7 @@ export default function AdminAgents() {
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm">
                     {selectedConversation?.messages.map((message) => (
-                      <div key={message.id} className="flex items-center justify-between rounded border px-3 py-2">
+                      <div key={message.id} className="flex items-center justify-between rounded px-3 py-2">
                         <div className="flex items-center gap-3 text-xs font-medium">
                           {roleIconMap[message.role]}
                           <span>{roleLabelMap[message.role]}</span>
@@ -1355,7 +1355,7 @@ export default function AdminAgents() {
               </CardHeader>
               <CardContent>
                 <div
-                  className="relative h-[420px] w-full overflow-hidden rounded-lg border bg-background"
+                  className="relative h-[420px] w-full overflow-hidden rounded-lg bg-background"
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}

@@ -87,7 +87,7 @@ export const Pricing = () => {
             return (
               <Card
                 key={index}
-                className={`p-8 glass transition-all duration-500 hover-lift relative overflow-hidden group ${
+                className={`p-8 bg-card transition-all duration-500 hover-lift relative overflow-hidden group ${
                   tier.popular ? 'scale-105' : ''
                 }`}
               >
