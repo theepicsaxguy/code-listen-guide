@@ -17,37 +17,45 @@ import { cn } from "@/lib/utils";
  * No gradients or glow effects in product UIs
  */
 const badgeVariants = cva(
-  "inline-flex items-center rounded-control px-2.5 py-0.5 text-xs font-semibold transition-standard focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        // Pending/default: purple semantic color
+        // Info: blue (Comments) - Subtle muted neon
         default:
-          "bg-pending/5 text-pending",
+          "bg-blue-500/5 text-blue-300",
         
-        // Success: completed jobs - green semantic
+        // Success: green (Accessibility)
         success:
-          "bg-success/5 text-success",
+          "bg-green-500/5 text-green-300",
         
-        // Danger/Failed: error states - red semantic
+        // Danger: red (Share)
         danger:
-          "bg-danger/5 text-danger",
+          "bg-red-500/5 text-red-300",
         
-        // Primary/In Progress: active states - cyan
-        primary:
-          "bg-primary/5 text-primary",
-        
-        // Warning: caution states - amber
+        // Warning: orange (Collaborators)
         warning:
-          "bg-warning/5 text-warning",
+          "bg-orange-500/5 text-orange-300",
         
-        // Secondary: purple accent (use sparingly)
+        // Info: blue semantic
+        info:
+          "bg-blue-500/5 text-blue-300",
+        
+        // Pending: purple (CMS Drafts)
+        pending:
+          "bg-purple-500/5 text-purple-300",
+        
+        // Primary: cyan/teal (Feature Flags)
+        primary:
+          "bg-cyan-500/5 text-cyan-300",
+        
+        // Secondary: purple accent
         secondary:
-          "bg-secondary/5 text-secondary",
+          "bg-purple-500/5 text-purple-300",
         
         // Outline: minimal badge with border
         outline:
-          "bg-surface text-foreground border border-border",
+          "bg-transparent text-zinc-500 border border-zinc-800",
       },
     },
     defaultVariants: {

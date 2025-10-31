@@ -12,8 +12,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
 
  if (status === 'completed') {
  return (
- <span className="inline-flex items-center gap-1.5 rounded-control bg-success/5 px-2.5 py-1 text-xs font-semibold text-success">
- <CheckCircle className="h-3 w-3" />
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/5 px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-green-300">
+ <CheckCircle className="h-3 w-3 stroke-[1.5] text-green-300" />
  Completed
  </span>
  );
@@ -21,8 +21,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
 
  if (status === 'failed') {
  return (
- <span className="inline-flex items-center gap-1.5 rounded-control bg-danger/5 px-2.5 py-1 text-xs font-semibold text-danger">
- <XCircle className="h-3 w-3" />
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/5 px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-red-300">
+ <XCircle className="h-3 w-3 stroke-[1.5] text-red-300" />
  Failed
  </span>
  );
@@ -30,16 +30,16 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
 
  if (status === 'pending') {
  return (
- <span className="inline-flex items-center gap-1.5 rounded-control bg-pending/5 px-2.5 py-1 text-xs font-semibold text-pending">
- <Loader className="h-3 w-3 animate-spin" />
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/5 px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-purple-300">
+ <Loader className="h-3 w-3 animate-spin stroke-[1.5] text-purple-300" />
  Pending
  </span>
  );
  }
 
  return (
- <span className="inline-flex items-center gap-1.5 rounded-control bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary">
- <Loader className="h-3 w-3 animate-spin" />
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/5 px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-cyan-300">
+ <Loader className="h-3 w-3 animate-spin stroke-[1.5] text-cyan-300" />
  {normalized.charAt(0).toUpperCase() + normalized.slice(1)}
  </span>
  );

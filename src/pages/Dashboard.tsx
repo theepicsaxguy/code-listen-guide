@@ -31,7 +31,8 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedAudiobookId, setSelectedAudiobookId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Mobile: collapsed by default, desktop: expanded
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
 
   const { data: user } = useUser();
 
@@ -56,38 +57,21 @@ const Dashboard: React.FC = () => {
     }
   }, [authUser, isAuthLoading, navigate]);
 
-  // Show loading while checking auth
-  if (isAuthLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // Handle mobile sidebar collapse on resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsSidebarCollapsed(true);
+      } else {
+        setIsSidebarCollapsed(false);
+      }
+    };
 
-  // Don't render dashboard if not authenticated
-  if (!authUser) {
-    return null;
-  }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const handleNavigateToAudiobook = (id: string) => {
-    setSelectedAudiobookId(id);
-    setActiveTab('audiobook-detail');
-  };
-
-  const handleBackToAudiobooks = () => {
-    setSelectedAudiobookId(null);
-    setActiveTab('audiobooks');
-  };
-
-  const handleCreateNewAudiobook = () => {
-    // Navigate to the submit page where users can create new audiobooks
-    navigate('/submit');
-  };
-
+  // Memoize title/description/crumbs BEFORE early returns to ensure hooks order consistency
   const { title, description, crumbs } = useMemo(() => {
     if (activeTab === 'audiobook-detail' && selectedAudiobookId) {
       return {
@@ -139,10 +123,42 @@ const Dashboard: React.FC = () => {
     };
   }, [activeTab, selectedAudiobookId]);
 
+  // Show loading while checking auth
+  if (isAuthLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!authUser) {
+    return null;
+  }
+
+  const handleNavigateToAudiobook = (id: string) => {
+    setSelectedAudiobookId(id);
+    setActiveTab('audiobook-detail');
+  };
+
+  const handleBackToAudiobooks = () => {
+    setSelectedAudiobookId(null);
+    setActiveTab('audiobooks');
+  };
+
+  const handleCreateNewAudiobook = () => {
+    // Navigate to the submit page where users can create new audiobooks
+    navigate('/submit');
+  };
+
   return (
-    <div className="flex min-h-screen bg-background text-foreground relative">
-      {/* Radial gradient background accent */}
-      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+    <div className="flex min-h-screen bg-black text-zinc-50 relative">
+      {/* Soft radial gradient background accent - Vercel style */}
+      <div className="fixed inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent pointer-events-none" />
       
       <Sidebar
         activeTab={activeTab}
@@ -152,28 +168,28 @@ const Dashboard: React.FC = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div className="flex-1 overflow-hidden relative">
-        <div className="bg-surface">
-          <div className="mx-auto flex max-w-content-default flex-col gap-8 px-6 py-8">
-            <div className="space-y-4">
+        <div className="surface-depth mx-auto">
+          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-32">
+            <div className="space-y-8">
               <Breadcrumb>
                 <BreadcrumbList>
                   {crumbs.map((crumb, index) => (
                     <React.Fragment key={crumb.label}>
                       <BreadcrumbItem>
-                        <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                        <BreadcrumbLink href={crumb.href} className="text-zinc-400 hover:text-zinc-100">{crumb.label}</BreadcrumbLink>
                       </BreadcrumbItem>
                       {index < crumbs.length - 1 && <BreadcrumbSeparator />}
                     </React.Fragment>
                   ))}
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>{title}</BreadcrumbPage>
+                    <BreadcrumbPage className="text-zinc-400">{title}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
-              <div className="flex flex-col gap-3">
-                <h1 className="text-3xl font-bold text-foreground leading-tight">{title}</h1>
-                <p className="text-base leading-relaxed text-muted-foreground">{description}</p>
+              <div className="flex flex-col gap-8">
+                <h1 className="text-5xl md:text-6xl 2xl:text-[4.5rem] font-semibold text-zinc-50 leading-[1.1]">{title}</h1>
+                <p className="text-lg leading-relaxed text-zinc-500 font-normal max-w-3xl">{description}</p>
               </div>
             </div>
             <div className={cn('flex flex-col gap-4', (activeTab === 'home' || activeTab === 'audiobooks') && 'md:flex-row md:items-center md:justify-between')}>
@@ -202,7 +218,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <main className="mx-auto max-w-content-default space-y-8 px-6 py-8 relative">
+        <main className="mx-auto max-w-7xl space-y-8 px-6 py-24 relative gap-8">
           {activeTab === 'home' && <OverviewPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
           {activeTab === 'audiobooks' && (
             <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} searchQuery={searchQuery} />

@@ -14,25 +14,25 @@
   --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   
   /* Body text - standardized with improved line-height */
-  --font-size-base: 1rem;
-  --line-height-base: 1.6; /* 1.6-1.7 for relaxed reading */
-  --line-height-heading: 1.25;
+  --font-size-base: 0.875rem; /* text-sm */
+  --line-height-base: 1.625; /* leading-relaxed for body */
+  --line-height-heading: 1.2; /* leading-tight for headings */
   
   /* Semantic Typography Scale - Professional hierarchy */
   --text-display: 3.75rem;   /* text-6xl - Largest headings, hero text */
   --text-heading: 2.25rem;   /* text-3xl - Page titles */
   --text-subheading: 1.5rem; /* text-xl to text-2xl - Section headers */
-  --text-body: 1rem;         /* text-base - Body text */
+  --text-body: 0.875rem;     /* text-sm - Body text */
   --text-body-sm: 0.875rem;  /* text-sm - Metadata */
   --text-caption: 0.75rem;   /* text-xs - Tiny labels */
   
-  /* Heading scale - Enhanced for visual hierarchy */
-  --font-size-h1: 3rem;      /* text-3xl - Page titles */
-  --font-size-h2: 2rem;      /* text-2xl - Section headers */
-  --font-size-h3: 1.5rem;    /* text-xl - Subsection headers */
-  --font-size-h4: 1.25rem;   /* text-lg */
-  --font-size-h5: 1.125rem;  /* text-base */
-  --font-size-h6: 1rem;      /* text-base */
+  /* Heading scale - Enhanced for visual hierarchy (Vercel-style) */
+  --font-size-h1: 3.75rem;   /* text-6xl - Hero headlines (base) */
+  --font-size-h2: 3rem;      /* text-5xl - Page titles */
+  --font-size-h3: 2.25rem;  /* text-4xl - Large headings */
+  --font-size-h4: 1.875rem;   /* text-3xl - Section headers */
+  --font-size-h5: 1.125rem;   /* text-lg - Subheadlines */
+  --font-size-h6: 0.875rem;   /* text-sm - Body text */
 
   /* ============================================================================
      Core Surface Palette (Vercel-Style Deep Black)
@@ -40,36 +40,36 @@
      ============================================================================ */
   
   /* Base background - Pure to near-black (#000000 ? #0A0A0A) */
-  --color-background: hsl(0 0% 2%); /* #050505 - near-black base */
+  --color-background: hsl(0 0% 0%); /* #000000 - pure black base */
   
   /* Elevated surface - Subtle lift (#111111 ? #1A1A1A) */
-  --color-surface: hsl(0 0% 10%); /* #1A1A1A - elevated containers */
-  --color-surface-secondary: hsl(0 0% 12%); /* #1F1F1F - intermediate step */
+  --color-surface: hsl(0 0% 7%); /* #111111 - elevated containers */
+  --color-surface-secondary: hsl(0 0% 9%); /* #18181b - intermediate step */
   
   /* Active surface - Card-level elevation (#1F1F1F ? #262626) */
-  --color-surface-active: hsl(0 0% 15%); /* #262626 - card surfaces */
+  --color-surface-active: hsl(0 0% 11%); /* #18181b - card surfaces */
   --color-surface-tertiary: hsl(0 0% 15%); /* Alias for backwards compatibility */
   
   /* Foreground hierarchy - Pure optical contrast (no hue shift) */
-  --color-foreground: hsl(0 0% 100%); /* Pure white - headings and primary text */
-  --color-foreground-muted: hsl(0 0% 83%); /* #D4D4D8 - body text */
-  --color-muted: hsl(0 0% 63%); /* #A1A1AA - secondary text */
-  --color-muted-foreground: hsl(0 0% 45%); /* #71717A - metadata/dim */
+  --color-foreground: hsl(0 0% 98%); /* Zinc-50 - headings and primary text */
+  --color-foreground-muted: hsl(0 0% 71%); /* Zinc-300 - body text */
+  --color-muted: hsl(0 0% 63%); /* Zinc-400 - secondary text */
+  --color-muted-foreground: hsl(0 0% 45%); /* Zinc-500 - metadata/dim */
   
   /* Interactive elements - Nearly invisible borders, pure contrast */
-  --color-border: hsl(0 0% 15%); /* Minimal borders - contrast via light, not outlines */
-  --color-ring: hsl(180 100% 50%); /* Bright cyan focus - #00FFFF */
-  --color-input: hsl(0 0% 10%); /* Matches elevated surface */
+  --color-border: hsl(0 0% 22%); /* Zinc-800 - minimal borders, only where absolutely needed */
+  --color-ring: hsl(187 85% 53%); /* Cyan-500 - focus ring only */
+  --color-input: hsl(0 0% 7%); /* Matches elevated surface */
 
   /* ============================================================================
      Accent Palette (Vercel-Style Electric Microbursts)
      Minimal chromatic highlights - bright, almost neon, used sparingly
      ============================================================================ */
 
-  /* Brand / Primary Accent - Bright neon cyan (#00FFFF ? #06B6D4) */
-  --color-primary: hsl(180 100% 50%); /* #00FFFF - electric cyan for hero/links */
-  --color-primary-hover: hsl(186 93% 42%); /* #06B6D4 - slightly softer on hover */
-  --color-primary-active: hsl(180 100% 45%); /* Slightly darker on active */
+  /* Brand / Primary Accent - Soft desaturated cyan (Vercel style) */
+  --color-primary: hsl(187 75% 55%); /* Softer cyan - ~70% saturation */
+  --color-primary-hover: hsl(187 75% 60%); /* Lighter on hover */
+  --color-primary-active: hsl(187 75% 50%); /* Slightly darker on active */
   --color-primary-foreground: hsl(0 0% 0%); /* Black text on primary (high contrast) */
   
   /* Secondary Accent - Supportive chromatic for links, less-dominant buttons, tags */
@@ -84,26 +84,31 @@
   --color-accent-active: hsl(0 0% 10%); /* #1A1A1A - Darker active */
   --color-accent-foreground: hsl(0 0% 83%); /* #D4D4D8 - Body text color */
   
-  /* Semantic Accents - Vercel tag colors (bright, electric, minimal usage) */
-  /* Applied as text + low-alpha background (5-10% opacity) for integration */
-  --color-success: hsl(142 71% 45%); /* #22C55E - green - bright tag color */
-  --color-success-hover: hsl(142 71% 50%);
-  --color-success-foreground: hsl(0 0% 0%); /* Black text on bright colors */
-  --color-warning: hsl(43 96% 56%); /* #FBBF24 - amber - bright tag color */
-  --color-warning-hover: hsl(43 96% 61%);
-  --color-warning-foreground: hsl(0 0% 0%);
-  --color-danger: hsl(0 84% 60%); /* #EF4444 - red - bright tag color */
-  --color-danger-hover: hsl(0 84% 65%);
-  --color-danger-foreground: hsl(0 0% 100%); /* White on red for readability */
-  --color-info: hsl(217 91% 60%); /* #3B82F6 - blue - bright tag color */
+  /* Semantic Accents - Vercel tag colors (muted but vibrant) */
+  /* Applied as text + low-alpha background (5-10% opacity) for badges/tags only */
+  --color-info: hsl(217 91% 60%); /* #3B82F6 - blue (Comments) */
   --color-info-hover: hsl(217 91% 65%);
-  --color-info-foreground: hsl(0 0% 0%);
-  --color-pending: hsl(258 90% 67%); /* #A855F7 - purple - bright tag color */
+  --color-info-foreground: hsl(0 0% 100%); /* White text on blue */
+  
+  --color-pending: hsl(258 90% 67%); /* #A855F7 - purple (CMS Drafts) */
   --color-pending-hover: hsl(258 90% 72%);
-  --color-pending-foreground: hsl(0 0% 0%);
-  --color-teal: hsl(173 80% 40%); /* #06B6D4 - teal/cyan - bright tag color */
-  --color-teal-hover: hsl(173 80% 45%);
-  --color-teal-foreground: hsl(0 0% 0%);
+  --color-pending-foreground: hsl(0 0% 100%); /* White text on purple */
+  
+  --color-success: hsl(142 71% 45%); /* #22C55E - green (Accessibility) */
+  --color-success-hover: hsl(142 71% 50%);
+  --color-success-foreground: hsl(0 0% 0%); /* Black text on green */
+  
+  --color-danger: hsl(0 84% 60%); /* #EF4444 - red (Share) */
+  --color-danger-hover: hsl(0 84% 65%);
+  --color-danger-foreground: hsl(0 0% 100%); /* White text on red */
+  
+  --color-warning: hsl(25 95% 53%); /* #F97316 - orange (Collaborators) */
+  --color-warning-hover: hsl(25 95% 58%);
+  --color-warning-foreground: hsl(0 0% 0%); /* Black text on orange */
+  
+  --color-teal: hsl(187 85% 53%); /* #06B6D4 - teal/cyan (Feature Flags) */
+  --color-teal-hover: hsl(187 85% 58%);
+  --color-teal-foreground: hsl(0 0% 0%); /* Black text on teal */
   
   /* Destructive (alias for danger) */
   --color-destructive: var(--color-danger);
@@ -194,11 +199,11 @@
   --ring-offset: 2px;
   --ring-color: var(--color-ring);
 
-  /* Motion */
-  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* Motion - Vercel smooth transitions */
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --motion-duration-short: 150ms;
-  --motion-duration-medium: 250ms;
-  --motion-duration-long: 400ms;
+  --motion-duration-medium: 200ms;
+  --motion-duration-long: 300ms;
 }
 
 @layer base {
@@ -269,6 +274,12 @@
     -moz-osx-font-smoothing: grayscale;
     font-size: var(--font-size-base);
     line-height: var(--line-height-base);
+    font-weight: 400; /* Normal weight for body */
+    /* Noise texture overlay - 3% opacity film grain (higher for OLED) */
+    background-image: 
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E"),
+      linear-gradient(to bottom, hsl(0 0% 0%), hsl(0 0% 0%));
+    background-blend-mode: overlay;
   }
 
   h1,
@@ -278,10 +289,15 @@
   h5,
   h6 {
     font-family: var(--font-sans);
-    font-weight: 700;
+    font-weight: 600; /* font-semibold */
     letter-spacing: -0.015em;
-    line-height: var(--line-height-heading);
+    line-height: 1.1; /* Tight leading for headings */
     color: var(--color-foreground);
+  }
+  
+  p {
+    font-weight: 400; /* font-normal for body */
+    line-height: var(--line-height-base);
   }
 
   h1 { font-size: var(--font-size-h1); }
@@ -291,9 +307,6 @@
   h5 { font-size: var(--font-size-h5); }
   h6 { font-size: var(--font-size-h6); }
 
-  p {
-    line-height: var(--line-height-base);
-  }
 
   input,
   button,
@@ -426,9 +439,9 @@
     transition-timing-function: var(--motion-ease-standard);
   }
 
-  /* Content width utilities */
+  /* Content width utilities - Vercel width (max-w-7xl ? 1280px) */
   .max-w-content {
-    max-width: var(--size-content-max);
+    max-width: 80rem; /* 1280px */
   }
 
   .max-w-content-narrow {
@@ -436,10 +449,39 @@
   }
 
   .max-w-content-default {
-    max-width: var(--size-content-default);
+    max-width: 80rem; /* 1280px - Vercel standard */
   }
 
   .max-w-content-wide {
-    max-width: var(--size-content-wide);
+    max-width: 80rem; /* 1280px */
+  }
+  
+  /* Micro-grid texture for hero sections - tighter 20px grid */
+  .micro-grid {
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 0;
+  }
+  
+  /* Light layer gradient for hero backgrounds */
+  .light-layer {
+    background-image: 
+      linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), transparent 60%),
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 100% 100%, 20px 20px, 20px 20px;
+    background-position: 0 0, 0 0, 0 0;
+  }
+  
+  /* Depth gradients for large surfaces */
+  .surface-depth {
+    background: linear-gradient(to bottom, hsl(0 0% 7%), hsl(0 0% 0%));
+  }
+  
+  /* Ambient white shadows (not cyan glow) */
+  .shadow-ambient {
+    box-shadow: 0 0 40px rgba(255, 255, 255, 0.03);
   }
 }

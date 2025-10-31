@@ -19,8 +19,9 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   <div 
     ref={ref} 
     className={cn(
-      "bg-surface text-card-foreground",
-      "hover:shadow-xl hover:shadow-primary/10 transition-standard",
+      "bg-gradient-to-b from-zinc-950 to-black text-card-foreground",
+      "transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
+      "hover:from-zinc-900 hover:to-zinc-950", /* Tone shift on hover */
       className
     )} 
     {...props} 
@@ -37,14 +38,14 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("text-xl font-semibold leading-tight text-foreground", className)} {...props} />
+    <h3 ref={ref} className={cn("text-xl font-semibold leading-tight text-zinc-50", className)} {...props} />
   ),
 );
 CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+    <p ref={ref} className={cn("text-sm text-zinc-500 leading-relaxed font-normal", className)} {...props} />
   ),
 );
 CardDescription.displayName = "CardDescription";
