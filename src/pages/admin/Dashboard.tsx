@@ -46,7 +46,7 @@ export default function AdminDashboard() {
 
  return (
  <div className="bg-background text-text">
-        <div className="mx-auto max-w-content-default space-y-6 px-6 py-6">
+        <div className="mx-auto max-w-content-default space-y-8 px-6 py-8">
  <div className="space-y-3">
  <div className="flex items-center justify-between">
  <div className="space-y-2">
@@ -89,62 +89,71 @@ export default function AdminDashboard() {
  </div>
 
  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
- <Card className="rounded-card  bg-surface">
- <CardHeader className="space-y-2">
- <CardTitle className="text-lg font-semibold text-text">Recent activity</CardTitle>
- <CardDescription>System activity overview</CardDescription>
- </CardHeader>
- <CardContent className="space-y-4">
- <Separator />
- <p className="text-sm text-muted-foreground">
- Activity tracking is coming soon. Visit Content and Users for granular details.
- </p>
- </CardContent>
- </Card>
+      <Card className="rounded-card bg-surface border-zinc-800 transition-card">
+        <CardHeader className="space-y-1 px-6 pt-6">
+          <CardTitle className="text-lg font-semibold text-foreground-h2">Recent activity</CardTitle>
+          <CardDescription className="text-muted-foreground">System activity overview</CardDescription>
+        </CardHeader>
+        <CardContent className="px-6 pb-6">
+          <Separator className="mb-4" />
+          <div className="flex flex-col items-center justify-center py-12">
+            <Activity className="h-10 w-10 mb-4 text-zinc-500 stroke-[1.5]" />
+            <p className="text-sm font-medium text-foreground-h2 mb-1">No recent activity</p>
+            <p className="text-sm text-muted-foreground text-center max-w-md">
+              Activity tracking is coming soon. Visit Content and Users for granular details.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
- <Card className="rounded-card  bg-surface">
- <CardHeader className="space-y-2">
- <CardTitle className="text-lg font-semibold text-text">System status</CardTitle>
- <CardDescription>Key infrastructure signals</CardDescription>
- </CardHeader>
+      <Card className="rounded-card bg-surface border-zinc-800 transition-card">
+        <CardHeader className="space-y-1 px-6 pt-6">
+          <CardTitle className="text-lg font-semibold text-foreground-h2">System status</CardTitle>
+          <CardDescription className="text-muted-foreground">Key infrastructure signals</CardDescription>
+        </CardHeader>
  <CardContent className="space-y-4">
- <div className="space-y-2">
- <div className="flex items-center justify-between text-sm">
- <span className="font-medium text-text">API health</span>
- <span className="text-xs font-semibold text-success">Operational</span>
- </div>
- <Progress value={100} className="h-2" />
- </div>
- <div className="space-y-2">
- <div className="flex items-center justify-between text-sm">
- <span className="font-medium text-text">Active jobs</span>
- <span className="text-xs font-semibold text-primary">{stats?.active_jobs ?? 0}</span>
- </div>
- <Progress value={Math.min(100, (stats?.active_jobs ?? 0) * 10)} className="h-2" />
- </div>
- <div className="space-y-2">
- <div className="flex items-center justify-between text-sm">
- <span className="font-medium text-text">Total users</span>
- <span className="text-xs font-semibold text-primary">{stats?.total_users ?? 0}</span>
- </div>
- <Progress value={Math.min(100, stats?.total_users ?? 0)} className="h-2" />
- </div>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-foreground-muted">API health</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-success">Operational</span>
+          </div>
+          <Progress value={100} className="h-1.5 bg-surface-secondary" />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-foreground-muted">Active jobs</span>
+            <span className="text-xs font-semibold text-zinc-300">{stats?.active_jobs ?? 0}</span>
+          </div>
+          <Progress value={Math.min(100, (stats?.active_jobs ?? 0) * 10)} className="h-1.5 bg-surface-secondary" />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-foreground-muted">Total users</span>
+            <span className="text-xs font-semibold text-zinc-300">{stats?.total_users ?? 0}</span>
+          </div>
+          <Progress value={Math.min(100, stats?.total_users ?? 0)} className="h-1.5 bg-surface-secondary" />
+        </div>
+      </div>
  </CardContent>
  </Card>
  </div>
 
- <Card className="rounded-card  bg-surface">
- <CardHeader className="space-y-2">
- <CardTitle className="text-lg font-semibold text-text">Revenue trend</CardTitle>
- <CardDescription>High-level view of revenue momentum</CardDescription>
- </CardHeader>
- <CardContent className="space-y-4">
- <div className="flex items-center justify-between text-sm text-muted-foreground">
- <span>More detailed revenue analytics will appear here.</span>
- <TrendingUp className="h-5 w-5 text-muted-foreground" />
- </div>
- </CardContent>
- </Card>
+      <Card className="rounded-card bg-surface border-zinc-800 transition-card">
+        <CardHeader className="space-y-1 px-6 pt-6">
+          <CardTitle className="text-lg font-semibold text-foreground-h2">Revenue trend</CardTitle>
+          <CardDescription className="text-muted-foreground">High-level view of revenue momentum</CardDescription>
+        </CardHeader>
+        <CardContent className="px-6 pb-6">
+          <div className="flex flex-col items-center justify-center py-12">
+            <TrendingUp className="h-10 w-10 mb-4 text-zinc-500 stroke-[1.5]" />
+            <p className="text-sm font-medium text-foreground-h2 mb-1">Analytics coming soon</p>
+            <p className="text-sm text-muted-foreground text-center max-w-md">
+              More detailed revenue analytics will appear here.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
  </div>
  </div>
  );

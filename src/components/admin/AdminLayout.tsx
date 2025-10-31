@@ -66,68 +66,71 @@ export const AdminLayout = () => {
  mainLogout();
  };
 
- return (
- <div className="min-h-screen flex bg-background">
- <aside
- className={`${
-      isSidebarCollapsed ? 'w-16' : 'w-sidebar-expanded'
- } flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300`}
- >
- <div className="relative p-6">
- <button
- onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
- className="absolute -right-3 top-6 rounded-full border border-sidebar-border bg-sidebar-accent p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent/70 hover:text-sidebar-foreground"
- aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
- >
- {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
- </button>
- {!isSidebarCollapsed ? (
- <>
- <h1 className="text-xl font-bold text-foreground tracking-tight">
- Codebase Audiobook
- </h1>
- <p className="text-xs text-muted-foreground mt-1 font-medium">Admin Dashboard</p>
- </>
- ) : (
- <div className="flex items-center justify-center">
- <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/15 text-xs font-bold text-primary">
- CA
- </div>
- </div>
- )}
- </div>
+  return (
+    <div className="min-h-screen flex bg-background">
+      <aside
+        className={`${
+          isSidebarCollapsed ? 'w-16' : 'w-sidebar-expanded'
+        } flex flex-col flex-shrink-0 border-r border-sidebar-border bg-sidebar-surface text-sidebar-foreground transition-all duration-300`}
+      >
+        <div className="relative px-4 py-5 border-b border-sidebar-border">
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-surface-secondary p-2 text-zinc-500 transition-fast hover:bg-sidebar-accent-hover hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-surface"
+            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+          {!isSidebarCollapsed ? (
+            <>
+              <h1 className="text-xl font-bold text-sidebar-foreground tracking-tight">
+                Codebase Audiobook
+              </h1>
+              <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">Admin Dashboard</p>
+            </>
+          ) : (
+            <div className="flex items-center justify-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-surface-secondary text-xs font-bold text-zinc-300">
+                CA
+              </div>
+            </div>
+          )}
+        </div>
 
- <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
- {navItems.map((item) => {
- const Icon = item.icon;
- const isActive =
- location.pathname === item.path ||
- (item.path !== "/admin" && location.pathname.startsWith(item.path));
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive =
+              location.pathname === item.path ||
+              (item.path !== "/admin" && location.pathname.startsWith(item.path));
 
- return (
- <Link key={item.path} to={item.path}>
- <Button
- variant="ghost"
- className={`relative w-full ${
- isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'
- } rounded-md border border-transparent text-sm font-medium transition-colors before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-transparent focus-visible:ring-offset-sidebar ${
- isActive
- ? 'bg-sidebar-accent text-sidebar-accent-foreground before:bg-primary border-sidebar-border'
- : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
- }`}
- title={isSidebarCollapsed ? item.label : undefined}
- >
- <Icon
- className={`h-4 w-4 ${
- isActive ? 'text-primary' : 'text-sidebar-foreground/70'
- } ${!isSidebarCollapsed ? 'mr-3' : ''}`}
- />
- {!isSidebarCollapsed && <span className="font-medium">{item.label}</span>}
- </Button>
- </Link>
- );
- })}
- </nav>
+            return (
+              <Link key={item.path} to={item.path}>
+                <Button
+                  variant="ghost"
+                  className={`relative w-full ${
+                    isSidebarCollapsed ? 'justify-center px-2' : 'justify-start'
+                  } rounded-lg px-3 py-2.5 text-sm font-medium transition-fast focus-visible:ring-offset-sidebar-surface ${
+                    isActive
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                      : 'text-zinc-500 hover:bg-sidebar-accent/60 hover:text-zinc-200'
+                  }`}
+                  title={isSidebarCollapsed ? item.label : undefined}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary" />
+                  )}
+                  <Icon
+                    className={`h-4 w-4 ${
+                      isActive ? 'text-zinc-200' : 'text-zinc-500'
+                    } ${!isSidebarCollapsed ? 'mr-3' : ''}`}
+                  />
+                  {!isSidebarCollapsed && <span className="font-medium">{item.label}</span>}
+                </Button>
+              </Link>
+            );
+          })}
+        </nav>
 
  <div className="p-4 border-t border-sidebar-border">
  <Button

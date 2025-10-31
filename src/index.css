@@ -39,22 +39,26 @@
      Near-black neutrals with tiny luminance jumps - "black glass" depth
      ============================================================================ */
   
-  /* Base background - Pure to near-black (#000000 ? #0A0A0A) */
+  /* Base background - Pure black (#000000) */
   --color-background: hsl(0 0% 0%); /* #000000 - pure black base */
   
-  /* Elevated surface - Subtle lift (#111111 ? #1A1A1A) */
-  --color-surface: hsl(0 0% 7%); /* #111111 - elevated containers */
-  --color-surface-secondary: hsl(0 0% 9%); /* #18181b - intermediate step */
+  /* Elevated surface - Tier 1 (#111111) - 6-8% luminance delta */
+  --color-surface: hsl(0 0% 7%); /* #111111 - elevated containers, sidebar background */
+  --color-surface-secondary: hsl(0 0% 7%); /* Match tier 1 */
   
-  /* Active surface - Card-level elevation (#1F1F1F ? #262626) */
-  --color-surface-active: hsl(0 0% 11%); /* #18181b - card surfaces */
-  --color-surface-tertiary: hsl(0 0% 15%); /* Alias for backwards compatibility */
+  /* Active surface - Tier 2 (#18181b) - hover/focus states */
+  --color-surface-active: hsl(0 0% 9%); /* #18181b - hover/focus states */
+  --color-surface-tertiary: hsl(0 0% 9%); /* Match tier 2 */
   
-  /* Foreground hierarchy - Pure optical contrast (no hue shift) */
-  --color-foreground: hsl(0 0% 98%); /* Zinc-50 - headings and primary text */
-  --color-foreground-muted: hsl(0 0% 71%); /* Zinc-300 - body text */
+  /* Card surface - Tier 3 (slightly lighter than tier 2) */
+  --color-card-elevated: hsl(0 0% 10%); /* Cards that need more separation */
+  
+  /* Foreground hierarchy - Vercel optical contrast */
+  --color-foreground: hsl(0 0% 100%); /* Pure white - H1 headings only */
+  --color-foreground-h2: hsl(0 0% 98%); /* Zinc-50 - H2/H3 headings (semibold, dimmer) */
+  --color-foreground-muted: hsl(0 0% 71%); /* Zinc-300 - body text (normal weight) */
   --color-muted: hsl(0 0% 63%); /* Zinc-400 - secondary text */
-  --color-muted-foreground: hsl(0 0% 45%); /* Zinc-500 - metadata/dim */
+  --color-muted-foreground: hsl(0 0% 45%); /* Zinc-500 - metadata/dim (uppercase labels) */
   
   /* Interactive elements - Nearly invisible borders, pure contrast */
   --color-border: hsl(0 0% 22%); /* Zinc-800 - minimal borders, only where absolutely needed */
@@ -121,14 +125,14 @@
   --color-popover: hsl(0 0% 12%); /* #1F1F1F - popover elevation */
   --color-popover-foreground: hsl(0 0% 83%); /* #D4D4D8 - body text */
 
-  /* Sidebar - Deeper black for visual distinction */
-  --color-sidebar-surface: hsl(0 0% 0%); /* Pure black or near-black */
-  --color-sidebar-surface-secondary: hsl(0 0% 6%); /* #0F0F0F */
+  /* Sidebar - Elevated tier (#111111) with proper depth */
+  --color-sidebar-surface: hsl(0 0% 7%); /* #111111 - elevated sidebar */
+  --color-sidebar-surface-secondary: hsl(0 0% 9%); /* #18181b - hover states */
   --color-sidebar-foreground: hsl(0 0% 83%); /* #D4D4D8 - body text */
-  --color-sidebar-border: hsl(0 0% 15%); /* Minimal borders */
-  --color-sidebar-accent: hsl(0 0% 10%); /* #1A1A1A */
-  --color-sidebar-accent-hover: hsl(0 0% 12%); /* #1F1F1F */
-  --color-sidebar-accent-foreground: hsl(0 0% 83%); /* #D4D4D8 */
+  --color-sidebar-border: hsl(0 0% 13%); /* #222222 - subtle divider (zinc-900 equivalent) */
+  --color-sidebar-accent: hsl(0 0% 9%); /* #18181b - active state */
+  --color-sidebar-accent-hover: hsl(0 0% 11%); /* Slightly lighter on hover */
+  --color-sidebar-accent-foreground: hsl(0 0% 98%); /* Pure white for active text */
 
   /* Radius - Minimal, professional (buttons/inputs only) */
   --radius-control: 0.5rem; /* Buttons and inputs */
@@ -199,11 +203,13 @@
   --ring-offset: 2px;
   --ring-color: var(--color-ring);
 
-  /* Motion - Vercel smooth transitions */
+  /* Motion - Vercel layered choreography */
   --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --motion-duration-short: 150ms;
-  --motion-duration-medium: 200ms;
-  --motion-duration-long: 300ms;
+  --motion-ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1); /* Drawer/overlay motion */
+  --motion-duration-fast: 120ms; /* Buttons - quick interaction */
+  --motion-duration-short: 160ms; /* Buttons - standard */
+  --motion-duration-medium: 250ms; /* Cards - slower ease */
+  --motion-duration-long: 300ms; /* Drawer/overlay */
 }
 
 @layer base {
@@ -282,17 +288,31 @@
     background-blend-mode: overlay;
   }
 
-  h1,
+  h1 {
+    font-family: var(--font-sans);
+    font-weight: 700; /* font-bold */
+    letter-spacing: -0.015em;
+    line-height: 1.1;
+    color: var(--color-foreground); /* Pure white */
+  }
+  
   h2,
-  h3,
+  h3 {
+    font-family: var(--font-sans);
+    font-weight: 600; /* font-semibold */
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    color: var(--color-foreground-h2); /* Zinc-50 (dimmer than H1) */
+  }
+  
   h4,
   h5,
   h6 {
     font-family: var(--font-sans);
     font-weight: 600; /* font-semibold */
     letter-spacing: -0.015em;
-    line-height: 1.1; /* Tight leading for headings */
-    color: var(--color-foreground);
+    line-height: 1.2;
+    color: var(--color-foreground-h2); /* Zinc-50 */
   }
   
   p {
@@ -300,12 +320,12 @@
     line-height: var(--line-height-base);
   }
 
-  h1 { font-size: var(--font-size-h1); }
-  h2 { font-size: var(--font-size-h2); }
-  h3 { font-size: var(--font-size-h3); }
-  h4 { font-size: var(--font-size-h4); }
-  h5 { font-size: var(--font-size-h5); }
-  h6 { font-size: var(--font-size-h6); }
+  h1 { font-size: var(--font-size-h1); font-weight: 700; }
+  h2 { font-size: var(--font-size-h2); font-weight: 600; }
+  h3 { font-size: var(--font-size-h3); font-weight: 600; }
+  h4 { font-size: var(--font-size-h4); font-weight: 600; }
+  h5 { font-size: var(--font-size-h5); font-weight: 600; }
+  h6 { font-size: var(--font-size-h6); font-weight: 600; }
 
 
   input,
@@ -423,9 +443,14 @@
     line-height: var(--line-height-base);
   }
 
-  /* Motion utilities */
+  /* Motion utilities - Layered choreography */
   .transition-standard {
     transition-duration: var(--motion-duration-medium);
+    transition-timing-function: var(--motion-ease-standard);
+  }
+
+  .transition-fast {
+    transition-duration: var(--motion-duration-fast);
     transition-timing-function: var(--motion-ease-standard);
   }
 
@@ -436,6 +461,18 @@
 
   .transition-standard-slow {
     transition-duration: var(--motion-duration-long);
+    transition-timing-function: var(--motion-ease-smooth);
+  }
+  
+  /* Button-specific transitions */
+  .transition-button {
+    transition-duration: var(--motion-duration-fast);
+    transition-timing-function: var(--motion-ease-standard);
+  }
+  
+  /* Card-specific transitions */
+  .transition-card {
+    transition-duration: var(--motion-duration-medium);
     transition-timing-function: var(--motion-ease-standard);
   }
 
@@ -480,8 +517,36 @@
     background: linear-gradient(to bottom, hsl(0 0% 7%), hsl(0 0% 0%));
   }
   
-  /* Ambient white shadows (not cyan glow) */
+  /* Ambient white shadows (not cyan glow) - Vercel style */
   .shadow-ambient {
     box-shadow: 0 0 40px rgba(255, 255, 255, 0.03);
+  }
+  
+  /* Interactive feedback - scale animations for tactile feel */
+  .interactive-press {
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+  
+  .interactive-press:active {
+    transform: scale(0.98);
+  }
+  
+  /* Vertical anchor gradients - top and bottom luminosity */
+  .anchor-gradient {
+    position: relative;
+  }
+  
+  .anchor-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0) 50%,
+      rgba(0, 0, 0, 0.9) 100%
+    );
+    z-index: 0;
   }
 }
