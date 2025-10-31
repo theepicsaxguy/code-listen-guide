@@ -37,14 +37,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
   return (
     <aside
       className={cn(
-        isCollapsed ? 'w-20' : 'w-64',
-        'flex h-full flex-col flex-shrink-0 bg-sidebar-surface text-sidebar-foreground border-r border-sidebar-border transition-all duration-300',
-        // Mobile: overlay sidebar
-        'fixed md:relative inset-y-0 left-0 z-40 md:z-auto',
-        // Mobile: show/hide based on menu state, hide collapsed sidebar on mobile
-        isCollapsed && !isMobileMenuOpen ? 'hidden md:flex' : '',
-        !isMobileMenuOpen && !isCollapsed ? '-translate-x-full md:translate-x-0' : '',
-        isMobileMenuOpen ? 'translate-x-0' : '',
+        'flex h-full flex-col flex-shrink-0 bg-sidebar-surface text-sidebar-foreground border-r border-sidebar-border transition-transform duration-300',
+        // Desktop: relative positioning, variable width
+        'md:relative w-64',
+        isCollapsed && 'md:w-20',
+        // Mobile: fixed overlay, controlled by isMobileMenuOpen
+        'fixed md:static inset-y-0 left-0 z-40',
+        // Mobile: translate based on menu state only
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       )}
     >
     <div className="relative flex items-center px-4 py-5 border-b border-sidebar-border">

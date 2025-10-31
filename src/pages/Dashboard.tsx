@@ -31,9 +31,10 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedAudiobookId, setSelectedAudiobookId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  // Mobile: collapsed by default, desktop: expanded
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
+  // Mobile overlay state (mobile only)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Desktop collapse state (desktop only)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const { data: user } = useUser();
 
@@ -58,18 +59,14 @@ const Dashboard: React.FC = () => {
     }
   }, [authUser, isAuthLoading, navigate]);
 
-  // Handle mobile sidebar collapse on resize
+  // Handle mobile menu auto-close on resize to desktop
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarCollapsed(true);
+      if (window.innerWidth >= 768) {
         setIsMobileMenuOpen(false);
-      } else {
-        setIsSidebarCollapsed(false);
       }
     };
 
-    handleResize(); // Set initial state
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -184,8 +181,9 @@ const Dashboard: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={(tab) => {
           setActiveTab(tab);
-          // Close mobile menu on navigation
-          if (window.innerWidth < 768) {
+          // Close mobile menu on navigation (use media query check)
+          const isMobile = window.matchMedia('(max-width: 767px)').matches;
+          if (isMobile) {
             setIsMobileMenuOpen(false);
           }
         }}

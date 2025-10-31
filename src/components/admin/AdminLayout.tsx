@@ -48,21 +48,19 @@ export const AdminLayout = () => {
  const location = useLocation();
  const navigate = useNavigate();
  const { user, isLoading: isAuthLoading, logout: mainLogout } = useAuth();
- const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+ // Mobile overlay state (mobile only)
  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+ // Desktop collapse state (desktop only)
+ const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
- // Mobile: collapsed by default, desktop: expanded
+ // Handle mobile menu auto-close on resize to desktop
  useEffect(() => {
    const handleResize = () => {
-     if (window.innerWidth < 768) {
-       setIsSidebarCollapsed(true);
+     if (window.innerWidth >= 768) {
        setIsMobileMenuOpen(false);
-     } else {
-       setIsSidebarCollapsed(false);
      }
    };
 
-   handleResize(); // Set initial state
    window.addEventListener('resize', handleResize);
    return () => window.removeEventListener('resize', handleResize);
  }, []);
@@ -110,11 +108,13 @@ export const AdminLayout = () => {
 
       <aside
         className={cn(
-          'flex flex-col flex-shrink-0 border-r border-sidebar-border bg-sidebar-surface text-sidebar-foreground transition-all duration-300',
-          isSidebarCollapsed ? 'w-20' : 'w-64',
-          // Mobile: overlay sidebar
-          'fixed md:relative inset-y-0 left-0 z-40 md:z-auto',
-          // Mobile: show/hide based on menu state
+          'flex flex-col flex-shrink-0 border-r border-sidebar-border bg-sidebar-surface text-sidebar-foreground transition-transform duration-300',
+          // Desktop: relative positioning, variable width
+          'md:relative w-64',
+          isSidebarCollapsed && 'md:w-20',
+          // Mobile: fixed overlay, controlled by isMobileMenuOpen
+          'fixed md:static inset-y-0 left-0 z-40',
+          // Mobile: translate based on menu state only
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
@@ -154,8 +154,9 @@ export const AdminLayout = () => {
                 key={item.path}
                 to={item.path}
                 onClick={() => {
-                  // Close mobile menu on navigation
-                  if (window.innerWidth < 768) {
+                  // Close mobile menu on navigation (use media query check)
+                  const isMobile = window.matchMedia('(max-width: 767px)').matches;
+                  if (isMobile) {
                     setIsMobileMenuOpen(false);
                   }
                 }}
