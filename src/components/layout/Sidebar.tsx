@@ -56,14 +56,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside
       className={cn(
         isCollapsed ? 'w-sidebar-collapsed' : 'w-sidebar-expanded',
-        'flex h-screen flex-col bg-sidebar-surface text-sidebar-foreground shadow-md transition-[width] duration-200',
+        'flex h-screen flex-col flex-shrink-0 bg-sidebar-surface text-sidebar-foreground border-r border-sidebar-border transition-[width] duration-300',
         className,
       )}
     >
-      <div className="relative flex items-center px-4 py-5 shadow-sm">
+      <div className="relative flex items-center px-4 py-5 border-b border-sidebar-border">
         <button
           onClick={onToggleCollapse}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-surface-secondary p-2 text-muted shadow-md transition-standard hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-surface-secondary p-2 text-zinc-500 transition-fast hover:bg-sidebar-accent-hover hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-surface"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className={cn('flex items-center', isCollapsed ? 'justify-center w-full' : 'gap-3')}>
           {isCollapsed ? (
             brand?.collapsedLogo || brand?.logo || (
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-secondary text-xs font-semibold text-zinc-300">
                 CA
               </div>
             )
@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {brand?.logo && <div className="flex-shrink-0">{brand.logo}</div>}
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-sidebar-foreground">{brand?.title}</p>
-                {brand?.subtitle && <p className="truncate text-xs text-muted-foreground">{brand.subtitle}</p>}
+                {brand?.subtitle && <p className="truncate text-xs text-muted-foreground uppercase tracking-wide">{brand.subtitle}</p>}
               </div>
             </>
           )}
@@ -92,20 +92,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           const Icon = item.icon;
           const isActive = isItemActive(item);
           const commonClasses = cn(
-            'group relative flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-standard',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            'group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-fast',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-surface',
             isCollapsed && 'justify-center gap-0 px-0',
             isActive
               ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-              : 'text-muted hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
+              : 'text-zinc-500 hover:bg-sidebar-accent/60 hover:text-zinc-200',
           );
 
           if (item.path) {
             return (
               <Link key={item.id} to={item.path} title={isCollapsed ? item.label : undefined} className="block">
                 <div className={commonClasses}>
+                  {isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary" />
+                  )}
                   {typeof Icon === 'function' ? (
-                    <Icon className={cn('h-4 w-4', !isCollapsed && 'shrink-0')} />
+                    <Icon className={cn('h-4 w-4', isActive ? 'text-zinc-200' : 'text-zinc-500', !isCollapsed && 'shrink-0')} />
                   ) : (
                     <span className={cn(!isCollapsed && 'shrink-0')}>{Icon}</span>
                   )}
@@ -122,8 +125,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={commonClasses}
               title={isCollapsed ? item.label : undefined}
             >
+              {isActive && (
+                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary" />
+              )}
               {typeof Icon === 'function' ? (
-                <Icon className={cn('h-4 w-4', !isCollapsed && 'shrink-0')} />
+                <Icon className={cn('h-4 w-4', isActive ? 'text-zinc-200' : 'text-zinc-500', !isCollapsed && 'shrink-0')} />
               ) : (
                 <span className={cn(!isCollapsed && 'shrink-0')}>{Icon}</span>
               )}
@@ -133,7 +139,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {footer && <div className="px-4 py-4 text-muted shadow-[0_-1px_0_0_rgb(0_0_0_/_0.05)]">{footer}</div>}
+      {footer && <div className="px-4 py-4 border-t border-sidebar-border text-muted-foreground">{footer}</div>}
     </aside>
   );
 };

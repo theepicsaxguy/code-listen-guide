@@ -82,7 +82,7 @@ export const SettingsPage: React.FC = () => {
  <h2 className="text-2xl font-bold text-foreground">Notification Preferences</h2>
  </div>
  </div>
- <div className="p-6 space-y-5">
+        <div className="p-6 space-y-4">
  <div className="flex items-center justify-between p-4 rounded-lg bg-card/70 hover:bg-primary/10 transition-all transition-colors">
  <div>
  <div className="text-sm font-bold text-foreground mb-1">Email Notifications</div>

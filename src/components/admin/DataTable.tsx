@@ -30,17 +30,21 @@ export function DataTable({ children, className = "" }: DataTableProps) {
 }
 
 export function DataTableEmpty({
- title = "No data found",
- description,
- icon,
+  title = "No data found",
+  description,
+  icon,
 }: DataTableEmptyProps) {
- return (
- <div className="text-center py-12 text-muted-foreground">
- {icon || <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />}
- <p className="font-semibold text-foreground">{title}</p>
- {description && <p className="text-sm mt-2 text-muted-foreground">{description}</p>}
- </div>
- );
+  return (
+    <div className="text-center py-16 px-4">
+      {icon || (
+        <AlertCircle className="h-10 w-10 mx-auto mb-4 text-zinc-500 stroke-[1.5]" />
+      )}
+      <p className="text-sm font-semibold text-foreground-h2 mb-1">{title}</p>
+      {description && (
+        <p className="text-sm text-muted-foreground max-w-md mx-auto">{description}</p>
+      )}
+    </div>
+  );
 }
 
 export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow };

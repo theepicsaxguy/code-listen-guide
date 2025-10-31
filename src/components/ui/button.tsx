@@ -22,37 +22,37 @@ import { cn } from "@/lib/utils";
  * - Focus: 2px ring-primary at 3:1 contrast
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-button focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 interactive-press",
   {
     variants: {
       variant: {
-        // Primary: Soft cyan CTA (tone shift on hover)
+        // Primary: Cyan CTA - ONLY for primary actions
         default:
           "bg-[hsl(187,75%,55%)] text-black hover:bg-[hsl(187,75%,60%)] active:bg-[hsl(187,75%,50%)]",
 
-        // Secondary: Transparent with white border (tone shift)
+        // Secondary: Muted gray-blue for neutral interactions
         secondary:
-          "bg-transparent text-white border border-white/20 hover:border-white/40 hover:bg-white/5",
+          "bg-transparent text-zinc-300 border border-zinc-800 hover:border-zinc-700 hover:text-zinc-100 hover:bg-zinc-900/30",
 
-        // Tertiary: Text-only cyan link
+        // Tertiary: Muted link (NOT cyan)
         tertiary:
-          "bg-transparent text-[hsl(187,75%,55%)] hover:text-[hsl(187,75%,65%)] underline-offset-4 hover:underline",
+          "bg-transparent text-zinc-400 hover:text-zinc-100 underline-offset-4 hover:underline",
 
-        // Danger: High risk actions (tone shift)
+        // Danger: High risk actions
         danger:
           "bg-danger text-danger-foreground hover:bg-danger/90 active:bg-danger/80",
 
         // Ghost: Transparent with tone shift
         ghost:
-          "text-zinc-300 hover:text-white hover:bg-zinc-900/30",
+          "text-zinc-500 hover:text-zinc-100 hover:bg-zinc-900/50",
 
-        // Link: Text-only (alias for tertiary)
+        // Link: Muted link (NOT cyan)
         link:
-          "bg-transparent text-[hsl(187,75%,55%)] hover:text-[hsl(187,75%,65%)] underline-offset-4 hover:underline",
+          "bg-transparent text-zinc-400 hover:text-zinc-100 underline-offset-4 hover:underline",
 
         // Outline: Transparent with subtle border (tone shift)
         outline:
-          "bg-transparent text-zinc-300 border border-zinc-800 hover:border-zinc-700 hover:text-white hover:bg-zinc-900/20",
+          "bg-transparent text-zinc-300 border border-zinc-800 hover:border-zinc-700 hover:text-zinc-100 hover:bg-zinc-900/20",
       },
       size: {
         default: "h-10 px-4 py-2", // Reduced padding

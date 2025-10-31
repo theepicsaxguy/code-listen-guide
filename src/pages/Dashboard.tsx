@@ -156,9 +156,9 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-black text-zinc-50 relative">
-      {/* Soft radial gradient background accent - Vercel style */}
-      <div className="fixed inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent pointer-events-none" />
+    <div className="flex min-h-screen bg-background text-foreground relative anchor-gradient">
+      {/* Reduced gradient opacity - Vercel style (3-5% max) */}
+      <div className="fixed inset-0 bg-gradient-to-br from-cyan-400/[0.03] via-transparent to-transparent pointer-events-none" />
       
       <Sidebar
         activeTab={activeTab}
@@ -169,27 +169,27 @@ const Dashboard: React.FC = () => {
       />
       <div className="flex-1 overflow-hidden relative">
         <div className="surface-depth mx-auto">
-          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-32">
+          <div className="mx-auto flex max-w-7xl flex-col gap-12 px-6 py-24">
             <div className="space-y-8">
               <Breadcrumb>
                 <BreadcrumbList>
                   {crumbs.map((crumb, index) => (
                     <React.Fragment key={crumb.label}>
                       <BreadcrumbItem>
-                        <BreadcrumbLink href={crumb.href} className="text-zinc-400 hover:text-zinc-100">{crumb.label}</BreadcrumbLink>
+                        <BreadcrumbLink href={crumb.href} className="text-muted-foreground hover:text-foreground-muted transition-fast">{crumb.label}</BreadcrumbLink>
                       </BreadcrumbItem>
                       {index < crumbs.length - 1 && <BreadcrumbSeparator />}
                     </React.Fragment>
                   ))}
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
-                    <BreadcrumbPage className="text-zinc-400">{title}</BreadcrumbPage>
+                    <BreadcrumbPage className="text-muted-foreground">{title}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
-              <div className="flex flex-col gap-8">
-                <h1 className="text-5xl md:text-6xl 2xl:text-[4.5rem] font-semibold text-zinc-50 leading-[1.1]">{title}</h1>
-                <p className="text-lg leading-relaxed text-zinc-500 font-normal max-w-3xl">{description}</p>
+              <div className="flex flex-col gap-6">
+                <h1 className="text-5xl md:text-6xl 2xl:text-[4.5rem] font-bold leading-[1.1]">{title}</h1>
+                <p className="text-lg leading-relaxed text-foreground-muted font-normal max-w-3xl">{description}</p>
               </div>
             </div>
             <div className={cn('flex flex-col gap-4', (activeTab === 'home' || activeTab === 'audiobooks') && 'md:flex-row md:items-center md:justify-between')}>
@@ -201,7 +201,7 @@ const Dashboard: React.FC = () => {
                       value={searchQuery}
                       onChange={(event) => setSearchQuery(event.target.value)}
                       placeholder="Search repositories or jobs"
-                      className="pl-9"
+                      className="pl-9 bg-surface border-zinc-800"
                       aria-label="Search audiobooks"
                     />
                   </div>
@@ -218,7 +218,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <main className="mx-auto max-w-7xl space-y-8 px-6 py-24 relative gap-8">
+        <main className="mx-auto max-w-7xl space-y-12 px-6 py-12 relative">
           {activeTab === 'home' && <OverviewPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
           {activeTab === 'audiobooks' && (
             <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} searchQuery={searchQuery} />
