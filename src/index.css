@@ -92,13 +92,13 @@
   --color-popover: hsl(220 15% 15%);
   --color-popover-foreground: hsl(220 20% 88%);
 
-  /* Sidebar with proper separation */
-  --color-sidebar-surface: hsl(220 15% 11%);
-  --color-sidebar-surface-secondary: hsl(220 15% 13%);
+  /* Sidebar with proper separation - darker for visual distinction */
+  --color-sidebar-surface: hsl(220 15% 9%);
+  --color-sidebar-surface-secondary: hsl(220 15% 11%);
   --color-sidebar-foreground: hsl(220 20% 88%);
   --color-sidebar-border: hsl(220 15% 20%); /* Subtle, minimal usage */
-  --color-sidebar-accent: hsl(220 15% 18%);
-  --color-sidebar-accent-hover: hsl(220 15% 20%);
+  --color-sidebar-accent: hsl(220 15% 15%);
+  --color-sidebar-accent-hover: hsl(220 15% 18%);
   --color-sidebar-accent-foreground: hsl(220 20% 88%);
 
   /* Radius - Unified to 2 tokens */

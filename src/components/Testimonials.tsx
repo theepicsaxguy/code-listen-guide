@@ -66,10 +66,10 @@ export const Testimonials = () => {
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center space-y-4 mb-20">
-          <h2 className="text-4xl md:text-5xl font-bold">
+          <h2 className="text-heading md:text-display font-bold">
             Loved by <span className="gradient-text-accent">Developers</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-body text-muted-foreground max-w-2xl mx-auto">
             See what developers are saying about learning code through audio
           </p>
         </div>
@@ -78,7 +78,7 @@ export const Testimonials = () => {
           {testimonials.map((testimonial, index) => (
             <Card
               key={index}
-              className="p-6 bg-card transition-all duration-300 hover-lift group relative overflow-hidden"
+              className="p-6 bg-surface-secondary shadow-md hover:shadow-lg transition-standard hover-lift group relative overflow-hidden"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               {/* Quote icon background */}
@@ -95,7 +95,7 @@ export const Testimonials = () => {
                 </div>
 
                 {/* Content */}
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-body-sm text-muted-foreground leading-relaxed">
                   "{testimonial.content}"
                 </p>
 
@@ -105,8 +105,8 @@ export const Testimonials = () => {
                     {testimonial.avatar}
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">{testimonial.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-semibold text-body-sm">{testimonial.name}</p>
+                    <p className="text-caption text-muted-foreground">
                       {testimonial.role} at {testimonial.company}
                     </p>
                   </div>
@@ -129,7 +129,7 @@ export const Testimonials = () => {
                 </div>
               ))}
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-body-sm text-muted-foreground">
               Join <span className="font-bold text-foreground">2,500+</span> developers learning through audio
             </p>
           </div>

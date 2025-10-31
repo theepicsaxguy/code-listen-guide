@@ -67,17 +67,17 @@ export function FileViewer({ file }: FileViewerProps) {
 
           <TabsContent value="content" className="space-y-4">
             {file.summary && (
-              <div className="rounded-lg border-default bg-surface-subtle p-4">
+              <div className="rounded-card bg-surface-secondary shadow-sm p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-primary" />
                   <span className="font-semibold">Summary</span>
                 </div>
-                <p className="text-sm text-muted">{file.summary}</p>
+                <p className="text-body-sm text-muted-foreground">{file.summary}</p>
               </div>
             )}
 
-            <ScrollArea className="max-h-pane-lg w-full rounded-lg border-default">
-              <pre className="p-4 text-sm text-muted">
+            <ScrollArea className="max-h-pane-lg w-full rounded-card bg-surface-secondary shadow-sm">
+              <pre className="p-4 text-body-sm text-muted-foreground">
                 <code>{file.content || 'No content available'}</code>
               </pre>
             </ScrollArea>
@@ -151,10 +151,10 @@ export function FileViewer({ file }: FileViewerProps) {
           <TabsContent value="chunks" className="space-y-4">
             {file.num_chunks ? (
               <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-4 rounded-lg border-default bg-surface-subtle p-4 text-center">
+                <div className="grid grid-cols-3 gap-4 rounded-card bg-surface-secondary shadow-sm p-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-foreground">{file.num_chunks}</div>
-                    <div className="text-xs text-muted">Total chunks</div>
+                    <div className="text-subheading font-bold text-foreground">{file.num_chunks}</div>
+                    <div className="text-caption text-muted-foreground">Total chunks</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-foreground">
@@ -178,7 +178,7 @@ export function FileViewer({ file }: FileViewerProps) {
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border-default bg-surface-subtle py-8 text-center text-muted">
+              <div className="rounded-card bg-surface-secondary shadow-sm py-8 text-center text-body text-muted-foreground">
                 <BarChart className="mx-auto mb-2 h-12 w-12 text-muted" />
                 <p>No chunk information available</p>
               </div>

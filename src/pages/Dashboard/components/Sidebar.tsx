@@ -37,13 +37,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  <aside
  className={cn(
       isCollapsed ? 'w-20' : 'w-sidebar-expanded',
- 'flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300',
+ 'flex h-screen flex-col bg-sidebar-surface text-sidebar-foreground shadow-lg transition-[width] duration-300',
  )}
  >
- <div className="relative flex items-center border-b border-sidebar-border px-4 py-5">
+ <div className="relative flex items-center bg-sidebar-surface-secondary px-4 py-5 shadow-sm">
  <button
  onClick={onToggleCollapse}
- className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full border border-border bg-surface p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+ className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-surface-secondary shadow-md p-1 text-muted-foreground transition-standard hover:bg-accent hover:text-accent-foreground hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
  aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
  >
  {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -52,10 +52,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  <div className="flex h-10 w-10 items-center justify-center rounded-card bg-primary/15 text-primary">
  <Mic className="h-5 w-5" />
  </div>
- {!isCollapsed && (
+  {!isCollapsed && (
  <div className="min-w-0">
- <p className="text-sm font-semibold text-sidebar-foreground">Codebase Audio</p>
- <p className="text-xs text-muted-foreground">Dashboard</p>
+ <p className="text-body-sm font-semibold text-sidebar-foreground">Codebase Audio</p>
+ <p className="text-caption text-muted-foreground">Dashboard</p>
  </div>
  )}
  </div>
@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  })}
  </nav>
  {user && (
- <div className="border-t border-sidebar-border px-4 py-4">
+ <div className="bg-sidebar-surface-secondary px-4 py-4 shadow-sm">
  <div className={cn('flex items-center rounded-control bg-sidebar-accent/40 px-3 py-3', isCollapsed ? 'justify-center' : 'gap-3')}>
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
  {user.name
@@ -96,10 +96,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  .map((n) => n[0])
  .join('')}
  </div>
- {!isCollapsed && (
+  {!isCollapsed && (
  <div className="min-w-0">
- <p className="truncate text-sm font-semibold text-sidebar-foreground">{user.name}</p>
- <p className="text-xs text-muted-foreground capitalize">{user.subscription_tier} plan</p>
+ <p className="truncate text-body-sm font-semibold text-sidebar-foreground">{user.name}</p>
+ <p className="text-caption text-muted-foreground capitalize">{user.subscription_tier} plan</p>
  </div>
  )}
  </div>

@@ -86,24 +86,24 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
 
           <TabsContent value="cleaned" className="space-y-4">
             {file.summary && (
-              <div className="rounded-lg border-default bg-surface-subtle p-4">
+              <div className="rounded-card bg-surface-secondary shadow-sm p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-primary" />
                   <span className="font-semibold">AI-Generated Summary</span>
                 </div>
-                <p className="text-sm text-muted">{file.summary}</p>
+                <p className="text-body-sm text-muted-foreground">{file.summary}</p>
               </div>
             )}
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">Cleaned Content</span>
+                <span className="text-body-sm font-semibold">Cleaned Content</span>
                 <Badge variant="secondary">
                   {file.content?.split('\n').length || 0} lines
                 </Badge>
               </div>
-              <ScrollArea className="max-h-pane-lg w-full rounded-lg border-default">
-                <pre className="p-4 text-sm text-muted">
+              <ScrollArea className="max-h-pane-lg w-full rounded-card bg-surface-secondary shadow-sm">
+                <pre className="p-4 text-body-sm text-muted-foreground">
                   <code>{file.content || 'No content available'}</code>
                 </pre>
               </ScrollArea>
@@ -129,8 +129,8 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
                     {rawData.raw_content?.split('\n').length || 0} lines
                   </Badge>
                 </div>
-                <ScrollArea className="max-h-pane-lg w-full rounded-lg border-default">
-                  <pre className="p-4 text-sm text-muted">
+                <ScrollArea className="max-h-pane-lg w-full rounded-card bg-surface-secondary shadow-sm">
+                  <pre className="p-4 text-body-sm text-muted-foreground">
                     <code>{rawData.raw_content}</code>
                   </pre>
                 </ScrollArea>
@@ -183,8 +183,8 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
                 </div>
               </div>
 
-              <ScrollArea className="max-h-pane-md w-full rounded-lg border-default">
-                <div className="space-y-0.5 p-4 text-sm font-mono text-muted">
+              <ScrollArea className="max-h-pane-md w-full rounded-card bg-surface-secondary shadow-sm">
+                <div className="space-y-0.5 p-4 text-body-sm font-mono text-muted-foreground">
                   {(() => {
                     const rawLines = rawData.raw_content?.split('\n') || [];
                     const cleanedLines = file.content?.split('\n') || [];

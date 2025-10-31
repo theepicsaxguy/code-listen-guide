@@ -39,10 +39,10 @@ export const HowItWorks = () => {
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center space-y-4 mb-20">
-          <h2 className="text-4xl md:text-5xl font-bold">
+          <h2 className="text-heading md:text-display font-bold">
             How It <span className="gradient-text-primary">Works</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-body text-muted-foreground max-w-2xl mx-auto">
             From code to comprehension in four seamless steps
           </p>
         </div>
@@ -60,20 +60,20 @@ export const HowItWorks = () => {
                 <div className="space-y-6 hover-lift">
                   {/* Enhanced icon container with glow */}
                   <div className="relative">
-                    <div className={`relative w-20 h-20 rounded-card bg-gradient-to-br ${step.gradient} p-[2px] hover:elevation-flat transition-all duration-300`}>
+                    <div className={`relative w-20 h-20 rounded-card bg-gradient-to-br ${step.gradient} p-[2px] shadow-sm hover:shadow-md transition-standard`}>
                       <div className="w-full h-full rounded-card bg-background flex items-center justify-center">
                         <Icon className={`w-10 h-10 ${step.iconColor}`} />
                       </div>
                     </div>
                     {/* Enhanced step number badge */}
-                    <div className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold elevation-flat">
+                    <div className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-body-sm font-bold shadow-sm">
                       {index + 1}
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors duration-300">{step.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <h3 className="text-subheading font-bold mb-3 group-hover:text-primary transition-standard">{step.title}</h3>
+                    <p className="text-body-sm text-muted-foreground leading-relaxed">
                       {step.description}
                     </p>
                   </div>
