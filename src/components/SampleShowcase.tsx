@@ -31,45 +31,43 @@ const samples = [
 
 export const SampleShowcase = () => {
   return (
-    <section className="px-6 py-24 relative overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
-      <div className="absolute top-1/2 left-0 w-96 h-96 bg-accent/10 rounded-full blur-[100px] animate-float" style={{ animationDuration: '15s' }} />
-      <div className="absolute top-1/4 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[100px] animate-float" style={{ animationDuration: '18s', animationDelay: '2s' }} />
+    <section className="relative px-6 py-24 overflow-hidden">
+      {/* Radial gradient accents */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center space-y-4 mb-20">
-          <h2 className="text-4xl md:text-5xl font-bold">
-            Sample <span className="gradient-text-accent">Audiobooks</span>
+          <h2 className="text-3xl font-bold text-foreground leading-tight sm:text-4xl">
+            Sample <span className="text-primary">Audiobooks</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base leading-relaxed text-muted-foreground max-w-2xl mx-auto">
             Explore professionally generated audiobooks for popular open-source projects
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {samples.map((sample, index) => (
             <Card
               key={index}
-              className="p-8 bg-card transition-all duration-300 hover-lift group overflow-hidden relative"
+              className="p-6 group overflow-hidden relative hover:shadow-xl hover:shadow-primary/10 transition-standard"
             >
               {/* Gradient overlay on hover */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
               <div className="space-y-5 relative z-10">
                 {/* Header */}
                 <div>
-                  <div className={`inline-block px-4 py-1.5 rounded-card bg-gradient-to-r ${sample.color} text-sm font-bold mb-4 elevation-flat`}>
+                  <div className={`inline-block px-4 py-1.5 bg-surface text-sm font-semibold text-foreground mb-4`}>
                     {sample.repo}
                   </div>
-                  <h3 className="text-2xl font-bold mb-3 group-hover:gradient-text-primary transition-all duration-300">{sample.name}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{sample.description}</p>
+                  <h3 className="text-2xl font-bold mb-3 text-foreground group-hover:text-primary transition-standard">{sample.name}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{sample.description}</p>
                 </div>
 
                 {/* Stats */}
                 <div className="flex items-center gap-6 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-accent" />
+                    <Clock className="w-4 h-4 text-primary" />
                     <span className="font-medium">{sample.duration}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -81,9 +79,9 @@ export const SampleShowcase = () => {
                 {/* Play button */}
                 <Button
                   variant="outline"
-                  className="w-full group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-accent group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-300 hover-scale font-semibold"
+                  className="w-full group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-standard font-semibold"
                 >
-                  <Play className="w-4 h-4 mr-2 group-hover:animate-pulse" />
+                  <Play className="w-4 h-4 mr-2" />
                   Listen to Sample
                 </Button>
               </div>

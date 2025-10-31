@@ -34,58 +34,71 @@
   --font-size-h5: 1.125rem;  /* text-base */
   --font-size-h6: 1rem;      /* text-base */
 
-  /* Colors - Dark theme (default) - Professional Developer Tools Design System */
-  /* Background hierarchy - 3-5% luminance difference between layers */
-  --color-background: hsl(0 0% 4%); /* #0a0a0a - Base layer */
-  --color-surface: hsl(240 5% 10%); /* #18181b - Elevated layer */
-  --color-surface-secondary: hsl(240 5% 15%); /* Elevated secondary */
-  --color-surface-tertiary: hsl(240 5% 16%); /* #27272a - Highest layer */
-  --color-surface-strong: hsl(240 5% 17%);
-  --color-surface-subtle: hsl(240 5% 8%);
+  /* ============================================================================
+     Core Surface Palette (Neutral Foundation)
+     Neutral greys with 3-5% luminance difference between layers
+     ============================================================================ */
   
-  /* Foreground hierarchy - Professional text colors */
-  --color-foreground: hsl(0 0% 98%); /* #fafafa - zinc-50 for headings */
-  --color-foreground-muted: hsl(240 5% 90%); /* #e4e4e7 - zinc-200 for body */
-  --color-muted: hsl(240 5% 64%); /* #a1a1aa - zinc-400 for secondary */
-  --color-muted-foreground: hsl(240 5% 70%);
+  /* Base background - Darkest deep grey for full-screen, root backgrounds */
+  --color-background: hsl(0 0% 4%); /* #0a0a0a */
   
-  /* Interactive elements - minimal border usage */
-  --color-border: hsl(240 5% 20%); /* Subtle, for inputs/separators only */
-  --color-ring: hsl(188 94% 43%); /* cyan-500 for focus rings */
+  /* Elevated surface - Slightly lighter grey for cards, panels, elevated containers */
+  --color-surface: hsl(240 5% 10%); /* #18181b */
+  --color-surface-secondary: hsl(240 5% 13%); /* Intermediate step */
+  
+  /* Active surface - Lightest grey for highlighted sections, active states */
+  --color-surface-active: hsl(240 5% 16%); /* #27272a */
+  --color-surface-tertiary: hsl(240 5% 16%); /* Alias for backwards compatibility */
+  
+  /* Foreground hierarchy - High contrast for readability */
+  --color-foreground: hsl(0 0% 98%); /* Very light - for headings */
+  --color-foreground-muted: hsl(240 5% 90%); /* Light - for body text */
+  --color-muted: hsl(240 5% 64%); /* Muted - for metadata/secondary text */
+  --color-muted-foreground: hsl(240 5% 70%); /* Slightly brighter muted */
+  
+  /* Interactive elements - Minimal usage, only for inputs/separators */
+  --color-border: hsl(240 5% 20%); /* Subtle borders only */
+  --color-ring: hsl(188 94% 43%); /* Focus rings use brand accent */
   --color-input: hsl(240 5% 10%); /* Matches elevated surface */
 
-  /* Primary action colors - Cyan-500 (#06b6d4) */
-  --color-primary: hsl(188 94% 43%); /* cyan-500 */
-  --color-primary-hover: hsl(188 94% 48%); /* cyan-400 */
-  --color-primary-active: hsl(188 94% 38%); /* cyan-600 */
+  /* ============================================================================
+     Accent Palette (Chromatic Highlights)
+     Three functional roles: Brand/Primary, Secondary, Semantic
+     ============================================================================ */
+
+  /* Brand / Primary Accent - Cool, crisp cyan for hero CTAs, active states, key highlights */
+  --color-primary: hsl(188 94% 43%); /* cyan-500 - Stands out but readable in dark mode */
+  --color-primary-hover: hsl(188 94% 48%); /* cyan-400 - Lighter on hover */
+  --color-primary-active: hsl(188 94% 38%); /* cyan-600 - Darker on active */
   --color-primary-foreground: hsl(0 0% 100%); /* White text on primary */
   
-  /* Secondary colors */
-  --color-secondary: hsl(260 90% 70%);
-  --color-secondary-hover: hsl(260 90% 75%);
-  --color-secondary-active: hsl(260 90% 65%);
-  --color-secondary-foreground: hsl(0 0% 100%);
+  /* Secondary Accent - Supportive chromatic for links, less-dominant buttons, tags */
+  --color-secondary: hsl(260 90% 70%); /* Purple - Less saturated, supportive */
+  --color-secondary-hover: hsl(260 90% 75%); /* Lighter on hover */
+  --color-secondary-active: hsl(260 90% 65%); /* Darker on active */
+  --color-secondary-foreground: hsl(0 0% 100%); /* White text on secondary */
   
-  /* Accent colors - Elevated surfaces */
-  --color-accent: hsl(240 5% 15%); /* Elevated surface */
-  --color-accent-hover: hsl(240 5% 18%);
-  --color-accent-active: hsl(240 5% 12%);
+  /* Accent surface - For hover states on neutral surfaces */
+  --color-accent: hsl(240 5% 15%); /* Elevated surface for hover */
+  --color-accent-hover: hsl(240 5% 18%); /* Lighter hover */
+  --color-accent-active: hsl(240 5% 12%); /* Darker active */
   --color-accent-foreground: hsl(240 5% 90%); /* Body text color */
   
-  /* Semantic state colors - Dark mode optimized */
-  --color-success: hsl(142 76% 36%); /* green-400 #4ade80 */
+  /* Semantic Accents - Status colors for badges, indicators, alerts */
+  /* Applied as text + low-alpha background (5-10% opacity) for integration */
+  --color-success: hsl(142 76% 36%); /* green-400 - Success states */
   --color-success-hover: hsl(142 76% 41%);
   --color-success-foreground: hsl(0 0% 100%);
-  --color-warning: hsl(38 92% 50%); /* amber-400 #fbbf24 */
+  --color-warning: hsl(38 92% 50%); /* amber-400 - Warning states */
   --color-warning-hover: hsl(38 92% 55%);
   --color-warning-foreground: hsl(0 0% 100%);
-  --color-danger: hsl(0 84% 60%); /* red-400 #f87171 */
+  --color-danger: hsl(0 84% 60%); /* red-400 - Error states */
   --color-danger-hover: hsl(0 84% 65%);
   --color-danger-foreground: hsl(0 0% 100%);
-  --color-info: hsl(217 91% 60%); /* blue-400 #60a5fa */
+  --color-info: hsl(217 91% 60%); /* blue-400 - Info states */
   --color-info-hover: hsl(217 91% 65%);
   --color-info-foreground: hsl(0 0% 100%);
-  --color-pending: hsl(258 90% 66%); /* purple-400 #a78bfa */
+  --color-pending: hsl(258 90% 66%); /* purple-400 - Pending states */
   --color-pending-hover: hsl(258 90% 71%);
   --color-pending-foreground: hsl(0 0% 100%);
   
@@ -94,10 +107,10 @@
   --color-destructive-hover: var(--color-danger-hover);
   --color-destructive-foreground: var(--color-danger-foreground);
 
-  /* Component surfaces - Elevated backgrounds */
+  /* Component surfaces - Maps to core surface palette */
   --color-card: hsl(240 5% 10%); /* Elevated surface */
   --color-card-foreground: hsl(240 5% 90%); /* Body text */
-  --color-popover: hsl(240 5% 15%); /* Higher elevation */
+  --color-popover: hsl(240 5% 13%); /* Slightly higher elevation */
   --color-popover-foreground: hsl(240 5% 90%);
 
   /* Sidebar with proper separation - darker for visual distinction */

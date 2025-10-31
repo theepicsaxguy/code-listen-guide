@@ -60,29 +60,31 @@ const testimonials = [
 
 export const Testimonials = () => {
   return (
-    <section className="px-6 py-24 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
+    <section className="relative px-6 py-24 overflow-hidden">
+      {/* Radial gradient accent */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center space-y-4 mb-20">
-          <h2 className="text-heading md:text-display font-bold">
-            Loved by <span className="gradient-text-accent">Developers</span>
+          <h2 className="text-3xl font-bold text-foreground leading-tight sm:text-4xl">
+            Loved by <span className="text-primary">Developers</span>
           </h2>
-          <p className="text-body text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base leading-relaxed text-muted-foreground max-w-2xl mx-auto">
             See what developers are saying about learning code through audio
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {testimonials.map((testimonial, index) => (
             <Card
               key={index}
-              className="p-6 bg-surface-secondary shadow-md hover:shadow-lg transition-standard hover-lift group relative overflow-hidden"
-              style={{ animationDelay: `${index * 50}ms` }}
+              className="p-6 group relative overflow-hidden transition-standard hover:shadow-xl hover:shadow-primary/10"
             >
+              {/* Gradient overlay on hover */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
               {/* Quote icon background */}
-              <div className="absolute top-4 right-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <div className="absolute top-4 right-4 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
                 <Quote className="w-16 h-16 text-primary" />
               </div>
 
@@ -95,18 +97,18 @@ export const Testimonials = () => {
                 </div>
 
                 {/* Content */}
-                <p className="text-body-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm leading-relaxed text-muted-foreground">
                   "{testimonial.content}"
                 </p>
 
                 {/* Author */}
                 <div className="flex items-center gap-3 pt-2">
-                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${testimonial.gradient} flex items-center justify-center font-bold text-sm`}>
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-bold text-sm text-primary">
                     {testimonial.avatar}
                   </div>
                   <div>
-                    <p className="font-semibold text-body-sm">{testimonial.name}</p>
-                    <p className="text-caption text-muted-foreground">
+                    <p className="font-semibold text-sm text-foreground">{testimonial.name}</p>
+                    <p className="text-xs text-muted-foreground">
                       {testimonial.role} at {testimonial.company}
                     </p>
                   </div>
@@ -118,18 +120,18 @@ export const Testimonials = () => {
 
         {/* Social proof stats */}
         <div className="mt-16 text-center space-y-4">
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-3">
             <div className="flex -space-x-2">
               {testimonials.slice(0, 5).map((t, i) => (
                 <div
                   key={i}
-                  className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center font-bold text-xs`}
+                  className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xs text-primary border-2 border-background"
                 >
                   {t.avatar}
                 </div>
               ))}
             </div>
-            <p className="text-body-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Join <span className="font-bold text-foreground">2,500+</span> developers learning through audio
             </p>
           </div>

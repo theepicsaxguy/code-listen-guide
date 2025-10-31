@@ -36,26 +36,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  return (
  <aside
  className={cn(
-      isCollapsed ? 'w-20' : 'w-sidebar-expanded',
- 'flex h-screen flex-col bg-sidebar-surface text-sidebar-foreground shadow-lg transition-[width] duration-300',
+      isCollapsed ? 'w-20 hidden sm:flex' : 'w-64',
+ 'flex h-screen flex-col bg-sidebar-surface text-sidebar-foreground transition-[width] duration-300',
  )}
  >
- <div className="relative flex items-center bg-sidebar-surface-secondary px-4 py-5 shadow-sm">
+ <div className="relative flex items-center bg-sidebar-surface-secondary px-4 py-5">
  <button
  onClick={onToggleCollapse}
- className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-surface-secondary shadow-md p-1 text-muted-foreground transition-standard hover:bg-accent hover:text-accent-foreground hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+ className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-surface shadow-lg shadow-primary/10 p-1 text-muted-foreground transition-standard hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
  aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
  >
  {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
  </button>
  <div className={cn('flex items-center', isCollapsed ? 'justify-center w-full' : 'gap-3')}>
- <div className="flex h-10 w-10 items-center justify-center rounded-card bg-primary/15 text-primary">
+ <div className="flex h-10 w-10 items-center justify-center bg-primary/10 text-primary">
  <Mic className="h-5 w-5" />
  </div>
   {!isCollapsed && (
  <div className="min-w-0">
- <p className="text-body-sm font-semibold text-sidebar-foreground">Codebase Audio</p>
- <p className="text-caption text-muted-foreground">Dashboard</p>
+ <p className="text-sm font-semibold text-sidebar-foreground">Codebase Audio</p>
+ <p className="text-xs text-muted-foreground">Dashboard</p>
  </div>
  )}
  </div>
@@ -64,11 +64,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  {navItems.map((item) => {
  const isActive = activeTab === item.id;
  const itemClasses = cn(
- 'group relative flex w-full items-center gap-3 rounded-control px-3 py-3 text-sm font-medium transition-colors',
+ 'group relative flex w-full items-center gap-3 rounded-control px-3 py-3 text-sm font-medium transition-standard',
  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
  isCollapsed && 'justify-center gap-0 px-0',
  isActive
- ? 'bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:rounded-full before:bg-primary'
+ ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-lg shadow-primary/10'
  : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
  );
 
@@ -88,9 +88,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  })}
  </nav>
  {user && (
- <div className="bg-sidebar-surface-secondary px-4 py-4 shadow-sm">
+ <div className="bg-sidebar-surface-secondary px-4 py-4">
  <div className={cn('flex items-center rounded-control bg-sidebar-accent/40 px-3 py-3', isCollapsed ? 'justify-center' : 'gap-3')}>
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
  {user.name
  .split(' ')
  .map((n) => n[0])
@@ -98,8 +98,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  </div>
   {!isCollapsed && (
  <div className="min-w-0">
- <p className="truncate text-body-sm font-semibold text-sidebar-foreground">{user.name}</p>
- <p className="text-caption text-muted-foreground capitalize">{user.subscription_tier} plan</p>
+ <p className="truncate text-sm font-semibold text-sidebar-foreground">{user.name}</p>
+ <p className="text-xs text-muted-foreground capitalize">{user.subscription_tier} plan</p>
  </div>
  )}
  </div>

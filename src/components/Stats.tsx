@@ -96,27 +96,27 @@ const CountUp = ({ end, duration = 2000 }: { end: number; duration?: number }) =
 
 export const Stats = () => {
   return (
-    <section className="px-6 py-24 relative overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+    <section className="relative px-6 py-24 overflow-hidden">
+      {/* Radial gradient accent */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center space-y-4 mb-20">
-          <h2 className="text-3xl md:text-4xl font-semibold text-foreground leading-tight">
+          <h2 className="text-3xl font-bold text-foreground leading-tight sm:text-4xl">
             Trusted by <span className="text-primary">Developers</span> Worldwide
           </h2>
-          <p className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base leading-relaxed text-muted-foreground max-w-2xl mx-auto">
             Join thousands of developers learning code through audio
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <div
                 key={index}
-                className="bg-surface p-6 hover:bg-surface-secondary/50 transition-colors group text-center relative"
+                className="bg-surface p-6 text-center group transition-colors hover:bg-surface-secondary relative"
               >
                 <div className="space-y-4">
                   {/* Icon */}
@@ -128,9 +128,9 @@ export const Stats = () => {
                   <div className="space-y-2">
                     <div className="flex items-baseline justify-center gap-1">
                       <CountUp end={stat.value} />
-                      <span className="text-3xl font-semibold text-primary">{stat.suffix}</span>
+                      <span className="text-4xl font-semibold text-primary">{stat.suffix}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">{stat.label}</p>
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{stat.label}</p>
                   </div>
                 </div>
               </div>

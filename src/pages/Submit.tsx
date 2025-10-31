@@ -55,8 +55,11 @@ export default function Submit() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
+      {/* Radial gradient accent */}
+      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+
+      <header className="relative z-10 bg-surface">
+        <div className="container mx-auto px-6 py-4">
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
@@ -64,24 +67,24 @@ export default function Submit() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-12 max-w-4xl">
+      <main className="container mx-auto px-6 py-12 max-w-4xl relative z-10">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Create New Audiobook</h1>
-          <p className="text-xl text-muted-foreground">
+          <h1 className="text-3xl font-bold mb-4 text-foreground sm:text-4xl">Create New Audiobook</h1>
+          <p className="text-base leading-relaxed text-muted-foreground">
             Transform any GitHub repository into a comprehensive audio walkthrough
           </p>
         </div>
 
-        <Card>
+        <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
           <CardHeader>
-            <CardTitle>Repository Details</CardTitle>
-            <CardDescription>Enter the GitHub repository you want to convert</CardDescription>
+            <CardTitle className="text-xl font-semibold">Repository Details</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">Enter the GitHub repository you want to convert</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="repo-url">
+                  <Label htmlFor="repo-url" className="text-sm font-medium text-foreground">
                     <Github className="inline mr-2 h-4 w-4" />
                     Repository URL
                   </Label>
@@ -98,7 +101,7 @@ export default function Submit() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="git-ref">Branch / Tag / Commit (optional)</Label>
+                  <Label htmlFor="git-ref" className="text-sm font-medium text-foreground">Branch / Tag / Commit (optional)</Label>
                   <Input
                     id="git-ref"
                     placeholder="main"
@@ -109,7 +112,7 @@ export default function Submit() {
               </div>
 
               <div className="space-y-4">
-                <Label>Select Depth Tier</Label>
+                <Label className="text-sm font-medium text-foreground">Select Depth Tier</Label>
                 <DepthSelector selectedDepth={selectedDepth} onDepthChange={setSelectedDepth} />
               </div>
 

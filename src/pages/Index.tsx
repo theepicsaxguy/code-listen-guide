@@ -14,17 +14,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="fixed inset-x-0 top-0 z-50 bg-surface-secondary/90 backdrop-blur shadow-sm">
-        <div className="mx-auto flex max-w-content items-center justify-between px-4 py-4 sm:px-6">
-          <p className="text-body font-semibold text-foreground">Codebase Audiobook</p>
-          <div className="flex items-center gap-2 sm:gap-3">
+      <nav className="fixed inset-x-0 top-0 z-50 bg-surface/90 backdrop-blur-sm shadow-sm">
+        <div className="mx-auto flex max-w-content items-center justify-between px-4 py-4 sm:px-6 gap-x-6">
+          <p className="text-base font-semibold text-foreground">Codebase Audiobook</p>
+          <div className="flex items-center gap-x-6">
             <Button variant="ghost" onClick={() => navigate('/why-we-exist')} className="hidden sm:inline-flex">
               Why we exist
             </Button>
             <Button variant="ghost" onClick={() => navigate('/auth')} className="hidden sm:inline-flex">
               Login
             </Button>
-            <Button onClick={() => navigate('/auth')} className="transition-standard">
+            <Button onClick={() => navigate('/auth')}>
               Get started
             </Button>
           </div>

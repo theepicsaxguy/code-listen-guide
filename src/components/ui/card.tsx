@@ -19,8 +19,8 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   <div 
     ref={ref} 
     className={cn(
-      "bg-gradient-to-b from-surface to-surface/95 text-card-foreground",
-      "hover:shadow-lg hover:shadow-primary/10 transition-shadow",
+      "bg-surface text-card-foreground",
+      "hover:shadow-xl hover:shadow-primary/10 transition-standard",
       className
     )} 
     {...props} 
