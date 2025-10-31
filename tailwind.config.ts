@@ -10,8 +10,8 @@ const config: Config = {
       },
     },
   },
-  // Plugins moved to CSS directive (@import "@tailwindcss/typography" in index.css)
-  // tailwindcss-animate moved to CSS directive (see index.css)
+  // Plugins moved to CSS directive (@plugin "@tailwindcss/typography" in index.css)
+  // tailwindcss-animate moved to CSS directive (@plugin "tailwindcss-animate" in index.css)
 };
 
 export default config;

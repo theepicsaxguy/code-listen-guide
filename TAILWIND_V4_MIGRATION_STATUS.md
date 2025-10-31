@@ -4,7 +4,7 @@
 
 1. **Theme colors as full colors** - All colors in `@theme` now use full `hsl()` values instead of channel triples
 2. **@source consolidation** - Single accurate source glob: `../src/**/*.{ts,tsx}`
-3. **Typography plugin** - Enabled via CSS `@import "@tailwindcss/typography"`
+3. **Typography plugin** - Enabled via CSS `@plugin "@tailwindcss/typography"`
 4. **Dark mode standardization** - Using `[data-theme="dark"]` variant only (removed `.dark` class usage)
 5. **Palette utility purge** - All `blue-500`, `red-500`, etc. replaced with semantic tokens (`primary`, `danger`, etc.)
 6. **Radius unification** - Two radii: `rounded-control` (0.5rem) and `rounded-card` (0.75rem)
@@ -16,7 +16,7 @@
 12. **Touch target enforcement** - 44x44 minimum via base layer rule
 13. **Typography scale** - Standardized font sizes and line heights in `@theme`
 14. **Icon sizing** - Standardized icon size tokens (`--size-icon-xs` through `--size-icon-xl`)
-15. **tailwindcss-animate** - Moved to CSS `@import` directive
+15. **tailwindcss-animate** - Moved to CSS `@plugin` directive
 16. **Motion reduction** - `prefers-reduced-motion` support added
 17. **Gradients consolidated** - Reduced to brand gradients: `from-primary to-accent`, `from-success to-accent`, `from-secondary to-accent`
 18. **Semantic color roles** - Locked to: `primary`, `secondary`, `accent`, `success`, `warning`, `danger`
