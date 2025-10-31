@@ -23,7 +23,7 @@ const WhyWeExist = () => {
             </Button>
             <Button
               onClick={() => navigate('/auth')}
-              className="bg-gradient-to-r from-primary to-accent hover:scale-105 shadow-[0_0_20px_rgba(138,43,226,0.3)] hover:shadow-[0_0_30px_rgba(0,255,255,0.4)] transition-all duration-300"
+              className="bg-gradient-to-r from-primary to-accent hover:scale-105 transition-all duration-300"
             >
               Get Started
             </Button>

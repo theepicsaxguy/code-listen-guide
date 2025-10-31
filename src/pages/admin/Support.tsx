@@ -380,7 +380,7 @@ export default function Support() {
  {ticketDetail.messages?.map((message: TicketMessage) => (
           <div
             key={message.id}
-            className={`rounded-lg p-4 ${
+            className={`rounded-card p-4 ${
               message.author_type === "admin"
                 ? "bg-primary/10"
                 : "bg-surface-subtle"
@@ -421,7 +421,7 @@ export default function Support() {
  </div>
 
  {showCannedReplies && (
-        <div className="grid gap-2 rounded-lg bg-surface-subtle p-3">
+        <div className="grid gap-2 rounded-card bg-surface-subtle p-3">
  {cannedRepliesData?.replies?.map((reply: CannedReply) => (
           <Button
             key={reply.id}

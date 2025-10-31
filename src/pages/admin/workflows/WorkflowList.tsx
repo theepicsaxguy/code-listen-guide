@@ -89,7 +89,7 @@ export default function WorkflowList() {
  <div className="p-8 space-y-6">
  <div>
  <h1 className="text-3xl font-bold gradient-text-primary flex items-center gap-3">
- <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+ <div className="w-10 h-10 rounded-card bg-primary flex items-center justify-center elevation-raised">
  <GitBranch className="w-6 h-6 text-primary-foreground" />
  </div>
  Workflow Management
@@ -111,12 +111,12 @@ export default function WorkflowList() {
  </div>
  <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
  <DialogTrigger asChild>
- <Button className="bg-primary hover:opacity-90 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 px-8">
+ <Button className="bg-primary hover:opacity-90 text-primary-foreground elevation-raised hover:elevation-overlay hover:-translate-y-0.5 px-8">
  <Plus className="w-4 h-4 mr-2" />
  New Workflow
  </Button>
  </DialogTrigger>
- <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-content-narrow">
  <DialogHeader>
  <DialogTitle>Create New Workflow</DialogTitle>
  <DialogDescription>
@@ -164,7 +164,7 @@ export default function WorkflowList() {
  </Dialog>
  </div>
 
- <div className="bg-surface border border-primary/20 rounded-lg shadow-lg overflow-hidden">
+ <div className="bg-surface border border-primary/20 rounded-card elevation-raised overflow-hidden">
  {isLoading ? (
  <div className="p-8 text-center text-muted-foreground">
  Loading workflows...
@@ -259,9 +259,9 @@ export default function WorkflowList() {
  </div>
 
  <div className="grid gap-4 md:grid-cols-3">
- <div className="bg-surface border border-accent/20 rounded-lg p-6 shadow-lg">
+ <div className="bg-surface border border-accent/20 rounded-card p-6 elevation-raised">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
+ <div className="w-10 h-10 rounded-card bg-accent flex items-center justify-center elevation-raised">
  <GitBranch className="w-5 h-5 text-accent-foreground" />
  </div>
  <div>
@@ -271,9 +271,9 @@ export default function WorkflowList() {
  </div>
  </div>
 
- <div className="bg-surface border border-primary/20 rounded-lg p-6 shadow-lg">
+ <div className="bg-surface border border-primary/20 rounded-card p-6 elevation-raised">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+ <div className="w-10 h-10 rounded-card bg-primary flex items-center justify-center elevation-raised">
  <Play className="w-5 h-5 text-primary-foreground" />
  </div>
  <div>
@@ -285,9 +285,9 @@ export default function WorkflowList() {
  </div>
  </div>
 
- <div className="bg-surface border border-secondary/20 rounded-lg p-6 shadow-lg">
+ <div className="bg-surface border border-secondary/20 rounded-card p-6 elevation-raised">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shadow-lg shadow-secondary/20">
+ <div className="w-10 h-10 rounded-card bg-secondary flex items-center justify-center elevation-raised">
  <Edit className="w-5 h-5 text-secondary-foreground" />
  </div>
  <div>

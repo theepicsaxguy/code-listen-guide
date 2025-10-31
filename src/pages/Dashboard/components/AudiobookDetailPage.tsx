@@ -48,7 +48,7 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
  if (isLoadingJob || isLoadingChapters) {
  return (
  <div className="flex items-center justify-center h-64">
- <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+ <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
  </div>
  );
  }
@@ -73,9 +73,9 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
  <ChevronRight size={16} className="rotate-180" />
  Back to Audiobooks
  </button>
- <div className="bg-surface rounded-lg p-8">
+ <div className="bg-surface rounded-card p-8">
  <div className="flex items-start gap-6">
- <div className="w-32 h-32 bg-surface rounded-lg flex items-center justify-center flex-shrink-0">
+ <div className="w-32 h-32 bg-surface rounded-card flex items-center justify-center flex-shrink-0">
  <GitBranch className="text-text" size={64} />
  </div>
  <div className="flex-1">
@@ -85,11 +85,11 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
  <p className="text-muted-foreground mb-4">{audiobook.repo_url}</p>
  </div>
  <div className="flex items-center gap-2">
- <button onClick={handleCopyUrl} className="p-2 hover:bg-surface/70 rounded-lg transition-colors" title="Copy link">
+ <button onClick={handleCopyUrl} className="p-2 hover:bg-surface/70 rounded-card transition-colors" title="Copy link">
  {copied ? <Check size={20} className="text-success" /> : <Copy size={20} className="text-muted-foreground" />}
  </button>
- <button className="p-2 hover:bg-surface/70 rounded-lg transition-colors" title="Share"><Share2 size={20} className="text-muted-foreground" /></button>
- <button className="p-2 hover:bg-surface/70 rounded-lg transition-colors" title="Download"><Download size={20} className="text-muted-foreground" /></button>
+ <button className="p-2 hover:bg-surface/70 rounded-card transition-colors" title="Share"><Share2 size={20} className="text-muted-foreground" /></button>
+ <button className="p-2 hover:bg-surface/70 rounded-card transition-colors" title="Download"><Download size={20} className="text-muted-foreground" /></button>
  </div>
  </div>
  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -110,7 +110,7 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
  </div>
  {chapters.length > 0 && (
  <>
- <div className="bg-surface rounded-lg p-6">
+ <div className="bg-surface rounded-card p-6">
  <div className="flex items-center justify-between mb-4">
  <div>
  <h3 className="text-lg font-semibold text-text mb-1">Chapter {currentChapter + 1}: {chapters[currentChapter].title}</h3>
@@ -127,7 +127,7 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
  max="100"
  value={(currentTime / (chapters[currentChapter].audio_duration_seconds || 1)) * 100}
  onChange={(e) => setCurrentTime((parseInt(e.target.value) / 100) * (chapters[currentChapter].audio_duration_seconds || 0))}
- className="w-full h-2 bg-surface/60 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+ className="w-full h-2 bg-surface/60 rounded-card appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
  />
  </div>
  <div className="flex items-center justify-between">
@@ -135,7 +135,7 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
  <button
  disabled={currentChapter === 0}
  onClick={() => setCurrentChapter(Math.max(0, currentChapter - 1))}
- className="p-3 hover:bg-surface/70 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+ className="p-3 hover:bg-surface/70 rounded-card transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
  aria-label="Previous Chapter"
  >
  <SkipBack size={20} className="text-muted-foreground" />
@@ -146,14 +146,14 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
  <button
  disabled={currentChapter >= chapters.length - 1}
  onClick={() => setCurrentChapter(Math.min(chapters.length - 1, currentChapter + 1))}
- className="p-3 hover:bg-surface/70 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+ className="p-3 hover:bg-surface/70 rounded-card transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
  aria-label="Next Chapter"
  >
  <SkipForward size={20} className="text-muted-foreground" />
  </button>
  </div>
  <div className="flex items-center gap-3">
- <button onClick={() => setIsMuted(!isMuted)} className="p-2 hover:bg-surface/70 rounded-lg transition-colors" aria-label="Mute/Unmute">
+ <button onClick={() => setIsMuted(!isMuted)} className="p-2 hover:bg-surface/70 rounded-card transition-colors" aria-label="Mute/Unmute">
  {isMuted ? <VolumeX size={20} className="text-muted-foreground" /> : <Volume2 size={20} className="text-muted-foreground" />}
  </button>
  <input
@@ -162,14 +162,14 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
  max="100"
  value={volume}
  onChange={(e) => setVolume(parseInt(e.target.value))}
- className="w-24 h-1 bg-surface/60 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+ className="w-24 h-1 bg-surface/60 rounded-card appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
  />
  <span className="text-sm text-muted-foreground w-12" aria-label="Volume Percentage">{volume}%</span>
  </div>
  </div>
  </div>
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
- <div className="bg-surface rounded-lg overflow-hidden">
+ <div className="bg-surface rounded-card overflow-hidden">
  <div className="p-6">
  <h3 className="text-lg font-semibold text-text">Chapters</h3>
  </div>
@@ -181,7 +181,7 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
  className={`w-full p-4 text-left hover:bg-surface/70 transition-colors ${idx === currentChapter ? 'bg-surface/60' : ''}`}
  >
  <div className="flex items-center gap-3">
- <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${idx === currentChapter ? 'bg-primary text-text' : 'bg-surface/60 text-muted-foreground'}`}>
+ <div className={`w-8 h-8 rounded-card flex items-center justify-center ${idx === currentChapter ? 'bg-primary text-text' : 'bg-surface/60 text-muted-foreground'}`}>
  {idx === currentChapter && isPlaying ? <Pause size={16} /> : <Play size={16} />}
  </div>
  <div className="flex-1">
@@ -193,13 +193,13 @@ export const AudiobookDetailPage: React.FC<AudiobookDetailPageProps> = ({ audiob
  ))}
  </div>
  </div>
- <div className="bg-surface rounded-lg overflow-hidden">
+ <div className="bg-surface rounded-card overflow-hidden">
  <div className="p-6">
  <h3 className="text-lg font-semibold text-text">Files Covered</h3>
  </div>
  <div className="p-6 space-y-3 max-h-96 overflow-y-auto">
  {chapters[currentChapter].files_covered?.map((file, idx) => (
- <div key={idx} className="flex items-center gap-3 p-3 bg-surface/60 rounded-lg">
+ <div key={idx} className="flex items-center gap-3 p-3 bg-surface/60 rounded-card">
  <FileCode size={16} className="text-primary flex-shrink-0" />
  <span className="text-sm text-muted-foreground font-mono truncate">{file}</span>
  </div>

@@ -49,25 +49,25 @@ export default function JobTracing() {
  const getStageIcon = (status: string) => {
  switch (status) {
  case "completed":
- return <CheckCircle2 className="h-5 w-5 text-green-500" />;
- case "failed":
- return <XCircle className="h-5 w-5 text-red-500" />;
- case "running":
- return <Play className="h-5 w-5 text-blue-500 animate-pulse" />;
+      return <CheckCircle2 className="h-5 w-5 text-success" />;
+    case "failed":
+      return <XCircle className="h-5 w-5 text-danger" />;
+    case "running":
+      return <Play className="h-5 w-5 text-primary animate-pulse" />;
  default:
  return <Clock className="h-5 w-5 text-muted-foreground" />;
  }
  };
 
- const getStatusColor = (status: string) => {
- const colors: Record<string, string> = {
- completed: "bg-green-500/10 text-green-500 border-green-500/20",
- failed: "bg-red-500/10 text-red-500 border-red-500/20",
- running: "bg-blue-500/10 text-blue-500 border-blue-500/20",
- queued: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
- parsing: "bg-purple-500/10 text-purple-500 border-purple-500/20",
- generating: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
- rendering: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+const getStatusColor = (status: string) => {
+  const colors: Record<string, string> = {
+    completed: "bg-success/10 text-success border-success/20",
+    failed: "bg-danger/10 text-danger border-danger/20",
+    running: "bg-primary/10 text-primary border-primary/20",
+    queued: "bg-warning/10 text-warning border-warning/20",
+    parsing: "bg-secondary/10 text-secondary border-secondary/20",
+    generating: "bg-accent/10 text-accent border-accent/20",
+    rendering: "bg-warning/10 text-warning border-warning/20",
  };
  return colors[status] || colors.queued;
  };
@@ -194,7 +194,7 @@ export default function JobTracing() {
  </div>
 
  {jobTrace.error && (
- <div className="bg-danger/10 rounded-lg p-4">
+ <div className="bg-danger/10 rounded-card p-4">
  <div className="flex items-start gap-2">
  <AlertCircle className="h-5 w-5 text-danger mt-0.5" />
  <div>

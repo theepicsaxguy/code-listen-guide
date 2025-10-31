@@ -150,7 +150,7 @@ const Dashboard: React.FC = () => {
       />
       <div className="flex-1 overflow-hidden">
         <div className="border-b border-border bg-surface/60 backdrop-blur">
-          <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 py-6">
+          <div className="mx-auto flex max-w-content-default flex-col gap-6 px-6 py-6">
             <div className="space-y-3">
               <Breadcrumb>
                 <BreadcrumbList>
@@ -199,7 +199,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <main className="mx-auto max-w-[1280px] space-y-6 px-6 py-6">
+        <main className="mx-auto max-w-content-default space-y-6 px-6 py-6">
           {activeTab === 'home' && <OverviewPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
           {activeTab === 'audiobooks' && (
             <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} searchQuery={searchQuery} />

@@ -236,7 +236,7 @@ export default function OutlinePreview() {
                   <FileViewer file={selectedFile} />
                 ) : (
                   <Card>
-                    <CardContent className="flex items-center justify-center h-[600px] text-muted-foreground">
+                    <CardContent className="flex items-center justify-center h-[37.5rem] text-muted-foreground">
                       <div className="text-center">
                         <FileCode className="h-12 w-12 mx-auto mb-4 opacity-20" />
                         <p>Select a file to view its contents</p>
@@ -247,7 +247,7 @@ export default function OutlinePreview() {
               </div>
             ) : (
               <Card>
-                <CardContent className="flex items-center justify-center h-[400px] text-muted-foreground">
+                <CardContent className="flex items-center justify-center h-[25rem] text-muted-foreground">
                   <div className="text-center">
                     <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin" />
                     <p>Loading repository data...</p>

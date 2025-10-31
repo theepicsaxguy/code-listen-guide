@@ -112,9 +112,9 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
                 return (
                   <div 
                     key={index} 
-                    className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all transition-colors cursor-pointer ${colorClass}`}
+                    className={`flex items-center gap-3 p-3 rounded-card border-2 transition-all transition-colors cursor-pointer ${colorClass}`}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/20">
+                    <div className="w-8 h-8 rounded-card bg-primary flex items-center justify-center elevation-flat">
                       <File className="h-4 w-4 text-primary-foreground" />
                     </div>
                     <code className="text-sm font-medium text-foreground flex-1">{path}</code>
@@ -156,7 +156,7 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[400px]">
+            <ScrollArea className="h-[25rem]">
               <div className="space-y-4">
                 {Object.entries(filesByFramework).map(([framework, files]) => (
                   <div key={framework} className="space-y-2">
@@ -199,7 +199,7 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[400px]">
+            <ScrollArea className="h-[25rem]">
               <div className="space-y-4">
                 {Object.entries(filesByPattern).map(([pattern, files]) => (
                   <div key={pattern} className="space-y-2">
@@ -241,7 +241,7 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[25rem]">
             <div className="space-y-3">
               {Object.entries(filesByDirectory)
                 .sort(([a], [b]) => a.localeCompare(b))

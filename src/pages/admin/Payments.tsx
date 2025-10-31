@@ -263,7 +263,7 @@ export default function AdminPayments() {
  />
  </div>
  <Select value={statusFilter || "all"} onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}>
- <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-44">
  <SelectValue placeholder="All statuses" />
  </SelectTrigger>
  <SelectContent>
@@ -334,9 +334,9 @@ export default function AdminPayments() {
  <TableCell>
  <Badge variant={getStatusColor(payment.status)}>{payment.status}</Badge>
  </TableCell>
- <TableCell>{payment.payment_method || "—"}</TableCell>
+ <TableCell>{payment.payment_method || "?"}</TableCell>
  <TableCell className="font-mono text-xs">
- {payment.job_id ? payment.job_id.substring(0, 8) + "..." : "—"}
+ {payment.job_id ? payment.job_id.substring(0, 8) + "..." : "?"}
  </TableCell>
  <TableCell className="text-sm">
  {new Date(payment.created_at).toLocaleDateString()}
@@ -427,7 +427,7 @@ export default function AdminPayments() {
  </div>
  <div>
  <label className="text-sm font-medium text-muted-foreground">Payment Method</label>
- <p>{selectedPayment.payment_method_type || "—"}</p>
+ <p>{selectedPayment.payment_method_type || "?"}</p>
  </div>
  <div>
  <label className="text-sm font-medium text-muted-foreground">Created</label>
@@ -446,7 +446,7 @@ export default function AdminPayments() {
  <label className="text-sm font-medium text-muted-foreground">
  Associated Job
  </label>
- <div className="mt-2 p-4 bg-muted rounded-lg">
+ <div className="mt-2 p-4 bg-muted rounded-card">
  <p className="font-medium">{selectedPayment.job.repo_name}</p>
  <p className="text-sm text-muted-foreground">{selectedPayment.job.repo_url}</p>
  <div className="flex gap-2 mt-2">

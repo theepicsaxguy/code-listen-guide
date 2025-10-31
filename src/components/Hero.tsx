@@ -27,7 +27,7 @@ export const Hero = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="w-full max-w-2xl">
-          <div className="flex flex-col gap-3 rounded-lg border-default bg-surface p-4 elevation-flat sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-3 rounded-card border-default bg-surface p-4 elevation-flat sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Github className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" aria-hidden="true" />
               <Input
@@ -45,15 +45,15 @@ export const Hero = () => {
         </form>
 
         <dl className="grid w-full max-w-3xl grid-cols-1 gap-6 text-left sm:grid-cols-3">
-          <div className="rounded-lg border-default bg-surface p-4">
+          <div className="rounded-card border-default bg-surface p-4">
             <dt className="text-sm text-muted">Production time</dt>
             <dd className="mt-2 text-2xl font-semibold text-foreground">15–45 minutes</dd>
           </div>
-          <div className="rounded-lg border-default bg-surface p-4">
+          <div className="rounded-card border-default bg-surface p-4">
             <dt className="text-sm text-muted">Chapters per book</dt>
             <dd className="mt-2 text-2xl font-semibold text-foreground">20–50 chapters</dd>
           </div>
-          <div className="rounded-lg border-default bg-surface p-4">
+          <div className="rounded-card border-default bg-surface p-4">
             <dt className="text-sm text-muted">Pricing starts at</dt>
             <dd className="mt-2 text-2xl font-semibold text-primary">$19</dd>
           </div>

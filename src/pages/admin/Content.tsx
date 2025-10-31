@@ -32,16 +32,16 @@ export default function AdminContent() {
  queryFn: () => apiClient.getJobs(page, statusFilter === "all" ? undefined : statusFilter),
  });
 
- const getStatusColor = (status: string) => {
- const colors: Record<string, string> = {
- completed: "bg-green-500/10 text-green-500 border-green-500/20",
- failed: "bg-red-500/10 text-red-500 border-red-500/20",
- pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
- analyzing: "bg-blue-500/10 text-blue-500 border-blue-500/20",
- scripting: "bg-purple-500/10 text-purple-500 border-purple-500/20",
- synthesizing: "bg-pink-500/10 text-pink-500 border-pink-500/20",
- waiting_approval: "bg-orange-500/10 text-orange-500 border-orange-500/20",
- };
+const getStatusColor = (status: string) => {
+  const colors: Record<string, string> = {
+    completed: "bg-success/10 text-success border-success/20",
+    failed: "bg-danger/10 text-danger border-danger/20",
+    pending: "bg-warning/10 text-warning border-warning/20",
+    analyzing: "bg-primary/10 text-primary border-primary/20",
+    scripting: "bg-secondary/10 text-secondary border-secondary/20",
+    synthesizing: "bg-accent/10 text-accent border-accent/20",
+    waiting_approval: "bg-warning/10 text-warning border-warning/20",
+  };
  return colors[status] || "bg-muted text-muted-foreground";
  };
 

@@ -25,7 +25,7 @@ const samples = [
     duration: "24h 18m",
     chapters: 56,
     description: "Comprehensive tour of ORM implementation, template engine, and admin interface",
-    color: "from-green-500 to-emerald-500"
+    color: "from-success to-accent"
   }
 ];
 
@@ -59,7 +59,7 @@ export const SampleShowcase = () => {
               <div className="space-y-5 relative z-10">
                 {/* Header */}
                 <div>
-                  <div className={`inline-block px-4 py-1.5 rounded-lg bg-gradient-to-r ${sample.color} text-sm font-bold mb-4 shadow-lg`}>
+                  <div className={`inline-block px-4 py-1.5 rounded-card bg-gradient-to-r ${sample.color} text-sm font-bold mb-4 elevation-flat`}>
                     {sample.repo}
                   </div>
                   <h3 className="text-2xl font-bold mb-3 group-hover:gradient-text-primary transition-all duration-300">{sample.name}</h3>
