@@ -37,7 +37,7 @@ export function DepthSelector({ selectedDepth, onDepthChange }: DepthSelectorPro
   return (
     <div className="grid md:grid-cols-3 gap-6 w-full">
       {depthTiers.map((tier) => (
-        <Card key={tier.id} className={`relative hover-scale cursor-pointer transition-all ${tier.popular ? 'shadow-glow' : ''} ${selectedDepth === tier.id ? 'ring-2 ring-primary' : ''}`} onClick={() => onDepthChange(tier.id)}>
+        <Card key={tier.id} className={`relative hover-scale cursor-pointer transition-all ${tier.popular ? 'shadow-lg' : ''} ${selectedDepth === tier.id ? 'ring-2 ring-primary' : ''}`} onClick={() => onDepthChange(tier.id)}>
           {tier.popular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Most Popular</Badge>}
           <CardHeader>
             <CardTitle className="text-2xl">{tier.name}</CardTitle>

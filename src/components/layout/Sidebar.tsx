@@ -1,7 +1,8 @@
 import React, { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, LucideIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
+import { cn } from '@/lib/utils';
 
 export interface SidebarNavItem {
   id: string;
@@ -53,63 +54,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`${isCollapsed ? 'w-20' : 'w-64'} bg-card h-screen flex flex-col transition-all duration-300 ${className}`}
+      className={cn(
+        isCollapsed ? 'w-20' : 'w-[264px]',
+        'h-screen border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300',
+        'flex flex-col',
+        className,
+      )}
     >
-      {/* Brand Header */}
-      <div className="p-6 relative">
+      <div className="relative flex items-center border-b border-sidebar-border px-4 py-5">
         <button
           onClick={onToggleCollapse}
-          className="absolute -right-3 top-6 bg-background rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors z-10"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full border border-border bg-surface p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+        <div className={cn('flex items-center', isCollapsed ? 'justify-center w-full' : 'gap-3')}>
           {isCollapsed ? (
             brand?.collapsedLogo || brand?.logo || (
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center text-xs font-bold text-primary-foreground">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-sm font-semibold text-primary">
                 CA
               </div>
             )
           ) : (
             <>
               {brand?.logo && <div className="flex-shrink-0">{brand.logo}</div>}
-              <div>
-                <div className="font-semibold text-foreground">{brand?.title}</div>
-                {brand?.subtitle && (
-                  <div className="text-xs text-muted-foreground">{brand.subtitle}</div>
-                )}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-sidebar-foreground">{brand?.title}</p>
+                {brand?.subtitle && <p className="truncate text-xs text-muted-foreground">{brand.subtitle}</p>}
               </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 space-y-1 px-3 py-4">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = isItemActive(item);
-          const activeClasses = isActive
-            ? 'bg-accent text-accent-foreground shadow-lg'
-            : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground';
+          const commonClasses = cn(
+            'group relative flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
+            isCollapsed && 'justify-center gap-0 px-0',
+            isActive
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:rounded-full before:bg-primary'
+              : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
+          );
 
-          // Use Link if path provided, otherwise use button with onClick
           if (item.path) {
             return (
-              <Link key={item.id} to={item.path}>
-                <Button
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start'} ${activeClasses}`}
-                  title={isCollapsed ? item.label : undefined}
-                >
+              <Link key={item.id} to={item.path} title={isCollapsed ? item.label : undefined} className="block">
+                <div className={commonClasses}>
                   {typeof Icon === 'function' ? (
-                    <Icon className={`h-4 w-4 ${!isCollapsed ? 'mr-3' : ''}`} />
+                    <Icon className={cn('h-4 w-4', !isCollapsed && 'shrink-0')} />
                   ) : (
-                    <span className={!isCollapsed ? 'mr-3' : ''}>{Icon}</span>
+                    <span className={cn(!isCollapsed && 'shrink-0')}>{Icon}</span>
                   )}
-                  {!isCollapsed && item.label}
-                </Button>
+                  {!isCollapsed && <span className="truncate">{item.label}</span>}
+                </div>
               </Link>
             );
           }
@@ -118,22 +120,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={item.onClick}
-              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-lg transition-all ${activeClasses}`}
+              className={commonClasses}
               title={isCollapsed ? item.label : undefined}
             >
               {typeof Icon === 'function' ? (
-                <Icon className="h-4 w-4" />
+                <Icon className={cn('h-4 w-4', !isCollapsed && 'shrink-0')} />
               ) : (
-                Icon
+                <span className={cn(!isCollapsed && 'shrink-0')}>{Icon}</span>
               )}
-              {!isCollapsed && <span>{item.label}</span>}
+              {!isCollapsed && <span className="truncate">{item.label}</span>}
             </button>
           );
         })}
       </nav>
 
-      {/* Footer */}
-      {footer && <div className="p-4">{footer}</div>}
+      {footer && <div className="border-t border-sidebar-border px-4 py-4">{footer}</div>}
     </aside>
   );
 };

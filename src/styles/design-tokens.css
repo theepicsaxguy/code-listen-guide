@@ -30,11 +30,14 @@
 [data-theme="dark"],
 :root {
   /* Base Surfaces & Backgrounds - No pure black/white */
-  --bg: 220 15% 10%;              /* Main background - soft dark */
+  --background: 220 15% 10%;      /* Main background - soft dark */
+  --bg: var(--background);
   --surface: 220 15% 12%;         /* Cards, panels - slightly lighter */
+  --surface-foreground: 220 20% 88%;
   --text: 220 20% 88%;            /* Primary text - soft white (13.5:1 contrast) */
   --text-muted: 220 10% 60%;      /* Secondary text (5.8:1 contrast) */
   --muted: 220 10% 60%;           /* Alias for compatibility */
+  --muted-foreground: 220 8% 68%;
   --border: 220 15% 20%;          /* UI borders (3.1:1 contrast minimum) */
   
   /* Semantic Colors - Calm, professional palette */
@@ -54,7 +57,6 @@
   --card-foreground: 220 20% 88%;
   --popover: 220 15% 14%;
   --popover-foreground: 220 20% 88%;
-  --muted-foreground: 220 8% 68%;
   --accent: 220 15% 16%;
   --accent-foreground: 220 20% 88%;
   
@@ -84,11 +86,14 @@
 
 [data-theme="light"] {
   /* Base - Inverted but still soft */
-  --bg: 220 20% 98%;
+  --background: 220 20% 98%;
+  --bg: var(--background);
   --surface: 220 25% 99%;
+  --surface-foreground: 220 25% 15%;
   --text: 220 25% 15%;            /* Dark text (13.8:1 contrast) */
   --text-muted: 220 15% 45%;      /* Secondary (5.1:1 contrast) */
   --muted: 220 15% 45%;
+  --muted-foreground: 220 15% 40%;
   --border: 220 15% 88%;          /* Light borders (3:1 minimum) */
   
   /* Semantic - Unchanged from dark theme */
@@ -108,7 +113,6 @@
   --card-foreground: 220 25% 15%;
   --popover: 220 25% 100%;
   --popover-foreground: 220 25% 15%;
-  --muted-foreground: 220 15% 40%;
   --accent: 220 20% 95%;
   --accent-foreground: 220 25% 15%;
   

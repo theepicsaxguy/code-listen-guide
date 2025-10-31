@@ -77,7 +77,7 @@ export default function OutlinePreview() {
           title: 'Failed to load outline',
           description:
             error instanceof Error ? error.message : 'Unable to fetch outline details.',
-          variant: 'destructive',
+          variant: 'danger',
         });
       } finally {
         if (isActive) setIsLoading(false);
@@ -108,7 +108,7 @@ export default function OutlinePreview() {
       toast({
         title: 'Failed to approve outline',
         description: error.message,
-        variant: 'destructive',
+        variant: 'danger',
       });
     } finally {
       setIsApproving(false);

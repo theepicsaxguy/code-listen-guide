@@ -1,119 +1,110 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Library, Settings, CreditCard, Mic, ChevronLeft, ChevronRight } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
+
 import type { User } from '../../../lib/types';
 
 interface SidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-  user: User | null;
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
+ activeTab: string;
+ setActiveTab: (tab: string) => void;
+ user: User | null;
+ isCollapsed: boolean;
+ onToggleCollapse: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, isCollapsed, onToggleCollapse }) => {
-  const navigate = useNavigate();
+ const navigate = useNavigate();
 
-  const navItems = [
-    { id: 'home', label: 'Overview', icon: <Home size={20} /> },
-    { id: 'audiobooks', label: 'Audiobooks', icon: <Library size={20} /> },
-    { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
-    { id: 'billing', label: 'Billing', icon: <CreditCard size={20} /> },
-    ...(user?.is_admin ? [{ id: 'admin', label: 'Admin', icon: <Settings size={20} /> }] : [])
-  ];
+ const navItems = [
+ { id: 'home', label: 'Overview', icon: <Home size={20} /> },
+ { id: 'audiobooks', label: 'Audiobooks', icon: <Library size={20} /> },
+ { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
+ { id: 'billing', label: 'Billing', icon: <CreditCard size={20} /> },
+ ...(user?.is_admin ? [{ id: 'admin', label: 'Admin', icon: <Settings size={20} /> }] : [])
+ ];
 
-  const handleNavClick = (itemId: string) => {
-    if (itemId === 'admin') {
-      navigate('/admin');
-    } else {
-      setActiveTab(itemId);
-    }
-  };
+ const handleNavClick = (itemId: string) => {
+ if (itemId === 'admin') {
+ navigate('/admin');
+ } else {
+ setActiveTab(itemId);
+ }
+ };
 
-  return (
-    <div className={`${isCollapsed ? 'w-20' : 'w-64'} bg-gradient-sidebar h-screen flex flex-col transition-all duration-300`}>
-      <div className="p-6 relative bg-gradient-to-r from-primary/5 to-accent/5">
-        <button
-          onClick={onToggleCollapse}
-          className="absolute -right-3 top-6 bg-card rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-primary/20 transition-all z-10 shadow-lg hover:shadow-xl shadow-primary/20"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-          <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20">
-            <Mic className="text-primary-foreground" size={24} />
-          </div>
-          {!isCollapsed && (
-            <div>
-              <div className="font-bold text-foreground text-lg tracking-tight">Codebase Audio</div>
-              <div className="text-xs text-muted-foreground font-medium">Dashboard</div>
-            </div>
-          )}
-        </div>
-      </div>
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item, idx) => {
-          // Rotate colors for variety
-          const colorVariants = ['primary', 'accent', 'secondary'] as const;
-          const colorVariant = colorVariants[idx % colorVariants.length];
-          
-          const IconComponent = React.cloneElement(item.icon, {
-            className: `${
-              activeTab === item.id 
-                ? colorVariant === 'primary' ? 'text-primary' : colorVariant === 'accent' ? 'text-accent' : 'text-foreground'
-                : 'text-muted-foreground'
-            } transition-colors ${activeTab === item.id ? 'icon-gradient' : ''}`
-          });
-          
-          const activeStyles = {
-            primary: 'bg-gradient-primary text-primary-foreground shadow-lg shadow-primary/30 border-2 border-primary/40',
-            accent: 'bg-gradient-accent text-accent-foreground shadow-lg shadow-accent/30 border-2 border-accent/40',
-            secondary: 'bg-gradient-secondary text-secondary-foreground shadow-lg shadow-secondary/20 border-2 border-secondary/40'
-          }[colorVariant];
-          
-          const hoverStyles = {
-            primary: 'hover:bg-primary/15 hover:border-primary/30 hover:text-primary',
-            accent: 'hover:bg-accent/15 hover:border-accent/30 hover:text-accent',
-            secondary: 'hover:bg-secondary/15 hover:border-secondary/30 hover:text-foreground'
-          }[colorVariant];
-          
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl mb-1 transition-all relative group border-2 ${
-                activeTab === item.id
-                  ? activeStyles
-                  : `text-muted-foreground border-transparent ${hoverStyles}`
-              }`}
-              title={isCollapsed ? item.label : undefined}
-            >
-              {IconComponent}
-              {!isCollapsed && (
-                <span className={`font-medium ${activeTab === item.id ? 'text-foreground' : ''}`}>
-                  {item.label}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
-      {user && (
-        <div className="p-4 bg-gradient-to-r from-secondary/10 to-muted/10">
-          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-all hover-card`}>
-            <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground flex-shrink-0 shadow-md shadow-primary/20">
-              {user.name.split(' ').map(n => n[0]).join('')}
-            </div>
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-foreground truncate">{user.name}</div>
-                <div className="text-xs text-muted-foreground font-medium capitalize">{user.subscription_tier} Plan</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+ return (
+ <aside
+ className={cn(
+ isCollapsed ? 'w-20' : 'w-[264px]',
+ 'flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300',
+ )}
+ >
+ <div className="relative flex items-center border-b border-sidebar-border px-4 py-5">
+ <button
+ onClick={onToggleCollapse}
+ className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full border border-border bg-surface p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+ aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+ >
+ {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+ </button>
+ <div className={cn('flex items-center', isCollapsed ? 'justify-center w-full' : 'gap-3')}>
+ <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+ <Mic className="h-5 w-5" />
+ </div>
+ {!isCollapsed && (
+ <div className="min-w-0">
+ <p className="text-sm font-semibold text-sidebar-foreground">Codebase Audio</p>
+ <p className="text-xs text-muted-foreground">Dashboard</p>
+ </div>
+ )}
+ </div>
+ </div>
+ <nav className="flex-1 space-y-1 px-3 py-4">
+ {navItems.map((item) => {
+ const isActive = activeTab === item.id;
+ const itemClasses = cn(
+ 'group relative flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors',
+ 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
+ isCollapsed && 'justify-center gap-0 px-0',
+ isActive
+ ? 'bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:rounded-full before:bg-primary'
+ : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
+ );
+
+ return (
+ <button
+ key={item.id}
+ onClick={() => handleNavClick(item.id)}
+ className={itemClasses}
+ title={isCollapsed ? item.label : undefined}
+ >
+ {React.cloneElement(item.icon, {
+ className: cn('h-5 w-5', !isCollapsed && 'shrink-0'),
+ })}
+ {!isCollapsed && <span className="truncate">{item.label}</span>}
+ </button>
+ );
+ })}
+ </nav>
+ {user && (
+ <div className="border-t border-sidebar-border px-4 py-4">
+ <div className={cn('flex items-center rounded-md bg-sidebar-accent/40 px-3 py-3', isCollapsed ? 'justify-center' : 'gap-3')}>
+ <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
+ {user.name
+ .split(' ')
+ .map((n) => n[0])
+ .join('')}
+ </div>
+ {!isCollapsed && (
+ <div className="min-w-0">
+ <p className="truncate text-sm font-semibold text-sidebar-foreground">{user.name}</p>
+ <p className="text-xs text-muted-foreground capitalize">{user.subscription_tier} plan</p>
+ </div>
+ )}
+ </div>
+ </div>
+ )}
+ </aside>
+ );
 };

@@ -55,7 +55,7 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
     <div className="space-y-6">
       {/* Overview */}
       <div className="grid lg:grid-cols-3 gap-4">
-        <Card className="bg-gradient-card-primary border-primary/20 hover:border-primary/40 transition-all hover-card">
+        <Card className="bg-surface border-primary/20 hover:border-primary/40 transition-all transition-colors">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-primary">Entry Points</CardTitle>
           </CardHeader>
@@ -65,7 +65,7 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card-accent border-accent/20 hover:border-accent/40 transition-all hover-card">
+        <Card className="bg-surface border-accent/20 hover:border-accent/40 transition-all transition-colors">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-accent">Directories</CardTitle>
           </CardHeader>
@@ -75,7 +75,7 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card-secondary border-secondary/30 hover:border-secondary/50 transition-all hover-card">
+        <Card className="bg-surface border-secondary/30 hover:border-secondary/50 transition-all transition-colors">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-primary">Frameworks</CardTitle>
           </CardHeader>
@@ -103,18 +103,18 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
               {entryPoints.map((path, index) => {
                 // Rotate colors for variety
                 const colorVariants = [
-                  'bg-gradient-primary/20 border-primary/40 hover:bg-gradient-primary/30 hover:border-primary/60',
-                  'bg-gradient-accent/20 border-accent/40 hover:bg-gradient-accent/30 hover:border-accent/60',
-                  'bg-gradient-secondary/30 border-secondary/50 hover:bg-gradient-secondary/40 hover:border-secondary/70',
+                  'bg-primary/20 border-primary/40 hover:bg-primary/30 hover:border-primary/60',
+                  'bg-accent/20 border-accent/40 hover:bg-accent/30 hover:border-accent/60',
+                  'bg-secondary/30 border-secondary/50 hover:bg-secondary/40 hover:border-secondary/70',
                 ];
                 const colorClass = colorVariants[index % colorVariants.length];
                 
                 return (
                   <div 
                     key={index} 
-                    className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all hover-card cursor-pointer ${colorClass}`}
+                    className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all transition-colors cursor-pointer ${colorClass}`}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center shadow-md shadow-primary/20">
+                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/20">
                       <File className="h-4 w-4 text-primary-foreground" />
                     </div>
                     <code className="text-sm font-medium text-foreground flex-1">{path}</code>

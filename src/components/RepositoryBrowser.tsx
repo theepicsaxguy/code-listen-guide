@@ -164,7 +164,7 @@ export function RepositoryBrowser({ files, onFileSelect, selectedPath }: Reposit
   const getComplexityColor = (complexity?: string) => {
     switch (complexity) {
       case 'high':
-        return 'destructive';
+        return 'danger';
       case 'medium':
         return 'default';
       case 'low':
@@ -232,10 +232,10 @@ export function RepositoryBrowser({ files, onFileSelect, selectedPath }: Reposit
           key={node.path}
           className={cn(
             "flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer",
-            "transition-all hover-card",
+            "transition-all transition-colors",
             isSelected 
-              ? "bg-gradient-primary/20 border-2 border-primary/50 shadow-md shadow-primary/20" 
-              : "border-2 border-transparent hover:border-primary/30 hover:bg-gradient-primary/10"
+              ? "bg-primary/20 border-2 border-primary/50 shadow-md shadow-primary/20" 
+              : "border-2 border-transparent hover:border-primary/30 hover:bg-primary/10"
           )}
           style={{ paddingLeft: `${depth * 16 + 24}px` }}
           onClick={() => node.file && onFileSelect?.(node.file)}
@@ -243,7 +243,7 @@ export function RepositoryBrowser({ files, onFileSelect, selectedPath }: Reposit
           <div className={cn(
             "w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0",
             isSelected 
-              ? "bg-gradient-primary text-primary-foreground shadow-sm" 
+              ? "bg-primary text-primary-foreground shadow-sm" 
               : "bg-primary/20 text-primary"
           )}>
             {getFileIcon(node.file?.language)}

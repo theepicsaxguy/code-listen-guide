@@ -28,7 +28,7 @@ const toastVariants = cva(
     variants: {
       variant: {
         default: "bg-background text-foreground",
-        destructive: "destructive group bg-destructive text-destructive-foreground",
+        danger: "danger group bg-danger text-danger-foreground",
       },
     },
     defaultVariants: {
@@ -52,7 +52,7 @@ const ToastAction = React.forwardRef<
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
-      "inline-flex h-8 shrink-0 items-center justify-center rounded-md bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 group-[.destructive]:focus:ring-destructive disabled:pointer-events-none disabled:opacity-50",
+      "inline-flex h-8 shrink-0 items-center justify-center rounded-md bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary group-[.danger]:hover:bg-danger group-[.danger]:hover:text-danger-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 group-[.danger]:focus:ring-danger disabled:pointer-events-none disabled:opacity-50",
       className,
     )}
     {...props}
@@ -67,7 +67,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity group-hover:opacity-100 group-[.destructive]:text-red-300 hover:text-foreground group-[.destructive]:hover:text-red-50 focus:opacity-100 focus:outline-none focus:ring-2 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity group-hover:opacity-100 group-[.danger]:text-danger hover:text-foreground group-[.danger]:hover:text-danger-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-[.danger]:focus:ring-danger group-[.danger]:focus:ring-offset-background",
       className,
     )}
     toast-close=""

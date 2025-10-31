@@ -98,7 +98,7 @@ All include base + foreground variants:
 **Variants:**
 - `default` - Primary (`bg-primary`)
 - `secondary` - Surface with border
-- `destructive` - Danger color
+- `danger` - Danger color
 - `ghost` - Transparent
 - `outline` - Border only
 - `link` - Text only
@@ -145,6 +145,11 @@ All include base + foreground variants:
 - Map to semantic tokens
 - Maintain 4.5:1 text contrast
 - No neon/glow effects
+
+### Quality Gates
+
+- Run `npm run lint:styles` to ensure banned utilities (white text, legacy gradients, glow shadows, raw hex values) are absent.
+- Run `npm run lint:contrast` to confirm text, muted text, borders, and primary accents meet WCAG AA contrast across light and dark themes.
 
 ### Card (Specification)
 
@@ -344,10 +349,10 @@ p-8  /* 64px */
 - [x] Design tokens created
 - [x] Tailwind config updated
 - [x] Button migrated
-- [ ] Input
-- [ ] Badge
-- [ ] Card
-- [ ] Table
+- [x] Input migrated
+- [x] Badge migrated
+- [x] Card migrated
+- [x] Table migrated
 
 ### Phase 2: Find and Replace
 
@@ -373,6 +378,12 @@ bg-gray-700 → bg-muted
 border-white → border-border
 border-gray-700 → border-border
 ```
+
+**Legacy Gradient Utilities:**
+
+- Remove `bg-gradient-*` helpers in favor of flat token backgrounds (`bg-surface`, `bg-primary`).
+- Replace glow classes (`shadow-glow`, `hover-glow`, `card-elevation`) with semantic borders or `shadow-none`.
+- Normalize radii by mapping `rounded-xl+` to `rounded-lg` for app surfaces.
 
 ### Phase 3: Spacing Alignment
 

@@ -25,7 +25,7 @@ export function FileViewer({ file }: FileViewerProps) {
   const getComplexityColor = (complexity?: string) => {
     switch (complexity) {
       case 'high':
-        return 'destructive';
+        return 'danger';
       case 'medium':
         return 'default';
       case 'low':

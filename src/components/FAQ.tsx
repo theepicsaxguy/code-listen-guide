@@ -100,7 +100,7 @@ export const FAQ = () => {
             filteredFaqs.map((faq, index) => (
               <div
                 key={index}
-                className="bg-card rounded-xl overflow-hidden transition-all duration-300"
+                className="bg-card rounded-lg overflow-hidden transition-all duration-300"
               >
                 <button
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}
@@ -132,7 +132,7 @@ export const FAQ = () => {
         </div>
 
         {/* Still have questions CTA */}
-        <div className="mt-12 text-center space-y-4 p-8 bg-card rounded-2xl">
+        <div className="mt-12 text-center space-y-4 p-8 bg-card rounded-lg">
           <h3 className="text-2xl font-bold">Still have questions?</h3>
           <p className="text-muted-foreground">
             Can't find the answer you're looking for? Our support team is here to help.
@@ -140,7 +140,7 @@ export const FAQ = () => {
           <div className="flex items-center justify-center gap-4 pt-4">
             <a
               href="mailto:support@codebaseaudiobook.com"
-              className="px-6 py-3 bg-gradient-to-r from-primary to-accent rounded-xl font-semibold hover-scale transition-all duration-300 shadow-[0_0_20px_rgba(138,43,226,0.3)]"
+              className="px-6 py-3 bg-gradient-to-r from-primary to-accent rounded-lg font-semibold hover-scale transition-all duration-300 shadow-[0_0_20px_rgba(138,43,226,0.3)]"
             >
               Contact Support
             </a>

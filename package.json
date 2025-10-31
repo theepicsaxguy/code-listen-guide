@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
-    "lint": "eslint .",
+    "lint": "npm run lint:eslint && npm run lint:styles && npm run lint:contrast",
+    "lint:eslint": "eslint .",
+    "lint:styles": "node scripts/check-style-violations.mjs",
+    "lint:contrast": "node scripts/check-contrast.mjs",
     "test": "vitest run",
     "preview": "vite preview"
   },

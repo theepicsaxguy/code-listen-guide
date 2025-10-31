@@ -1,41 +1,46 @@
 import React from 'react';
 import { Loader, CheckCircle, XCircle } from 'lucide-react';
+
 import type { Job } from '../../../lib/types';
 
 interface StatusBadgeProps {
-  status: Job['status'];
+ status: Job['status'];
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const getStatusConfig = () => {
-    switch (status) {
-      case 'completed':
-        return {
-          style: 'bg-success/10 text-success border-success/30',
-          icon: <CheckCircle size={12} />,
-          label: 'Completed'
-        };
-      case 'failed':
-        return {
-          style: 'bg-destructive/10 text-destructive border-destructive/30',
-          icon: <XCircle size={12} />,
-          label: 'Failed'
-        };
-      default: // pending, analyzing, scripting, synthesizing, post_processing
-        return {
-          style: 'bg-primary/10 text-primary border-primary/30',
-          icon: <Loader size={12} className="animate-spin" />,
-          label: status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')
-        };
-    }
-  };
+ const normalized = status.replace('_', ' ');
 
-  const config = getStatusConfig();
+ if (status === 'completed') {
+ return (
+ <span className="inline-flex items-center gap-1.5 rounded-md border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+ <CheckCircle className="h-3 w-3" />
+ Completed
+ </span>
+ );
+ }
 
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${config.style} shadow-sm`}>
-      {config.icon}
-      {config.label}
-    </span>
-  );
+ if (status === 'failed') {
+ return (
+ <span className="inline-flex items-center gap-1.5 rounded-md border border-danger/20 bg-danger/10 px-2.5 py-1 text-xs font-semibold text-danger">
+ <XCircle className="h-3 w-3" />
+ Failed
+ </span>
+ );
+ }
+
+ if (status === 'pending') {
+ return (
+ <span className="inline-flex items-center gap-1.5 rounded-md border border-muted/40 bg-muted/20 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+ <Loader className="h-3 w-3 animate-spin" />
+ Pending
+ </span>
+ );
+ }
+
+ return (
+ <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+ <Loader className="h-3 w-3 animate-spin" />
+ {normalized.charAt(0).toUpperCase() + normalized.slice(1)}
+ </span>
+ );
 };

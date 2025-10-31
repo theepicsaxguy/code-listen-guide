@@ -15,10 +15,10 @@ export const theme = {
       icon: "text-success",
     },
     error: {
-      bg: "bg-destructive/10",
-      text: "text-destructive",
-      border: "border-destructive/20",
-      icon: "text-destructive",
+      bg: "bg-danger/10",
+      text: "text-danger",
+      border: "border-danger/20",
+      icon: "text-danger",
     },
     warning: {
       bg: "bg-warning/10",
