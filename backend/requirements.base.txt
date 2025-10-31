@@ -2,7 +2,7 @@
 # Add back commented packages when implementing those features
 
 # Web Framework (REQUIRED)
-fastapi==0.120.3
+fastapi==0.120.4
 uvicorn[standard]==0.38.0
 
 # Database (REQUIRED)
