@@ -333,10 +333,10 @@ const galleryItems: GalleryItem[] = [
  },
 ];
 const roleIconMap: Record<AgentMessageRole, ReactNode> = {
- system: <ServerCog className="h-4 w-4 text-purple-500" />,
- user: <Users className="h-4 w-4 text-sky-500" />,
- assistant: <Zap className="h-4 w-4 text-amber-500" />,
- function: <GitBranch className="h-4 w-4 text-emerald-500" />,
+    system: <ServerCog className="h-4 w-4 text-secondary" />,
+  user: <Users className="h-4 w-4 text-primary" />,
+  assistant: <Zap className="h-4 w-4 text-accent" />,
+  function: <GitBranch className="h-4 w-4 text-success" />,
 };
 
 const roleLabelMap: Record<AgentMessageRole, string> = {
@@ -347,22 +347,22 @@ const roleLabelMap: Record<AgentMessageRole, string> = {
 };
 
 const statusBadgeStyles: Record<Conversation["status"], string> = {
- active: "bg-emerald-500/10 text-emerald-500",
- archived: "bg-muted text-muted-foreground",
- draft: "bg-sky-500/10 text-sky-500",
+  active: "bg-success/10 text-success",
+  archived: "bg-muted text-muted-foreground",
+  draft: "bg-accent/10 text-accent",
 };
 
 const nodeStatusStyles: Record<WorkflowNode["status"], string> = {
- pending: "bg-muted text-muted-foreground",
- running: "bg-blue-500/10 text-blue-500",
- completed: "bg-emerald-500/10 text-emerald-500",
- failed: "bg-danger/10 text-danger",
+  pending: "bg-muted text-muted-foreground",
+    running: "bg-primary/10 text-primary",
+  completed: "bg-success/10 text-success",
+  failed: "bg-danger/10 text-danger",
 };
 
 const difficultyStyles: Record<GalleryItem["difficulty"], string> = {
- starter: "bg-emerald-500/10 text-emerald-500",
- intermediate: "bg-sky-500/10 text-sky-500",
- advanced: "bg-amber-500/10 text-amber-500",
+  starter: "bg-success/10 text-success",
+  intermediate: "bg-primary/10 text-primary",
+  advanced: "bg-warning/10 text-warning",
 };
 
 interface InlinePattern {
@@ -748,7 +748,7 @@ export default function AdminAgents() {
  return (
  <div className="flex items-center gap-2 text-muted-foreground">
  <Loader2 className="h-4 w-4 animate-spin" />
- <span>Streaming response…</span>
+ <span>Streaming response?</span>
  </div>
  );
  }
@@ -760,7 +760,7 @@ export default function AdminAgents() {
  ))}
  <div className="flex items-center gap-2 text-xs text-muted-foreground">
  <Loader2 className="h-3 w-3 animate-spin" />
- <span>Generating…</span>
+ <span>Generating?</span>
  </div>
  </div>
  );
@@ -883,12 +883,12 @@ export default function AdminAgents() {
  </div>
  </div>
 
- <Card className="mt-6 bg-yellow-500/5">
+            <Card className="mt-6 bg-warning/5">
  <CardContent className="py-4">
  <div className="flex items-start gap-3">
- <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
+        <AlertTriangle className="h-5 w-5 text-warning mt-0.5" />
  <div>
- <p className="font-semibold text-yellow-500">Demo Mode - Mock Data</p>
+        <p className="font-semibold text-warning">Demo Mode - Mock Data</p>
  <p className="text-sm text-muted-foreground mt-1">
  This page currently displays sample agent conversations. Real agent monitoring and workflow visualization will be connected to the backend in a future update.
  </p>
@@ -1041,11 +1041,11 @@ export default function AdminAgents() {
  <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
  <div>
  <CardTitle className="flex items-center gap-2 text-xl">
- <Circle className="h-3 w-3 fill-emerald-500 text-emerald-500" />
+                <Circle className="h-3 w-3 fill-success text-success" />
  Live conversation
  </CardTitle>
  <CardDescription>
- Tokens: {formatTokens(conversationTotals.tokens)} • Latency: {formatLatency(conversationTotals.latency)}
+ Tokens: {formatTokens(conversationTotals.tokens)} ? Latency: {formatLatency(conversationTotals.latency)}
  </CardDescription>
  </div>
  {selectedConversation && (
@@ -1130,13 +1130,13 @@ export default function AdminAgents() {
  </div>
  <div className="flex items-center gap-3 text-xs text-muted-foreground">
  <span>{formatTokens(message.tokens)} tokens</span>
- <span>•</span>
+ <span>?</span>
  <span>{formatLatency(message.latencyMs)}</span>
  </div>
  </div>
  </div>
  <div className={viewOptions.compactMessages ? "flex-1" : "ml-14"}>
- <div className="prose prose-sm max-w-none space-y-2 dark:prose-invert">{content}</div>
+ <div className="prose prose-sm max-w-none space-y-2">{content}</div>
  {message.functionCall && (
  <Card className="mt-4">
  <CardHeader className="pb-2">
@@ -1145,7 +1145,7 @@ export default function AdminAgents() {
  Function call
  </CardTitle>
  <CardDescription>
- {message.functionCall.name} · {message.functionCall.status}
+ {message.functionCall.name} ? {message.functionCall.status}
  </CardDescription>
  </CardHeader>
  <CardContent className="space-y-2">
@@ -1169,13 +1169,13 @@ export default function AdminAgents() {
  </Card>
  )}
  {message.approval && (
- <Card className="mt-4 bg-emerald-500/5">
+            <Card className="mt-4 bg-success/5">
  <CardHeader className="pb-2">
- <CardTitle className="flex items-center gap-2 text-sm text-emerald-600">
+            <CardTitle className="flex items-center gap-2 text-sm text-success">
  <CheckCircle2 className="h-4 w-4" />
  Approval log
  </CardTitle>
- <CardDescription className="text-emerald-600">
+            <CardDescription className="text-success">
  Status: {message.approval.status}
  </CardDescription>
  </CardHeader>
@@ -1249,7 +1249,7 @@ export default function AdminAgents() {
  <Card className="lg:col-span-2">
  <CardHeader className="pb-3">
  <CardTitle className="flex items-center gap-2 text-sm">
- <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertTriangle className="h-4 w-4 text-warning" />
  Usage tracker
  </CardTitle>
  <CardDescription>
@@ -1294,7 +1294,7 @@ export default function AdminAgents() {
  <span>
  {selectedConversation
  ? formatDistanceToNow(new Date(selectedConversation.updatedAt), { addSuffix: true })
- : "—"}
+ : "?"}
  </span>
  </div>
  </CardContent>
@@ -1450,11 +1450,11 @@ export default function AdminAgents() {
  </div>
  <div className="space-y-1">
  <p className="text-muted-foreground">Input</p>
- <div className="rounded bg-muted px-3 py-2 font-mono text-xs">{selectedWorkflowNode.input || "—"}</div>
+ <div className="rounded bg-muted px-3 py-2 font-mono text-xs">{selectedWorkflowNode.input || "?"}</div>
  </div>
  <div className="space-y-1">
  <p className="text-muted-foreground">Output</p>
- <div className="rounded bg-muted px-3 py-2 font-mono text-xs">{selectedWorkflowNode.output || "—"}</div>
+ <div className="rounded bg-muted px-3 py-2 font-mono text-xs">{selectedWorkflowNode.output || "?"}</div>
  </div>
  {selectedWorkflowNode.error && (
  <div className="space-y-1">

@@ -103,7 +103,7 @@ export default function AdminParse() {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-[1800px] mx-auto space-y-6">
+      <div className="max-w-content-wide mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -442,9 +442,9 @@ export default function AdminParse() {
 
         {/* Warnings */}
         {parseResults?.summary.warnings && parseResults.summary.warnings.length > 0 && (
-          <Card className="border-yellow-500">
+          <Card className="border-warning">
             <CardHeader>
-              <CardTitle className="text-yellow-600">Warnings</CardTitle>
+              <CardTitle className="text-warning">Warnings</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="list-disc list-inside space-y-1">

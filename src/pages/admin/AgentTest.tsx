@@ -616,9 +616,9 @@ export default function AgentTest() {
  <div key={idx} className="p-3 bg-muted rounded-lg border flex items-start justify-between">
  <div className="flex items-center gap-2">
  {stage.status === "completed" ? (
- <CheckCircle2 className="w-5 h-5 text-green-500" />
+            <CheckCircle2 className="w-5 h-5 text-success" />
  ) : (
- <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+            <Loader2 className="w-5 h-5 text-primary animate-spin" />
  )}
  <div>
  <div className="font-semibold">{stage.name}</div>

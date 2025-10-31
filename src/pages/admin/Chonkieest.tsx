@@ -93,7 +93,7 @@ export default function chonkieTest() {
  value={repoUrl}
  onChange={(e) => setRepoUrl(e.target.value)}
  placeholder="https://github.com/user/repo"
- className="w-full px-4 py-2 bg-card rounded-lg text-text placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+ className="w-full px-4 py-2 bg-card rounded-lg text-text placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
  />
  </div>
 
@@ -106,7 +106,7 @@ export default function chonkieTest() {
  value={gitRef}
  onChange={(e) => setGitRef(e.target.value)}
  placeholder="main"
- className="w-full px-4 py-2 bg-card rounded-lg text-text placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+ className="w-full px-4 py-2 bg-card rounded-lg text-text placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
  />
  </div>
  </div>
@@ -122,7 +122,7 @@ export default function chonkieTest() {
  value={includePatterns}
  onChange={(e) => setIncludePatterns(e.target.value)}
  placeholder="*.py, *.ts, src/**/*"
- className="w-full px-4 py-2 bg-card rounded-lg text-text placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+ className="w-full px-4 py-2 bg-card rounded-lg text-text placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
  />
  <p className="text-xs text-muted-foreground mt-1">Leave empty to include all files</p>
  </div>
@@ -136,7 +136,7 @@ export default function chonkieTest() {
  value={excludePatterns}
  onChange={(e) => setExcludePatterns(e.target.value)}
  placeholder="*test*.py, *.min.js"
- className="w-full px-4 py-2 bg-card rounded-lg text-text placeholder:text-muted-foreground focus:outline-none focus:border-blue-500"
+ className="w-full px-4 py-2 bg-card rounded-lg text-text placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
  />
  <p className="text-xs text-muted-foreground mt-1">Leave empty to exclude nothing</p>
  </div>
@@ -153,7 +153,7 @@ export default function chonkieTest() {
  onChange={(e) => setMaxFileSizeKb(Number(e.target.value))}
  min="1"
  max="5000"
- className="w-full px-4 py-2 bg-card rounded-lg text-text focus:outline-none focus:border-blue-500"
+ className="w-full px-4 py-2 bg-card rounded-lg text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
  />
  </div>
 
@@ -232,11 +232,11 @@ export default function chonkieTest() {
 
  {/* Error Display */}
  {error && (
- <div className="bg-red-900/20 rounded-lg p-4 flex items-start gap-3">
- <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
- <div>
- <h3 className="text-red-500 font-semibold">Error</h3>
- <p className="text-red-300 mt-1">{error}</p>
+        <div className="bg-danger/10 rounded-card p-4 flex items-start gap-3">
+          <XCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-danger font-semibold">Error</h3>
+            <p className="text-danger/70 mt-1">{error}</p>
  </div>
  </div>
  )}
@@ -249,7 +249,7 @@ export default function chonkieTest() {
  <div className="bg-muted rounded-lg p-6">
  <div className="flex items-center justify-between mb-2">
  <span className="text-muted-foreground text-sm">Files Parsed</span>
- <CheckCircle className="w-5 h-5 text-green-500" />
+            <CheckCircle className="w-5 h-5 text-success" />
  </div>
  <div className="text-3xl font-bold text-text">
  {result.summary.total_files}
@@ -262,7 +262,7 @@ export default function chonkieTest() {
  <div className="bg-muted rounded-lg p-6">
  <div className="flex items-center justify-between mb-2">
  <span className="text-muted-foreground text-sm">Success Rate</span>
- <CheckCircle className="w-5 h-5 text-green-500" />
+            <CheckCircle className="w-5 h-5 text-success" />
  </div>
  <div className="text-3xl font-bold text-text">
  {result.summary.parse_success_rate}%
@@ -275,7 +275,7 @@ export default function chonkieTest() {
  <div className="bg-muted rounded-lg p-6">
  <div className="flex items-center justify-between mb-2">
  <span className="text-muted-foreground text-sm">Execution Time</span>
- <Activity className="w-5 h-5 text-blue-500" />
+            <Activity className="w-5 h-5 text-primary" />
  </div>
  <div className="text-3xl font-bold text-text">
  {result.execution_time_seconds}s
@@ -298,7 +298,7 @@ export default function chonkieTest() {
  result.summary.languages.map((lang) => (
  <span
  key={lang}
- className="px-3 py-1 bg-blue-900/30 text-blue-300 rounded-full text-sm"
+                className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm"
  >
  {lang}
  </span>
@@ -316,7 +316,7 @@ export default function chonkieTest() {
  result.summary.frameworks.map((fw) => (
  <span
  key={fw}
- className="px-3 py-1 bg-purple-900/30 text-purple-300 rounded-full text-sm"
+                className="px-3 py-1 bg-secondary/20 text-secondary rounded-full text-sm"
  >
  {fw}
  </span>
@@ -334,7 +334,7 @@ export default function chonkieTest() {
  result.summary.patterns.map((pattern) => (
  <span
  key={pattern}
- className="px-3 py-1 bg-green-900/30 text-green-300 rounded-full text-sm"
+                className="px-3 py-1 bg-success/20 text-success rounded-full text-sm"
  >
  {pattern}
  </span>
@@ -367,7 +367,7 @@ export default function chonkieTest() {
  <div className="space-y-1">
  {result.summary.warnings.map((warning, idx) => (
  <div key={idx} className="text-sm text-yellow-300">
- • {warning}
+ ? {warning}
  </div>
  ))}
  </div>

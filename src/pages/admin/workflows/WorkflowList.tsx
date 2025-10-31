@@ -116,7 +116,7 @@ export default function WorkflowList() {
  New Workflow
  </Button>
  </DialogTrigger>
- <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-content-narrow">
  <DialogHeader>
  <DialogTitle>Create New Workflow</DialogTitle>
  <DialogDescription>

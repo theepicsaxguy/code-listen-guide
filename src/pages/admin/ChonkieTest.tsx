@@ -246,11 +246,11 @@ export default function ChonkieTest() {
 
  {/* Error Display */}
  {error && (
- <div className="bg-red-900/20 rounded-lg p-4 flex items-start gap-3">
- <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+        <div className="bg-danger/10 rounded-card p-4 flex items-start gap-3">
+          <XCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
  <div>
- <h3 className="text-red-500 font-semibold">Error</h3>
- <p className="text-red-300 mt-1">{error}</p>
+          <h3 className="text-danger font-semibold">Error</h3>
+          <p className="text-danger/70 mt-1">{error}</p>
  </div>
  </div>
  )}

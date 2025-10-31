@@ -244,13 +244,13 @@ export function UserDetailsDialog({ userId, isOpen, onClose }: UserDetailsDialog
  <TableCell>
  <Badge
  variant="outline"
- className={
- job.status === "completed"
- ? "bg-green-500/10 text-green-500"
- : job.status === "failed"
- ? "bg-red-500/10 text-red-500"
- : "bg-blue-500/10 text-blue-500"
- }
+              className={
+                job.status === "completed"
+                  ? "bg-success/10 text-success"
+                  : job.status === "failed"
+                  ? "bg-danger/10 text-danger"
+                  : "bg-primary/10 text-primary"
+              }
  >
  {job.status}
  </Badge>

@@ -31,7 +31,7 @@ export default function AdminDashboard() {
 
  if (isLoading) {
  return (
- <div className="mx-auto max-w-[1280px] px-6 py-6">
+        <div className="mx-auto max-w-content-default px-6 py-6">
  <div className="space-y-4">
  <div className="h-9 w-48 rounded-md bg-muted/20" />
  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -46,7 +46,7 @@ export default function AdminDashboard() {
 
  return (
  <div className="bg-background text-text">
- <div className="mx-auto max-w-[1280px] space-y-6 px-6 py-6">
+        <div className="mx-auto max-w-content-default space-y-6 px-6 py-6">
  <div className="space-y-3">
  <div className="flex items-center justify-between">
  <div className="space-y-2">
