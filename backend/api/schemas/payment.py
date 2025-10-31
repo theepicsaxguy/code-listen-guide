@@ -167,20 +167,21 @@ class RefundRequest(BaseModel):
     """Schema for refund request."""
 
     amount: Optional[float] = None
-    reason: Optional[str] = "requested_by_customer"
+    reason: str = "requested_by_customer"
 
-    @field_validator("reason")
-    @classmethod
-    def validate_reason(cls, v: Optional[str]) -> Optional[str]:
+    @field_validator("reason", mode="before")
+    def validate_reason(cls, v: Optional[str]) -> str:
         """Validate refund reason."""
-        if v is not None:
-            allowed_reasons = ["duplicate", "fraudulent", "requested_by_customer"]
-            if v not in allowed_reasons:
-                raise ValueError(f"Reason must be one of: {', '.join(allowed_reasons)}")
+        # Use default if None
+        if v is None:
+            return "requested_by_customer"
+        
+        allowed_reasons = ["duplicate", "fraudulent", "requested_by_customer"]
+        if v not in allowed_reasons:
+            raise ValueError(f"Reason must be one of: {', '.join(allowed_reasons)}")
         return v
 
-    @field_validator("amount")
-    @classmethod
+    @field_validator("amount", mode="before")
     def validate_amount(cls, v: Optional[float]) -> Optional[float]:
         """Validate refund amount."""
         if v is not None and v <= 0:

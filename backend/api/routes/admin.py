@@ -502,6 +502,107 @@ async def get_payments(
         )
 
 
+@router.get("/payments/stats")
+async def get_payment_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get payment statistics for admin dashboard.
+
+    Requires admin privileges.
+    """
+    try:
+        from datetime import datetime, timedelta
+        from sqlalchemy import extract
+
+        # Total revenue (all succeeded payments)
+        total_revenue = db.query(func.sum(Payment.amount_cents)).filter(
+            Payment.status == 'succeeded'
+        ).scalar() or 0
+
+        # Revenue this month
+        now = datetime.utcnow()
+        first_day_of_month = datetime(now.year, now.month, 1)
+        revenue_this_month = db.query(func.sum(Payment.amount_cents)).filter(
+            Payment.status == 'succeeded',
+            Payment.created_at >= first_day_of_month
+        ).scalar() or 0
+
+        # Revenue last month
+        if now.month == 1:
+            first_day_last_month = datetime(now.year - 1, 12, 1)
+            last_day_last_month = datetime(now.year, 1, 1)
+        else:
+            first_day_last_month = datetime(now.year, now.month - 1, 1)
+            last_day_last_month = first_day_of_month
+
+        revenue_last_month = db.query(func.sum(Payment.amount_cents)).filter(
+            Payment.status == 'succeeded',
+            Payment.created_at >= first_day_last_month,
+            Payment.created_at < last_day_last_month
+        ).scalar() or 0
+
+        # Total payment count
+        total_payments = db.query(func.count(Payment.id)).scalar() or 0
+
+        # Payment count by status
+        status_counts = {}
+        status_results = db.query(
+            Payment.status, func.count(Payment.id)
+        ).group_by(Payment.status).all()
+        
+        for status, count in status_results:
+            status_counts[status or 'unknown'] = count
+
+        # Average transaction value
+        avg_transaction = db.query(func.avg(Payment.amount_cents)).filter(
+            Payment.status == 'succeeded'
+        ).scalar() or 0
+
+        # Recent transactions (last 7 days)
+        seven_days_ago = now - timedelta(days=7)
+        recent_transaction_count = db.query(func.count(Payment.id)).filter(
+            Payment.created_at >= seven_days_ago
+        ).scalar() or 0
+
+        # Revenue by day for last 30 days (for charts)
+        thirty_days_ago = now - timedelta(days=30)
+        from sqlalchemy import cast, Date
+        daily_revenue = db.query(
+            cast(Payment.created_at, Date).label('date'),
+            func.sum(Payment.amount_cents).label('revenue')
+        ).filter(
+            Payment.status == 'succeeded',
+            Payment.created_at >= thirty_days_ago
+        ).group_by(cast(Payment.created_at, Date)).order_by(cast(Payment.created_at, Date)).all()
+
+        revenue_chart = [
+            {
+                "date": str(date),
+                "revenue": float(revenue / 100) if revenue else 0
+            }
+            for date, revenue in daily_revenue
+        ]
+
+        return {
+            "total_revenue": float(total_revenue / 100),
+            "revenue_this_month": float(revenue_this_month / 100),
+            "revenue_last_month": float(revenue_last_month / 100),
+            "total_payments": total_payments,
+            "status_counts": status_counts,
+            "average_transaction": float(avg_transaction / 100),
+            "recent_transaction_count": recent_transaction_count,
+            "revenue_chart_30_days": revenue_chart,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching payment stats: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch payment statistics"
+        )
+
+
 @router.get("/payments/{payment_id}")
 async def get_payment_details(
     payment_id: str,
@@ -662,107 +763,6 @@ async def search_payments(
         )
 
 
-@router.get("/payments/stats")
-async def get_payment_stats(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
-):
-    """
-    Get payment statistics for admin dashboard.
-
-    Requires admin privileges.
-    """
-    try:
-        from datetime import datetime, timedelta
-        from sqlalchemy import extract
-
-        # Total revenue (all succeeded payments)
-        total_revenue = db.query(func.sum(Payment.amount_cents)).filter(
-            Payment.status == 'succeeded'
-        ).scalar() or 0
-
-        # Revenue this month
-        now = datetime.utcnow()
-        first_day_of_month = datetime(now.year, now.month, 1)
-        revenue_this_month = db.query(func.sum(Payment.amount_cents)).filter(
-            Payment.status == 'succeeded',
-            Payment.created_at >= first_day_of_month
-        ).scalar() or 0
-
-        # Revenue last month
-        if now.month == 1:
-            first_day_last_month = datetime(now.year - 1, 12, 1)
-            last_day_last_month = datetime(now.year, 1, 1)
-        else:
-            first_day_last_month = datetime(now.year, now.month - 1, 1)
-            last_day_last_month = first_day_of_month
-
-        revenue_last_month = db.query(func.sum(Payment.amount_cents)).filter(
-            Payment.status == 'succeeded',
-            Payment.created_at >= first_day_last_month,
-            Payment.created_at < last_day_last_month
-        ).scalar() or 0
-
-        # Total payment count
-        total_payments = db.query(func.count(Payment.id)).scalar() or 0
-
-        # Payment count by status
-        status_counts = {}
-        status_results = db.query(
-            Payment.status, func.count(Payment.id)
-        ).group_by(Payment.status).all()
-        
-        for status, count in status_results:
-            status_counts[status or 'unknown'] = count
-
-        # Average transaction value
-        avg_transaction = db.query(func.avg(Payment.amount_cents)).filter(
-            Payment.status == 'succeeded'
-        ).scalar() or 0
-
-        # Recent transactions (last 7 days)
-        seven_days_ago = now - timedelta(days=7)
-        recent_transaction_count = db.query(func.count(Payment.id)).filter(
-            Payment.created_at >= seven_days_ago
-        ).scalar() or 0
-
-        # Revenue by day for last 30 days (for charts)
-        thirty_days_ago = now - timedelta(days=30)
-        from sqlalchemy import cast, Date
-        daily_revenue = db.query(
-            cast(Payment.created_at, Date).label('date'),
-            func.sum(Payment.amount_cents).label('revenue')
-        ).filter(
-            Payment.status == 'succeeded',
-            Payment.created_at >= thirty_days_ago
-        ).group_by(cast(Payment.created_at, Date)).order_by(cast(Payment.created_at, Date)).all()
-
-        revenue_chart = [
-            {
-                "date": str(date),
-                "revenue": float(revenue / 100) if revenue else 0
-            }
-            for date, revenue in daily_revenue
-        ]
-
-        return {
-            "total_revenue": float(total_revenue / 100),
-            "revenue_this_month": float(revenue_this_month / 100),
-            "revenue_last_month": float(revenue_last_month / 100),
-            "total_payments": total_payments,
-            "status_counts": status_counts,
-            "average_transaction": float(avg_transaction / 100),
-            "recent_transaction_count": recent_transaction_count,
-            "revenue_chart_30_days": revenue_chart,
-        }
-    except Exception as e:
-        logger.error(f"Error fetching payment stats: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch payment statistics"
-        )
-
-
 @router.post("/payments/{payment_id}/refund")
 async def refund_payment(
     payment_id: str,
@@ -787,6 +787,7 @@ async def refund_payment(
     try:
         import stripe
         from backend.config import get_settings
+        from datetime import datetime, timedelta
 
         # Get payment from database
         payment = db.query(Payment).filter(Payment.id == payment_id).first()
@@ -806,29 +807,180 @@ async def refund_payment(
                 detail=f"Cannot refund payment with status: {payment.status}"
             )
 
-        if not payment.stripe_payment_intent_id:
-            logger.error("Payment has no Stripe payment intent ID")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Payment has no Stripe payment intent ID"
-            )
-
         # Initialize Stripe
         settings = get_settings()
-        if not settings.STRIPE_SECRET_KEY:
+        if not settings.stripe_secret_key:
             logger.error("Stripe secret key not configured")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Stripe not configured"
             )
 
-        stripe.api_key = settings.STRIPE_SECRET_KEY
+        stripe.api_key = settings.stripe_secret_key
         logger.info("Stripe initialized")
 
+        # Get payment intent ID from our database or fetch from Stripe
+        payment_intent_id = payment.stripe_payment_intent_id
+        charge_id = payment.stripe_charge_id
+        
+        if not payment_intent_id:
+            logger.info("Payment intent ID not in database, attempting to fetch from Stripe")
+            
+            # Strategy 1: Try to get it from the charge ID if available
+            if charge_id:
+                try:
+                    logger.info(f"Fetching charge {charge_id} from Stripe")
+                    charge = stripe.Charge.retrieve(charge_id)
+                    payment_intent_id = charge.payment_intent
+                    
+                    if payment_intent_id:
+                        payment.stripe_payment_intent_id = payment_intent_id
+                        db.commit()
+                        logger.info(f"Retrieved and saved payment intent ID from charge: {payment_intent_id}")
+                except stripe.StripeError as e:
+                    logger.error(f"Failed to retrieve charge from Stripe: {e}")
+            
+            # Strategy 2: Search for payment intents by amount, currency, and time window
+            if not payment_intent_id and payment.created_at:
+                try:
+                    logger.info("Searching Stripe for matching payment intent by amount and timestamp")
+                    
+                    # Search within ±5 minutes of payment creation
+                    time_window_start = int((payment.created_at - timedelta(minutes=5)).timestamp())
+                    time_window_end = int((payment.created_at + timedelta(minutes=5)).timestamp())
+                    
+                    # Get user for metadata matching
+                    user = db.query(User).filter(User.id == payment.user_id).first()
+                    
+                    # Search payment intents
+                    payment_intents = stripe.PaymentIntent.list(
+                        limit=100,
+                        created={
+                            'gte': time_window_start,
+                            'lte': time_window_end
+                        }
+                    )
+                    
+                    logger.info(f"Found {len(payment_intents.data)} payment intents in time window")
+                    
+                    # Find matching payment intent by amount and optionally user email
+                    for intent in payment_intents.data:
+                        # Match by amount (required)
+                        amount_match = intent.amount == payment.amount_cents
+                        
+                        # Match by currency if available
+                        currency_match = intent.currency == (payment.currency or 'usd')
+                        
+                        # Match by user email in metadata if available
+                        email_match = True
+                        if user and hasattr(intent, 'metadata') and intent.metadata:
+                            metadata_email = intent.metadata.get('user_email') or intent.metadata.get('email')
+                            if metadata_email:
+                                email_match = metadata_email.lower() == user.email.lower()
+                        
+                        # If all conditions match, we found it
+                        if amount_match and currency_match and email_match and intent.status == 'succeeded':
+                            payment_intent_id = intent.id
+                            
+                            # Also get charge ID if not already set
+                            if not charge_id and hasattr(intent, 'latest_charge'):
+                                charge_id = intent.latest_charge
+                                payment.stripe_charge_id = charge_id
+                            
+                            # Save to database
+                            payment.stripe_payment_intent_id = payment_intent_id
+                            db.commit()
+                            
+                            logger.info(
+                                f"Found matching payment intent: {payment_intent_id}, "
+                                f"amount={intent.amount}, currency={intent.currency}, "
+                                f"email_match={email_match}"
+                            )
+                            break
+                    
+                    if not payment_intent_id:
+                        logger.warning("No matching payment intent found in Stripe search")
+                        
+                except stripe.StripeError as e:
+                    logger.error(f"Failed to search Stripe for payment intent: {e}")
+            
+            # Strategy 3: For subscription payments, search charges directly
+            if not payment_intent_id and payment.payment_method_type == 'subscription':
+                try:
+                    logger.info("Searching for subscription charges in Stripe")
+                    
+                    # Get user for customer matching
+                    user = db.query(User).filter(User.id == payment.user_id).first()
+                    
+                    # Search charges by amount and time
+                    time_window_start = int((payment.created_at - timedelta(minutes=5)).timestamp())
+                    time_window_end = int((payment.created_at + timedelta(minutes=5)).timestamp())
+                    
+                    charges = stripe.Charge.list(
+                        limit=100,
+                        created={
+                            'gte': time_window_start,
+                            'lte': time_window_end
+                        }
+                    )
+                    
+                    logger.info(f"Found {len(charges.data)} charges in time window")
+                    
+                    # Find matching charge
+                    for charge in charges.data:
+                        amount_match = charge.amount == payment.amount_cents
+                        currency_match = charge.currency == (payment.currency or 'usd')
+                        
+                        # Check customer email if available
+                        email_match = True
+                        if user and hasattr(charge, 'billing_details') and charge.billing_details:
+                            charge_email = charge.billing_details.get('email')
+                            if charge_email:
+                                email_match = charge_email.lower() == user.email.lower()
+                        
+                        if amount_match and currency_match and email_match and charge.status == 'succeeded':
+                            charge_id = charge.id
+                            payment_intent_id = charge.payment_intent
+                            
+                            # Save to database
+                            payment.stripe_charge_id = charge_id
+                            if payment_intent_id:
+                                payment.stripe_payment_intent_id = payment_intent_id
+                            db.commit()
+                            
+                            logger.info(
+                                f"Found matching charge: {charge_id}, "
+                                f"payment_intent={payment_intent_id}"
+                            )
+                            break
+                            
+                except stripe.StripeError as e:
+                    logger.error(f"Failed to search Stripe for charges: {e}")
+            
+            # If still no payment intent ID, we cannot refund
+            if not payment_intent_id and not charge_id:
+                logger.error("Cannot refund: Unable to find payment in Stripe")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot refund: Unable to locate this payment in Stripe. The payment may have been processed outside of Stripe or the records may be incomplete."
+                )
+
         # Prepare refund parameters
-        refund_params = {
-            "payment_intent": payment.stripe_payment_intent_id,
-        }
+        refund_params = {}
+        
+        # Use payment_intent if available, otherwise use charge
+        if payment_intent_id:
+            refund_params["payment_intent"] = payment_intent_id
+            logger.info(f"Refunding via payment intent: {payment_intent_id}")
+        elif charge_id:
+            refund_params["charge"] = charge_id
+            logger.info(f"Refunding via charge: {charge_id}")
+        else:
+            # This should not happen due to earlier checks, but just in case
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot refund: No payment intent or charge ID available"
+            )
 
         # Add optional amount (convert dollars to cents)
         if refund_data.amount is not None:
@@ -847,6 +999,8 @@ async def refund_payment(
                 )
             refund_params["amount"] = int(amount_dollars * 100)
             logger.info(f"Refund amount: {amount_dollars} dollars = {refund_params['amount']} cents")
+        else:
+            logger.info(f"Refunding full amount: ${payment.amount_cents / 100:.2f}")
 
         # Add optional reason
         if refund_data.reason:
@@ -856,25 +1010,40 @@ async def refund_payment(
         logger.info(f"Creating Stripe refund with params: {refund_params}")
 
         # Create refund in Stripe
-        refund = stripe.Refund.create(**refund_params)
-        logger.info(f"Stripe refund created: {refund}")
+        try:
+            refund = stripe.Refund.create(**refund_params)
+            logger.info(f"Stripe refund created successfully: {refund.id}")
+        except stripe.error.InvalidRequestError as e:
+            logger.error(f"Invalid refund request: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Stripe refund failed: {str(e)}"
+            )
 
         # Update payment status in database
-        if refund["status"] == "succeeded":
+        refund_status = refund.status if hasattr(refund, 'status') else refund.get('status')
+        if refund_status == "succeeded":
             payment.status = "refunded"
             db.commit()
             logger.info(f"Payment {payment_id} status updated to refunded")
+        elif refund_status == "pending":
+            logger.info(f"Refund is pending, payment status unchanged")
+        else:
+            logger.warning(f"Refund has unexpected status: {refund_status}")
 
         logger.info(
             f"Admin {current_user.email} issued refund for payment {payment_id}. "
-            f"Refund ID: {refund['id']}"
+            f"Refund ID: {refund.id if hasattr(refund, 'id') else refund.get('id')}"
         )
+
+        refund_id = refund.id if hasattr(refund, 'id') else refund.get('id')
+        refund_amount = refund.amount if hasattr(refund, 'amount') else refund.get('amount', payment.amount_cents)
 
         return {
             "success": True,
-            "refund_id": refund["id"],
-            "status": refund["status"],
-            "amount_refunded": refund["amount"] / 100,
+            "refund_id": refund_id,
+            "status": refund_status,
+            "amount_refunded": refund_amount / 100,
         }
 
     except stripe.StripeError as e:
