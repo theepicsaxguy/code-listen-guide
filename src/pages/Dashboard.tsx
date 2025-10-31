@@ -31,7 +31,8 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedAudiobookId, setSelectedAudiobookId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Mobile: collapsed by default, desktop: expanded
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
 
   const { data: user } = useUser();
 
@@ -55,6 +56,20 @@ const Dashboard: React.FC = () => {
       navigate('/auth');
     }
   }, [authUser, isAuthLoading, navigate]);
+
+  // Handle mobile sidebar collapse on resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsSidebarCollapsed(true);
+      } else {
+        setIsSidebarCollapsed(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Memoize title/description/crumbs BEFORE early returns to ensure hooks order consistency
   const { title, description, crumbs } = useMemo(() => {
@@ -141,9 +156,9 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground relative">
-      {/* Radial gradient background accent */}
-      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+    <div className="flex min-h-screen bg-black text-zinc-50 relative">
+      {/* Soft radial gradient background accent - Vercel style */}
+      <div className="fixed inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent pointer-events-none" />
       
       <Sidebar
         activeTab={activeTab}
@@ -153,28 +168,28 @@ const Dashboard: React.FC = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div className="flex-1 overflow-hidden relative">
-        <div className="bg-surface">
-          <div className="mx-auto flex max-w-content-default flex-col gap-8 px-6 py-8">
-            <div className="space-y-4">
+        <div className="bg-zinc-950">
+          <div className="mx-auto flex max-w-content-default flex-col gap-6 px-6 py-24">
+            <div className="space-y-6">
               <Breadcrumb>
                 <BreadcrumbList>
                   {crumbs.map((crumb, index) => (
                     <React.Fragment key={crumb.label}>
                       <BreadcrumbItem>
-                        <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                        <BreadcrumbLink href={crumb.href} className="text-zinc-400 hover:text-zinc-100">{crumb.label}</BreadcrumbLink>
                       </BreadcrumbItem>
                       {index < crumbs.length - 1 && <BreadcrumbSeparator />}
                     </React.Fragment>
                   ))}
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>{title}</BreadcrumbPage>
+                    <BreadcrumbPage className="text-zinc-400">{title}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
               <div className="flex flex-col gap-3">
-                <h1 className="text-3xl font-bold text-foreground leading-tight">{title}</h1>
-                <p className="text-base leading-relaxed text-muted-foreground">{description}</p>
+                <h1 className="text-4xl font-semibold text-zinc-50 leading-tight">{title}</h1>
+                <p className="text-lg leading-relaxed text-zinc-400">{description}</p>
               </div>
             </div>
             <div className={cn('flex flex-col gap-4', (activeTab === 'home' || activeTab === 'audiobooks') && 'md:flex-row md:items-center md:justify-between')}>
@@ -203,7 +218,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <main className="mx-auto max-w-content-default space-y-8 px-6 py-8 relative">
+        <main className="mx-auto max-w-content-default space-y-8 px-6 py-8 relative gap-6">
           {activeTab === 'home' && <OverviewPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
           {activeTab === 'audiobooks' && (
             <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} searchQuery={searchQuery} />

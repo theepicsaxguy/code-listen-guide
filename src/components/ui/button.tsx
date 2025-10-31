@@ -22,17 +22,17 @@ import { cn } from "@/lib/utils";
  * - Focus: 2px ring-primary at 3:1 contrast
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control text-sm font-semibold transition-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        // Primary: High contrast cyan with white text
+        // Primary: Pill-shaped cyan CTA only
         default:
-          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80",
+          "bg-cyan-500 text-black hover:bg-cyan-400 active:bg-cyan-500",
 
-        // Secondary: Ghost style - text/icon with hover only
+        // Secondary: Neutral ghost style
         secondary:
-          "bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground",
+          "bg-transparent text-zinc-200 hover:text-white hover:bg-zinc-900/50",
 
         // Danger: High risk actions
         danger:
@@ -40,15 +40,15 @@ const buttonVariants = cva(
 
         // Ghost: Transparent with hover
         ghost:
-          "text-foreground hover:bg-accent hover:text-accent-foreground",
+          "text-zinc-300 hover:bg-zinc-900/50 hover:text-white",
 
         // Link: Text-only
         link:
-          "text-primary underline-offset-4 hover:underline",
+          "text-cyan-500 underline-offset-4 hover:underline",
 
-        // Outline: Border only
+        // Outline: No borders for Vercel style
         outline:
-          "border border-border bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground",
+          "bg-transparent text-zinc-300 hover:bg-zinc-900/50 hover:text-white",
       },
       size: {
         default: "h-10 px-4 py-2", // Reduced padding

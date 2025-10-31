@@ -58,42 +58,42 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
   return (
     <div className="space-y-8">
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
+        <Card>
           <CardHeader className="flex flex-col gap-2">
-            <CardDescription className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total audiobooks</CardDescription>
-            <CardTitle className="text-4xl font-semibold text-foreground">{audiobooks.length}</CardTitle>
+            <CardDescription className="text-xs font-medium uppercase tracking-wide text-zinc-400">Total audiobooks</CardDescription>
+            <CardTitle className="text-4xl font-semibold text-zinc-50">{audiobooks.length}</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
+          <CardContent className="flex items-center justify-between text-sm text-zinc-400">
             <span>{completedBooks.length} completed</span>
-            <Library className="h-5 w-5 text-muted-foreground" />
+            <Library className="h-5 w-5 text-zinc-400" />
           </CardContent>
         </Card>
-        <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
+        <Card>
           <CardHeader className="flex flex-col gap-2">
-            <CardDescription className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Hours generated</CardDescription>
-            <CardTitle className="text-4xl font-semibold text-foreground">{totalHours.toFixed(1)}h</CardTitle>
+            <CardDescription className="text-xs font-medium uppercase tracking-wide text-zinc-400">Hours generated</CardDescription>
+            <CardTitle className="text-4xl font-semibold text-zinc-50">{totalHours.toFixed(1)}h</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
+          <CardContent className="flex items-center justify-between text-sm text-zinc-400">
             <span>Total audio content</span>
-            <Clock className="h-5 w-5 text-muted-foreground" />
+            <Clock className="h-5 w-5 text-zinc-400" />
           </CardContent>
         </Card>
-        <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
+        <Card>
           <CardHeader className="flex flex-col gap-2">
-            <CardDescription className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Credits remaining</CardDescription>
-            <CardTitle className="text-4xl font-semibold text-foreground">{user?.credits_remaining ?? 0}</CardTitle>
+            <CardDescription className="text-xs font-medium uppercase tracking-wide text-zinc-400">Credits remaining</CardDescription>
+            <CardTitle className="text-4xl font-semibold text-zinc-50">{user?.credits_remaining ?? 0}</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
+          <CardContent className="flex items-center justify-between text-sm text-zinc-400">
             <span>Available credits</span>
-            <Headphones className="h-5 w-5 text-muted-foreground" />
+            <Headphones className="h-5 w-5 text-zinc-400" />
           </CardContent>
         </Card>
       </div>
 
-      <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
+      <Card>
         <CardHeader className="space-y-2">
-          <CardTitle className="text-xl font-semibold text-foreground">Usage this week</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">Daily audiobook generation activity</CardDescription>
+          <CardTitle className="text-xl font-semibold text-zinc-50">Usage this week</CardTitle>
+          <CardDescription className="text-sm text-zinc-400">Daily audiobook generation activity</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-end justify-between gap-4">
@@ -101,25 +101,25 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
               <div key={item.date} className="flex flex-1 flex-col items-center gap-2">
                 <div className="flex w-full flex-1 items-end">
                   <div
-                    className="w-full bg-primary/50 shadow-lg shadow-primary/10"
+                    className="w-full bg-zinc-800"
                     style={{ height: `${(item.count / maxCount) * 100}%`, minHeight: '8px' }}
                   />
                 </div>
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{item.date}</span>
+                <span className="text-xs font-medium text-zinc-400 uppercase tracking-wide">{item.date}</span>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
+      <Card>
         <CardHeader className="space-y-2">
-          <CardTitle className="text-xl font-semibold text-foreground">Recent activity</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">Your latest audiobook projects</CardDescription>
+          <CardTitle className="text-xl font-semibold text-zinc-50">Recent activity</CardTitle>
+          <CardDescription className="text-sm text-zinc-400">Your latest audiobook projects</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {audiobooks.length === 0 ? (
-            <div className="bg-surface px-6 py-8 text-center text-sm text-muted-foreground">
+            <div className="bg-zinc-900 px-6 py-8 text-center text-sm text-zinc-400">
               No audiobooks yet. Start by submitting a repository.
             </div>
           ) : (
@@ -138,36 +138,36 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
                   {audiobooks.slice(0, 5).map((job: Job) => (
                     <TableRow
                       key={job.id}
-                      className="cursor-pointer transition-colors hover:bg-surface-secondary/50"
+                      className="cursor-pointer transition-colors hover:bg-zinc-900/50"
                       onClick={() => onNavigateToAudiobook(job.id)}
                     >
                       <TableCell>
                         <div className="flex items-center gap-4">
-                          <div className="flex h-10 w-10 items-center justify-center bg-primary/10 text-primary">
+                          <div className="flex h-10 w-10 items-center justify-center bg-zinc-900 text-zinc-400">
                             <FileCode className="h-4 w-4" />
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-foreground">{job.repo_name}</p>
-                            <p className="text-xs text-muted-foreground">{job.metadata?.language ?? 'Unknown'}</p>
+                            <p className="truncate text-sm font-semibold text-zinc-50">{job.repo_name}</p>
+                            <p className="text-xs text-zinc-400">{job.metadata?.language ?? 'Unknown'}</p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="align-middle"><StatusBadge status={job.status} /></TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatDate(job.created_at)}</TableCell>
+                      <TableCell className="text-sm text-zinc-400">{formatDate(job.created_at)}</TableCell>
                       <TableCell>
                         {job.estimated_chapters ? (
                           <Badge variant="outline" className="text-xs">
                             {job.estimated_chapters} chapters
                           </Badge>
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <span className="text-xs text-zinc-400">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground">
+                      <TableCell className="text-right text-sm text-zinc-400">
                         {job.estimated_duration_minutes ? (
                           formatDuration(job.estimated_duration_minutes)
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
                             <AlertCircle className="h-3 w-3" />
                             Pending
                           </span>
@@ -181,6 +181,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
           )}
  </CardContent>
  </Card>
- </div>
- );
+</div>
+);
 };

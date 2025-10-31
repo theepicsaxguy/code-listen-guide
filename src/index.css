@@ -14,9 +14,9 @@
   --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   
   /* Body text - standardized with improved line-height */
-  --font-size-base: 1rem;
-  --line-height-base: 1.6; /* 1.6-1.7 for relaxed reading */
-  --line-height-heading: 1.25;
+  --font-size-base: 0.875rem; /* text-sm */
+  --line-height-base: 1.625; /* leading-relaxed for body */
+  --line-height-heading: 1.2; /* leading-tight for headings */
   
   /* Semantic Typography Scale - Professional hierarchy */
   --text-display: 3.75rem;   /* text-6xl - Largest headings, hero text */
@@ -26,13 +26,13 @@
   --text-body-sm: 0.875rem;  /* text-sm - Metadata */
   --text-caption: 0.75rem;   /* text-xs - Tiny labels */
   
-  /* Heading scale - Enhanced for visual hierarchy */
+  /* Heading scale - Enhanced for visual hierarchy (Vercel-style) */
   --font-size-h1: 3rem;      /* text-3xl - Page titles */
-  --font-size-h2: 2rem;      /* text-2xl - Section headers */
-  --font-size-h3: 1.5rem;    /* text-xl - Subsection headers */
-  --font-size-h4: 1.25rem;   /* text-lg */
-  --font-size-h5: 1.125rem;  /* text-base */
-  --font-size-h6: 1rem;      /* text-base */
+  --font-size-h2: 2.25rem;   /* text-4xl - Hero headlines */
+  --font-size-h3: 1.875rem;  /* text-5xl - Large headings */
+  --font-size-h4: 1.5rem;    /* text-xl - Section headers */
+  --font-size-h5: 1.25rem;   /* text-lg - Subheadlines */
+  --font-size-h6: 0.875rem;  /* text-sm - Body text */
 
   /* ============================================================================
      Core Surface Palette (Vercel-Style Deep Black)
@@ -40,36 +40,36 @@
      ============================================================================ */
   
   /* Base background - Pure to near-black (#000000 ? #0A0A0A) */
-  --color-background: hsl(0 0% 2%); /* #050505 - near-black base */
+  --color-background: hsl(0 0% 0%); /* #000000 - pure black base */
   
   /* Elevated surface - Subtle lift (#111111 ? #1A1A1A) */
-  --color-surface: hsl(0 0% 10%); /* #1A1A1A - elevated containers */
-  --color-surface-secondary: hsl(0 0% 12%); /* #1F1F1F - intermediate step */
+  --color-surface: hsl(0 0% 7%); /* #111111 - elevated containers */
+  --color-surface-secondary: hsl(0 0% 9%); /* #18181b - intermediate step */
   
   /* Active surface - Card-level elevation (#1F1F1F ? #262626) */
-  --color-surface-active: hsl(0 0% 15%); /* #262626 - card surfaces */
+  --color-surface-active: hsl(0 0% 11%); /* #18181b - card surfaces */
   --color-surface-tertiary: hsl(0 0% 15%); /* Alias for backwards compatibility */
   
   /* Foreground hierarchy - Pure optical contrast (no hue shift) */
-  --color-foreground: hsl(0 0% 100%); /* Pure white - headings and primary text */
-  --color-foreground-muted: hsl(0 0% 83%); /* #D4D4D8 - body text */
-  --color-muted: hsl(0 0% 63%); /* #A1A1AA - secondary text */
-  --color-muted-foreground: hsl(0 0% 45%); /* #71717A - metadata/dim */
+  --color-foreground: hsl(0 0% 98%); /* Zinc-50 - headings and primary text */
+  --color-foreground-muted: hsl(0 0% 71%); /* Zinc-300 - body text */
+  --color-muted: hsl(0 0% 63%); /* Zinc-400 - secondary text */
+  --color-muted-foreground: hsl(0 0% 45%); /* Zinc-500 - metadata/dim */
   
   /* Interactive elements - Nearly invisible borders, pure contrast */
-  --color-border: hsl(0 0% 15%); /* Minimal borders - contrast via light, not outlines */
-  --color-ring: hsl(180 100% 50%); /* Bright cyan focus - #00FFFF */
-  --color-input: hsl(0 0% 10%); /* Matches elevated surface */
+  --color-border: hsl(0 0% 22%); /* Zinc-800 - minimal borders, only where absolutely needed */
+  --color-ring: hsl(187 85% 53%); /* Cyan-500 - focus ring only */
+  --color-input: hsl(0 0% 7%); /* Matches elevated surface */
 
   /* ============================================================================
      Accent Palette (Vercel-Style Electric Microbursts)
      Minimal chromatic highlights - bright, almost neon, used sparingly
      ============================================================================ */
 
-  /* Brand / Primary Accent - Bright neon cyan (#00FFFF ? #06B6D4) */
-  --color-primary: hsl(180 100% 50%); /* #00FFFF - electric cyan for hero/links */
-  --color-primary-hover: hsl(186 93% 42%); /* #06B6D4 - slightly softer on hover */
-  --color-primary-active: hsl(180 100% 45%); /* Slightly darker on active */
+  /* Brand / Primary Accent - Cyan for CTAs only */
+  --color-primary: hsl(187 85% 53%); /* Cyan-500 - CTAs only */
+  --color-primary-hover: hsl(187 85% 60%); /* Cyan-400 - hover */
+  --color-primary-active: hsl(187 85% 47%); /* Slightly darker on active */
   --color-primary-foreground: hsl(0 0% 0%); /* Black text on primary (high contrast) */
   
   /* Secondary Accent - Supportive chromatic for links, less-dominant buttons, tags */
@@ -278,7 +278,7 @@
   h5,
   h6 {
     font-family: var(--font-sans);
-    font-weight: 700;
+    font-weight: 600; /* font-semibold */
     letter-spacing: -0.015em;
     line-height: var(--line-height-heading);
     color: var(--color-foreground);

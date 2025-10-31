@@ -36,26 +36,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  return (
  <aside
  className={cn(
-      isCollapsed ? 'w-20 hidden sm:flex' : 'w-64',
- 'flex h-screen flex-col bg-sidebar-surface text-sidebar-foreground transition-[width] duration-300',
+      isCollapsed ? 'w-20 hidden md:flex' : 'w-64',
+ 'flex h-screen flex-col bg-black text-zinc-300 transition-[width] duration-300',
  )}
  >
- <div className="relative flex items-center bg-sidebar-surface-secondary px-4 py-5">
+ <div className="relative flex items-center bg-zinc-950 px-3 py-4">
  <button
  onClick={onToggleCollapse}
- className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-surface shadow-lg shadow-primary/10 p-1 text-muted-foreground transition-standard hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+ className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-zinc-900 p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
  aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
  >
- {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+ {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
  </button>
  <div className={cn('flex items-center', isCollapsed ? 'justify-center w-full' : 'gap-3')}>
- <div className="flex h-10 w-10 items-center justify-center bg-primary/10 text-primary">
- <Mic className="h-5 w-5" />
+ <div className="flex h-8 w-8 items-center justify-center bg-zinc-900">
+ <Mic className="h-4 w-4 text-zinc-400" />
  </div>
   {!isCollapsed && (
  <div className="min-w-0">
- <p className="text-sm font-semibold text-sidebar-foreground">Codebase Audio</p>
- <p className="text-xs text-muted-foreground">Dashboard</p>
+ <p className="text-sm font-semibold text-zinc-50">Codebase Audio</p>
+ <p className="text-xs text-zinc-400">Dashboard</p>
  </div>
  )}
  </div>
@@ -64,12 +64,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  {navItems.map((item) => {
  const isActive = activeTab === item.id;
  const itemClasses = cn(
- 'group relative flex w-full items-center gap-3 rounded-control px-3 py-3 text-sm font-medium transition-standard',
- 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
+ 'group relative flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors',
+ 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50',
  isCollapsed && 'justify-center gap-0 px-0',
  isActive
- ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-lg shadow-primary/10'
- : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
+ ? 'bg-zinc-900 text-zinc-50'
+ : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-100',
  );
 
  return (
@@ -88,9 +88,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  })}
  </nav>
  {user && (
- <div className="bg-sidebar-surface-secondary px-4 py-4">
- <div className={cn('flex items-center rounded-control bg-sidebar-accent/40 px-3 py-3', isCollapsed ? 'justify-center' : 'gap-3')}>
- <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+ <div className="bg-zinc-950 px-3 py-4">
+ <div className={cn('flex items-center rounded-lg bg-zinc-900/50 px-3 py-3', isCollapsed ? 'justify-center' : 'gap-3')}>
+ <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-xs font-semibold text-zinc-300">
  {user.name
  .split(' ')
  .map((n) => n[0])
@@ -98,8 +98,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  </div>
   {!isCollapsed && (
  <div className="min-w-0">
- <p className="truncate text-sm font-semibold text-sidebar-foreground">{user.name}</p>
- <p className="text-xs text-muted-foreground capitalize">{user.subscription_tier} plan</p>
+ <p className="truncate text-sm font-semibold text-zinc-50">{user.name}</p>
+ <p className="text-xs text-zinc-400 capitalize">{user.subscription_tier} plan</p>
  </div>
  )}
  </div>
