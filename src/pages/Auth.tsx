@@ -107,14 +107,17 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      {/* Radial gradient accent */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+
+      <div className="w-full max-w-md space-y-6 relative z-10">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Code2 className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">Codebase Audiobook</h1>
+            <Code2 className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold text-foreground">Codebase Audiobook</h1>
           </div>
-          <p className="text-muted-foreground">Transform repositories into audio learning experiences</p>
+          <p className="text-base text-muted-foreground">Transform repositories into audio learning experiences</p>
         </div>
 
         <Tabs defaultValue="login" className="w-full">
@@ -124,15 +127,15 @@ export default function Auth() {
           </TabsList>
 
           <TabsContent value="login">
-            <Card>
+            <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
               <form onSubmit={handleLogin}>
                 <CardHeader>
-                  <CardTitle>Login</CardTitle>
-                  <CardDescription>Enter your credentials to access your account</CardDescription>
+                  <CardTitle className="text-xl font-semibold">Login</CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">Enter your credentials to access your account</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="login-email" className="text-sm font-medium">Email</Label>
                     <Input
                       id="login-email"
                       name="email"
@@ -143,7 +146,7 @@ export default function Auth() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
+                    <Label htmlFor="login-password" className="text-sm font-medium">Password</Label>
                     <Input
                       id="login-password"
                       name="password"
@@ -164,15 +167,15 @@ export default function Auth() {
           </TabsContent>
 
           <TabsContent value="register">
-            <Card>
+            <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
               <form onSubmit={handleRegister}>
                 <CardHeader>
-                  <CardTitle>Create Account</CardTitle>
-                  <CardDescription>Get started with your first audiobook</CardDescription>
+                  <CardTitle className="text-xl font-semibold">Create Account</CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">Get started with your first audiobook</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="register-name">Name</Label>
+                    <Label htmlFor="register-name" className="text-sm font-medium">Name</Label>
                     <Input
                       id="register-name"
                       name="name"
@@ -183,7 +186,7 @@ export default function Auth() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
+                    <Label htmlFor="register-email" className="text-sm font-medium">Email</Label>
                     <Input
                       id="register-email"
                       name="email"
@@ -194,7 +197,7 @@ export default function Auth() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="register-password">Password</Label>
+                    <Label htmlFor="register-password" className="text-sm font-medium">Password</Label>
                     <Input
                       id="register-password"
                       name="password"

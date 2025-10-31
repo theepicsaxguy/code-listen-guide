@@ -77,11 +77,14 @@ export const FAQ = () => {
   );
 
   return (
-    <section className="section-spacing bg-background">
-      <div className="mx-auto max-w-content px-4 sm:px-6">
+    <section className="relative px-6 py-24 overflow-hidden">
+      {/* Radial gradient accent */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+
+      <div className="mx-auto max-w-content px-4 sm:px-6 relative z-10">
         <div className="mb-12 space-y-4 text-center">
-          <h2 className="text-balance text-heading font-semibold">Frequently asked questions</h2>
-          <p className="mx-auto max-w-2xl text-body text-muted-foreground">
+          <h2 className="text-balance text-3xl font-bold text-foreground leading-tight sm:text-4xl">Frequently asked questions</h2>
+          <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground">
             Everything you need to know about how Codebase Audiobook works and what to expect.
           </p>
         </div>
@@ -104,43 +107,45 @@ export const FAQ = () => {
             filteredFaqs.map((faq, index) => {
               const isOpen = openIndex === index;
               return (
-                <div key={faq.question} className="rounded-card bg-surface-secondary shadow-sm hover:shadow-md transition-standard">
+                <Card key={faq.question} className="transition-standard hover:shadow-xl hover:shadow-primary/10">
                   <button
                     type="button"
                     onClick={() => setOpenIndex(isOpen ? null : index)}
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-standard hover:bg-surface-tertiary rounded-card"
+                    className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left transition-standard hover:bg-surface-secondary"
                     aria-expanded={isOpen}
                   >
-                    <span className="text-body font-semibold text-foreground">{faq.question}</span>
+                    <span className="text-base font-semibold text-foreground">{faq.question}</span>
                     <ChevronDown
-                      className={`h-5 w-5 text-primary transition-standard ${isOpen ? "rotate-180" : ""}`}
+                      className={`h-5 w-5 text-primary transition-standard shrink-0 ${isOpen ? "rotate-180" : ""}`}
                       aria-hidden="true"
                     />
                   </button>
                   {isOpen ? (
-                    <div className="bg-surface-tertiary px-5 py-4 text-body-sm leading-relaxed text-muted-foreground rounded-b-card">
+                    <div className="px-6 pb-4 text-sm leading-relaxed text-muted-foreground">
                       {faq.answer}
                     </div>
                   ) : null}
-                </div>
+                </Card>
               );
             })
           ) : (
-            <div className="rounded-card bg-surface-secondary shadow-sm px-6 py-12 text-center text-body text-muted-foreground">
-              No questions found matching "{searchQuery}"
-            </div>
+            <Card className="px-6 py-12 text-center">
+              <p className="text-base text-muted-foreground">
+                No questions found matching "{searchQuery}"
+              </p>
+            </Card>
           )}
         </div>
 
-        <div className="mt-12 rounded-card bg-surface-secondary shadow-md p-8 text-center">
-          <h3 className="text-subheading font-semibold text-foreground">Still have questions?</h3>
-          <p className="mt-2 text-body text-muted-foreground">
+        <Card className="mt-12 p-8 text-center hover:shadow-xl hover:shadow-primary/10 transition-standard">
+          <h3 className="text-xl font-semibold text-foreground">Still have questions?</h3>
+          <p className="mt-2 text-base text-muted-foreground">
             Can't find the answer you're looking for? Our support team is ready to help.
           </p>
-          <Button asChild variant="secondary" className="mt-4">
+          <Button asChild variant="outline" className="mt-4">
             <a href="mailto:support@codebaseaudiobook.com">Contact support</a>
           </Button>
-        </div>
+        </Card>
       </div>
     </section>
   );
