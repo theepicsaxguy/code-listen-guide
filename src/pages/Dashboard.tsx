@@ -140,7 +140,10 @@ const Dashboard: React.FC = () => {
   }, [activeTab, selectedAudiobookId]);
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen bg-background text-foreground relative">
+      {/* Radial gradient background accent */}
+      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+      
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -148,10 +151,10 @@ const Dashboard: React.FC = () => {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
-      <div className="flex-1 overflow-hidden">
-        <div className="bg-surface-secondary/60 backdrop-blur shadow-sm">
-          <div className="mx-auto flex max-w-content-default flex-col gap-6 px-6 py-6">
-            <div className="space-y-3">
+      <div className="flex-1 overflow-hidden relative">
+        <div className="bg-surface backdrop-blur">
+          <div className="mx-auto flex max-w-content-default flex-col gap-8 px-6 py-8">
+            <div className="space-y-4">
               <Breadcrumb>
                 <BreadcrumbList>
                   {crumbs.map((crumb, index) => (
@@ -168,12 +171,12 @@ const Dashboard: React.FC = () => {
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
-              <div className="flex flex-col gap-2">
-                <h1 className="text-4xl font-semibold text-text">{title}</h1>
-                <p className="text-sm text-muted-foreground">{description}</p>
+              <div className="flex flex-col gap-3">
+                <h1 className="text-3xl font-semibold text-foreground leading-tight">{title}</h1>
+                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
               </div>
             </div>
-            <div className={cn('flex flex-col gap-3', (activeTab === 'home' || activeTab === 'audiobooks') && 'md:flex-row md:items-center md:justify-between')}>
+            <div className={cn('flex flex-col gap-4', (activeTab === 'home' || activeTab === 'audiobooks') && 'md:flex-row md:items-center md:justify-between')}>
               {(activeTab === 'home' || activeTab === 'audiobooks') && (
                 <div className="w-full md:max-w-sm">
                   <div className="relative">
@@ -199,7 +202,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <main className="mx-auto max-w-content-default space-y-6 px-6 py-6">
+        <main className="mx-auto max-w-content-default space-y-8 px-6 py-8 relative">
           {activeTab === 'home' && <OverviewPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
           {activeTab === 'audiobooks' && (
             <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} searchQuery={searchQuery} />

@@ -102,9 +102,12 @@ export default function JobDetails() {
   const isProcessing = job.status !== 'completed' && job.status !== 'failed';
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 max-w-5xl">
+    <div className="min-h-screen bg-background relative">
+      {/* Radial gradient background accent */}
+      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+      
+      <header className="bg-surface">
+        <div className="container mx-auto px-6 py-6 max-w-5xl">
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
@@ -112,12 +115,12 @@ export default function JobDetails() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="container mx-auto px-6 py-8 max-w-5xl relative">
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">{job.repo_name}</h1>
-              <p className="text-muted-foreground">{job.repo_url}</p>
+              <h1 className="text-3xl font-semibold mb-2 text-foreground">{job.repo_name}</h1>
+              <p className="text-muted-foreground leading-relaxed">{job.repo_url}</p>
             </div>
             <div className="flex gap-2">
               {isProcessing && (
@@ -175,11 +178,11 @@ export default function JobDetails() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{job.current_stage}</span>
-                  <span className="font-medium">{Math.round(job.progress_percentage)}%</span>
+                  <span className="font-semibold text-foreground">{Math.round(job.progress_percentage)}%</span>
                 </div>
                 <Progress value={job.progress_percentage} className="h-2" />
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 This may take 15-45 minutes depending on repository size and depth tier.
               </p>
             </CardContent>
@@ -187,7 +190,7 @@ export default function JobDetails() {
         )}
 
         {job.status === 'failed' && job.error_message && (
-          <Card className="mb-8 border-danger">
+          <Card className="mb-8">
             <CardHeader>
               <CardTitle className="text-danger flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
@@ -195,7 +198,7 @@ export default function JobDetails() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm">{job.error_message}</p>
+              <p className="text-sm leading-relaxed">{job.error_message}</p>
             </CardContent>
           </Card>
         )}
