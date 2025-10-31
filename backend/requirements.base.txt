@@ -45,7 +45,7 @@ opentelemetry-instrumentation-fastapi==0.59b0
 stripe==13.1.0
 
 # Cloud Storage
-boto3==1.40.60
+boto3==1.40.63
 
 # Repository Analysis
 # tree-sitter==0.25.2
