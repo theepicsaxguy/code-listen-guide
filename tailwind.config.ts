@@ -28,7 +28,7 @@ export default {
     extend: {
       colors: {
         // Map design tokens with alpha-value support
-        background: "hsl(var(--bg) / <alpha-value>)",
+        background: "hsl(var(--background) / <alpha-value>)",
         surface: "hsl(var(--surface) / <alpha-value>)",
         text: "hsl(var(--text) / <alpha-value>)",
         muted: "hsl(var(--muted) / <alpha-value>)",
@@ -73,10 +73,6 @@ export default {
         // Aliases for shadcn/ui compatibility
         foreground: "hsl(var(--text) / <alpha-value>)",
         "muted-foreground": "hsl(var(--muted-foreground) / <alpha-value>)",
-        destructive: {
-          DEFAULT: "hsl(var(--danger) / <alpha-value>)",
-          foreground: "hsl(var(--danger-foreground) / <alpha-value>)",
-        },
         input: "hsl(var(--input) / <alpha-value>)",
         ring: "hsl(var(--ring) / <alpha-value>)",
         
@@ -88,6 +84,17 @@ export default {
           accent: "hsl(var(--sidebar-accent) / <alpha-value>)",
           "accent-foreground": "hsl(var(--sidebar-accent-foreground) / <alpha-value>)",
         },
+      },
+      ringColor: {
+        DEFAULT: "hsl(var(--ring) / <alpha-value>)",
+        ring: "hsl(var(--ring) / <alpha-value>)",
+        primary: "hsl(var(--primary) / <alpha-value>)",
+        danger: "hsl(var(--danger) / <alpha-value>)",
+      },
+      ringOffsetColor: {
+        background: "hsl(var(--background) / <alpha-value>)",
+        surface: "hsl(var(--surface) / <alpha-value>)",
+        sidebar: "hsl(var(--sidebar-background) / <alpha-value>)",
       },
       fontFamily: {
         sans: [

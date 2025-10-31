@@ -29,7 +29,7 @@ export const Hero = () => {
 
       <div className="relative z-10 max-w-5xl mx-auto text-center space-y-10 animate-slide-up">
         {/* Enhanced Badge with glow */}
-        <div className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-card hover-glow transition-all duration-300">
+        <div className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-card hover:shadow-lg transition-all duration-300">
           <Sparkles className="w-4 h-4 text-accent animate-pulse" />
           <span className="text-sm font-medium gradient-text-accent">Transform any GitHub repo into an audiobook</span>
         </div>
@@ -51,7 +51,7 @@ export const Hero = () => {
 
         {/* Enhanced GitHub URL input with modern styling */}
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4">
-          <div className="group flex flex-col sm:flex-row gap-3 p-2 bg-card rounded-2xl hover-glow transition-all duration-300">
+          <div className="group flex flex-col sm:flex-row gap-3 p-2 bg-card rounded-lg hover:shadow-lg transition-all duration-300">
             <div className="flex-1 relative">
               <Github className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors duration-300" />
               <Input
@@ -59,13 +59,13 @@ export const Hero = () => {
                 placeholder="https://github.com/username/repository"
                 value={repoUrl}
                 onChange={(e) => setRepoUrl(e.target.value)}
-                className="pl-14 pr-4 h-16 bg-background border-0 focus-visible:ring-2 focus-visible:ring-accent/50 rounded-xl text-base placeholder:text-muted-foreground/60"
+                className="pl-14 pr-4 h-16 bg-background border-0 focus-visible:ring-2 focus-visible:ring-accent/50 rounded-lg text-base placeholder:text-muted-foreground/60"
               />
             </div>
             <Button
               type="submit"
               size="lg"
-              className="h-16 px-12 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] hover:bg-right-bottom transition-all duration-500 shadow-[0_0_30px_rgba(138,43,226,0.4)] hover:shadow-[0_0_50px_rgba(0,255,255,0.5)] hover:scale-105 font-bold rounded-xl relative overflow-hidden group/btn"
+              className="h-16 px-12 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] hover:bg-right-bottom transition-all duration-500 shadow-[0_0_30px_rgba(138,43,226,0.4)] hover:shadow-[0_0_50px_rgba(0,255,255,0.5)] hover:scale-105 font-bold rounded-lg relative overflow-hidden group/btn"
             >
               <span className="relative z-10 flex items-center gap-2">
                 Generate Audiobook

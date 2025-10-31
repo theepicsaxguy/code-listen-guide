@@ -46,7 +46,7 @@ export default function JobDetails() {
       toast({
         title: 'Failed to load job',
         description: error.message,
-        variant: 'destructive',
+        variant: 'danger',
       });
     } finally {
       setIsLoading(false);
@@ -68,7 +68,7 @@ export default function JobDetails() {
       toast({
         title: 'Failed to cancel job',
         description: error.message,
-        variant: 'destructive',
+        variant: 'danger',
       });
     } finally {
       setIsCancelling(false);
@@ -123,7 +123,7 @@ export default function JobDetails() {
               {isProcessing && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isCancelling}>
+                    <Button variant="danger" disabled={isCancelling}>
                       {isCancelling ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -146,7 +146,7 @@ export default function JobDetails() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>No, keep processing</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleCancelJob} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      <AlertDialogAction onClick={handleCancelJob} className="bg-danger text-danger-foreground hover:bg-danger/90">
                         Yes, cancel job
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -161,7 +161,7 @@ export default function JobDetails() {
               )}
             </div>
           </div>
-          <Badge variant={job.status === 'completed' ? 'default' : job.status === 'failed' ? 'destructive' : 'secondary'} className="text-sm">
+          <Badge variant={job.status === 'completed' ? 'default' : job.status === 'failed' ? 'danger' : 'secondary'} className="text-sm">
             {job.status}
           </Badge>
         </div>
@@ -187,9 +187,9 @@ export default function JobDetails() {
         )}
 
         {job.status === 'failed' && job.error_message && (
-          <Card className="mb-8 border-destructive">
+          <Card className="mb-8 border-danger">
             <CardHeader>
-              <CardTitle className="text-destructive flex items-center gap-2">
+              <CardTitle className="text-danger flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
                 Processing Failed
               </CardTitle>

@@ -103,7 +103,7 @@ border-gray-700 → border-border
 ```tsx
 <Button>Primary (bg-primary)</Button>
 <Button variant="secondary">Surface + border</Button>
-<Button variant="destructive">Danger</Button>
+<Button variant="danger">Danger</Button>
 <Button variant="ghost">Transparent</Button>
 <Button variant="outline">Border only</Button>
 <Button variant="link">Text only</Button>

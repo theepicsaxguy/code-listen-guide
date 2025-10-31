@@ -98,7 +98,7 @@ All include base + foreground variants:
 **Variants:**
 - `default` - Primary (`bg-primary`)
 - `secondary` - Surface with border
-- `destructive` - Danger color
+- `danger` - Danger color
 - `ghost` - Transparent
 - `outline` - Border only
 - `link` - Text only
@@ -145,6 +145,11 @@ All include base + foreground variants:
 - Map to semantic tokens
 - Maintain 4.5:1 text contrast
 - No neon/glow effects
+
+### Quality Gates
+
+- Run `npm run lint:styles` to ensure banned utilities (white text, legacy gradients, glow shadows, raw hex values) are absent.
+- Run `npm run lint:contrast` to confirm text, muted text, borders, and primary accents meet WCAG AA contrast across light and dark themes.
 
 ### Card (Specification)
 

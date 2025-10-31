@@ -67,7 +67,7 @@ export default function Player() {
       toast({
         title: 'Failed to load player',
         description: error.message,
-        variant: 'destructive',
+        variant: 'danger',
       });
     } finally {
       setIsLoading(false);

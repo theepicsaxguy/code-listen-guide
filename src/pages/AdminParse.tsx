@@ -71,7 +71,7 @@ export default function AdminParse() {
       toast({
         title: 'Parse failed',
         description: error.message,
-        variant: 'destructive',
+        variant: 'danger',
       });
     } finally {
       setIsLoading(false);
@@ -115,7 +115,7 @@ export default function AdminParse() {
               Test chonkie configurations and analyze repository parsing
             </p>
           </div>
-          <Badge variant="default" className="text-lg px-4 py-2 bg-gradient-primary text-primary-foreground shadow-md shadow-primary/20">
+          <Badge variant="default" className="text-lg px-4 py-2 bg-primary text-primary-foreground shadow-md shadow-primary/20">
             <Zap className="h-4 w-4 mr-2" />
             Admin Mode
           </Badge>
@@ -260,7 +260,7 @@ export default function AdminParse() {
             <Button 
               onClick={handleParse} 
               disabled={isLoading || !repoUrl}
-              className="w-full bg-gradient-primary hover:opacity-90 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 disabled:hover:translate-y-0"
+              className="w-full bg-primary hover:opacity-90 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 disabled:hover:translate-y-0"
               size="lg"
             >
               {isLoading ? (
@@ -283,7 +283,7 @@ export default function AdminParse() {
           <>
             {/* Summary Statistics */}
             <div className="grid lg:grid-cols-5 gap-4">
-              <Card className="bg-gradient-card-primary border-primary/20 hover:border-primary/40 transition-all hover-card">
+              <Card className="bg-surface border-primary/20 hover:border-primary/40 transition-all transition-colors">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-primary">Total Files</CardTitle>
                 </CardHeader>
@@ -295,7 +295,7 @@ export default function AdminParse() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-card-accent border-accent/20 hover:border-accent/40 transition-all hover-card">
+              <Card className="bg-surface border-accent/20 hover:border-accent/40 transition-all transition-colors">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-accent">Languages</CardTitle>
                 </CardHeader>
@@ -307,7 +307,7 @@ export default function AdminParse() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-card-secondary border-secondary/30 hover:border-secondary/50 transition-all hover-card">
+              <Card className="bg-surface border-secondary/30 hover:border-secondary/50 transition-all transition-colors">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-success">Success Rate</CardTitle>
                 </CardHeader>
@@ -321,7 +321,7 @@ export default function AdminParse() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-card-primary border-primary/20 hover:border-primary/40 transition-all hover-card">
+              <Card className="bg-surface border-primary/20 hover:border-primary/40 transition-all transition-colors">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-primary">Frameworks</CardTitle>
                 </CardHeader>
@@ -333,7 +333,7 @@ export default function AdminParse() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-card-accent border-accent/20 hover:border-accent/40 transition-all hover-card">
+              <Card className="bg-surface border-accent/20 hover:border-accent/40 transition-all transition-colors">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-accent">Parse Time</CardTitle>
                 </CardHeader>

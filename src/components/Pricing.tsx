@@ -104,8 +104,8 @@ export const Pricing = () => {
                 <div className="relative z-10 space-y-6">
                   {/* Icon & Name */}
                   <div className="space-y-4">
-                    <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tier.gradient} p-[2px] hover-glow`}>
-                      <div className="w-full h-full rounded-xl bg-background flex items-center justify-center">
+                    <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${tier.gradient} p-[2px] hover:shadow-lg`}>
+                      <div className="w-full h-full rounded-lg bg-background flex items-center justify-center">
                         <Icon className="w-8 h-8 text-primary" />
                       </div>
                     </div>

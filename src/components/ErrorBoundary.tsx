@@ -64,10 +64,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-          <Card className="max-w-lg w-full bg-gray-900 border-gray-800">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="w-full max-w-lg bg-surface">
             <CardHeader>
-              <div className="flex items-center gap-2 text-red-500">
+              <div className="flex items-center gap-2 text-danger">
                 <AlertTriangle className="h-5 w-5" />
                 <CardTitle>Something went wrong</CardTitle>
               </div>
@@ -77,12 +77,12 @@ export class ErrorBoundary extends Component<Props, State> {
             </CardHeader>
             <CardContent className="space-y-4">
               {import.meta.env.DEV && this.state.error && (
-                <div className="bg-gray-950 border border-gray-800 rounded p-4 font-mono text-xs text-red-400 overflow-auto max-h-48">
+                <div className="max-h-48 overflow-auto rounded-lg border border-border bg-surface/80 p-4 font-mono text-xs text-danger">
                   <div className="font-semibold mb-2">Error Details:</div>
                   <div>{this.state.error.toString()}</div>
                   {this.state.errorInfo && (
                     <details className="mt-2">
-                      <summary className="cursor-pointer text-gray-400 hover:text-gray-300">
+                      <summary className="cursor-pointer text-muted-foreground hover:text-text">
                         Component Stack
                       </summary>
                       <pre className="mt-2 text-xs whitespace-pre-wrap">

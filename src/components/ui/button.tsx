@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * Variants:
  * - Primary: bg-primary with 8.2:1 contrast
  * - Secondary: bg-surface with border
- * - Destructive: bg-danger for dangerous actions
+ * - Danger: bg-danger for dangerous actions
  * - Ghost: Transparent with hover state
  * - Link: Text-only with underline
  * 
@@ -34,8 +34,8 @@ const buttonVariants = cva(
         secondary:
           "bg-surface text-text border border-border hover:bg-accent hover:text-accent-foreground",
         
-        // Destructive: Danger token
-        destructive:
+        // Danger: High risk actions
+        danger:
           "bg-danger text-danger-foreground hover:brightness-110 active:brightness-125",
         
         // Ghost: Transparent with hover

@@ -60,8 +60,8 @@ export const HowItWorks = () => {
                 <div className="space-y-6 hover-lift">
                   {/* Enhanced icon container with glow */}
                   <div className="relative">
-                    <div className={`relative w-20 h-20 rounded-2xl bg-gradient-to-br ${step.gradient} p-[2px] hover-glow transition-all duration-300`}>
-                      <div className="w-full h-full rounded-2xl bg-background flex items-center justify-center">
+                    <div className={`relative w-20 h-20 rounded-lg bg-gradient-to-br ${step.gradient} p-[2px] hover:shadow-lg transition-all duration-300`}>
+                      <div className="w-full h-full rounded-lg bg-background flex items-center justify-center">
                         <Icon className={`w-10 h-10 ${step.iconColor}`} />
                       </div>
                     </div>

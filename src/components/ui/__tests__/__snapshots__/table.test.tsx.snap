@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Table > renders tokenized table shell 1`] = `"<div class="relative w-full overflow-auto"><table class="w-full caption-bottom text-sm"><thead class="border-b border-border"><tr class="h-12 border-b border-border transition-colors hover:bg-accent/30 data-[state=selected]:bg-accent/50"><th class="h-12 px-4 text-left align-middle font-medium text-text/80 [&amp;:has([role=checkbox])]:pr-0">Header</th></tr></thead><tbody class="[&amp;_tr:last-child]:border-0"><tr class="h-12 border-b border-border transition-colors hover:bg-accent/30 data-[state=selected]:bg-accent/50"><td class="px-4 py-3 align-middle [&amp;:has([role=checkbox])]:pr-0">Value</td></tr></tbody></table></div>"`;

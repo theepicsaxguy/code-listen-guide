@@ -51,7 +51,7 @@ export default function Auth() {
       toast({
         title: 'Validation Error',
         description: 'Please enter email and password',
-        variant: 'destructive',
+        variant: 'danger',
       });
       setIsLoading(false);
       return;
@@ -65,7 +65,7 @@ export default function Auth() {
       toast({
         title: 'Login failed',
         description: getErrorMessage(error),
-        variant: 'destructive',
+        variant: 'danger',
       });
     } finally {
       setIsLoading(false);
@@ -84,7 +84,7 @@ export default function Auth() {
       toast({
         title: 'Validation Error',
         description: 'Please fill in all fields',
-        variant: 'destructive',
+        variant: 'danger',
       });
       setIsLoading(false);
       return;
@@ -98,7 +98,7 @@ export default function Auth() {
       toast({
         title: 'Registration failed',
         description: getErrorMessage(error),
-        variant: 'destructive',
+        variant: 'danger',
         duration: 6000,
       });
     } finally {

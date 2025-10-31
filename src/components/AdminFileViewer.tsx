@@ -29,7 +29,7 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
   const getComplexityColor = (complexity?: string) => {
     switch (complexity) {
       case 'high':
-        return 'destructive';
+        return 'danger';
       case 'medium':
         return 'default';
       case 'low':
@@ -170,7 +170,7 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span>Lines removed:</span>
-                    <Badge variant="destructive">
+                    <Badge variant="danger">
                       {Math.max(0, (rawData.raw_content?.split('\n').length || 0) - (file.content?.split('\n').length || 0))}
                     </Badge>
                   </div>

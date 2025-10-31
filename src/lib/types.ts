@@ -32,7 +32,13 @@ export interface Job {
   started_at?: string;
   completed_at?: string;
   updated_at: string;
-  metadata?: any;
+  metadata?: JobMetadata;
+}
+
+export interface JobMetadata {
+  language?: string;
+  frameworks?: string[];
+  [key: string]: unknown;
 }
 
 export interface Chapter {

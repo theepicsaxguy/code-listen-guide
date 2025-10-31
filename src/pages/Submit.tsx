@@ -46,7 +46,7 @@ export default function Submit() {
       toast({
         title: 'Failed to create job',
         description: error.message || 'Please check the repository URL',
-        variant: 'destructive',
+        variant: 'danger',
       });
     } finally {
       setIsLoading(false);

@@ -117,7 +117,7 @@ export const Stats = () => {
             return (
               <div
                 key={index}
-                className="glass p-8 rounded-2xl hover-lift group text-center relative overflow-hidden"
+                className="glass p-8 rounded-lg hover-lift group text-center relative overflow-hidden"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Background glow effect */}
@@ -125,7 +125,7 @@ export const Stats = () => {
 
                 <div className="relative z-10 space-y-4">
                   {/* Icon */}
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 group-hover:scale-110 transition-transform duration-300">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-accent/10 group-hover:scale-110 transition-transform duration-300">
                     <Icon className={`w-8 h-8 ${stat.color}`} />
                   </div>
 
