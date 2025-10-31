@@ -4,21 +4,21 @@ import { cn } from "@/lib/utils";
 
 /**
  * Card Component
- * Clean container with consistent spacing and no glow effects
+ * Modern SaaS-style container with shadow-based elevation
  * 
  * Spacing (8px grid):
  * - Header: 16px (p-4)
  * - Body: 16px (p-4)
  * - Footer: 12px (p-3)
  * 
- * Borders: 1px border-border, no gradients
- * Elevation by contrast, not drop shadows
+ * Elevation: Uses shadow-sm for subtle depth (no borders)
+ * Follows Stripe/Vercel pattern: shadows create visual hierarchy
  */
 
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <div 
     ref={ref} 
-    className={cn("rounded-card border border-border bg-surface text-card-foreground", className)} 
+    className={cn("rounded-card bg-card text-card-foreground shadow-sm", className)} 
     {...props} 
   />
 ));

@@ -89,7 +89,7 @@ export default function AdminDashboard() {
  </div>
 
  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
- <Card className="rounded-card border border-border bg-surface">
+ <Card className="rounded-card  bg-surface">
  <CardHeader className="space-y-2">
  <CardTitle className="text-lg font-semibold text-text">Recent activity</CardTitle>
  <CardDescription>System activity overview</CardDescription>
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
  </CardContent>
  </Card>
 
- <Card className="rounded-card border border-border bg-surface">
+ <Card className="rounded-card  bg-surface">
  <CardHeader className="space-y-2">
  <CardTitle className="text-lg font-semibold text-text">System status</CardTitle>
  <CardDescription>Key infrastructure signals</CardDescription>
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
  </Card>
  </div>
 
- <Card className="rounded-card border border-border bg-surface">
+ <Card className="rounded-card  bg-surface">
  <CardHeader className="space-y-2">
  <CardTitle className="text-lg font-semibold text-text">Revenue trend</CardTitle>
  <CardDescription>High-level view of revenue momentum</CardDescription>

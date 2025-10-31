@@ -56,14 +56,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside
       className={cn(
         isCollapsed ? 'w-sidebar-collapsed' : 'w-sidebar-expanded',
-        'flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200',
+        'flex h-screen flex-col bg-sidebar-surface text-sidebar-foreground shadow-md transition-[width] duration-200',
         className,
       )}
     >
-      <div className="relative flex items-center border-b border-sidebar-border px-4 py-5">
+      <div className="relative flex items-center px-4 py-5 shadow-sm">
         <button
           onClick={onToggleCollapse}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full border border-sidebar-border bg-surface p-2 text-muted transition-standard hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-surface-secondary p-2 text-muted shadow-md transition-standard hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -133,7 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {footer && <div className="border-t border-sidebar-border px-4 py-4 text-muted">{footer}</div>}
+      {footer && <div className="px-4 py-4 text-muted shadow-[0_-1px_0_0_rgb(0_0_0_/_0.05)]">{footer}</div>}
     </aside>
   );
 };
