@@ -22,17 +22,17 @@
   --text-display: 3.75rem;   /* text-6xl - Largest headings, hero text */
   --text-heading: 2.25rem;   /* text-3xl - Page titles */
   --text-subheading: 1.5rem; /* text-xl to text-2xl - Section headers */
-  --text-body: 1rem;         /* text-base - Body text */
+  --text-body: 0.875rem;     /* text-sm - Body text */
   --text-body-sm: 0.875rem;  /* text-sm - Metadata */
   --text-caption: 0.75rem;   /* text-xs - Tiny labels */
   
   /* Heading scale - Enhanced for visual hierarchy (Vercel-style) */
-  --font-size-h1: 3rem;      /* text-3xl - Page titles */
-  --font-size-h2: 2.25rem;   /* text-4xl - Hero headlines */
-  --font-size-h3: 1.875rem;  /* text-5xl - Large headings */
-  --font-size-h4: 1.5rem;    /* text-xl - Section headers */
-  --font-size-h5: 1.25rem;   /* text-lg - Subheadlines */
-  --font-size-h6: 0.875rem;  /* text-sm - Body text */
+  --font-size-h1: 3.75rem;   /* text-6xl - Hero headlines (large screens) */
+  --font-size-h2: 3rem;      /* text-5xl - Page titles */
+  --font-size-h3: 2.25rem;  /* text-4xl - Large headings */
+  --font-size-h4: 1.875rem;   /* text-3xl - Section headers */
+  --font-size-h5: 1.125rem;   /* text-lg - Subheadlines */
+  --font-size-h6: 0.875rem;   /* text-sm - Body text */
 
   /* ============================================================================
      Core Surface Palette (Vercel-Style Deep Black)
@@ -84,26 +84,31 @@
   --color-accent-active: hsl(0 0% 10%); /* #1A1A1A - Darker active */
   --color-accent-foreground: hsl(0 0% 83%); /* #D4D4D8 - Body text color */
   
-  /* Semantic Accents - Vercel tag colors (bright, electric, minimal usage) */
-  /* Applied as text + low-alpha background (5-10% opacity) for integration */
-  --color-success: hsl(142 71% 45%); /* #22C55E - green - bright tag color */
-  --color-success-hover: hsl(142 71% 50%);
-  --color-success-foreground: hsl(0 0% 0%); /* Black text on bright colors */
-  --color-warning: hsl(43 96% 56%); /* #FBBF24 - amber - bright tag color */
-  --color-warning-hover: hsl(43 96% 61%);
-  --color-warning-foreground: hsl(0 0% 0%);
-  --color-danger: hsl(0 84% 60%); /* #EF4444 - red - bright tag color */
-  --color-danger-hover: hsl(0 84% 65%);
-  --color-danger-foreground: hsl(0 0% 100%); /* White on red for readability */
-  --color-info: hsl(217 91% 60%); /* #3B82F6 - blue - bright tag color */
+  /* Semantic Accents - Vercel tag colors (muted but vibrant) */
+  /* Applied as text + low-alpha background (5-10% opacity) for badges/tags only */
+  --color-info: hsl(217 91% 60%); /* #3B82F6 - blue (Comments) */
   --color-info-hover: hsl(217 91% 65%);
-  --color-info-foreground: hsl(0 0% 0%);
-  --color-pending: hsl(258 90% 67%); /* #A855F7 - purple - bright tag color */
+  --color-info-foreground: hsl(0 0% 100%); /* White text on blue */
+  
+  --color-pending: hsl(258 90% 67%); /* #A855F7 - purple (CMS Drafts) */
   --color-pending-hover: hsl(258 90% 72%);
-  --color-pending-foreground: hsl(0 0% 0%);
-  --color-teal: hsl(173 80% 40%); /* #06B6D4 - teal/cyan - bright tag color */
-  --color-teal-hover: hsl(173 80% 45%);
-  --color-teal-foreground: hsl(0 0% 0%);
+  --color-pending-foreground: hsl(0 0% 100%); /* White text on purple */
+  
+  --color-success: hsl(142 71% 45%); /* #22C55E - green (Accessibility) */
+  --color-success-hover: hsl(142 71% 50%);
+  --color-success-foreground: hsl(0 0% 0%); /* Black text on green */
+  
+  --color-danger: hsl(0 84% 60%); /* #EF4444 - red (Share) */
+  --color-danger-hover: hsl(0 84% 65%);
+  --color-danger-foreground: hsl(0 0% 100%); /* White text on red */
+  
+  --color-warning: hsl(25 95% 53%); /* #F97316 - orange (Collaborators) */
+  --color-warning-hover: hsl(25 95% 58%);
+  --color-warning-foreground: hsl(0 0% 0%); /* Black text on orange */
+  
+  --color-teal: hsl(187 85% 53%); /* #06B6D4 - teal/cyan (Feature Flags) */
+  --color-teal-hover: hsl(187 85% 58%);
+  --color-teal-foreground: hsl(0 0% 0%); /* Black text on teal */
   
   /* Destructive (alias for danger) */
   --color-destructive: var(--color-danger);
@@ -194,11 +199,11 @@
   --ring-offset: 2px;
   --ring-color: var(--color-ring);
 
-  /* Motion */
-  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* Motion - Vercel smooth transitions */
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --motion-duration-short: 150ms;
-  --motion-duration-medium: 250ms;
-  --motion-duration-long: 400ms;
+  --motion-duration-medium: 200ms;
+  --motion-duration-long: 300ms;
 }
 
 @layer base {
@@ -269,6 +274,12 @@
     -moz-osx-font-smoothing: grayscale;
     font-size: var(--font-size-base);
     line-height: var(--line-height-base);
+    font-weight: 400; /* Normal weight for body */
+    /* Noise texture overlay - 2% opacity film grain */
+    background-image: 
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E"),
+      linear-gradient(to bottom, hsl(0 0% 0%), hsl(0 0% 0%));
+    background-blend-mode: overlay;
   }
 
   h1,
@@ -280,8 +291,13 @@
     font-family: var(--font-sans);
     font-weight: 600; /* font-semibold */
     letter-spacing: -0.015em;
-    line-height: var(--line-height-heading);
+    line-height: 1.1; /* Tight leading for headings */
     color: var(--color-foreground);
+  }
+  
+  p {
+    font-weight: 400; /* font-normal for body */
+    line-height: var(--line-height-base);
   }
 
   h1 { font-size: var(--font-size-h1); }
@@ -291,9 +307,6 @@
   h5 { font-size: var(--font-size-h5); }
   h6 { font-size: var(--font-size-h6); }
 
-  p {
-    line-height: var(--line-height-base);
-  }
 
   input,
   button,
@@ -426,9 +439,9 @@
     transition-timing-function: var(--motion-ease-standard);
   }
 
-  /* Content width utilities */
+  /* Content width utilities - Vercel width (max-w-7xl ? 1280px) */
   .max-w-content {
-    max-width: var(--size-content-max);
+    max-width: 80rem; /* 1280px */
   }
 
   .max-w-content-narrow {
@@ -436,10 +449,29 @@
   }
 
   .max-w-content-default {
-    max-width: var(--size-content-default);
+    max-width: 80rem; /* 1280px - Vercel standard */
   }
 
   .max-w-content-wide {
-    max-width: var(--size-content-wide);
+    max-width: 80rem; /* 1280px */
+  }
+  
+  /* Micro-grid texture for hero sections */
+  .micro-grid {
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 0 0, 0 0;
+  }
+  
+  /* Depth gradients for large surfaces */
+  .surface-depth {
+    background: linear-gradient(to bottom, hsl(0 0% 7%), hsl(0 0% 0%));
+  }
+  
+  /* Ambient white shadows (not cyan glow) */
+  .shadow-ambient {
+    box-shadow: 0 0 40px rgba(255, 255, 255, 0.03);
   }
 }

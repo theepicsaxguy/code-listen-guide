@@ -153,17 +153,17 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
                         </div>
                       </TableCell>
                       <TableCell className="align-middle"><StatusBadge status={job.status} /></TableCell>
-                      <TableCell className="text-sm text-zinc-400">{formatDate(job.created_at)}</TableCell>
+                      <TableCell className="text-sm text-zinc-400 font-normal">{formatDate(job.created_at)}</TableCell>
                       <TableCell>
                         {job.estimated_chapters ? (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs font-medium">
                             {job.estimated_chapters} chapters
                           </Badge>
                         ) : (
-                          <span className="text-xs text-zinc-400">—</span>
+                          <span className="text-xs text-zinc-400 font-normal">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right text-sm text-zinc-400">
+                      <TableCell className="text-right text-sm text-zinc-400 font-normal">
                         {job.estimated_duration_minutes ? (
                           formatDuration(job.estimated_duration_minutes)
                         ) : (

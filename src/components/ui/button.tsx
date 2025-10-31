@@ -22,33 +22,33 @@ import { cn } from "@/lib/utils";
  * - Focus: 2px ring-primary at 3:1 contrast
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        // Primary: Pill-shaped cyan CTA only
+        // Primary: Pill-shaped cyan/white CTA
         default:
-          "bg-cyan-500 text-black hover:bg-cyan-400 active:bg-cyan-500",
+          "bg-cyan-500 text-black hover:brightness-110 active:brightness-95",
 
-        // Secondary: Neutral ghost style
+        // Secondary: Transparent with white border
         secondary:
-          "bg-transparent text-zinc-200 hover:text-white hover:bg-zinc-900/50",
+          "bg-transparent text-white border border-white/20 hover:border-white/40 hover:brightness-110",
 
         // Danger: High risk actions
         danger:
-          "bg-danger text-danger-foreground hover:bg-danger/90 active:bg-danger/80",
+          "bg-danger text-danger-foreground hover:brightness-110 active:brightness-95",
 
-        // Ghost: Transparent with hover
+        // Ghost: Transparent with brightness shift
         ghost:
-          "text-zinc-300 hover:bg-zinc-900/50 hover:text-white",
+          "text-zinc-300 hover:text-white hover:bg-zinc-900/30",
 
         // Link: Text-only
         link:
-          "text-cyan-500 underline-offset-4 hover:underline",
+          "text-cyan-500 underline-offset-4 hover:underline hover:text-cyan-400",
 
-        // Outline: No borders for Vercel style
+        // Outline: Transparent with subtle border
         outline:
-          "bg-transparent text-zinc-300 hover:bg-zinc-900/50 hover:text-white",
+          "bg-transparent text-zinc-300 border border-zinc-800 hover:border-zinc-700 hover:text-white",
       },
       size: {
         default: "h-10 px-4 py-2", // Reduced padding

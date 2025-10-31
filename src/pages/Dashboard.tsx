@@ -168,9 +168,9 @@ const Dashboard: React.FC = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div className="flex-1 overflow-hidden relative">
-        <div className="bg-zinc-950">
-          <div className="mx-auto flex max-w-content-default flex-col gap-6 px-6 py-24">
-            <div className="space-y-6">
+        <div className="surface-depth">
+          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-24">
+            <div className="space-y-8">
               <Breadcrumb>
                 <BreadcrumbList>
                   {crumbs.map((crumb, index) => (
@@ -187,9 +187,9 @@ const Dashboard: React.FC = () => {
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
-              <div className="flex flex-col gap-3">
-                <h1 className="text-4xl font-semibold text-zinc-50 leading-tight">{title}</h1>
-                <p className="text-lg leading-relaxed text-zinc-400">{description}</p>
+              <div className="flex flex-col gap-8">
+                <h1 className="text-5xl md:text-6xl font-semibold text-zinc-50 leading-[1.1]">{title}</h1>
+                <p className="text-lg leading-relaxed text-zinc-400 font-normal max-w-3xl">{description}</p>
               </div>
             </div>
             <div className={cn('flex flex-col gap-4', (activeTab === 'home' || activeTab === 'audiobooks') && 'md:flex-row md:items-center md:justify-between')}>
@@ -218,7 +218,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <main className="mx-auto max-w-content-default space-y-8 px-6 py-8 relative gap-6">
+        <main className="mx-auto max-w-7xl space-y-8 px-6 py-8 relative gap-6">
           {activeTab === 'home' && <OverviewPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
           {activeTab === 'audiobooks' && (
             <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} searchQuery={searchQuery} />

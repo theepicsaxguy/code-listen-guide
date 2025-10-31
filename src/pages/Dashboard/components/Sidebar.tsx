@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  title={isCollapsed ? item.label : undefined}
  >
  {React.cloneElement(item.icon, {
- className: cn('h-5 w-5', !isCollapsed && 'shrink-0'),
+ className: cn('h-5 w-5 text-zinc-400 stroke-[1.5]', !isCollapsed && 'shrink-0', 'hover:text-zinc-100'),
  })}
  {!isCollapsed && <span className="truncate">{item.label}</span>}
  </button>
