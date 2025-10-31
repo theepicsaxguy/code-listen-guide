@@ -2,6 +2,8 @@
 @import "@tailwindcss/typography";
 @import "tailwindcss-animate";
 
+@config "../tailwind.config.ts";
+
 @source "../src/**/*.{ts,tsx}";
 
 @variant dark ([data-theme="dark"] &);
