@@ -88,19 +88,19 @@ export const SettingsPage: React.FC = () => {
  <div className="text-sm font-bold text-foreground mb-1">Email Notifications</div>
  <div className="text-xs text-muted-foreground">Receive updates about your account</div>
  </div>
- <button
- onClick={() => setEmailNotifications(!emailNotifications)}
- className={`relative w-14 h-7 rounded-full transition-all shadow-lg border-2 ${
- emailNotifications 
- ? 'bg-primary shadow-primary/30 border-primary/50' 
- : 'bg-muted border-muted/40'
- }`}
- >
- <div className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full transition-transform shadow-md ${
- emailNotifications 
- ? 'translate-x-7 bg-primary-foreground' 
- : 'translate-x-0 bg-card'
- }`} />
+        <button
+          onClick={() => setEmailNotifications(!emailNotifications)}
+          className={`relative w-14 h-7 rounded-lg transition-all shadow-lg border-2 ${
+            emailNotifications 
+            ? 'bg-primary shadow-primary/30 border-primary/50' 
+            : 'bg-muted border-muted/40'
+          }`}
+        >
+          <div className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-md transition-transform shadow-md ${
+            emailNotifications 
+            ? 'translate-x-7 bg-primary-foreground' 
+            : 'translate-x-0 bg-card'
+          }`} />
  </button>
  </div>
  <div className="flex items-center justify-between p-4 rounded-lg bg-card/70 hover:bg-primary/10 transition-all transition-colors">
@@ -108,19 +108,19 @@ export const SettingsPage: React.FC = () => {
  <div className="text-sm font-bold text-foreground mb-1">Processing Notifications</div>
  <div className="text-xs text-muted-foreground">Get notified when audiobooks are complete</div>
  </div>
- <button
- onClick={() => setProcessingNotifications(!processingNotifications)}
- className={`relative w-14 h-7 rounded-full transition-all shadow-lg border-2 ${
- processingNotifications 
- ? 'bg-accent shadow-accent/30 border-accent/50' 
- : 'bg-muted border-muted/40'
- }`}
- >
- <div className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full transition-transform shadow-md ${
- processingNotifications 
- ? 'translate-x-7 bg-accent-foreground' 
- : 'translate-x-0 bg-card'
- }`} />
+        <button
+          onClick={() => setProcessingNotifications(!processingNotifications)}
+          className={`relative w-14 h-7 rounded-lg transition-all shadow-lg border-2 ${
+            processingNotifications 
+            ? 'bg-accent shadow-accent/30 border-accent/50' 
+            : 'bg-muted border-muted/40'
+          }`}
+        >
+          <div className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-md transition-transform shadow-md ${
+            processingNotifications 
+            ? 'translate-x-7 bg-accent-foreground' 
+            : 'translate-x-0 bg-card'
+          }`} />
  </button>
  </div>
  </div>

@@ -33,13 +33,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  }
  };
 
- return (
-  <aside
-    className={cn(
-      isCollapsed ? 'w-20 hidden md:flex' : 'w-64',
-      'flex h-screen flex-col flex-shrink-0 bg-sidebar-surface text-sidebar-foreground border-r border-sidebar-border transition-[width] duration-300',
-    )}
-  >
+  return (
+    <aside
+      className={cn(
+        isCollapsed ? 'w-20 hidden md:flex' : 'w-64',
+        'flex h-full flex-col flex-shrink-0 bg-sidebar-surface text-sidebar-foreground border-r border-sidebar-border transition-[width] duration-300',
+      )}
+    >
     <div className="relative flex items-center px-4 py-5 border-b border-sidebar-border">
       <button
         onClick={onToggleCollapse}

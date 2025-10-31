@@ -156,7 +156,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground relative anchor-gradient">
+    <div className="flex h-screen bg-background text-foreground relative anchor-gradient overflow-hidden">
       {/* Reduced gradient opacity - Vercel style (3-5% max) */}
       <div className="fixed inset-0 bg-gradient-to-br from-cyan-400/[0.03] via-transparent to-transparent pointer-events-none" />
       
@@ -167,7 +167,7 @@ const Dashboard: React.FC = () => {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         <div className="surface-depth mx-auto">
           <div className="mx-auto flex max-w-7xl flex-col gap-12 px-6 py-24">
             <div className="space-y-8">
