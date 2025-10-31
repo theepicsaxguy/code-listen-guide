@@ -15,7 +15,7 @@ export function ChunkVisualizer({ file, rawData }: ChunkVisualizerProps) {
   if (!chunks || chunks.length === 0) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center h-[400px] text-muted-foreground">
+        <CardContent className="flex items-center justify-center h-[25rem] text-muted-foreground">
           <div className="text-center">
             <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-20" />
             <p>No chunk information available for this file</p>
@@ -124,10 +124,10 @@ export function ChunkVisualizer({ file, rawData }: ChunkVisualizerProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[600px] w-full">
+          <ScrollArea className="h-[37.5rem] w-full">
             <div className="space-y-6">
               {chunks.map((chunk: any, index: number) => (
-                <div key={index} className="border rounded-lg p-4 space-y-3">
+                <div key={index} className="border rounded-card p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Badge variant="outline" className="font-mono">

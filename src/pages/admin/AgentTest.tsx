@@ -172,7 +172,7 @@ export default function AgentTest() {
  {/* Header */}
  <div>
  <h1 className="text-4xl font-bold text-foreground flex items-center gap-3 mb-2">
- <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+ <div className="w-12 h-12 rounded-card bg-primary flex items-center justify-center elevation-raised">
  <Activity className="w-7 h-7 text-primary-foreground" />
  </div>
  <span className="gradient-text-primary">Agent Framework Test & Trace</span>
@@ -200,7 +200,7 @@ export default function AgentTest() {
  <Card className="bg-surface ">
  <CardHeader className="bg-surface">
  <CardTitle className="flex items-center gap-3 text-xl">
- <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shadow-md shadow-primary/10">
+ <div className="w-10 h-10 rounded-card bg-primary/20 flex items-center justify-center elevation-flat">
  <Settings className="w-5 h-5 icon-gradient" />
  </div>
  Agent Configuration
@@ -224,7 +224,7 @@ export default function AgentTest() {
  </SelectContent>
  </Select>
  {selectedAgentInfo && (
- <div className="mt-3 p-4 bg-surface border border-accent/30 rounded-lg transition-colors">
+ <div className="mt-3 p-4 bg-surface border border-accent/30 rounded-card transition-colors">
  <p className="text-sm text-foreground font-medium mb-3">{selectedAgentInfo.description}</p>
  {selectedAgentInfo.tools.length > 0 && (
  <div className="flex flex-wrap gap-2">
@@ -292,7 +292,7 @@ export default function AgentTest() {
  <Button 
  onClick={handleTestAgent} 
  disabled={isTestingAgent} 
- className="w-full bg-primary hover:opacity-90 text-primary-foreground rounded-lg font-bold py-6 text-lg shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
+ className="w-full bg-primary hover:opacity-90 text-primary-foreground rounded-card font-bold py-6 text-lg elevation-raised hover:elevation-overlay transition-all"
  >
  {isTestingAgent ? (
  <>
@@ -321,7 +321,7 @@ export default function AgentTest() {
             >
  <CardTitle className="flex items-center justify-between text-xl">
  <span className="flex items-center gap-3">
- <div className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-md ${
+ <div className={`w-10 h-10 rounded-card flex items-center justify-center elevation-flat ${
  agentResult.error 
  ? 'bg-danger/20 shadow-danger/10' 
  : 'bg-success/20 shadow-success/10'
@@ -343,18 +343,18 @@ export default function AgentTest() {
  <CardContent className="space-y-4">
  {/* Summary */}
  <div className="grid grid-cols-3 gap-4">
- <div className="p-4 bg-surface border border-border/50 rounded-lg transition-colors">
+ <div className="p-4 bg-surface border border-border/50 rounded-card transition-colors">
  <div className="text-sm text-muted-foreground font-medium mb-2">Execution Time</div>
  <div className="text-2xl font-bold text-foreground flex items-center gap-2">
  <Clock className="w-5 h-5 text-primary" />
  {agentResult.execution_time_seconds.toFixed(2)}s
  </div>
  </div>
- <div className="p-4 bg-surface border border-border/50 rounded-lg transition-colors">
+ <div className="p-4 bg-surface border border-border/50 rounded-card transition-colors">
  <div className="text-sm text-muted-foreground font-medium mb-2">Messages</div>
  <div className="text-2xl font-bold text-foreground">{agentResult.messages.length}</div>
  </div>
- <div className="p-4 bg-surface border border-border/50 rounded-lg transition-colors">
+ <div className="p-4 bg-surface border border-border/50 rounded-card transition-colors">
  <div className="text-sm text-muted-foreground font-medium mb-2">Tools Called</div>
  <div className="text-2xl font-bold text-foreground">{agentResult.tools_called.length}</div>
  </div>
@@ -362,7 +362,7 @@ export default function AgentTest() {
 
  {/* Error Display */}
  {agentResult.error && (
- <div className="p-4 bg-danger/10 rounded-lg">
+ <div className="p-4 bg-danger/10 rounded-card">
  <div className="flex items-start gap-2">
  <XCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
  <div>
@@ -375,7 +375,7 @@ export default function AgentTest() {
 
  {/* Messages Trace */}
  <Collapsible open={expandedSections.has("messages")} onOpenChange={() => toggleSection("messages")}>
- <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-primary/10 border border-primary/30 rounded-lg hover:bg-primary/20 hover:border-primary/50 transition-all transition-colors">
+ <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-primary/10 border border-primary/30 rounded-card hover:bg-primary/20 hover:border-primary/50 transition-all transition-colors">
  <span className="font-semibold text-primary flex items-center gap-2">
  <MessageSquare className="w-4 h-4" />
  Message Trace ({agentResult.messages.length})
@@ -391,7 +391,7 @@ export default function AgentTest() {
  {agentResult.messages.map((msg, idx) => (
  <div
  key={idx}
- className={`p-4 rounded-lg border ${
+ className={`p-4 rounded-card border ${
  msg.role === "user" 
  ? "bg-primary/10 border-primary/30" 
  : "bg-success/10 border-success/30"
@@ -410,7 +410,7 @@ export default function AgentTest() {
  </Badge>
  <span className="text-xs text-muted-foreground font-medium">{formatTimestamp(msg.timestamp)}</span>
  </div>
- <pre className="text-sm whitespace-pre-wrap font-mono text-foreground bg-secondary/20 p-3 rounded-lg">{msg.content}</pre>
+ <pre className="text-sm whitespace-pre-wrap font-mono text-foreground bg-secondary/20 p-3 rounded-card">{msg.content}</pre>
  </div>
  ))}
  </div>
@@ -420,7 +420,7 @@ export default function AgentTest() {
  {/* Tools Called */}
  {agentResult.tools_called.length > 0 && (
  <Collapsible open={expandedSections.has("tools")} onOpenChange={() => toggleSection("tools")}>
- <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/10 border border-accent/30 rounded-lg hover:bg-accent/20 hover:border-accent/50 transition-all transition-colors">
+ <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-accent/10 border border-accent/30 rounded-card hover:bg-accent/20 hover:border-accent/50 transition-all transition-colors">
  <span className="font-semibold text-accent flex items-center gap-2">
  <Code2 className="w-4 h-4" />
  Tools Called ({agentResult.tools_called.length})
@@ -434,7 +434,7 @@ export default function AgentTest() {
  <CollapsibleContent>
  <div className="mt-2 space-y-2 max-h-96 overflow-y-auto">
  {agentResult.tools_called.map((tool, idx) => (
- <div key={idx} className="p-3 bg-muted rounded-lg border">
+ <div key={idx} className="p-3 bg-muted rounded-card border">
  <div className="flex items-center justify-between mb-2">
  <Badge>
  <Code2 className="w-3 h-3 mr-1" />
@@ -455,7 +455,7 @@ export default function AgentTest() {
  {/* Output Message */}
  {agentResult.output_message && (
  <Collapsible open={expandedSections.has("output")} onOpenChange={() => toggleSection("output")}>
- <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-secondary/10 border border-secondary/30 rounded-lg hover:bg-secondary/20 hover:border-secondary/50 transition-all transition-colors">
+ <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-secondary/10 border border-secondary/30 rounded-card hover:bg-secondary/20 hover:border-secondary/50 transition-all transition-colors">
  <span className="font-semibold text-foreground flex items-center gap-2">
  <MessageSquare className="w-4 h-4 text-success" />
  Output Message
@@ -467,7 +467,7 @@ export default function AgentTest() {
  )}
  </CollapsibleTrigger>
  <CollapsibleContent>
- <div className="mt-2 p-4 bg-background rounded-lg border max-h-96 overflow-y-auto">
+ <div className="mt-2 p-4 bg-background rounded-card border max-h-96 overflow-y-auto">
  <pre className="text-sm whitespace-pre-wrap font-mono">{agentResult.output_message}</pre>
  </div>
  </CollapsibleContent>
@@ -484,7 +484,7 @@ export default function AgentTest() {
  <Card className="bg-surface border-accent/20 ">
  <CardHeader className="bg-surface">
  <CardTitle className="flex items-center gap-3 text-xl text-accent">
- <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shadow-md shadow-accent/10">
+ <div className="w-10 h-10 rounded-card bg-accent/20 flex items-center justify-center elevation-flat">
  <Workflow className="w-5 h-5 icon-gradient-accent" />
  </div>
  Workflow Configuration
@@ -548,7 +548,7 @@ export default function AgentTest() {
  <Button 
  onClick={handleTestWorkflow} 
  disabled={isTestingWorkflow} 
- className="w-full bg-accent hover:opacity-90 text-accent-foreground rounded-lg font-bold py-6 text-lg shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30 transition-all"
+ className="w-full bg-accent hover:opacity-90 text-accent-foreground rounded-card font-bold py-6 text-lg elevation-raised hover:elevation-overlay transition-all"
  >
  {isTestingWorkflow ? (
  <>
@@ -582,14 +582,14 @@ export default function AgentTest() {
  <CardContent className="space-y-4">
  {/* Summary */}
  <div className="grid grid-cols-2 gap-4">
- <div className="p-3 bg-muted rounded-lg">
+ <div className="p-3 bg-muted rounded-card">
  <div className="text-sm text-muted-foreground">Execution Time</div>
  <div className="text-lg font-semibold flex items-center gap-1">
  <Clock className="w-4 h-4" />
  {workflowResult.execution_time_seconds.toFixed(2)}s
  </div>
  </div>
- <div className="p-3 bg-muted rounded-lg">
+ <div className="p-3 bg-muted rounded-card">
  <div className="text-sm text-muted-foreground">Stages Completed</div>
  <div className="text-lg font-semibold">{workflowResult.stages.length}</div>
  </div>
@@ -597,7 +597,7 @@ export default function AgentTest() {
 
  {/* Error Display */}
  {workflowResult.error && (
- <div className="p-4 bg-danger/10 rounded-lg">
+ <div className="p-4 bg-danger/10 rounded-card">
  <div className="flex items-start gap-2">
  <XCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
  <div>
@@ -613,7 +613,7 @@ export default function AgentTest() {
  <h3 className="font-semibold mb-3">Stages</h3>
  <div className="space-y-2">
  {workflowResult.stages.map((stage, idx) => (
- <div key={idx} className="p-3 bg-muted rounded-lg border flex items-start justify-between">
+ <div key={idx} className="p-3 bg-muted rounded-card border flex items-start justify-between">
  <div className="flex items-center gap-2">
  {stage.status === "completed" ? (
             <CheckCircle2 className="w-5 h-5 text-success" />
@@ -634,7 +634,7 @@ export default function AgentTest() {
 
  {/* Final Result */}
  <Collapsible open={expandedSections.has("workflow-output")} onOpenChange={() => toggleSection("workflow-output")}>
- <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80">
+ <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-card hover:bg-muted/80">
  <span className="font-semibold">Final Result</span>
  {expandedSections.has("workflow-output") ? (
  <ChevronDown className="w-4 h-4" />
@@ -643,7 +643,7 @@ export default function AgentTest() {
  )}
  </CollapsibleTrigger>
  <CollapsibleContent>
- <div className="mt-2 p-4 bg-background rounded-lg border max-h-96 overflow-y-auto">
+ <div className="mt-2 p-4 bg-background rounded-card border max-h-96 overflow-y-auto">
  <pre className="text-sm whitespace-pre-wrap font-mono">
  {JSON.stringify(workflowResult.final_result, null, 2)}
  </pre>

@@ -115,7 +115,7 @@ export default function AdminParse() {
               Test chonkie configurations and analyze repository parsing
             </p>
           </div>
-          <Badge variant="default" className="text-lg px-4 py-2 bg-primary text-primary-foreground shadow-md shadow-primary/20">
+          <Badge variant="default" className="text-lg px-4 py-2 bg-primary text-primary-foreground elevation-flat">
             <Zap className="h-4 w-4 mr-2" />
             Admin Mode
           </Badge>
@@ -206,7 +206,7 @@ export default function AdminParse() {
               </h3>
               
               <div className="grid lg:grid-cols-3 gap-4">
-                <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                <div className="flex items-center justify-between space-x-2 rounded-card border p-4">
                   <div className="space-y-0.5">
                     <Label htmlFor="code-enrichment" className="cursor-pointer">
                       Code Enrichment
@@ -222,7 +222,7 @@ export default function AdminParse() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                <div className="flex items-center justify-between space-x-2 rounded-card border p-4">
                   <div className="space-y-0.5">
                     <Label htmlFor="formula-enrichment" className="cursor-pointer">
                       Formula Enrichment
@@ -238,7 +238,7 @@ export default function AdminParse() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                <div className="flex items-center justify-between space-x-2 rounded-card border p-4">
                   <div className="space-y-0.5">
                     <Label htmlFor="table-extraction" className="cursor-pointer">
                       Table Extraction
@@ -260,7 +260,7 @@ export default function AdminParse() {
             <Button 
               onClick={handleParse} 
               disabled={isLoading || !repoUrl}
-              className="w-full bg-primary hover:opacity-90 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 disabled:hover:translate-y-0"
+              className="w-full bg-primary hover:opacity-90 text-primary-foreground elevation-raised hover:elevation-overlay hover:-translate-y-0.5 disabled:hover:translate-y-0"
               size="lg"
             >
               {isLoading ? (
@@ -383,7 +383,7 @@ export default function AdminParse() {
                     />
                   ) : (
                     <Card>
-                      <CardContent className="flex items-center justify-center h-[600px] text-muted-foreground">
+                      <CardContent className="flex items-center justify-center h-[37.5rem] text-muted-foreground">
                         <div className="text-center">
                           <FileCode className="h-12 w-12 mx-auto mb-4 opacity-20" />
                           <p>Select a file to view detailed analysis</p>
@@ -402,7 +402,7 @@ export default function AdminParse() {
                   />
                 ) : (
                   <Card>
-                    <CardContent className="flex items-center justify-center h-[400px] text-muted-foreground">
+                    <CardContent className="flex items-center justify-center h-[25rem] text-muted-foreground">
                       <div className="text-center">
                         <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-20" />
                         <p>Select a file from the browser to view chunk analysis</p>
@@ -428,7 +428,7 @@ export default function AdminParse() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[600px] w-full rounded-md border">
+                    <ScrollArea className="h-[37.5rem] w-full rounded-card border">
                       <pre className="p-4 text-xs">
                         <code>{JSON.stringify(parseResults, null, 2)}</code>
                       </pre>

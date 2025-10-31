@@ -359,7 +359,7 @@ export default function AgentMonitoring() {
  </div>
  </TableCell>
  <TableCell>
- <span className="text-sm">{job.current_stage || "—"}</span>
+ <span className="text-sm">{job.current_stage || "?"}</span>
  </TableCell>
  <TableCell>
  <div className="text-sm space-y-1">
@@ -387,7 +387,7 @@ export default function AgentMonitoring() {
  Details
  </Button>
  </DialogTrigger>
- <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-content-default max-h-[80vh] overflow-y-auto">
  <DialogHeader>
  <DialogTitle>Job Details: {job.repo_name}</DialogTitle>
  <DialogDescription>
@@ -435,7 +435,7 @@ export default function AgentMonitoring() {
  </div>
 
  {jobDetails.error_message && (
- <div className="bg-danger/10 rounded-lg p-4">
+ <div className="bg-danger/10 rounded-card p-4">
  <div className="flex items-start gap-2">
  <AlertCircle className="h-5 w-5 text-danger mt-0.5" />
  <div>
@@ -458,7 +458,7 @@ export default function AgentMonitoring() {
  </TabsContent>
 
  <TabsContent value="stages">
- <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[25rem]">
  <div className="space-y-4">
  {jobDetails.stages && jobDetails.stages.length > 0 ? (
  jobDetails.stages.map((stage, index) => (
@@ -493,7 +493,7 @@ export default function AgentMonitoring() {
  </TabsContent>
 
  <TabsContent value="checkpoints">
- <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[25rem]">
  <div className="space-y-2">
  {jobDetails.checkpoints && jobDetails.checkpoints.length > 0 ? (
  jobDetails.checkpoints.map((checkpoint, index) => (
@@ -521,7 +521,7 @@ export default function AgentMonitoring() {
  </TabsContent>
 
  <TabsContent value="logs">
- <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[25rem]">
  <div className="space-y-2 font-mono text-xs">
  {logsData?.logs && logsData.logs.length > 0 ? (
  logsData.logs.map((log, index) => (

@@ -70,7 +70,7 @@ export const AdminLayout = () => {
  <div className="min-h-screen flex bg-background">
  <aside
  className={`${
- isSidebarCollapsed ? 'w-16' : 'w-[264px]'
+      isSidebarCollapsed ? 'w-16' : 'w-sidebar-expanded'
  } flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300`}
  >
  <div className="relative p-6">

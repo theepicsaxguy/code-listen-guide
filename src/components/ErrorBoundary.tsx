@@ -77,7 +77,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </CardHeader>
             <CardContent className="space-y-4">
               {import.meta.env.DEV && this.state.error && (
-                <div className="max-h-48 overflow-auto rounded-lg border border-border bg-surface/80 p-4 font-mono text-xs text-danger">
+                <div className="max-h-48 overflow-auto rounded-card border border-border bg-surface/80 p-4 font-mono text-xs text-danger">
                   <div className="font-semibold mb-2">Error Details:</div>
                   <div>{this.state.error.toString()}</div>
                   {this.state.errorInfo && (

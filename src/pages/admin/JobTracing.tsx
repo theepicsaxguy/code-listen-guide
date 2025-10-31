@@ -194,7 +194,7 @@ const getStatusColor = (status: string) => {
  </div>
 
  {jobTrace.error && (
- <div className="bg-danger/10 rounded-lg p-4">
+ <div className="bg-danger/10 rounded-card p-4">
  <div className="flex items-start gap-2">
  <AlertCircle className="h-5 w-5 text-danger mt-0.5" />
  <div>

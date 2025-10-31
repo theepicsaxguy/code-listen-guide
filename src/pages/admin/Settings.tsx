@@ -29,7 +29,7 @@ export default function AdminSettings() {
  <div className="p-8 space-y-6">
  <div>
  <h1 className="text-3xl font-bold gradient-text-primary flex items-center gap-3">
- <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+ <div className="w-10 h-10 rounded-card bg-primary flex items-center justify-center elevation-raised">
  <SettingsIcon className="w-6 h-6 text-primary-foreground" />
  </div>
  Settings
@@ -50,7 +50,7 @@ export default function AdminSettings() {
  <Card className="bg-surface border-primary/20 hover:border-primary/40 transition-all transition-colors ">
  <CardHeader className="bg-surface">
  <CardTitle className="flex items-center gap-3 text-xl text-primary">
- <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shadow-md shadow-primary/10">
+ <div className="w-10 h-10 rounded-card bg-primary/20 flex items-center justify-center elevation-flat">
  <Shield className="h-5 w-5 icon-gradient" />
  </div>
  Rate Limits
@@ -58,7 +58,7 @@ export default function AdminSettings() {
  <CardDescription className="text-base mt-2">API rate limiting configuration</CardDescription>
  </CardHeader>
  <CardContent className="space-y-4">
- <div className="flex justify-between items-center p-3 bg-surface rounded-lg transition-colors">
+ <div className="flex justify-between items-center p-3 bg-surface rounded-card transition-colors">
  <span className="text-sm font-semibold text-foreground">Enabled</span>
  <Badge variant={settings?.rate_limits?.enabled ? "default" : "secondary"} className="font-bold">
  {settings?.rate_limits?.enabled ? (
@@ -71,7 +71,7 @@ export default function AdminSettings() {
  )}
  </Badge>
  </div>
- <div className="flex justify-between items-center p-3 bg-surface rounded-lg transition-colors">
+ <div className="flex justify-between items-center p-3 bg-surface rounded-card transition-colors">
  <span className="text-sm font-semibold text-foreground">Requests per minute</span>
  <span className="font-mono text-lg font-bold text-primary">{settings?.rate_limits?.requests_per_minute || "N/A"}</span>
  </div>
@@ -81,7 +81,7 @@ export default function AdminSettings() {
  <Card className="bg-surface border-accent/20 hover:border-accent/40 transition-all transition-colors ">
  <CardHeader className="bg-surface">
  <CardTitle className="flex items-center gap-3 text-xl text-accent">
- <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shadow-md shadow-accent/10">
+ <div className="w-10 h-10 rounded-card bg-accent/20 flex items-center justify-center elevation-flat">
  <Zap className="h-5 w-5 icon-gradient-accent" />
  </div>
  Features
@@ -89,7 +89,7 @@ export default function AdminSettings() {
  <CardDescription className="text-base mt-2">System feature toggles</CardDescription>
  </CardHeader>
  <CardContent className="space-y-4">
- <div className="flex justify-between items-center p-3 bg-surface rounded-lg transition-colors">
+ <div className="flex justify-between items-center p-3 bg-surface rounded-card transition-colors">
  <span className="text-sm font-semibold text-foreground">User Registration</span>
  <Badge variant={settings?.features?.user_registration ? "default" : "secondary"} className="font-bold">
  {settings?.features?.user_registration ? (
@@ -102,7 +102,7 @@ export default function AdminSettings() {
  )}
  </Badge>
  </div>
- <div className="flex justify-between items-center p-3 bg-surface rounded-lg transition-colors">
+ <div className="flex justify-between items-center p-3 bg-surface rounded-card transition-colors">
  <span className="text-sm font-semibold text-foreground">Payment Processing</span>
  <Badge variant={settings?.features?.payment_processing ? "default" : "secondary"} className="font-bold">
  {settings?.features?.payment_processing ? (
@@ -121,7 +121,7 @@ export default function AdminSettings() {
  <Card className="bg-surface border-secondary/30 hover:border-secondary/50 transition-all transition-colors ">
  <CardHeader className="bg-surface ">
  <CardTitle className="flex items-center gap-3 text-xl text-foreground">
- <div className="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center shadow-md shadow-secondary/10">
+ <div className="w-10 h-10 rounded-card bg-secondary/20 flex items-center justify-center elevation-flat">
  <SettingsIcon className="h-5 w-5 text-primary" />
  </div>
  System Information
@@ -129,13 +129,13 @@ export default function AdminSettings() {
  <CardDescription className="text-base mt-2">Current system configuration</CardDescription>
  </CardHeader>
  <CardContent className="space-y-4">
- <div className="flex justify-between items-center p-3 bg-surface rounded-lg transition-colors">
+ <div className="flex justify-between items-center p-3 bg-surface rounded-card transition-colors">
  <span className="text-sm font-semibold text-foreground">Version</span>
  <span className="font-mono text-lg font-bold gradient-text-primary">{settings?.system?.version || "N/A"}</span>
  </div>
- <div className="flex justify-between items-center p-3 bg-surface rounded-lg transition-colors">
+ <div className="flex justify-between items-center p-3 bg-surface rounded-card transition-colors">
  <span className="text-sm font-semibold text-foreground">Environment</span>
- <Badge variant="default" className="bg-primary text-primary-foreground font-bold shadow-md shadow-primary/20">
+ <Badge variant="default" className="bg-primary text-primary-foreground font-bold elevation-flat">
  {settings?.system?.environment || "N/A"}
  </Badge>
  </div>

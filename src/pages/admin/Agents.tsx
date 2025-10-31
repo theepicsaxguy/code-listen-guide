@@ -898,7 +898,7 @@ export default function AdminAgents() {
  </Card>
 
  <Tabs defaultValue="agents" className="mt-8">
- <TabsList className="grid grid-cols-3 lg:w-[420px]">
+        <TabsList className="grid grid-cols-3 lg:w-96">
  <TabsTrigger value="agents" className="gap-2">
  <Zap className="h-4 w-4" />
  Agent UI
@@ -914,7 +914,7 @@ export default function AdminAgents() {
  </TabsList>
 
  <TabsContent value="agents" className="mt-6">
- <ResizablePanelGroup direction="vertical" className="min-h-[720px] rounded-lg">
+        <ResizablePanelGroup direction="vertical" className="min-h-[45rem] rounded-card">
  <ResizablePanel defaultSize={65}>
  <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
  <Card className="border-0">
@@ -950,7 +950,7 @@ export default function AdminAgents() {
  </div>
  </CardHeader>
  <CardContent className="px-0">
- <ScrollArea className="h-[420px] px-4">
+          <ScrollArea className="h-[26.25rem] px-4">
  <div className="space-y-2">
  {conversations.map((conversation) => (
  <Button
@@ -1101,7 +1101,7 @@ export default function AdminAgents() {
  )}
  </CardHeader>
  <CardContent className="flex flex-col gap-6">
- <ScrollArea className="h-[420px] pr-4">
+          <ScrollArea className="h-[26.25rem] pr-4">
  <div className="space-y-6">
  {selectedConversation?.messages.map((message) => {
  const content = renderMessageContent(message);
@@ -1111,7 +1111,7 @@ export default function AdminAgents() {
  className={
  viewOptions.compactMessages
  ? "flex items-start gap-4"
- : "space-y-3 rounded-lg p-4 shadow-sm"
+ : "space-y-3 rounded-card p-4 elevation-flat"
  }
  >
  <div className="flex items-center gap-3">
@@ -1187,7 +1187,7 @@ export default function AdminAgents() {
  </Card>
  )}
  {viewOptions.showAttachments && message.attachments && message.attachments.length > 0 && (
- <Collapsible className="mt-4 rounded-lg">
+ <Collapsible className="mt-4 rounded-card">
  <CollapsibleTrigger asChild>
  <Button variant="ghost" className="w-full justify-between">
  Attachments
@@ -1355,7 +1355,7 @@ export default function AdminAgents() {
  </CardHeader>
  <CardContent>
  <div
- className="relative h-[420px] w-full overflow-hidden rounded-lg bg-background"
+            className="relative h-[26.25rem] w-full overflow-hidden rounded-card bg-background"
  onPointerDown={handlePointerDown}
  onPointerMove={handlePointerMove}
  onPointerUp={handlePointerUp}

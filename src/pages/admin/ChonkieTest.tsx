@@ -90,7 +90,7 @@ export default function ChonkieTest() {
  </div>
 
  {/* Configuration Form */}
- <div className="bg-surface rounded-lg border border-primary/20 p-6 space-y-6 shadow-lg hover:shadow-xl transition-all">
+ <div className="bg-surface rounded-card border border-primary/20 p-6 space-y-6 elevation-raised hover:elevation-overlay transition-all">
  <div className="flex items-center gap-2 text-primary font-semibold mb-4">
  <Settings className="w-5 h-5 icon-gradient" />
  Configuration
@@ -107,7 +107,7 @@ export default function ChonkieTest() {
  value={repoUrl}
  onChange={(e) => setRepoUrl(e.target.value)}
  placeholder="https://github.com/user/repo"
- className="w-full px-4 py-2 bg-card rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+ className="w-full px-4 py-2 bg-card rounded-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
  />
  </div>
 
@@ -120,7 +120,7 @@ export default function ChonkieTest() {
  value={gitRef}
  onChange={(e) => setGitRef(e.target.value)}
  placeholder="main"
- className="w-full px-4 py-2 bg-card rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+ className="w-full px-4 py-2 bg-card rounded-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
  />
  </div>
  </div>
@@ -136,7 +136,7 @@ export default function ChonkieTest() {
  value={includePatterns}
  onChange={(e) => setIncludePatterns(e.target.value)}
  placeholder="*.py, *.ts, src/**/*"
- className="w-full px-4 py-2 bg-card rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+ className="w-full px-4 py-2 bg-card rounded-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
  />
  <p className="text-xs text-muted-foreground mt-1">Leave empty to include all files</p>
  </div>
@@ -150,7 +150,7 @@ export default function ChonkieTest() {
  value={excludePatterns}
  onChange={(e) => setExcludePatterns(e.target.value)}
  placeholder="*test*.py, *.min.js"
- className="w-full px-4 py-2 bg-card rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+ className="w-full px-4 py-2 bg-card rounded-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
  />
  <p className="text-xs text-muted-foreground mt-1">Leave empty to exclude nothing</p>
  </div>
@@ -167,7 +167,7 @@ export default function ChonkieTest() {
  onChange={(e) => setMaxFileSizeKb(Number(e.target.value))}
  min="1"
  max="5000"
- className="w-full px-4 py-2 bg-card rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+ className="w-full px-4 py-2 bg-card rounded-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
  />
  </div>
 
@@ -227,7 +227,7 @@ export default function ChonkieTest() {
  <button
  onClick={handleParse}
  disabled={isLoading || !repoUrl}
- className="flex items-center gap-2 px-8 py-4 bg-primary hover:opacity-90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground font-semibold rounded-lg transition-all shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+ className="flex items-center gap-2 px-8 py-4 bg-primary hover:opacity-90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground font-semibold rounded-card transition-all elevation-raised hover:elevation-overlay hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:elevation-flat"
  >
  {isLoading ? (
  <>

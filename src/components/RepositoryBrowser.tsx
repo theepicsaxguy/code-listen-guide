@@ -201,9 +201,9 @@ export function RepositoryBrowser({ files, onFileSelect, selectedPath }: Reposit
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )}
             {isExpanded ? (
-              <FolderOpen className="h-4 w-4 text-blue-500" />
+              <FolderOpen className="h-4 w-4 text-primary" />
             ) : (
-              <Folder className="h-4 w-4 text-blue-500" />
+              <Folder className="h-4 w-4 text-primary" />
             )}
             <span className="text-sm font-medium">{node.name}</span>
             {node.children && (
@@ -231,7 +231,7 @@ export function RepositoryBrowser({ files, onFileSelect, selectedPath }: Reposit
         <div
           key={node.path}
           className={cn(
-            "flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer",
+            "flex items-center gap-2 py-2 px-3 rounded-card cursor-pointer",
             "transition-all transition-colors",
             isSelected 
               ? "bg-primary/20 border-2 border-primary/50 shadow-md shadow-primary/20" 
@@ -321,7 +321,7 @@ export function RepositoryBrowser({ files, onFileSelect, selectedPath }: Reposit
         )}
 
         {/* File Tree */}
-        <ScrollArea className="max-h-pane-lg rounded-lg border-default">
+        <ScrollArea className="max-h-pane-lg rounded-card border-default">
           <div className="p-2">
             {fileTree.children?.map(node => renderTreeNode(node, 0))}
           </div>

@@ -33,7 +33,7 @@
   --color-muted: hsl(220 10% 60%);
   --color-muted-foreground: hsl(220 8% 68%);
   --color-foreground-muted: hsl(220 10% 60%);
-  --color-border: hsl(220 15% 20%);
+  --color-border: hsl(220 15% 45%);
   --color-ring: hsl(222 100% 62%);
   --color-input: hsl(220 15% 12%);
 
@@ -57,7 +57,7 @@
 
   --color-sidebar-surface: hsl(220 15% 10%);
   --color-sidebar-foreground: hsl(220 20% 88%);
-  --color-sidebar-border: hsl(220 15% 18%);
+  --color-sidebar-border: hsl(220 15% 30%);
   --color-sidebar-accent: hsl(220 15% 16%);
   --color-sidebar-accent-foreground: hsl(220 20% 88%);
 
@@ -95,6 +95,11 @@
   --size-sidebar-expanded: 16.5rem;
   --size-sidebar-collapsed: 5rem;
   --size-toast-width: 26rem;
+  --size-pane-xs: 20rem;
+  --size-pane-sm: 25rem;
+  --size-pane-md: 26.25rem;
+  --size-pane-lg: 37.5rem;
+  --size-pane-xl: 45rem;
   --size-pane-medium: min(60vh, 32rem);
   --size-pane-large: min(70vh, 40rem);
   
@@ -139,7 +144,7 @@
     --color-muted: hsl(220 15% 45%);
     --color-muted-foreground: hsl(220 15% 40%);
     --color-foreground-muted: hsl(220 15% 45%);
-    --color-border: hsl(220 15% 88%);
+    --color-border: hsl(220 15% 58%);
     --color-input: hsl(220 25% 99%);
     --color-card: hsl(220 25% 99%);
     --color-card-foreground: hsl(220 25% 15%);
@@ -149,7 +154,7 @@
     --color-accent-foreground: hsl(220 25% 15%);
     --color-sidebar-surface: hsl(220 20% 98%);
     --color-sidebar-foreground: hsl(220 25% 15%);
-    --color-sidebar-border: hsl(220 15% 90%);
+    --color-sidebar-border: hsl(220 15% 75%);
     --color-sidebar-accent: hsl(220 20% 95%);
     --color-sidebar-accent-foreground: hsl(220 25% 15%);
   }

@@ -36,7 +36,7 @@ export default function AdminDashboard() {
  <div className="h-9 w-48 rounded-md bg-muted/20" />
  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
  {Array.from({ length: 4 }).map((_, index) => (
- <div key={index} className="h-32 rounded-lg bg-muted/20" />
+ <div key={index} className="h-32 rounded-card bg-muted/20" />
  ))}
  </div>
  </div>
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
  </div>
 
  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-card border border-border bg-surface">
  <CardHeader className="space-y-2">
  <CardTitle className="text-lg font-semibold text-text">Recent activity</CardTitle>
  <CardDescription>System activity overview</CardDescription>
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
  </CardContent>
  </Card>
 
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-card border border-border bg-surface">
  <CardHeader className="space-y-2">
  <CardTitle className="text-lg font-semibold text-text">System status</CardTitle>
  <CardDescription>Key infrastructure signals</CardDescription>
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
  </Card>
  </div>
 
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-card border border-border bg-surface">
  <CardHeader className="space-y-2">
  <CardTitle className="text-lg font-semibold text-text">Revenue trend</CardTitle>
  <CardDescription>High-level view of revenue momentum</CardDescription>

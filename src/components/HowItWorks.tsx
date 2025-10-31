@@ -5,8 +5,8 @@ const steps = [
     icon: Code2,
     title: "Repository Analysis",
     description: "We parse your codebase using tree-sitter AST generation, build dependency graphs, and identify key architectural patterns.",
-    gradient: "from-blue-500 to-cyan-400",
-    iconColor: "text-blue-400"
+    gradient: "from-primary to-accent",
+    iconColor: "text-primary"
   },
   {
     icon: FileText,
@@ -19,14 +19,14 @@ const steps = [
     icon: Sparkles,
     title: "Audio Synthesis",
     description: "State-of-the-art TTS models generate professional narration with proper technical pronunciation and natural pacing.",
-    gradient: "from-purple-500 to-pink-400",
-    iconColor: "text-purple-400"
+    gradient: "from-secondary to-accent",
+    iconColor: "text-secondary"
   },
   {
     icon: Headphones,
     title: "Listen & Learn",
     description: "Stream your audiobook with chapter navigation, variable playback speed, and code sync. Learn while you commute, exercise, or relax.",
-    gradient: "from-green-400 to-emerald-400",
+    gradient: "from-success to-accent",
     iconColor: "text-success"
   }
 ];
@@ -60,13 +60,13 @@ export const HowItWorks = () => {
                 <div className="space-y-6 hover-lift">
                   {/* Enhanced icon container with glow */}
                   <div className="relative">
-                    <div className={`relative w-20 h-20 rounded-lg bg-gradient-to-br ${step.gradient} p-[2px] hover:shadow-lg transition-all duration-300`}>
-                      <div className="w-full h-full rounded-lg bg-background flex items-center justify-center">
+                    <div className={`relative w-20 h-20 rounded-card bg-gradient-to-br ${step.gradient} p-[2px] hover:elevation-flat transition-all duration-300`}>
+                      <div className="w-full h-full rounded-card bg-background flex items-center justify-center">
                         <Icon className={`w-10 h-10 ${step.iconColor}`} />
                       </div>
                     </div>
                     {/* Enhanced step number badge */}
-                    <div className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/30">
+                    <div className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold elevation-flat">
                       {index + 1}
                     </div>
                   </div>

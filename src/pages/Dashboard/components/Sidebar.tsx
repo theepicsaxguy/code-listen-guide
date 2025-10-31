@@ -36,7 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  return (
  <aside
  className={cn(
- isCollapsed ? 'w-20' : 'w-[264px]',
+      isCollapsed ? 'w-20' : 'w-sidebar-expanded',
  'flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300',
  )}
  >
@@ -49,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
  </button>
  <div className={cn('flex items-center', isCollapsed ? 'justify-center w-full' : 'gap-3')}>
- <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+ <div className="flex h-10 w-10 items-center justify-center rounded-card bg-primary/15 text-primary">
  <Mic className="h-5 w-5" />
  </div>
  {!isCollapsed && (
@@ -64,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  {navItems.map((item) => {
  const isActive = activeTab === item.id;
  const itemClasses = cn(
- 'group relative flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors',
+ 'group relative flex w-full items-center gap-3 rounded-control px-3 py-3 text-sm font-medium transition-colors',
  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
  isCollapsed && 'justify-center gap-0 px-0',
  isActive
@@ -89,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  </nav>
  {user && (
  <div className="border-t border-sidebar-border px-4 py-4">
- <div className={cn('flex items-center rounded-md bg-sidebar-accent/40 px-3 py-3', isCollapsed ? 'justify-center' : 'gap-3')}>
+ <div className={cn('flex items-center rounded-control bg-sidebar-accent/40 px-3 py-3', isCollapsed ? 'justify-center' : 'gap-3')}>
  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
  {user.name
  .split(' ')
