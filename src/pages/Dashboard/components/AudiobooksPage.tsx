@@ -112,7 +112,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
           </div>
         </CardContent>
       </Card>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {filteredAudiobooks.map((book: Job) => (
           <Card
             key={book.id}
@@ -121,12 +121,12 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
           >
             <CardHeader className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center bg-zinc-900 text-zinc-400">
-                  <GitBranch className="h-5 w-5" />
+                <div className="flex h-12 w-12 items-center justify-center bg-zinc-900">
+                  <GitBranch className="h-5 w-5 text-zinc-500 hover:text-zinc-100" />
                 </div>
                 <div className="min-w-0">
                   <CardTitle className="truncate text-base font-semibold text-zinc-50">{book.repo_name}</CardTitle>
-                  <CardDescription className="text-sm text-zinc-400">
+                  <CardDescription className="text-sm text-zinc-500">
                     {book.metadata?.language || 'Language unknown'}
                   </CardDescription>
                 </div>
@@ -145,19 +145,19 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
               )}
               {book.status !== 'completed' && book.status !== 'failed' && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-zinc-400">
+                  <div className="flex items-center justify-between text-xs text-zinc-500">
                     <span>Processing</span>
                     <span className="font-semibold text-zinc-50">{book.progress_percentage}%</span>
                   </div>
                   <div className="h-2 bg-zinc-900">
                     <div
-                      className="h-full bg-zinc-700"
+                      className="h-full bg-zinc-700 transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
                       style={{ width: `${book.progress_percentage}%` }}
                     />
                   </div>
                 </div>
               )}
-              <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-zinc-400">
+              <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-zinc-300">
                 <div className="flex flex-wrap items-center gap-4">
                   {book.estimated_duration_minutes && (
                     <span className="inline-flex items-center gap-1 font-semibold text-zinc-50">
@@ -189,7 +189,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
               {book.status === 'failed' && book.error_message && (
                 <div className="border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-300">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="mt-0.5 h-4 w-4" />
+                    <AlertCircle className="mt-0.5 h-4 w-4 text-zinc-500" />
                     <span>{book.error_message}</span>
                   </div>
                 </div>

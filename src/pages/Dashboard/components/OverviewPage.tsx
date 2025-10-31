@@ -57,35 +57,35 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-col gap-2">
-            <CardDescription className="text-xs font-medium uppercase tracking-wide text-zinc-400">Total audiobooks</CardDescription>
+            <CardDescription className="text-xs font-medium uppercase tracking-wide text-zinc-500">Total audiobooks</CardDescription>
             <CardTitle className="text-4xl font-semibold text-zinc-50">{audiobooks.length}</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center justify-between text-sm text-zinc-400">
+          <CardContent className="flex items-center justify-between text-sm text-zinc-300">
             <span>{completedBooks.length} completed</span>
-            <Library className="h-5 w-5 text-zinc-400" />
+            <Library className="h-5 w-5 text-zinc-500 hover:text-zinc-100" />
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-col gap-2">
-            <CardDescription className="text-xs font-medium uppercase tracking-wide text-zinc-400">Hours generated</CardDescription>
+            <CardDescription className="text-xs font-medium uppercase tracking-wide text-zinc-500">Hours generated</CardDescription>
             <CardTitle className="text-4xl font-semibold text-zinc-50">{totalHours.toFixed(1)}h</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center justify-between text-sm text-zinc-400">
+          <CardContent className="flex items-center justify-between text-sm text-zinc-300">
             <span>Total audio content</span>
-            <Clock className="h-5 w-5 text-zinc-400" />
+            <Clock className="h-5 w-5 text-zinc-500 hover:text-zinc-100" />
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-col gap-2">
-            <CardDescription className="text-xs font-medium uppercase tracking-wide text-zinc-400">Credits remaining</CardDescription>
+            <CardDescription className="text-xs font-medium uppercase tracking-wide text-zinc-500">Credits remaining</CardDescription>
             <CardTitle className="text-4xl font-semibold text-zinc-50">{user?.credits_remaining ?? 0}</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center justify-between text-sm text-zinc-400">
+          <CardContent className="flex items-center justify-between text-sm text-zinc-300">
             <span>Available credits</span>
-            <Headphones className="h-5 w-5 text-zinc-400" />
+            <Headphones className="h-5 w-5 text-zinc-500 hover:text-zinc-100" />
           </CardContent>
         </Card>
       </div>
@@ -93,19 +93,19 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
       <Card>
         <CardHeader className="space-y-2">
           <CardTitle className="text-xl font-semibold text-zinc-50">Usage this week</CardTitle>
-          <CardDescription className="text-sm text-zinc-400">Daily audiobook generation activity</CardDescription>
+          <CardDescription className="text-sm text-zinc-500">Daily audiobook generation activity</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-end justify-between gap-4">
-            {usageData.map((item) => (
-              <div key={item.date} className="flex flex-1 flex-col items-center gap-2">
+            {usageData.map((item, idx) => (
+              <div key={item.date} className="flex flex-1 flex-col items-center gap-2" style={{ animationDelay: `${idx * 75}ms` }}>
                 <div className="flex w-full flex-1 items-end">
                   <div
-                    className="w-full bg-zinc-800"
+                    className="w-full bg-zinc-800 transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
                     style={{ height: `${(item.count / maxCount) * 100}%`, minHeight: '8px' }}
                   />
                 </div>
-                <span className="text-xs font-medium text-zinc-400 uppercase tracking-wide">{item.date}</span>
+                <span className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{item.date}</span>
               </div>
             ))}
           </div>
@@ -115,11 +115,11 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
       <Card>
         <CardHeader className="space-y-2">
           <CardTitle className="text-xl font-semibold text-zinc-50">Recent activity</CardTitle>
-          <CardDescription className="text-sm text-zinc-400">Your latest audiobook projects</CardDescription>
+          <CardDescription className="text-sm text-zinc-500">Your latest audiobook projects</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {audiobooks.length === 0 ? (
-            <div className="bg-zinc-900 px-6 py-8 text-center text-sm text-zinc-400">
+            <div className="bg-zinc-900 px-6 py-8 text-center text-sm text-zinc-500">
               No audiobooks yet. Start by submitting a repository.
             </div>
           ) : (
@@ -143,32 +143,32 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
                     >
                       <TableCell>
                         <div className="flex items-center gap-4">
-                          <div className="flex h-10 w-10 items-center justify-center bg-zinc-900 text-zinc-400">
-                            <FileCode className="h-4 w-4" />
+                          <div className="flex h-10 w-10 items-center justify-center bg-zinc-900">
+                            <FileCode className="h-4 w-4 text-zinc-500 hover:text-zinc-100" />
                           </div>
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-zinc-50">{job.repo_name}</p>
-                            <p className="text-xs text-zinc-400">{job.metadata?.language ?? 'Unknown'}</p>
+                            <p className="text-xs text-zinc-500">{job.metadata?.language ?? 'Unknown'}</p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="align-middle"><StatusBadge status={job.status} /></TableCell>
-                      <TableCell className="text-sm text-zinc-400 font-normal">{formatDate(job.created_at)}</TableCell>
+                      <TableCell className="text-sm text-zinc-500 font-normal">{formatDate(job.created_at)}</TableCell>
                       <TableCell>
                         {job.estimated_chapters ? (
                           <Badge variant="outline" className="text-xs font-medium">
                             {job.estimated_chapters} chapters
                           </Badge>
                         ) : (
-                          <span className="text-xs text-zinc-400 font-normal">—</span>
+                          <span className="text-xs text-zinc-500 font-normal">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right text-sm text-zinc-400 font-normal">
+                      <TableCell className="text-right text-sm text-zinc-500 font-normal">
                         {job.estimated_duration_minutes ? (
                           formatDuration(job.estimated_duration_minutes)
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
-                            <AlertCircle className="h-3 w-3" />
+                          <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
+                            <AlertCircle className="h-3 w-3 text-zinc-500" />
                             Pending
                           </span>
                         )}

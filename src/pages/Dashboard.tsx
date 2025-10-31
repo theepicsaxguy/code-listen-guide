@@ -168,8 +168,8 @@ const Dashboard: React.FC = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div className="flex-1 overflow-hidden relative">
-        <div className="surface-depth">
-          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-24">
+        <div className="surface-depth mx-auto">
+          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-32">
             <div className="space-y-8">
               <Breadcrumb>
                 <BreadcrumbList>
@@ -188,8 +188,8 @@ const Dashboard: React.FC = () => {
                 </BreadcrumbList>
               </Breadcrumb>
               <div className="flex flex-col gap-8">
-                <h1 className="text-5xl md:text-6xl font-semibold text-zinc-50 leading-[1.1]">{title}</h1>
-                <p className="text-lg leading-relaxed text-zinc-400 font-normal max-w-3xl">{description}</p>
+                <h1 className="text-5xl md:text-6xl 2xl:text-[4.5rem] font-semibold text-zinc-50 leading-[1.1]">{title}</h1>
+                <p className="text-lg leading-relaxed text-zinc-500 font-normal max-w-3xl">{description}</p>
               </div>
             </div>
             <div className={cn('flex flex-col gap-4', (activeTab === 'home' || activeTab === 'audiobooks') && 'md:flex-row md:items-center md:justify-between')}>
@@ -218,7 +218,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <main className="mx-auto max-w-7xl space-y-8 px-6 py-8 relative gap-6">
+        <main className="mx-auto max-w-7xl space-y-8 px-6 py-24 relative gap-8">
           {activeTab === 'home' && <OverviewPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
           {activeTab === 'audiobooks' && (
             <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} searchQuery={searchQuery} />

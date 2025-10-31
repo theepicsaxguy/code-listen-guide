@@ -20,8 +20,8 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     ref={ref} 
     className={cn(
       "bg-gradient-to-b from-zinc-950 to-black text-card-foreground",
-      "shadow-[0_0_40px_rgba(255,255,255,0.03)] transition-colors duration-200",
-      "hover:from-zinc-900 hover:to-zinc-950", /* Brightness shift on hover */
+      "transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
+      "hover:from-zinc-900 hover:to-zinc-950", /* Tone shift on hover */
       className
     )} 
     {...props} 
@@ -45,7 +45,7 @@ CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn("text-sm text-zinc-400 leading-relaxed font-normal", className)} {...props} />
+    <p ref={ref} className={cn("text-sm text-zinc-500 leading-relaxed font-normal", className)} {...props} />
   ),
 );
 CardDescription.displayName = "CardDescription";

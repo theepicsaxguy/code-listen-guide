@@ -26,29 +26,33 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Primary: Pill-shaped cyan/white CTA
+        // Primary: Soft cyan CTA (tone shift on hover)
         default:
-          "bg-cyan-500 text-black hover:brightness-110 active:brightness-95",
+          "bg-[hsl(187,75%,55%)] text-black hover:bg-[hsl(187,75%,60%)] active:bg-[hsl(187,75%,50%)]",
 
-        // Secondary: Transparent with white border
+        // Secondary: Transparent with white border (tone shift)
         secondary:
-          "bg-transparent text-white border border-white/20 hover:border-white/40 hover:brightness-110",
+          "bg-transparent text-white border border-white/20 hover:border-white/40 hover:bg-white/5",
 
-        // Danger: High risk actions
+        // Tertiary: Text-only cyan link
+        tertiary:
+          "bg-transparent text-[hsl(187,75%,55%)] hover:text-[hsl(187,75%,65%)] underline-offset-4 hover:underline",
+
+        // Danger: High risk actions (tone shift)
         danger:
-          "bg-danger text-danger-foreground hover:brightness-110 active:brightness-95",
+          "bg-danger text-danger-foreground hover:bg-danger/90 active:bg-danger/80",
 
-        // Ghost: Transparent with brightness shift
+        // Ghost: Transparent with tone shift
         ghost:
           "text-zinc-300 hover:text-white hover:bg-zinc-900/30",
 
-        // Link: Text-only
+        // Link: Text-only (alias for tertiary)
         link:
-          "text-cyan-500 underline-offset-4 hover:underline hover:text-cyan-400",
+          "bg-transparent text-[hsl(187,75%,55%)] hover:text-[hsl(187,75%,65%)] underline-offset-4 hover:underline",
 
-        // Outline: Transparent with subtle border
+        // Outline: Transparent with subtle border (tone shift)
         outline:
-          "bg-transparent text-zinc-300 border border-zinc-800 hover:border-zinc-700 hover:text-white",
+          "bg-transparent text-zinc-300 border border-zinc-800 hover:border-zinc-700 hover:text-white hover:bg-zinc-900/20",
       },
       size: {
         default: "h-10 px-4 py-2", // Reduced padding

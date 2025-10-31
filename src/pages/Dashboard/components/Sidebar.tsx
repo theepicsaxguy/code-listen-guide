@@ -43,19 +43,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  <div className="relative flex items-center bg-zinc-950 px-3 py-4">
  <button
  onClick={onToggleCollapse}
- className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-zinc-900 p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
+ className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-zinc-900 p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
  aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
  >
  {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
  </button>
  <div className={cn('flex items-center', isCollapsed ? 'justify-center w-full' : 'gap-3')}>
  <div className="flex h-8 w-8 items-center justify-center bg-zinc-900">
- <Mic className="h-4 w-4 text-zinc-400" />
+ <Mic className="h-4 w-4 text-zinc-500 hover:text-zinc-100" />
  </div>
   {!isCollapsed && (
  <div className="min-w-0">
  <p className="text-sm font-semibold text-zinc-50">Codebase Audio</p>
- <p className="text-xs text-zinc-400">Dashboard</p>
+ <p className="text-xs text-zinc-500">Dashboard</p>
  </div>
  )}
  </div>
@@ -69,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  isCollapsed && 'justify-center gap-0 px-0',
  isActive
  ? 'bg-zinc-900 text-zinc-50'
- : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-100',
+ : 'text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-100',
  );
 
  return (
@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  title={isCollapsed ? item.label : undefined}
  >
  {React.cloneElement(item.icon, {
- className: cn('h-5 w-5 text-zinc-400 stroke-[1.5]', !isCollapsed && 'shrink-0', 'hover:text-zinc-100'),
+ className: cn('h-5 w-5 text-zinc-500 stroke-[1.5] transition-colors duration-200', !isCollapsed && 'shrink-0', 'hover:text-zinc-100 active:text-white'),
  })}
  {!isCollapsed && <span className="truncate">{item.label}</span>}
  </button>
@@ -99,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
   {!isCollapsed && (
  <div className="min-w-0">
  <p className="truncate text-sm font-semibold text-zinc-50">{user.name}</p>
- <p className="text-xs text-zinc-400 capitalize">{user.subscription_tier} plan</p>
+ <p className="text-xs text-zinc-500 capitalize">{user.subscription_tier} plan</p>
  </div>
  )}
  </div>

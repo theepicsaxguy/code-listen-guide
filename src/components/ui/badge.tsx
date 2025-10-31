@@ -21,41 +21,41 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        // Info: blue (Comments) - Vercel style
+        // Info: blue (Comments) - Subtle muted neon
         default:
-          "bg-blue-500/10 text-blue-400",
+          "bg-blue-500/5 text-blue-300",
         
         // Success: green (Accessibility)
         success:
-          "bg-green-500/10 text-green-400",
+          "bg-green-500/5 text-green-300",
         
         // Danger: red (Share)
         danger:
-          "bg-red-500/10 text-red-400",
+          "bg-red-500/5 text-red-300",
         
         // Warning: orange (Collaborators)
         warning:
-          "bg-orange-500/10 text-orange-400",
+          "bg-orange-500/5 text-orange-300",
         
         // Info: blue semantic
         info:
-          "bg-blue-500/10 text-blue-400",
+          "bg-blue-500/5 text-blue-300",
         
         // Pending: purple (CMS Drafts)
         pending:
-          "bg-purple-500/10 text-purple-400",
+          "bg-purple-500/5 text-purple-300",
         
         // Primary: cyan/teal (Feature Flags)
         primary:
-          "bg-cyan-500/10 text-cyan-400",
+          "bg-cyan-500/5 text-cyan-300",
         
         // Secondary: purple accent
         secondary:
-          "bg-purple-500/10 text-purple-400",
+          "bg-purple-500/5 text-purple-300",
         
         // Outline: minimal badge with border
         outline:
-          "bg-transparent text-zinc-400 border border-zinc-800",
+          "bg-transparent text-zinc-500 border border-zinc-800",
       },
     },
     defaultVariants: {
