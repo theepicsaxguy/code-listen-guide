@@ -17,37 +17,37 @@ import { cn } from "@/lib/utils";
  * No gradients or glow effects in product UIs
  */
 const badgeVariants = cva(
-  "inline-flex items-center rounded-control border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-control px-2.5 py-0.5 text-xs font-semibold transition-standard focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        // Pending/default: muted on surface
+        // Pending/default: purple semantic color
         default:
-          "border-transparent bg-muted/20 text-muted-foreground",
+          "bg-pending/5 text-pending",
         
-        // Success: completed jobs
+        // Success: completed jobs - green semantic
         success:
-          "border-transparent bg-success/10 text-success border border-success/20",
+          "bg-success/5 text-success",
         
-        // Danger/Failed: error states
+        // Danger/Failed: error states - red semantic
         danger:
-          "border-transparent bg-danger/10 text-danger border border-danger/20",
+          "bg-danger/5 text-danger",
         
-        // Primary/In Progress: active states
+        // Primary/In Progress: active states - cyan
         primary:
-          "bg-primary/10 text-primary border border-primary/20",
+          "bg-primary/5 text-primary",
         
-        // Warning: caution states
+        // Warning: caution states - amber
         warning:
-          "border-transparent bg-warning/10 text-warning border border-warning/20",
+          "bg-warning/5 text-warning",
         
         // Secondary: purple accent (use sparingly)
         secondary:
-          "border-transparent bg-secondary/10 text-secondary border border-secondary/20",
+          "bg-secondary/5 text-secondary",
         
-        // Outline: minimal badge
+        // Outline: minimal badge with border
         outline:
-          "text-text border-border",
+          "bg-surface text-foreground border border-border",
       },
     },
     defaultVariants: {

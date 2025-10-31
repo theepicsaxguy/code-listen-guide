@@ -57,10 +57,10 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="hover:bg-surface-secondary/50 transition-colors">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
           <CardHeader className="flex flex-col gap-2">
-            <CardDescription className="text-xs uppercase tracking-wide">Total audiobooks</CardDescription>
+            <CardDescription className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total audiobooks</CardDescription>
             <CardTitle className="text-4xl font-semibold text-foreground">{audiobooks.length}</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
@@ -68,9 +68,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
             <Library className="h-5 w-5 text-muted-foreground" />
           </CardContent>
         </Card>
-        <Card className="hover:bg-surface-secondary/50 transition-colors">
+        <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
           <CardHeader className="flex flex-col gap-2">
-            <CardDescription className="text-xs uppercase tracking-wide">Hours generated</CardDescription>
+            <CardDescription className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Hours generated</CardDescription>
             <CardTitle className="text-4xl font-semibold text-foreground">{totalHours.toFixed(1)}h</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
@@ -78,9 +78,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
             <Clock className="h-5 w-5 text-muted-foreground" />
           </CardContent>
         </Card>
-        <Card className="hover:bg-surface-secondary/50 transition-colors">
+        <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
           <CardHeader className="flex flex-col gap-2">
-            <CardDescription className="text-xs uppercase tracking-wide">Credits remaining</CardDescription>
+            <CardDescription className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Credits remaining</CardDescription>
             <CardTitle className="text-4xl font-semibold text-foreground">{user?.credits_remaining ?? 0}</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
@@ -90,10 +90,10 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
         </Card>
       </div>
 
-      <Card>
+      <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
         <CardHeader className="space-y-2">
           <CardTitle className="text-xl font-semibold text-foreground">Usage this week</CardTitle>
-          <CardDescription>Daily audiobook generation activity</CardDescription>
+          <CardDescription className="text-sm text-muted-foreground">Daily audiobook generation activity</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-end justify-between gap-4">
@@ -101,7 +101,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
               <div key={item.date} className="flex flex-1 flex-col items-center gap-2">
                 <div className="flex w-full flex-1 items-end">
                   <div
-                    className="w-full bg-primary/25"
+                    className="w-full bg-primary/50 shadow-lg shadow-primary/10"
                     style={{ height: `${(item.count / maxCount) * 100}%`, minHeight: '8px' }}
                   />
                 </div>
@@ -112,14 +112,14 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="hover:shadow-xl hover:shadow-primary/10 transition-standard">
         <CardHeader className="space-y-2">
           <CardTitle className="text-xl font-semibold text-foreground">Recent activity</CardTitle>
-          <CardDescription>Your latest audiobook projects</CardDescription>
+          <CardDescription className="text-sm text-muted-foreground">Your latest audiobook projects</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {audiobooks.length === 0 ? (
-            <div className="bg-surface-secondary/50 px-6 py-8 text-center text-sm text-muted-foreground">
+            <div className="bg-surface px-6 py-8 text-center text-sm text-muted-foreground">
               No audiobooks yet. Start by submitting a repository.
             </div>
           ) : (

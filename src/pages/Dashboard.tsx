@@ -152,7 +152,7 @@ const Dashboard: React.FC = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div className="flex-1 overflow-hidden relative">
-        <div className="bg-surface backdrop-blur">
+        <div className="bg-surface">
           <div className="mx-auto flex max-w-content-default flex-col gap-8 px-6 py-8">
             <div className="space-y-4">
               <Breadcrumb>
@@ -172,8 +172,8 @@ const Dashboard: React.FC = () => {
                 </BreadcrumbList>
               </Breadcrumb>
               <div className="flex flex-col gap-3">
-                <h1 className="text-3xl font-semibold text-foreground leading-tight">{title}</h1>
-                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+                <h1 className="text-3xl font-bold text-foreground leading-tight">{title}</h1>
+                <p className="text-base leading-relaxed text-muted-foreground">{description}</p>
               </div>
             </div>
             <div className={cn('flex flex-col gap-4', (activeTab === 'home' || activeTab === 'audiobooks') && 'md:flex-row md:items-center md:justify-between')}>
