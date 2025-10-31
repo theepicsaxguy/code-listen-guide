@@ -34,6 +34,7 @@ class Payment(Base):
     # Stripe IDs
     stripe_payment_intent_id = Column(String(255), unique=True)
     stripe_charge_id = Column(String(255))
+    stripe_customer_id = Column(String(255), index=True)
 
     # Payment Details
     amount_cents = Column(Integer, nullable=False)
@@ -43,9 +44,19 @@ class Payment(Base):
     # Payment Method
     payment_method_type = Column(String(50))  # card, bank_account, etc.
 
+    # Receipt and Refund Information
+    receipt_url = Column(String(500))
+    refund_status = Column(String(50))  # None, partial, full
+    refunded_amount_cents = Column(Integer)
+
+    # Failure Information (for failed payments)
+    failure_code = Column(String(100))
+    failure_message = Column(String(500))
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     completed_at = Column(DateTime(timezone=True))
+    refunded_at = Column(DateTime(timezone=True))
 
     # Relationships (uncomment when User and Job models are active)
     # user = relationship("User", back_populates="payments")

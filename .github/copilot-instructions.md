@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **Last Updated**: October 28, 2025
+> **Last Updated**: October 31, 2025
 > **Project Status**: MVP in Active Development - Frontend Complete, Backend Core Functional, Services In Progress
 > **Architecture**: Microsoft Agent Framework (Python) + React 19 + FastAPI
 
@@ -1688,28 +1688,43 @@ async def upload_audio_file(
 #### 7. Payment Service (Stripe)
 
 **File:** `backend/services/payment.py`
-**Status:** 0% complete (TODO)
+**Status:** ~ Partial (60% complete)
 **Dependencies:** `stripe`
 
+**What's implemented:**
+- ✅ Stripe client initialization
+- ✅ Payment intent creation with tier-based pricing
+- ✅ Webhook handler for payment events (succeeded, failed, refunded)
+- ✅ Customer creation and management
+- ✅ Checkout session creation for subscriptions
+- ✅ Payment model with full Stripe metadata (as of Oct 31, 2025):
+  - `stripe_payment_intent_id`, `stripe_charge_id`, `stripe_customer_id`
+  - `receipt_url` - Stripe receipt URL
+  - `refund_status` - Refund status (none/partial/full)
+  - `refunded_amount_cents` - Amount refunded
+  - `failure_code`, `failure_message` - Payment failure details
+  - `refunded_at` - Refund timestamp
+- ✅ Admin refund endpoint with extensive Stripe integration
+- ✅ Payment history and export functionality
+
 **What needs to be done:**
-1. Initialize Stripe client
-2. Implement payment intent creation:
-   - Calculate price based on depth tier
-   - Create Stripe PaymentIntent
-   - Return client secret for frontend
-3. Implement webhook handler:
-   - Verify webhook signature
-   - Handle `payment_intent.succeeded` event
-   - Update job payment status
-   - Trigger workflow if payment successful
-4. Implement refund (for failed jobs)
+1. Add retry logic for failed Stripe API calls
+2. Implement subscription update/cancellation flows
+3. Add payment dispute handling
+4. Implement automatic refunds for failed jobs
 
 **Pricing:**
 - Survey: $19 = 1900 cents
 - Standard: $49 = 4900 cents
 - Comprehensive: $99 = 9900 cents
 
-**Estimated effort:** 1-2 days
+**Key Integration Points:**
+- Webhook events trigger workflow execution on successful payment
+- Refunds integrate with Stripe Refund API (searches by payment intent, charge, or metadata)
+- Customer IDs synchronized between User model and Stripe
+- Receipt URLs captured from charge objects
+
+**Estimated effort for remaining work:** 1-2 days
 
 ---
 
@@ -1740,23 +1755,61 @@ async def upload_audio_file(
 - Alembic is configured with `backend/alembic.ini`
 - Initial schema migration: `20241010_initial_schema.py`
 - Workflow checkpoints migration: `20241025_add_workflow_checkpoints.py`
+- Admin user flag migration: `20241028_add_is_admin_to_users.py`
+- Payment metadata migration: `20251031_add_payment_metadata.py`
 
 **Running migrations:**
 ```bash
+# IMPORTANT: Always run from backend directory with venv activated
+cd backend
+source venv/bin/activate
+
 # Apply all migrations
-alembic -c backend/alembic.ini upgrade head
+alembic upgrade head
 
 # Apply specific migration
-alembic -c backend/alembic.ini upgrade 20241025_add_workflow_checkpoints
+alembic upgrade 20241028_add_is_admin
 
-# Rollback to previous version
-alembic -c backend/alembic.ini downgrade 20241010_initial_schema
+# Rollback one version
+alembic downgrade -1
 
-# Create new migration
-alembic -c backend/alembic.ini revision --autogenerate -m "Description"
+# Check current version
+alembic current
+
+# View migration history
+alembic history
+
+# Create new migration (auto-generate from model changes)
+alembic revision --autogenerate -m "Description"
+
+# Stamp database to specific version (when tables already exist)
+alembic stamp 20241028_add_is_admin
 ```
 
-**Status:** Complete, migrations in place
+**Critical Notes:**
+1. **Path Configuration**: `alembic.ini` uses `script_location = db/migrations` (relative to backend/)
+2. **Multiple Heads**: If you see "Multiple head revisions" error:
+   - Run `alembic heads` to see all head revisions
+   - Update new migration's `down_revision` to point to latest head
+   - Or create a merge migration with `alembic merge -m "merge heads"`
+3. **Existing Tables**: If tables already exist but migrations aren't tracked:
+   - Use `alembic stamp <revision>` to mark database at specific version
+   - Then run `alembic upgrade head` to apply new migrations
+4. **Database URL**: Uses `DATABASE_URL` from environment (PostgreSQL in production, SQLite in dev)
+
+**Common Issues:**
+- **"relation already exists"**: Database has tables but no migration history → Use `alembic stamp`
+- **"column does not exist"**: Migration not applied → Run `alembic upgrade head`
+- **Multiple heads**: Two migrations branch from same parent → Update `down_revision` or merge
+
+**Migration Best Practices:**
+1. Always create migrations for model changes (don't modify database directly)
+2. Test migrations with upgrade/downgrade cycle before committing
+3. Include both `upgrade()` and `downgrade()` functions
+4. Add indexes for foreign keys and frequently queried columns
+5. Use `server_default` for non-nullable columns added to existing tables
+
+**Status:** Complete and actively maintained
 
 ---
 
@@ -2318,6 +2371,11 @@ POST /api/v1/jobs/{job_id}/outline/approve - Approve and process payment
 POST /api/v1/payments/create-intent  - Create Stripe payment intent
 POST /api/v1/payments/webhook        - Stripe webhook handler
 GET  /api/v1/payments/history        - User's payment history
+POST /api/v1/payments/refund         - User-initiated refund request
+POST /api/v1/admin/payments/{id}/refund - Admin refund with advanced search
+GET  /api/v1/admin/payments          - Admin payment list with full metadata
+GET  /api/v1/admin/payments/{id}     - Admin payment details
+GET  /api/v1/admin/payments/stats    - Payment statistics dashboard
 ```
 
 **Player (Public):**
@@ -2382,14 +2440,102 @@ tree = await gh.get_tree("owner", "repo", "main")
 
 ---
 
+### Stripe Integration Patterns
+
+**Payment Model Fields:**
+All payments are tracked in the `payments` table with complete Stripe metadata:
+
+```python
+class Payment(Base):
+    # Core identifiers
+    stripe_payment_intent_id    # Payment intent from Stripe
+    stripe_charge_id            # Charge ID (retrieved from payment intent)
+    stripe_customer_id          # Stripe customer ID
+    
+    # Payment details
+    amount_cents                # Amount in cents
+    currency                    # Currency code (usd, eur, etc.)
+    status                      # pending, succeeded, failed, refunded
+    payment_method_type         # card, subscription, etc.
+    
+    # Success metadata
+    receipt_url                 # Stripe receipt URL (from charge object)
+    
+    # Refund tracking
+    refund_status               # none, partial, full
+    refunded_amount_cents       # Amount refunded
+    refunded_at                 # Timestamp of refund
+    
+    # Failure tracking
+    failure_code                # Stripe error code
+    failure_message             # Human-readable error message
+```
+
+**Webhook Event Handling:**
+
+The webhook handler (`backend/api/routes/payments.py`) processes these events:
+
+1. **payment_intent.succeeded**:
+   - Updates payment status to "succeeded"
+   - Captures `stripe_customer_id` from payment intent
+   - Fetches charge to get `receipt_url`
+   - Marks job as "paid" and triggers workflow
+
+2. **payment_intent.payment_failed**:
+   - Updates payment status to "failed"
+   - Captures `failure_code` and `failure_message` from `last_payment_error`
+   - Marks associated job as failed
+
+3. **charge.refunded**:
+   - Updates payment status to "refunded"
+   - Captures refund amount and determines if partial/full
+   - Sets `refund_status` and `refunded_at`
+
+4. **checkout.session.completed** (subscriptions):
+   - Creates payment record with subscription details
+   - Updates user's subscription tier and credits
+   - Associates with `stripe_customer_id`
+
+**Admin Refund Integration:**
+
+The admin refund endpoint has advanced Stripe search capabilities:
+
+```python
+# Strategy 1: Direct refund via payment intent ID
+if payment_intent_id:
+    refund = stripe.Refund.create(payment_intent=payment_intent_id)
+
+# Strategy 2: Search by charge ID
+if charge_id:
+    refund = stripe.Refund.create(charge=charge_id)
+
+# Strategy 3: Search Stripe for matching payments
+# When database lacks Stripe IDs, searches by:
+# - Amount and currency match
+# - Timestamp window (±5 minutes)
+# - User email in metadata
+payment_intents = stripe.PaymentIntent.list(
+    created={'gte': time_window_start, 'lte': time_window_end}
+)
+```
+
+**Critical Integration Points:**
+
+1. **Customer Creation**: Users get Stripe customer IDs on first payment
+2. **Receipt Capture**: Retrieved from charge object after payment success
+3. **Refund Tracking**: Full metadata stored for accounting and support
+4. **Failure Logging**: All payment failures captured for debugging
+
+---
+
 ## Future Roadmap
 
 ### Phase 1: MVP (Current Focus)
 
 - ✅ Frontend UI complete
+- ~ Payment integration (60% complete)
 - ❌ Backend services implementation
 - ❌ Basic workflow orchestration
-- ❌ Payment integration
 - ❌ Audio generation pipeline
 
 ### Phase 2: Polish & Launch
@@ -2552,7 +2698,7 @@ When implementing features, uncomment the relevant packages in `requirements.bas
 
 ---
 
-**Last Updated:** October 28, 2025
+**Last Updated:** October 31, 2025
 **Maintainer:** Project Team
 **Questions?** Open an issue on GitHub
 

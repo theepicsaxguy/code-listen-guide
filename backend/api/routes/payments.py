@@ -133,6 +133,7 @@ async def create_payment_intent_route(
         user_id=current_user.id,
         job_id=job.id,
         stripe_payment_intent_id=intent.id,
+        stripe_customer_id=customer_id,  # Capture customer ID
         amount_cents=intent.amount,
         currency=intent.currency,
         status=intent.status,
@@ -213,11 +214,22 @@ async def stripe_webhook(
             if payment_record:
                 payment_record.status = "succeeded"
                 payment_record.stripe_charge_id = data.get("latest_charge")
+                payment_record.stripe_customer_id = data.get("customer")
                 methods = data.get("payment_method_types") or []
                 payment_record.payment_method_type = (
                     methods[0] if methods else payment_record.payment_method_type
                 )
                 payment_record.completed_at = datetime.utcnow()
+                
+                # Fetch charge details to get receipt URL
+                charge_id = data.get("latest_charge")
+                if charge_id:
+                    try:
+                        charge = stripe.Charge.retrieve(charge_id)
+                        payment_record.receipt_url = charge.get("receipt_url")
+                    except stripe.StripeError as e:
+                        logger.warning(f"Failed to retrieve charge receipt URL: {e}")
+                
                 logger.info(
                     "Payment marked as succeeded",
                     extra={"payment_id": str(payment_record.id), "intent_id": intent_id},
@@ -257,18 +269,18 @@ async def stripe_webhook(
             )
             if payment_record:
                 payment_record.status = "failed"
-                # Store failure information if available
+                # Store failure information
                 last_payment_error = data.get("last_payment_error", {})
                 if last_payment_error:
-                    error_code = last_payment_error.get("code")
-                    error_message = last_payment_error.get("message")
+                    payment_record.failure_code = last_payment_error.get("code")
+                    payment_record.failure_message = last_payment_error.get("message")
                     logger.warning(
                         "Payment failed",
                         extra={
                             "payment_id": str(payment_record.id),
                             "intent_id": intent_id,
-                            "error_code": error_code,
-                            "error_message": error_message,
+                            "error_code": payment_record.failure_code,
+                            "error_message": payment_record.failure_message,
                         },
                     )
 
@@ -330,6 +342,7 @@ async def stripe_webhook(
                                     status="succeeded",
                                     payment_method_type="subscription",
                                     stripe_payment_intent_id=data.get("payment_intent"),
+                                    stripe_customer_id=customer_id,
                                     stripe_charge_id=None,
                                     completed_at=datetime.utcnow(),
                                 )
@@ -362,15 +375,27 @@ async def stripe_webhook(
             )
             if payment_record:
                 payment_record.status = "refunded"
-                # Calculate refunded amount
+                payment_record.refunded_at = datetime.utcnow()
+                
+                # Calculate refund status and amount
                 amount_refunded = data.get("amount_refunded", 0)
+                original_amount = data.get("amount", payment_record.amount_cents)
+                
                 if amount_refunded > 0:
-                    # Store refund information (we may want to add a refunds table later)
+                    payment_record.refunded_amount_cents = amount_refunded
+                    
+                    # Determine refund status: partial or full
+                    if amount_refunded >= original_amount:
+                        payment_record.refund_status = "full"
+                    else:
+                        payment_record.refund_status = "partial"
+                    
                     logger.info(
                         "Payment refunded",
                         extra={
                             "payment_id": str(payment_record.id),
                             "amount_refunded_cents": amount_refunded,
+                            "refund_status": payment_record.refund_status,
                         },
                     )
 

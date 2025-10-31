@@ -484,8 +484,15 @@ async def get_payments(
                 "status": payment.status,
                 "payment_method": payment.payment_method_type,
                 "stripe_payment_intent_id": payment.stripe_payment_intent_id,
+                "stripe_customer_id": payment.stripe_customer_id,
+                "receipt_url": payment.receipt_url,
+                "refund_status": payment.refund_status,
+                "refunded_amount": payment.refunded_amount_cents / 100 if payment.refunded_amount_cents else None,
+                "failure_code": payment.failure_code,
+                "failure_message": payment.failure_message,
                 "created_at": payment.created_at.isoformat() if payment.created_at else None,
                 "completed_at": payment.completed_at.isoformat() if payment.completed_at else None,
+                "refunded_at": payment.refunded_at.isoformat() if payment.refunded_at else None,
             })
 
         return {
@@ -646,8 +653,16 @@ async def get_payment_details(
             "payment_method_type": payment.payment_method_type,
             "stripe_payment_intent_id": payment.stripe_payment_intent_id,
             "stripe_charge_id": payment.stripe_charge_id,
+            "stripe_customer_id": payment.stripe_customer_id,
+            "receipt_url": payment.receipt_url,
+            "refund_status": payment.refund_status,
+            "refunded_amount_cents": payment.refunded_amount_cents,
+            "refunded_amount": payment.refunded_amount_cents / 100 if payment.refunded_amount_cents else None,
+            "failure_code": payment.failure_code,
+            "failure_message": payment.failure_message,
             "created_at": payment.created_at.isoformat() if payment.created_at else None,
             "completed_at": payment.completed_at.isoformat() if payment.completed_at else None,
+            "refunded_at": payment.refunded_at.isoformat() if payment.refunded_at else None,
         }
 
         # Add job details if payment is associated with a job
@@ -745,8 +760,15 @@ async def search_payments(
                 "status": payment.status,
                 "payment_method": payment.payment_method_type,
                 "stripe_payment_intent_id": payment.stripe_payment_intent_id,
+                "stripe_customer_id": payment.stripe_customer_id,
+                "receipt_url": payment.receipt_url,
+                "refund_status": payment.refund_status,
+                "refunded_amount": payment.refunded_amount_cents / 100 if payment.refunded_amount_cents else None,
+                "failure_code": payment.failure_code,
+                "failure_message": payment.failure_message,
                 "created_at": payment.created_at.isoformat() if payment.created_at else None,
                 "completed_at": payment.completed_at.isoformat() if payment.completed_at else None,
+                "refunded_at": payment.refunded_at.isoformat() if payment.refunded_at else None,
             })
 
         return {
