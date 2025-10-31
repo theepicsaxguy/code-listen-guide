@@ -31,7 +31,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
  <Skeleton key={index} className="h-32 rounded-lg" />
  ))}
  </div>
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-lg  bg-surface">
  <CardHeader>
  <CardTitle className="text-lg">Audiobooks</CardTitle>
  <CardDescription>Loading your most recent jobs…</CardDescription>
@@ -74,7 +74,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
 
  return (
  <div className="space-y-6">
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-lg  bg-surface">
  <CardHeader className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
  <div>
  <CardTitle className="text-lg">Filters</CardTitle>
@@ -116,7 +116,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
  {filteredAudiobooks.map((book: Job) => (
  <Card
  key={book.id}
- className="group h-full cursor-pointer rounded-lg border border-border bg-surface transition-colors hover:bg-surface/70"
+ className="group h-full cursor-pointer rounded-lg  bg-surface transition-colors hover:bg-surface/70"
  onClick={() => onNavigateToAudiobook(book.id)}
  >
  <CardHeader className="flex items-start justify-between gap-4">
@@ -199,7 +199,7 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
  ))}
  </div>
  {filteredAudiobooks.length === 0 && (
- <Card className="rounded-lg border border-border bg-surface text-center">
+ <Card className="rounded-lg  bg-surface text-center">
  <CardContent className="space-y-4 py-12">
  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted/20">
  <Library className="h-8 w-8 text-muted-foreground" />

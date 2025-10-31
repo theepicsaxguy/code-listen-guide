@@ -16,7 +16,15 @@
   --line-height-base: 1.55;
   --line-height-heading: 1.25;
   
-  /* Heading scale */
+  /* Semantic Typography Scale */
+  --text-display: 3rem;      /* Largest headings, hero text */
+  --text-heading: 2rem;      /* Main headings */
+  --text-subheading: 1.5rem; /* Section headings */
+  --text-body: 1rem;         /* Body text */
+  --text-body-sm: 0.875rem;   /* Small body text */
+  --text-caption: 0.75rem;    /* Captions, labels, fine print */
+  
+  /* Heading scale (maintained for backward compatibility) */
   --font-size-h1: 2.5rem;
   --font-size-h2: 2rem;
   --font-size-h3: 1.5rem;
@@ -25,50 +33,90 @@
   --font-size-h6: 1rem;
 
   /* Colors - Dark theme (default) - Full HSL values */
+  /* Background hierarchy - creates visual depth */
   --color-background: hsl(220 15% 10%);
-  --color-surface: hsl(220 15% 12%);
-  --color-surface-strong: hsl(220 15% 12%);
-  --color-surface-subtle: hsl(220 15% 16%);
+  --color-surface: hsl(220 15% 13%);
+  --color-surface-secondary: hsl(220 15% 15%);
+  --color-surface-tertiary: hsl(220 15% 17%);
+  --color-surface-strong: hsl(220 15% 18%);
+  --color-surface-subtle: hsl(220 15% 12%);
+  
+  /* Foreground hierarchy */
   --color-foreground: hsl(220 20% 88%);
+  --color-foreground-muted: hsl(220 10% 60%);
   --color-muted: hsl(220 10% 60%);
   --color-muted-foreground: hsl(220 8% 68%);
-  --color-foreground-muted: hsl(220 10% 60%);
-  --color-border: hsl(220 15% 45%);
+  
+  /* Interactive elements - minimal border usage */
+  --color-border: hsl(220 15% 25%); /* Subtle, for inputs/separators only */
   --color-ring: hsl(222 100% 62%);
-  --color-input: hsl(220 15% 12%);
+  --color-input: hsl(220 15% 13%);
 
+  /* Primary action colors with interaction states */
   --color-primary: hsl(222 100% 62%);
+  --color-primary-hover: hsl(222 100% 68%);
+  --color-primary-active: hsl(222 100% 55%);
   --color-primary-foreground: hsl(220 20% 98%);
+  
+  /* Secondary colors */
   --color-secondary: hsl(260 90% 70%);
+  --color-secondary-hover: hsl(260 90% 75%);
+  --color-secondary-active: hsl(260 90% 65%);
   --color-secondary-foreground: hsl(220 20% 98%);
-  --color-accent: hsl(220 15% 16%);
+  
+  /* Accent colors */
+  --color-accent: hsl(220 15% 18%);
+  --color-accent-hover: hsl(220 15% 20%);
+  --color-accent-active: hsl(220 15% 16%);
   --color-accent-foreground: hsl(220 20% 88%);
+  
+  /* Semantic state colors */
   --color-success: hsl(145 60% 45%);
+  --color-success-hover: hsl(145 60% 50%);
   --color-success-foreground: hsl(220 20% 98%);
   --color-warning: hsl(38 90% 60%);
+  --color-warning-hover: hsl(38 90% 65%);
   --color-warning-foreground: hsl(220 25% 15%);
   --color-danger: hsl(0 70% 60%);
+  --color-danger-hover: hsl(0 70% 65%);
   --color-danger-foreground: hsl(220 20% 98%);
+  
+  /* Destructive (alias for danger) */
+  --color-destructive: var(--color-danger);
+  --color-destructive-hover: var(--color-danger-hover);
+  --color-destructive-foreground: var(--color-danger-foreground);
 
-  --color-card: hsl(220 15% 12%);
+  /* Component surfaces */
+  --color-card: hsl(220 15% 13%);
   --color-card-foreground: hsl(220 20% 88%);
-  --color-popover: hsl(220 15% 14%);
+  --color-popover: hsl(220 15% 15%);
   --color-popover-foreground: hsl(220 20% 88%);
 
-  --color-sidebar-surface: hsl(220 15% 10%);
+  /* Sidebar with proper separation */
+  --color-sidebar-surface: hsl(220 15% 11%);
+  --color-sidebar-surface-secondary: hsl(220 15% 13%);
   --color-sidebar-foreground: hsl(220 20% 88%);
-  --color-sidebar-border: hsl(220 15% 30%);
-  --color-sidebar-accent: hsl(220 15% 16%);
+  --color-sidebar-border: hsl(220 15% 20%); /* Subtle, minimal usage */
+  --color-sidebar-accent: hsl(220 15% 18%);
+  --color-sidebar-accent-hover: hsl(220 15% 20%);
   --color-sidebar-accent-foreground: hsl(220 20% 88%);
 
   /* Radius - Unified to 2 tokens */
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
 
-  /* Elevation - Unified tokens */
-  --shadow-flat: 0 1px 2px rgb(15 23 42 / 0.12);
-  --shadow-raised: 0 10px 30px rgb(15 23 42 / 0.18);
-  --shadow-overlay: 0 12px 40px rgb(15 23 42 / 0.25);
+  /* Elevation System - Modern SaaS shadow scale */
+  /* Maps to Tailwind shadow utilities for consistency */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  
+  /* Semantic elevation tokens (deprecated, use shadow-sm/md/lg) */
+  --shadow-flat: var(--shadow-sm);
+  --shadow-raised: var(--shadow-md);
+  --shadow-overlay: var(--shadow-xl);
 
   /* Spacing scale - Base 4px */
   --spacing-0: 0px;
@@ -136,26 +184,56 @@
 
   [data-theme="light"] {
     color-scheme: light;
+    /* Background hierarchy */
     --color-background: hsl(220 20% 98%);
-    --color-surface: hsl(220 25% 99%);
-    --color-surface-strong: hsl(220 25% 99%);
-    --color-surface-subtle: hsl(220 20% 95%);
+    --color-surface: hsl(220 25% 100%);
+    --color-surface-secondary: hsl(220 20% 99%);
+    --color-surface-tertiary: hsl(220 20% 97%);
+    --color-surface-strong: hsl(220 25% 100%);
+    --color-surface-subtle: hsl(220 20% 96%);
+    
+    /* Foreground hierarchy */
     --color-foreground: hsl(220 25% 15%);
+    --color-foreground-muted: hsl(220 15% 45%);
     --color-muted: hsl(220 15% 45%);
     --color-muted-foreground: hsl(220 15% 40%);
-    --color-foreground-muted: hsl(220 15% 45%);
-    --color-border: hsl(220 15% 58%);
-    --color-input: hsl(220 25% 99%);
-    --color-card: hsl(220 25% 99%);
+    
+    /* Interactive elements */
+    --color-border: hsl(220 15% 70%);
+    --color-input: hsl(220 25% 100%);
+    
+    /* Primary interaction states */
+    --color-primary-hover: hsl(222 100% 58%);
+    --color-primary-active: hsl(222 100% 52%);
+    
+    /* Secondary interaction states */
+    --color-secondary-hover: hsl(260 90% 65%);
+    --color-secondary-active: hsl(260 90% 60%);
+    
+    /* Accent interaction states */
+    --color-accent: hsl(220 20% 96%);
+    --color-accent-hover: hsl(220 20% 94%);
+    --color-accent-active: hsl(220 20% 98%);
+    --color-accent-foreground: hsl(220 25% 15%);
+    
+    /* Semantic state colors */
+    --color-success-hover: hsl(145 60% 40%);
+    --color-warning-hover: hsl(38 90% 55%);
+    --color-danger-hover: hsl(0 70% 55%);
+    
+    /* Component surfaces */
+    --color-card: hsl(220 25% 100%);
     --color-card-foreground: hsl(220 25% 15%);
     --color-popover: hsl(220 25% 100%);
     --color-popover-foreground: hsl(220 25% 15%);
-    --color-accent: hsl(220 20% 95%);
-    --color-accent-foreground: hsl(220 25% 15%);
+    
+    /* Sidebar */
     --color-sidebar-surface: hsl(220 20% 98%);
+    --color-sidebar-surface-secondary: hsl(220 20% 99%);
     --color-sidebar-foreground: hsl(220 25% 15%);
-    --color-sidebar-border: hsl(220 15% 75%);
-    --color-sidebar-accent: hsl(220 20% 95%);
+    --color-sidebar-border: hsl(220 15% 80%);
+    --color-sidebar-accent: hsl(220 20% 96%);
+    --color-sidebar-accent-hover: hsl(220 20% 94%);
     --color-sidebar-accent-foreground: hsl(220 25% 15%);
   }
 
@@ -248,17 +326,64 @@
     border-radius: var(--radius-card);
   }
 
-  /* Elevation utilities - unified tokens */
+  /* Elevation utilities - modern shadow-based system */
   .elevation-flat {
-    box-shadow: var(--shadow-flat);
+    box-shadow: var(--shadow-sm);
   }
 
   .elevation-raised {
-    box-shadow: var(--shadow-raised);
+    box-shadow: var(--shadow-md);
   }
 
   .elevation-overlay {
-    box-shadow: var(--shadow-overlay);
+    box-shadow: var(--shadow-xl);
+  }
+  
+  /* Semantic surface utilities */
+  .bg-surface-primary {
+    background-color: var(--color-surface);
+  }
+  
+  .bg-surface-secondary {
+    background-color: var(--color-surface-secondary);
+  }
+  
+  .bg-surface-tertiary {
+    background-color: var(--color-surface-tertiary);
+  }
+  
+  /* Typography semantic utilities */
+  .text-display {
+    font-size: var(--text-display);
+    line-height: var(--line-height-heading);
+    font-weight: 700;
+  }
+  
+  .text-heading {
+    font-size: var(--text-heading);
+    line-height: var(--line-height-heading);
+    font-weight: 700;
+  }
+  
+  .text-subheading {
+    font-size: var(--text-subheading);
+    line-height: var(--line-height-heading);
+    font-weight: 600;
+  }
+  
+  .text-body {
+    font-size: var(--text-body);
+    line-height: var(--line-height-base);
+  }
+  
+  .text-body-sm {
+    font-size: var(--text-body-sm);
+    line-height: var(--line-height-base);
+  }
+  
+  .text-caption {
+    font-size: var(--text-caption);
+    line-height: var(--line-height-base);
   }
 
   /* Motion utilities */

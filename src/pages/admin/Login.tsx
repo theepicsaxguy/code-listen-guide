@@ -41,7 +41,7 @@ export default function AdminLogin() {
 
  return (
  <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
- <Card className="w-full max-w-md rounded-card border border-border bg-surface">
+ <Card className="w-full max-w-md rounded-card  bg-surface">
  <CardHeader className="space-y-3 text-center">
  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-primary/15 text-primary">
  <Lock className="h-5 w-5" />

@@ -140,7 +140,7 @@ const Dashboard: React.FC = () => {
   }, [activeTab, selectedAudiobookId]);
 
   return (
-    <div className="flex min-h-screen bg-background text-text">
+    <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -149,7 +149,7 @@ const Dashboard: React.FC = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div className="flex-1 overflow-hidden">
-        <div className="border-b border-border bg-surface/60 backdrop-blur">
+        <div className="bg-surface-secondary/60 backdrop-blur shadow-sm">
           <div className="mx-auto flex max-w-content-default flex-col gap-6 px-6 py-6">
             <div className="space-y-3">
               <Breadcrumb>

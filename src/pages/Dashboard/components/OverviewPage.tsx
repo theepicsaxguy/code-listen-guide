@@ -38,7 +38,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
  if (isLoading) {
  return (
  <div className="space-y-4">
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-lg  bg-surface">
  <CardHeader>
  <CardTitle className="text-lg">Loading overview…</CardTitle>
  <CardDescription>Fetching the latest audiobooks and metrics.</CardDescription>
@@ -58,7 +58,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
  return (
  <div className="space-y-6">
  <div className="grid gap-4 md:grid-cols-3">
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-lg  bg-surface">
  <CardHeader className="flex flex-col gap-1">
  <CardDescription>Total audiobooks</CardDescription>
  <CardTitle className="text-2xl font-semibold text-text">{audiobooks.length}</CardTitle>
@@ -68,7 +68,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
  <Library className="h-5 w-5 text-muted-foreground" />
  </CardContent>
  </Card>
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-lg  bg-surface">
  <CardHeader className="flex flex-col gap-1">
  <CardDescription>Hours generated</CardDescription>
  <CardTitle className="text-2xl font-semibold text-text">{totalHours.toFixed(1)}h</CardTitle>
@@ -78,7 +78,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
  <Clock className="h-5 w-5 text-muted-foreground" />
  </CardContent>
  </Card>
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-lg  bg-surface">
  <CardHeader className="flex flex-col gap-1">
  <CardDescription>Credits remaining</CardDescription>
  <CardTitle className="text-2xl font-semibold text-text">{user?.credits_remaining ?? 0}</CardTitle>
@@ -90,7 +90,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
  </Card>
  </div>
 
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-lg  bg-surface">
  <CardHeader className="space-y-1">
  <CardTitle className="text-lg font-semibold text-text">Usage this week</CardTitle>
  <CardDescription>Daily audiobook generation activity</CardDescription>
@@ -112,18 +112,18 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigateToAudioboo
  </CardContent>
  </Card>
 
- <Card className="rounded-lg border border-border bg-surface">
+ <Card className="rounded-lg  bg-surface">
  <CardHeader className="space-y-1">
  <CardTitle className="text-lg font-semibold text-text">Recent activity</CardTitle>
  <CardDescription>Your latest audiobook projects</CardDescription>
  </CardHeader>
  <CardContent className="space-y-4">
  {audiobooks.length === 0 ? (
- <div className="rounded-lg border border-border bg-muted/10 px-4 py-6 text-center text-sm text-muted-foreground">
+ <div className="rounded-lg  bg-muted/10 px-4 py-6 text-center text-sm text-muted-foreground">
  No audiobooks yet. Start by submitting a repository.
  </div>
  ) : (
- <div className="rounded-lg border border-border">
+ <div className="rounded-lg ">
  <Table>
  <TableHeader>
  <TableRow>
