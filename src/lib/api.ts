@@ -276,9 +276,79 @@ export class ApiClient {
     
       async getPayments(page = 1) {
         const params = new URLSearchParams({ page: page.toString() });
-        return this.request<{ payments: import('@/types/admin').Payment[]; total: number }>(
+        return this.request<{ payments: import('@/types/admin').Payment[]; total: number; page: number; per_page: number }>(
           `/admin/payments?${params}`
         );
+      }
+
+      async getPaymentDetails(paymentId: string) {
+        return this.request<import('@/types/admin').PaymentDetails>(
+          `/admin/payments/${paymentId}`
+        );
+      }
+
+      async searchPayments(params: {
+        page?: number;
+        query?: string;
+        status?: string;
+        user_email?: string;
+        min_amount?: number;
+        max_amount?: number;
+        start_date?: string;
+        end_date?: string;
+      }) {
+        const searchParams = new URLSearchParams();
+        if (params.page) searchParams.append('page', params.page.toString());
+        if (params.query) searchParams.append('query', params.query);
+        if (params.status) searchParams.append('status', params.status);
+        if (params.user_email) searchParams.append('user_email', params.user_email);
+        if (params.min_amount) searchParams.append('min_amount', params.min_amount.toString());
+        if (params.max_amount) searchParams.append('max_amount', params.max_amount.toString());
+        if (params.start_date) searchParams.append('start_date', params.start_date);
+        if (params.end_date) searchParams.append('end_date', params.end_date);
+        return this.request<{ payments: import('@/types/admin').Payment[]; total: number }>(
+          `/admin/payments/search?${searchParams}`
+        );
+      }
+
+      async getPaymentStats() {
+        return this.request<import('@/types/admin').PaymentStats>(
+          `/admin/payments/stats`
+        );
+      }
+
+      async refundPayment(paymentId: string, data: { amount?: number; reason?: string }) {
+        return this.request<{ success: boolean; refund_id: string; status: string; amount_refunded: number }>(
+          `/admin/payments/${paymentId}/refund`,
+          { method: 'POST', body: data }
+        );
+      }
+
+      async exportPayments(format: 'csv' | 'json', filters?: {
+        start_date?: string;
+        end_date?: string;
+        status?: string;
+      }) {
+        const params = new URLSearchParams({ format });
+        if (filters?.start_date) params.append('start_date', filters.start_date);
+        if (filters?.end_date) params.append('end_date', filters.end_date);
+        if (filters?.status) params.append('status', filters.status);
+        
+        const response = await fetch(`${this.baseURL}/admin/payments/export?${params}`, {
+          headers: this.getHeaders(),
+        });
+        
+        if (!response.ok) throw new Error('Export failed');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `payments_export.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
       }
     
       async getContentVersions(contentId: string) {

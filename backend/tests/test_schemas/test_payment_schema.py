@@ -200,10 +200,9 @@ class TestWebhookSignatureVerification:
 
         # Mock stripe to raise SignatureVerificationError
         def mock_construct_event(payload, signature, secret):
-            raise stripe.error.SignatureVerificationError("Invalid signature", "sig_header")
+            raise stripe.SignatureVerificationError("Invalid signature", "sig_header")
 
         monkeypatch.setattr("stripe.Webhook.construct_event", mock_construct_event)
-        monkeypatch.setattr("stripe.error.SignatureVerificationError", Exception)
 
         # This will return False because signature verification fails
         result = verify_webhook_signature(

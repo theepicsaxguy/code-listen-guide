@@ -43,11 +43,46 @@ export interface Job {
 export interface Payment {
   id: string;
   user_id: string;
+  user_email: string;
+  job_id?: string | null;
   amount: number;
   currency: string;
   status: "succeeded" | "pending" | "failed" | "refunded";
+  payment_method?: string | null;
+  stripe_payment_intent_id?: string | null;
   created_at: string;
-  description?: string;
+  completed_at?: string | null;
+}
+
+export interface PaymentDetails extends Payment {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  job?: {
+    id: string;
+    repo_url: string;
+    repo_name: string;
+    status: string;
+    depth_tier: string;
+  } | null;
+  amount_cents: number;
+  stripe_charge_id?: string | null;
+}
+
+export interface PaymentStats {
+  total_revenue: number;
+  revenue_this_month: number;
+  revenue_last_month: number;
+  total_payments: number;
+  status_counts: Record<string, number>;
+  average_transaction: number;
+  recent_transaction_count: number;
+  revenue_chart_30_days: Array<{
+    date: string;
+    revenue: number;
+  }>;
 }
 
 export interface ContentVersion {

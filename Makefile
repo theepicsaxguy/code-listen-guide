@@ -194,3 +194,14 @@ redis-shell: ## Open Redis CLI
 status: ## Show service status
 	@echo "$(BLUE)Service Status:$(NC)"
 	@docker compose -f docker-compose.dev.yml ps
+
+stripe-webhook: ## Start Stripe webhook listener for local development
+	@echo "$(BLUE)Starting Stripe webhook listener...$(NC)"
+	@echo "$(YELLOW)Forwarding to: http://localhost:8000/api/v1/payments/webhook$(NC)"
+	@echo ""
+	@echo "$(GREEN)Keep this running in a separate terminal$(NC)"
+	@echo "$(YELLOW)To trigger test events:$(NC)"
+	@echo "  stripe trigger payment_intent.succeeded"
+	@echo "  stripe trigger checkout.session.completed"
+	@echo ""
+	./stripe-webhook-listen.sh

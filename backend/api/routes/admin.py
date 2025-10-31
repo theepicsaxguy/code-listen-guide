@@ -16,6 +16,7 @@ from sqlalchemy import func, desc
 from backend.db.session import get_db
 from backend.models.user import User
 from backend.models.job import Job
+from backend.models.payment import Payment
 from backend.api.dependencies import require_admin
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
@@ -460,11 +461,35 @@ async def get_payments(
         per_page = 20
         offset = (page - 1) * per_page
 
-        # TODO: Implement Payment model and queries
-        # For now, return empty list
+        # Query payments with user join for email
+        query = db.query(Payment, User).join(User, Payment.user_id == User.id)
+        
+        # Get total count
+        total = query.count()
+
+        # Get paginated results ordered by most recent first
+        results = query.order_by(desc(Payment.created_at)).offset(offset).limit(per_page).all()
+
+        # Format response
+        payment_list = []
+        for payment, user in results:
+            payment_list.append({
+                "id": str(payment.id),
+                "user_id": str(payment.user_id),
+                "user_email": user.email,
+                "job_id": str(payment.job_id) if payment.job_id else None,
+                "amount": payment.amount_cents / 100,  # Convert cents to dollars
+                "currency": payment.currency or "usd",
+                "status": payment.status,
+                "payment_method": payment.payment_method_type,
+                "stripe_payment_intent_id": payment.stripe_payment_intent_id,
+                "created_at": payment.created_at.isoformat() if payment.created_at else None,
+                "completed_at": payment.completed_at.isoformat() if payment.completed_at else None,
+            })
+
         return {
-            "payments": [],
-            "total": 0,
+            "payments": payment_list,
+            "total": total,
             "page": page,
             "per_page": per_page,
         }
@@ -473,6 +498,483 @@ async def get_payments(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch payments"
+        )
+
+
+@router.get("/payments/{payment_id}")
+async def get_payment_details(
+    payment_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get detailed information about a specific payment.
+
+    Requires admin privileges.
+    """
+    try:
+        # Query payment with user and job info
+        result = db.query(Payment, User, Job).join(
+            User, Payment.user_id == User.id
+        ).outerjoin(
+            Job, Payment.job_id == Job.id
+        ).filter(Payment.id == payment_id).first()
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment not found"
+            )
+
+        payment, user, job = result
+
+        # Build detailed response
+        payment_details = {
+            "id": str(payment.id),
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "name": user.name,
+            },
+            "job": None,
+            "amount_cents": payment.amount_cents,
+            "amount": payment.amount_cents / 100,
+            "currency": payment.currency or "usd",
+            "status": payment.status,
+            "payment_method_type": payment.payment_method_type,
+            "stripe_payment_intent_id": payment.stripe_payment_intent_id,
+            "stripe_charge_id": payment.stripe_charge_id,
+            "created_at": payment.created_at.isoformat() if payment.created_at else None,
+            "completed_at": payment.completed_at.isoformat() if payment.completed_at else None,
+        }
+
+        # Add job details if payment is associated with a job
+        if job:
+            payment_details["job"] = {
+                "id": str(job.id),
+                "repo_url": job.repo_url,
+                "repo_name": job.repo_name,
+                "status": job.status,
+                "depth_tier": job.depth_tier,
+            }
+
+        return payment_details
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching payment {payment_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch payment details"
+        )
+
+
+@router.get("/payments/search")
+async def search_payments(
+    query: Optional[str] = Query(None),
+    status_filter: Optional[str] = Query(None, alias="status"),
+    user_email: Optional[str] = Query(None),
+    min_amount: Optional[float] = Query(None),
+    max_amount: Optional[float] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Search and filter payments with advanced criteria.
+
+    Requires admin privileges.
+    """
+    try:
+        per_page = 20
+        offset = (page - 1) * per_page
+
+        # Start with base query
+        query_obj = db.query(Payment, User).join(User, Payment.user_id == User.id)
+
+        # Apply filters
+        if status_filter:
+            query_obj = query_obj.filter(Payment.status == status_filter)
+
+        if user_email:
+            query_obj = query_obj.filter(User.email.ilike(f"%{user_email}%"))
+
+        if min_amount is not None:
+            query_obj = query_obj.filter(Payment.amount_cents >= int(min_amount * 100))
+
+        if max_amount is not None:
+            query_obj = query_obj.filter(Payment.amount_cents <= int(max_amount * 100))
+
+        if start_date:
+            from datetime import datetime
+            start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            query_obj = query_obj.filter(Payment.created_at >= start_dt)
+
+        if end_date:
+            from datetime import datetime
+            end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+            query_obj = query_obj.filter(Payment.created_at <= end_dt)
+
+        if query:
+            # Search in payment intent ID or charge ID
+            query_obj = query_obj.filter(
+                (Payment.stripe_payment_intent_id.ilike(f"%{query}%")) |
+                (Payment.stripe_charge_id.ilike(f"%{query}%"))
+            )
+
+        # Get total count
+        total = query_obj.count()
+
+        # Get paginated results
+        results = query_obj.order_by(desc(Payment.created_at)).offset(offset).limit(per_page).all()
+
+        # Format response
+        payment_list = []
+        for payment, user in results:
+            payment_list.append({
+                "id": str(payment.id),
+                "user_id": str(payment.user_id),
+                "user_email": user.email,
+                "job_id": str(payment.job_id) if payment.job_id else None,
+                "amount": payment.amount_cents / 100,
+                "currency": payment.currency or "usd",
+                "status": payment.status,
+                "payment_method": payment.payment_method_type,
+                "stripe_payment_intent_id": payment.stripe_payment_intent_id,
+                "created_at": payment.created_at.isoformat() if payment.created_at else None,
+                "completed_at": payment.completed_at.isoformat() if payment.completed_at else None,
+            })
+
+        return {
+            "payments": payment_list,
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+        }
+    except Exception as e:
+        logger.error(f"Error searching payments: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to search payments"
+        )
+
+
+@router.get("/payments/stats")
+async def get_payment_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Get payment statistics for admin dashboard.
+
+    Requires admin privileges.
+    """
+    try:
+        from datetime import datetime, timedelta
+        from sqlalchemy import extract
+
+        # Total revenue (all succeeded payments)
+        total_revenue = db.query(func.sum(Payment.amount_cents)).filter(
+            Payment.status == 'succeeded'
+        ).scalar() or 0
+
+        # Revenue this month
+        now = datetime.utcnow()
+        first_day_of_month = datetime(now.year, now.month, 1)
+        revenue_this_month = db.query(func.sum(Payment.amount_cents)).filter(
+            Payment.status == 'succeeded',
+            Payment.created_at >= first_day_of_month
+        ).scalar() or 0
+
+        # Revenue last month
+        if now.month == 1:
+            first_day_last_month = datetime(now.year - 1, 12, 1)
+            last_day_last_month = datetime(now.year, 1, 1)
+        else:
+            first_day_last_month = datetime(now.year, now.month - 1, 1)
+            last_day_last_month = first_day_of_month
+
+        revenue_last_month = db.query(func.sum(Payment.amount_cents)).filter(
+            Payment.status == 'succeeded',
+            Payment.created_at >= first_day_last_month,
+            Payment.created_at < last_day_last_month
+        ).scalar() or 0
+
+        # Total payment count
+        total_payments = db.query(func.count(Payment.id)).scalar() or 0
+
+        # Payment count by status
+        status_counts = {}
+        status_results = db.query(
+            Payment.status, func.count(Payment.id)
+        ).group_by(Payment.status).all()
+        
+        for status, count in status_results:
+            status_counts[status or 'unknown'] = count
+
+        # Average transaction value
+        avg_transaction = db.query(func.avg(Payment.amount_cents)).filter(
+            Payment.status == 'succeeded'
+        ).scalar() or 0
+
+        # Recent transactions (last 7 days)
+        seven_days_ago = now - timedelta(days=7)
+        recent_transaction_count = db.query(func.count(Payment.id)).filter(
+            Payment.created_at >= seven_days_ago
+        ).scalar() or 0
+
+        # Revenue by day for last 30 days (for charts)
+        thirty_days_ago = now - timedelta(days=30)
+        daily_revenue = db.query(
+            func.date(Payment.created_at).label('date'),
+            func.sum(Payment.amount_cents).label('revenue')
+        ).filter(
+            Payment.status == 'succeeded',
+            Payment.created_at >= thirty_days_ago
+        ).group_by(func.date(Payment.created_at)).order_by(func.date(Payment.created_at)).all()
+
+        revenue_chart = [
+            {
+                "date": str(date),
+                "revenue": float(revenue / 100) if revenue else 0
+            }
+            for date, revenue in daily_revenue
+        ]
+
+        return {
+            "total_revenue": float(total_revenue / 100),
+            "revenue_this_month": float(revenue_this_month / 100),
+            "revenue_last_month": float(revenue_last_month / 100),
+            "total_payments": total_payments,
+            "status_counts": status_counts,
+            "average_transaction": float(avg_transaction / 100),
+            "recent_transaction_count": recent_transaction_count,
+            "revenue_chart_30_days": revenue_chart,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching payment stats: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch payment statistics"
+        )
+
+
+@router.post("/payments/{payment_id}/refund")
+async def refund_payment(
+    payment_id: str,
+    refund_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Issue a refund for a payment through Stripe.
+
+    Requires admin privileges.
+
+    Request body:
+    {
+        "amount": 49.99,  // Optional: partial refund amount in dollars
+        "reason": "requested_by_customer"  // Optional: duplicate, fraudulent, requested_by_customer
+    }
+    """
+    try:
+        import stripe
+        from backend.config import get_settings
+
+        # Get payment from database
+        payment = db.query(Payment).filter(Payment.id == payment_id).first()
+        if not payment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment not found"
+            )
+
+        if payment.status != 'succeeded':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot refund payment with status: {payment.status}"
+            )
+
+        if not payment.stripe_payment_intent_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payment has no Stripe payment intent ID"
+            )
+
+        # Initialize Stripe
+        settings = get_settings()
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+
+        # Prepare refund parameters
+        refund_params = {
+            "payment_intent": payment.stripe_payment_intent_id,
+        }
+
+        # Add optional amount (convert dollars to cents)
+        if "amount" in refund_data:
+            amount_dollars = refund_data["amount"]
+            if amount_dollars <= 0 or amount_dollars > (payment.amount_cents / 100):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid refund amount"
+                )
+            refund_params["amount"] = int(amount_dollars * 100)
+
+        # Add optional reason
+        if "reason" in refund_data:
+            reason = refund_data["reason"]
+            if reason not in ["duplicate", "fraudulent", "requested_by_customer"]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid refund reason"
+                )
+            refund_params["reason"] = reason
+
+        # Create refund in Stripe
+        refund = stripe.Refund.create(**refund_params)
+
+        # Update payment status in database
+        if refund["status"] == "succeeded":
+            payment.status = "refunded"
+            db.commit()
+
+        logger.info(
+            f"Admin {current_user.email} issued refund for payment {payment_id}. "
+            f"Refund ID: {refund['id']}"
+        )
+
+        return {
+            "success": True,
+            "refund_id": refund["id"],
+            "status": refund["status"],
+            "amount_refunded": refund["amount"] / 100,
+        }
+
+    except stripe.StripeError as e:
+        logger.error(f"Stripe error refunding payment {payment_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Stripe error: {str(e)}"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error refunding payment {payment_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process refund"
+        )
+
+
+@router.get("/payments/export")
+async def export_payments(
+    format: str = Query("csv", regex="^(csv|json)$"),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    status_filter: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Export payment data in CSV or JSON format.
+
+    Requires admin privileges.
+    """
+    try:
+        from datetime import datetime
+        import csv
+        import io
+        from fastapi.responses import StreamingResponse
+
+        # Build query
+        query_obj = db.query(Payment, User).join(User, Payment.user_id == User.id)
+
+        # Apply filters
+        if status_filter:
+            query_obj = query_obj.filter(Payment.status == status_filter)
+
+        if start_date:
+            start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            query_obj = query_obj.filter(Payment.created_at >= start_dt)
+
+        if end_date:
+            end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+            query_obj = query_obj.filter(Payment.created_at <= end_dt)
+
+        # Get all results
+        results = query_obj.order_by(Payment.created_at).all()
+
+        if format == "csv":
+            # Create CSV
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow([
+                "Payment ID", "User Email", "Job ID", "Amount", "Currency",
+                "Status", "Payment Method", "Stripe Payment Intent ID",
+                "Created At", "Completed At"
+            ])
+
+            # Write data
+            for payment, user in results:
+                writer.writerow([
+                    str(payment.id),
+                    user.email,
+                    str(payment.job_id) if payment.job_id else "",
+                    payment.amount_cents / 100,
+                    payment.currency or "usd",
+                    payment.status,
+                    payment.payment_method_type or "",
+                    payment.stripe_payment_intent_id or "",
+                    payment.created_at.isoformat() if payment.created_at else "",
+                    payment.completed_at.isoformat() if payment.completed_at else "",
+                ])
+
+            output.seek(0)
+            return StreamingResponse(
+                iter([output.getvalue()]),
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f"attachment; filename=payments_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+                }
+            )
+        else:  # JSON
+            # Create JSON
+            payment_list = []
+            for payment, user in results:
+                payment_list.append({
+                    "id": str(payment.id),
+                    "user_email": user.email,
+                    "user_id": str(payment.user_id),
+                    "job_id": str(payment.job_id) if payment.job_id else None,
+                    "amount": payment.amount_cents / 100,
+                    "currency": payment.currency or "usd",
+                    "status": payment.status,
+                    "payment_method": payment.payment_method_type,
+                    "stripe_payment_intent_id": payment.stripe_payment_intent_id,
+                    "created_at": payment.created_at.isoformat() if payment.created_at else None,
+                    "completed_at": payment.completed_at.isoformat() if payment.completed_at else None,
+                })
+
+            import json
+            json_data = json.dumps({"payments": payment_list, "total": len(payment_list)}, indent=2)
+            
+            return StreamingResponse(
+                iter([json_data]),
+                media_type="application/json",
+                headers={
+                    "Content-Disposition": f"attachment; filename=payments_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+                }
+            )
+
+    except Exception as e:
+        logger.error(f"Error exporting payments: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to export payments"
         )
 
 

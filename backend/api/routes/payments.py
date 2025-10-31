@@ -153,8 +153,8 @@ async def create_payment_intent_route(
 async def stripe_webhook(
     request: Request,
     background: BackgroundTasks,
-    stripe_signature: str = Header(None),
     db: Session = Depends(get_db),
+    stripe_signature: str = Header(None, alias="Stripe-Signature"),
 ):
     """
     Process Stripe webhook events and trigger workflows when payments succeed.
@@ -166,16 +166,31 @@ async def stripe_webhook(
     """
     payload = await request.body()
     event_type = None
+    
+    logger.info("Webhook received", extra={
+        "signature_present": stripe_signature is not None,
+        "payload_length": len(payload),
+        "headers": dict(request.headers)
+    })
+    
+    # Check if signature is present
+    if not stripe_signature:
+        logger.error("Missing Stripe-Signature header")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Missing Stripe-Signature header"
+        )
+    
     try:
         event = get_stripe_service().verify_webhook_signature(payload, stripe_signature)
         event_type = event.get("type")
-        logger.info("Received Stripe webhook", extra={"event_type": event_type})
+        logger.info("Received Stripe webhook", extra={"event_type": event_type, "event_id": event.get("id")})
     except ValueError as exc:
         logger.error("Invalid webhook payload", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload"
         ) from exc
-    except stripe.error.SignatureVerificationError as exc:
+    except stripe.SignatureVerificationError as exc:
         logger.error("Invalid webhook signature", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature"
@@ -272,6 +287,67 @@ async def stripe_webhook(
                 pass
 
         db.commit()
+
+    # Handle checkout.session.completed (for subscriptions)
+    elif event_type == "checkout.session.completed":
+        customer_id = data.get("customer")
+        subscription_id = data.get("subscription")
+        amount_total = data.get("amount_total", 0)  # Amount in cents
+        
+        if customer_id:
+            # Find user by Stripe customer ID
+            user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
+            if user:
+                # Get the subscription details to determine the plan
+                if subscription_id:
+                    try:
+                        subscription = stripe.Subscription.retrieve(subscription_id)
+                        # Get the price lookup key from the subscription
+                        if subscription.get("items") and subscription["items"].get("data"):
+                            price_id = subscription["items"]["data"][0]["price"]["id"]
+                            price = stripe.Price.retrieve(price_id)
+                            plan_lookup_key = price.get("lookup_key", "")
+                            
+                            # Update user's subscription tier
+                            if plan_lookup_key in ["professional", "team", "enterprise"]:
+                                user.subscription_tier = plan_lookup_key
+                                user.subscription_status = "active"
+                                
+                                # Add credits based on plan
+                                credits_to_add = {
+                                    "professional": 10,
+                                    "team": 50,
+                                    "enterprise": 200
+                                }.get(plan_lookup_key, 0)
+                                
+                                user.credits_remaining += credits_to_add
+                                
+                                # Create a payment record for the subscription
+                                payment = Payment(
+                                    user_id=user.id,
+                                    amount_cents=amount_total,
+                                    currency=data.get("currency", "usd"),
+                                    status="succeeded",
+                                    payment_method_type="subscription",
+                                    stripe_payment_intent_id=data.get("payment_intent"),
+                                    stripe_charge_id=None,
+                                    completed_at=datetime.utcnow(),
+                                )
+                                db.add(payment)
+                                
+                                logger.info(
+                                    "User subscription updated",
+                                    extra={
+                                        "user_id": str(user.id),
+                                        "plan": plan_lookup_key,
+                                        "credits_added": credits_to_add,
+                                        "amount_cents": amount_total,
+                                    },
+                                )
+                    except stripe.StripeError as e:
+                        logger.error(f"Failed to retrieve subscription: {e}")
+                
+                db.commit()
 
     # Handle charge.refunded
     elif event_type == "charge.refunded":

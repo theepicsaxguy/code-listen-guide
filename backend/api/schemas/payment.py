@@ -41,12 +41,15 @@ class PaymentResponse(BaseModel):
     
     Includes complete Stripe metadata for payment tracking,
     refund processing, and payment method details.
+    
+    Note: job_id and stripe_payment_intent_id are optional because
+    subscription payments may not be associated with a specific job.
     """
 
     id: uuid.UUID
     user_id: uuid.UUID
-    job_id: uuid.UUID
-    stripe_payment_intent_id: str
+    job_id: Optional[uuid.UUID] = None
+    stripe_payment_intent_id: Optional[str] = None
     amount_cents: int
     currency: str
     status: str
@@ -154,7 +157,7 @@ def verify_webhook_signature(payload: str, signature: str, secret: str) -> bool:
         import stripe
         stripe.Webhook.construct_event(payload, signature, secret)
         return True
-    except stripe.error.SignatureVerificationError:
+    except stripe.SignatureVerificationError:
         return False
     except Exception:
         return False
