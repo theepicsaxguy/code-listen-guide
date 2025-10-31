@@ -509,6 +509,90 @@ export class ApiClient {
           }>;
         }>('/admin/agent-test/agents/list');
       }
+
+      // Workflow Admin endpoints
+      async getWorkflows() {
+        return this.request<{
+          workflows: import('@/lib/types/workflow').WorkflowWithSteps[];
+          total: number;
+        }>('/admin/workflows');
+      }
+
+      async getWorkflow(workflowId: string) {
+        return this.request<import('@/lib/types/workflow').WorkflowWithSteps>(
+          `/admin/workflows/${workflowId}`
+        );
+      }
+
+      async createWorkflow(data: {
+        name: string;
+        description: string;
+      }) {
+        return this.request<import('@/lib/types/workflow').WorkflowDefinition>(
+          '/admin/workflows',
+          {
+            method: 'POST',
+            body: JSON.stringify(data),
+          }
+        );
+      }
+
+      async getWorkflowRevisions(workflowId: string) {
+        return this.request<{
+          revisions: import('@/lib/types/workflow').WorkflowRevision[];
+          total: number;
+        }>(`/admin/workflows/${workflowId}/revisions`);
+      }
+
+      async createWorkflowRevision(
+        workflowId: string,
+        data: import('@/lib/types/workflow').CreateWorkflowRevisionRequest
+      ) {
+        return this.request<import('@/lib/types/workflow').WorkflowRevision>(
+          `/admin/workflows/${workflowId}/revisions`,
+          {
+            method: 'POST',
+            body: JSON.stringify(data),
+          }
+        );
+      }
+
+      async validateWorkflowRevision(workflowId: string, revisionId: string) {
+        return this.request<import('@/lib/types/workflow').ValidationResult>(
+          `/admin/workflows/${workflowId}/revisions/${revisionId}/validate`,
+          {
+            method: 'POST',
+          }
+        );
+      }
+
+      async publishWorkflowRevision(
+        workflowId: string,
+        revisionId: string,
+        data: import('@/lib/types/workflow').PublishRevisionRequest
+      ) {
+        return this.request<import('@/lib/types/workflow').WorkflowRevision>(
+          `/admin/workflows/${workflowId}/revisions/${revisionId}/publish`,
+          {
+            method: 'POST',
+            body: JSON.stringify(data),
+          }
+        );
+      }
+
+      async getAgentRegistry() {
+        return this.request<{
+          agents: import('@/lib/types/workflow').AgentRegistry[];
+          total: number;
+        }>('/admin/agents/registry');
+      }
+
+      async getToolRegistry() {
+        return this.request<{
+          tools: import('@/lib/types/workflow').ToolRegistry[];
+          total: number;
+        }>('/admin/tools/registry');
+      }
     }
     
     export const apiClient = new ApiClient(API_BASE_PATH);

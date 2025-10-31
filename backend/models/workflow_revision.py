@@ -19,6 +19,6 @@ class WorkflowRevision(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     published_at = Column(DateTime)
 
-    # Relationships
-    workflow_definition = relationship("WorkflowDefinition", back_populates="revisions")
-    steps = relationship("WorkflowStep", back_populates="revision")
+    # TODO: Add relationships after initial seeding
+    # workflow_definition = relationship("WorkflowDefinition", back_populates="revisions")
+    # steps = relationship("WorkflowStep", back_populates="revision")

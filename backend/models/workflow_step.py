@@ -23,6 +23,6 @@ class WorkflowStep(Base):
     retry_policy = Column(JSON)
     step_config = Column(JSON)
 
-    # Relationships
-    revision = relationship("WorkflowRevision", back_populates="steps")
-    agent = relationship("AgentRegistry")
+    # TODO: Add relationships after initial seeding
+    # revision = relationship("WorkflowRevision", back_populates="steps")
+    # agent = relationship("AgentRegistry")
