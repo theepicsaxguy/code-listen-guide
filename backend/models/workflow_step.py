@@ -1,9 +1,11 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, JSON, UniqueConstraint
+from datetime import datetime
+import uuid
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, JSON, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
 from backend.db.base import Base
-import uuid
-from datetime import datetime
 
 class WorkflowStep(Base):
     __tablename__ = "workflow_steps"
@@ -23,6 +25,11 @@ class WorkflowStep(Base):
     retry_policy = Column(JSON)
     step_config = Column(JSON)
 
-    # TODO: Add relationships after initial seeding
-    # revision = relationship("WorkflowRevision", back_populates="steps")
-    # agent = relationship("AgentRegistry")
+    revision = relationship(
+        "WorkflowRevision",
+        back_populates="steps",
+    )
+    agent = relationship(
+        "AgentRegistry",
+        back_populates="steps",
+    )

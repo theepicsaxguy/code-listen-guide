@@ -1,9 +1,11 @@
-from sqlalchemy import Column, String, Text, DateTime, JSON, UniqueConstraint
+from datetime import datetime
+import uuid
+
+from sqlalchemy import Column, DateTime, JSON, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
 from backend.db.base import Base
-import uuid
-from datetime import datetime
 
 class AgentRegistry(Base):
     __tablename__ = "agents_registry"
@@ -20,3 +22,8 @@ class AgentRegistry(Base):
     tools = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    steps = relationship(
+        "WorkflowStep",
+        back_populates="agent",
+    )
