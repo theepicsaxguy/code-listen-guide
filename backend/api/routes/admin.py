@@ -867,7 +867,7 @@ async def refund_payment(
                 try:
                     logger.info("Searching Stripe for matching payment intent by amount and timestamp")
                     
-                    # Search within ±5 minutes of payment creation
+                    # Search within ?5 minutes of payment creation
                     time_window_start = int((payment.created_at - timedelta(minutes=5)).timestamp())
                     time_window_end = int((payment.created_at + timedelta(minutes=5)).timestamp())
                     
@@ -1202,14 +1202,67 @@ async def get_content(
     current_user: User = Depends(require_admin),
 ):
     """
-    Get content (jobs) for admin content management.
+    Get content (completed audiobooks/podcasts) for admin content management.
 
-    This endpoint is an alias for /admin/jobs used by the content management page.
+    Returns only completed jobs that have deliverables (podcasts).
 
     Requires admin privileges.
     """
-    # Delegate to the jobs endpoint
-    return await get_all_jobs(page=page, status_filter=status_filter, db=db, current_user=current_user)
+    from backend.models.deliverable import Deliverable
+    
+    per_page = 20
+    offset = (page - 1) * per_page
+
+    # Query completed jobs that have deliverables
+    query = (
+        db.query(Job)
+        .join(Deliverable, Job.id == Deliverable.job_id)
+        .filter(Job.status == "completed")
+        .distinct()
+    )
+
+    if status_filter and status_filter != "all":
+        query = query.filter(Job.status == status_filter)
+
+    total = query.count()
+    jobs = query.order_by(desc(Job.created_at)).offset(offset).limit(per_page).all()
+
+    # Get deliverables for each job
+    job_list = []
+    for job in jobs:
+        deliverables = (
+            db.query(Deliverable)
+            .filter(Deliverable.job_id == job.id)
+            .all()
+        )
+        
+        # Find the full audiobook URL if available
+        full_audiobook = next(
+            (d for d in deliverables if d.file_type == "full_audiobook"),
+            None
+        )
+        
+        job_list.append({
+            "id": str(job.id),
+            "user_id": str(job.user_id),
+            "repo_url": job.repo_url,
+            "repo_name": job.repo_name,
+            "status": job.status,
+            "progress_percentage": job.progress_percentage,
+            "created_at": job.created_at.isoformat() if job.created_at else None,
+            "started_at": job.started_at.isoformat() if job.started_at else None,
+            "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+            "error_message": job.error_message,
+            "audio_url": full_audiobook.file_url if full_audiobook else None,
+            "deliverables_count": len(deliverables),
+        })
+
+    return {
+        "jobs": job_list,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+    }
 
 
 @router.get("/support/tickets")

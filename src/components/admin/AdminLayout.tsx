@@ -18,6 +18,7 @@ import {
  Zap,
  ArrowLeft,
  GitBranch,
+ Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,7 +30,9 @@ const navItems = [
  { path: "/admin/content", label: "Content", icon: BookOpen },
  { path: "/admin/versioning", label: "Versioning", icon: History },
  { path: "/admin/workflows", label: "Workflows", icon: GitBranch },
- { path: "/admin/agents", label: "Agents", icon: Activity },
+ { path: "/admin/agents", label: "Agent Monitoring", icon: Activity },
+ { path: "/admin/agents/manage", label: "Agent Management", icon: Bot },
+ { path: "/admin/plugins", label: "Plugins", icon: FileCode2 },
  { path: "/admin/tracing", label: "Job Tracing", icon: ActivityIcon },
  { path: "/admin/chonkie-test", label: "chonkie Test", icon: FileCode2 },
  { path: "/admin/agent-test", label: "Agent Test", icon: Zap },
@@ -70,7 +73,7 @@ export const AdminLayout = () => {
     <div className="min-h-screen flex bg-background">
       <aside
         className={`${
-          isSidebarCollapsed ? 'w-16' : 'w-sidebar-expanded'
+          isSidebarCollapsed ? 'w-sidebar-collapsed' : 'w-sidebar-expanded'
         } flex flex-col flex-shrink-0 border-r border-sidebar-border bg-sidebar-surface text-sidebar-foreground transition-all duration-300`}
       >
         <div className="relative px-4 py-5 border-b border-sidebar-border">

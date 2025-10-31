@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Activity, DollarSign, HardDrive, TrendingUp, Users } from "lucide-react";
+import { Activity, DollarSign, HardDrive, TrendingUp, Users, Bot, Package, GitBranch } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { StatCard } from "@/components/admin/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +9,29 @@ import { Separator } from "@/components/ui/separator";
 import { apiClient } from "@/lib/api";
 import { DashboardStats } from "@/types/admin";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 export default function AdminDashboard() {
  const [stats, setStats] = useState<DashboardStats | null>(null);
  const [isLoading, setIsLoading] = useState(true);
+
+ const { data: agents } = useQuery({
+   queryKey: ["admin-agents"],
+   queryFn: () => apiClient.listAgents(),
+   staleTime: 60000, // 1 minute
+ });
+
+ const { data: plugins } = useQuery({
+   queryKey: ["admin-plugins"],
+   queryFn: () => apiClient.listPlugins(),
+   staleTime: 60000,
+ });
+
+ const { data: workflows } = useQuery({
+   queryKey: ["admin-workflows"],
+   queryFn: () => apiClient.listWorkflows(),
+   staleTime: 60000,
+ });
 
  useEffect(() => {
  const fetchStats = async () => {
@@ -86,6 +106,50 @@ export default function AdminDashboard() {
  icon={HardDrive}
  description="Total storage"
  />
+ </div>
+
+ <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+ <Link to="/admin/agents/manage">
+ <Card className="rounded-card bg-surface border-zinc-800 transition-card hover:border-primary/50 cursor-pointer">
+ <CardHeader className="space-y-1 px-6 pt-6">
+ <CardTitle className="text-lg font-semibold text-foreground-h2 flex items-center gap-2">
+ <Bot className="h-5 w-5" />
+ Agents
+ </CardTitle>
+ <CardDescription className="text-muted-foreground">
+ {agents?.length ?? 0} registered agents
+ </CardDescription>
+ </CardHeader>
+ </Card>
+ </Link>
+
+ <Link to="/admin/plugins">
+ <Card className="rounded-card bg-surface border-zinc-800 transition-card hover:border-primary/50 cursor-pointer">
+ <CardHeader className="space-y-1 px-6 pt-6">
+ <CardTitle className="text-lg font-semibold text-foreground-h2 flex items-center gap-2">
+ <Package className="h-5 w-5" />
+ Plugins
+ </CardTitle>
+ <CardDescription className="text-muted-foreground">
+ {plugins?.length ?? 0} available plugins
+ </CardDescription>
+ </CardHeader>
+ </Card>
+ </Link>
+
+ <Link to="/admin/workflows">
+ <Card className="rounded-card bg-surface border-zinc-800 transition-card hover:border-primary/50 cursor-pointer">
+ <CardHeader className="space-y-1 px-6 pt-6">
+ <CardTitle className="text-lg font-semibold text-foreground-h2 flex items-center gap-2">
+ <GitBranch className="h-5 w-5" />
+ Workflows
+ </CardTitle>
+ <CardDescription className="text-muted-foreground">
+ {workflows?.length ?? 0} workflow definitions
+ </CardDescription>
+ </CardHeader>
+ </Card>
+ </Link>
  </div>
 
  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
