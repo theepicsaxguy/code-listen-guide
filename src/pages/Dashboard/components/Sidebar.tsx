@@ -12,9 +12,10 @@ interface SidebarProps {
  user: User | null;
  isCollapsed: boolean;
  onToggleCollapse: () => void;
+ isMobileMenuOpen?: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, isCollapsed, onToggleCollapse }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, isCollapsed, onToggleCollapse, isMobileMenuOpen = false }) => {
  const navigate = useNavigate();
 
  const navItems = [
@@ -36,8 +37,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
   return (
     <aside
       className={cn(
-        isCollapsed ? 'w-20 hidden md:flex' : 'w-64',
-        'flex h-full flex-col flex-shrink-0 bg-sidebar-surface text-sidebar-foreground border-r border-sidebar-border transition-[width] duration-300',
+        isCollapsed ? 'w-20' : 'w-64',
+        'flex h-full flex-col flex-shrink-0 bg-sidebar-surface text-sidebar-foreground border-r border-sidebar-border transition-all duration-300',
+        // Mobile: overlay sidebar
+        'fixed md:relative inset-y-0 left-0 z-40 md:z-auto',
+        // Mobile: show/hide based on menu state, hide collapsed sidebar on mobile
+        isCollapsed && !isMobileMenuOpen ? 'hidden md:flex' : '',
+        !isMobileMenuOpen && !isCollapsed ? '-translate-x-full md:translate-x-0' : '',
+        isMobileMenuOpen ? 'translate-x-0' : '',
       )}
     >
     <div className="relative flex items-center px-4 py-5 border-b border-sidebar-border">

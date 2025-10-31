@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, Outlet, Navigate, useNavigate } from "react-router-dom";
 import {
  LayoutDashboard,
@@ -19,9 +19,12 @@ import {
  ArrowLeft,
  GitBranch,
  Bot,
+ Menu,
+ X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 const navItems = [
  { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -46,6 +49,23 @@ export const AdminLayout = () => {
  const navigate = useNavigate();
  const { user, isLoading: isAuthLoading, logout: mainLogout } = useAuth();
  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+ const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+ // Mobile: collapsed by default, desktop: expanded
+ useEffect(() => {
+   const handleResize = () => {
+     if (window.innerWidth < 768) {
+       setIsSidebarCollapsed(true);
+       setIsMobileMenuOpen(false);
+     } else {
+       setIsSidebarCollapsed(false);
+     }
+   };
+
+   handleResize(); // Set initial state
+   window.addEventListener('resize', handleResize);
+   return () => window.removeEventListener('resize', handleResize);
+ }, []);
 
  if (isAuthLoading) {
  return (
@@ -70,11 +90,33 @@ export const AdminLayout = () => {
  };
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-background relative">
+      {/* Mobile menu overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg bg-sidebar-surface border border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors"
+        aria-label="Toggle menu"
+      >
+        {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
       <aside
-        className={`${
-          isSidebarCollapsed ? 'w-sidebar-collapsed' : 'w-sidebar-expanded'
-        } flex flex-col flex-shrink-0 border-r border-sidebar-border bg-sidebar-surface text-sidebar-foreground transition-all duration-300`}
+        className={cn(
+          'flex flex-col flex-shrink-0 border-r border-sidebar-border bg-sidebar-surface text-sidebar-foreground transition-all duration-300',
+          isSidebarCollapsed ? 'w-20' : 'w-64',
+          // Mobile: overlay sidebar
+          'fixed md:relative inset-y-0 left-0 z-40 md:z-auto',
+          // Mobile: show/hide based on menu state
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        )}
       >
         <div className="relative px-4 py-5 border-b border-sidebar-border">
           <button
@@ -108,7 +150,16 @@ export const AdminLayout = () => {
               (item.path !== "/admin" && location.pathname.startsWith(item.path));
 
             return (
-              <Link key={item.path} to={item.path}>
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => {
+                  // Close mobile menu on navigation
+                  if (window.innerWidth < 768) {
+                    setIsMobileMenuOpen(false);
+                  }
+                }}
+              >
                 <Button
                   variant="ghost"
                   className={`relative w-full ${
@@ -150,8 +201,8 @@ export const AdminLayout = () => {
  </div>
  </aside>
 
- <main className="flex-1 overflow-auto bg-background">
- <div className="p-6">
+ <main className="flex-1 overflow-auto bg-background min-w-0">
+ <div className="p-4 md:p-6">
  <div className="mb-4">
  <Button
  variant="ghost"

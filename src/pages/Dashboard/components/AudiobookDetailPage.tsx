@@ -15,6 +15,7 @@ import {
  Share2,
  FileCode
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useAudiobook, useAudiobookChapters } from '../hooks';
 import { formatTime, formatDuration } from '../utils';
 import { copyToClipboard } from '@/lib/error-utils';
