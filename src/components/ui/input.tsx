@@ -4,14 +4,13 @@ import { cn } from "@/lib/utils";
 
 /**
  * Input Component
- * WCAG AA compliant form input with proper focus states
+ * Professional developer tools form input
  * 
  * Specifications:
- * - Height: 40px (h-10) to match Button
- * - Background: bg-input (not white)
- * - Border: 1px border-border, no shadows
- * - Focus: 2px ring-ring at 3:1 contrast
- * - No bright inner shadows or white outlines
+ * - Background: bg-surface (elevated surface)
+ * - Border: border border-border
+ * - Focus: ring-2 ring-primary/50
+ * - No rounded corners on containers (only buttons/inputs)
  */
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
@@ -20,7 +19,11 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
       <input
         type={type}
         className={cn(
-          "flex h-11 w-full rounded-control border-0 bg-surface-secondary px-4 py-2 text-base text-foreground shadow-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:shadow-md disabled:cursor-not-allowed disabled:opacity-50 transition-standard",
+          "flex h-10 w-full rounded-control border border-border bg-surface px-4 py-2 text-sm text-foreground",
+          "placeholder:text-muted-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-0",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          "transition-standard",
           className,
         )}
         ref={ref}
