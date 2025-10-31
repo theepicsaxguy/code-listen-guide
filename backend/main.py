@@ -253,6 +253,8 @@ app.openapi = custom_openapi
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Return structured validation errors."""
+    logger.error(f"Request validation error for {request.method} {request.url.path}: {exc.errors()}")
+    
     # Safely serialize errors by converting to JSON-serializable format
     def sanitize_error(error):
         """Convert validation error to JSON-serializable format."""
@@ -355,7 +357,22 @@ if frontend_dist_exists:
 async def log_requests(request: Request, call_next):
     """Log every request and response."""
     logger.info(f"{request.method} {request.url.path}")
+    
+    # For 400 errors, try to log request body for debugging
+    if request.method in ["POST", "PUT", "PATCH"]:
+        try:
+            body = await request.body()
+            if body:
+                logger.info(f"Request body: {body.decode('utf-8', errors='replace')}")
+        except Exception as e:
+            logger.warning(f"Could not read request body: {e}")
+    
     response = await call_next(request)
+    
+    # Log error responses with more detail
+    if response.status_code >= 400:
+        logger.error(f"Error response: {response.status_code} for {request.method} {request.url.path}")
+    
     logger.info(f"Status: {response.status_code}")
     return response
 

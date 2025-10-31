@@ -320,7 +320,7 @@ export class ApiClient {
       async refundPayment(paymentId: string, data: { amount?: number; reason?: string }) {
         return this.request<{ success: boolean; refund_id: string; status: string; amount_refunded: number }>(
           `/admin/payments/${paymentId}/refund`,
-          { method: 'POST', body: data }
+          { method: 'POST', body: JSON.stringify(data) }
         );
       }
 
