@@ -86,15 +86,15 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
 
           <TabsContent value="cleaned" className="space-y-4">
             {file.summary && (
-              <div className="bg-muted p-4 rounded-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="h-4 w-4" />
+              <div className="rounded-lg border-default bg-surface-subtle p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
                   <span className="font-semibold">AI-Generated Summary</span>
                 </div>
-                <p className="text-sm">{file.summary}</p>
+                <p className="text-sm text-muted">{file.summary}</p>
               </div>
             )}
-            
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold">Cleaned Content</span>
@@ -102,8 +102,8 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
                   {file.content?.split('\n').length || 0} lines
                 </Badge>
               </div>
-              <ScrollArea className="h-[400px] w-full rounded-md border">
-                <pre className="p-4 text-sm">
+              <ScrollArea className="max-h-pane-lg w-full rounded-lg border-default">
+                <pre className="p-4 text-sm text-muted">
                   <code>{file.content || 'No content available'}</code>
                 </pre>
               </ScrollArea>
@@ -112,12 +112,12 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
 
           {hasRawContent && (
             <TabsContent value="raw" className="space-y-4">
-              <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-4 rounded-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <Info className="h-4 w-4 text-yellow-600" />
-                  <span className="font-semibold text-yellow-600">Original File</span>
+              <div className="rounded-lg border-warning/30 bg-warning/10 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Info className="h-4 w-4 text-warning" />
+                  <span className="font-semibold text-warning">Original File</span>
                 </div>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                <p className="text-sm text-warning">
                   This is the original content before chonkie processing. Compare with cleaned version to see transformations.
                 </p>
               </div>
@@ -129,8 +129,8 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
                     {rawData.raw_content?.split('\n').length || 0} lines
                   </Badge>
                 </div>
-                <ScrollArea className="h-[400px] w-full rounded-md border">
-                  <pre className="p-4 text-sm">
+                <ScrollArea className="max-h-pane-lg w-full rounded-lg border-default">
+                  <pre className="p-4 text-sm text-muted">
                     <code>{rawData.raw_content}</code>
                   </pre>
                 </ScrollArea>
@@ -140,26 +140,26 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
 
           {hasRawContent && (
             <TabsContent value="diff" className="space-y-4">
-              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-4 rounded-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <Diff className="h-4 w-4 text-blue-600" />
-                  <span className="font-semibold text-blue-600">Content Transformations</span>
+              <div className="rounded-lg border-primary/30 bg-primary/10 p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Diff className="h-4 w-4 text-primary" />
+                  <span className="font-semibold text-primary">Content Transformations</span>
                 </div>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
+                <p className="text-sm text-primary">
                   Shows what chonkie changed: removed comments, normalized whitespace, extracted code blocks, etc.
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <span className="text-sm font-semibold text-red-600">Original Size</span>
-                  <div className="text-2xl font-bold">
+                  <span className="text-sm font-semibold text-danger">Original Size</span>
+                  <div className="text-2xl font-bold text-danger">
                     {formatBytes(rawData.raw_content?.length || 0)}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <span className="text-sm font-semibold text-green-600">Cleaned Size</span>
-                  <div className="text-2xl font-bold">
+                  <span className="text-sm font-semibold text-success">Cleaned Size</span>
+                  <div className="text-2xl font-bold text-success">
                     {formatBytes(file.content?.length || 0)}
                   </div>
                 </div>
@@ -183,8 +183,8 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
                 </div>
               </div>
 
-              <ScrollArea className="h-[300px] w-full rounded-md border">
-                <div className="p-4 text-sm font-mono space-y-0.5">
+              <ScrollArea className="max-h-pane-md w-full rounded-lg border-default">
+                <div className="space-y-0.5 p-4 text-sm font-mono text-muted">
                   {(() => {
                     const rawLines = rawData.raw_content?.split('\n') || [];
                     const cleanedLines = file.content?.split('\n') || [];
@@ -202,21 +202,21 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
                         );
                       } else if (!cleanedLine) {
                         return (
-                          <div key={i} className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300">
+                          <div key={i} className="rounded-sm bg-danger/10 px-2 py-1 text-danger">
                             -{i + 1}: {rawLine}
                           </div>
                         );
                       } else if (!rawLine) {
                         return (
-                          <div key={i} className="bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300">
+                          <div key={i} className="rounded-sm bg-success/10 px-2 py-1 text-success">
                             +{i + 1}: {cleanedLine}
                           </div>
                         );
                       } else {
                         return (
-                          <div key={i} className="bg-yellow-100 dark:bg-yellow-950">
-                            <div className="text-red-700 dark:text-red-300">-{i + 1}: {rawLine}</div>
-                            <div className="text-green-700 dark:text-green-300">+{i + 1}: {cleanedLine}</div>
+                          <div key={i} className="space-y-1 rounded-sm bg-warning/10 px-2 py-1">
+                            <div className="text-danger">-{i + 1}: {rawLine}</div>
+                            <div className="text-success">+{i + 1}: {cleanedLine}</div>
                           </div>
                         );
                       }

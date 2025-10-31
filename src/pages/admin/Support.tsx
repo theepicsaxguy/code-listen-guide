@@ -93,37 +93,48 @@ export default function Support() {
  setShowCannedReplies(false);
  };
 
- const getPriorityIcon = (priority: string) => {
- switch (priority) {
- case "urgent":
- return <AlertCircle className="h-4 w-4 text-red-500" />;
- case "high":
- return <AlertCircle className="h-4 w-4 text-orange-500" />;
- default:
- return <Clock className="h-4 w-4 text-muted-foreground" />;
- }
- };
+  const getPriorityIcon = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+        return <AlertCircle className="h-4 w-4 text-danger" aria-hidden="true" />;
+      case "high":
+        return <AlertCircle className="h-4 w-4 text-warning" aria-hidden="true" />;
+      default:
+        return <Clock className="h-4 w-4 text-muted" aria-hidden="true" />;
+    }
+  };
 
- const getStatusColor = (status: string) => {
- const colors: Record<string, string> = {
- open: "bg-blue-500/10 text-blue-500",
- in_progress: "bg-purple-500/10 text-purple-500",
- waiting: "bg-yellow-500/10 text-yellow-500",
- resolved: "bg-green-500/10 text-green-500",
- closed: "bg-gray-500/10 text-muted-foreground",
- };
- return colors[status] || colors.open;
- };
+  const getStatusVariant = (status: string): "primary" | "secondary" | "warning" | "success" | "danger" => {
+    switch (status) {
+      case "open":
+        return "primary";
+      case "in_progress":
+        return "secondary";
+      case "waiting":
+        return "warning";
+      case "resolved":
+        return "success";
+      case "closed":
+        return "secondary";
+      default:
+        return "secondary";
+    }
+  };
 
- const getPriorityColor = (priority: string) => {
- const colors: Record<string, string> = {
- urgent: "bg-red-500/10 text-red-500",
- high: "bg-orange-500/10 text-orange-500",
- medium: "bg-yellow-500/10 text-yellow-500",
- low: "bg-gray-500/10 text-muted-foreground",
- };
- return colors[priority] || colors.medium;
- };
+  const getPriorityVariant = (priority: string): "danger" | "warning" | "secondary" => {
+    switch (priority) {
+      case "urgent":
+        return "danger";
+      case "high":
+        return "warning";
+      case "medium":
+        return "secondary";
+      case "low":
+        return "secondary";
+      default:
+        return "secondary";
+    }
+  };
 
  const handleFilterChange = (key: "status" | "priority" | "category", value: string) => {
  setFilters((current) => ({
@@ -134,16 +145,14 @@ export default function Support() {
 
  const tickets = ticketsData?.tickets ?? [];
 
- return (
- <div className="p-8 space-y-6">
- <div>
- <h1 className="text-3xl font-bold bg-primary bg-clip-text text-transparent">
- Support Tools
- </h1>
- <p className="text-muted-foreground mt-2">Manage customer tickets and provide support</p>
- </div>
+  return (
+    <div className="space-y-6 p-8">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Support tools</h1>
+        <p className="mt-2 text-muted">Manage customer tickets and provide support.</p>
+      </div>
 
- <Card className="bg-card">
+      <Card>
  <CardHeader>
  <CardTitle>Filters</CardTitle>
  </CardHeader>
@@ -204,24 +213,24 @@ export default function Support() {
 
  <div className="grid gap-4">
  {isTicketsLoading ? (
- <Card className="bg-card">
+          <Card>
  <CardContent className="p-6 text-center text-muted-foreground">
  Loading tickets...
  </CardContent>
  </Card>
  ) : tickets.length === 0 ? (
- <Card className="bg-card">
+          <Card>
  <CardContent className="p-6 text-center text-muted-foreground">
  No tickets found for the selected filters
  </CardContent>
  </Card>
  ) : (
  tickets.map((ticket: SupportTicket) => (
- <Card
- key={ticket.id}
- className="bg-card hover:shadow-lg transition-shadow cursor-pointer"
- onClick={() => setSelectedTicket(ticket.id)}
- >
+            <Card
+              key={ticket.id}
+              className="cursor-pointer transition-standard hover:elevation-flat"
+              onClick={() => setSelectedTicket(ticket.id)}
+            >
  <CardContent className="p-6">
  <div className="flex items-start justify-between">
  <div className="space-y-2 flex-1">
@@ -233,10 +242,10 @@ export default function Support() {
  {ticket.user_email} • {new Date(ticket.created_at).toLocaleString()}
  </p>
  <div className="flex gap-2">
- <Badge className={getStatusColor(ticket.status)}>
+                      <Badge variant={getStatusVariant(ticket.status)}>
  {ticket.status.replace("_", " ")}
  </Badge>
- <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
+                      <Badge variant={getPriorityVariant(ticket.priority)}>{ticket.priority}</Badge>
  <Badge variant="outline">{ticket.category}</Badge>
  </div>
  {ticket.context && (
@@ -259,7 +268,7 @@ export default function Support() {
  </div>
  )}
  </div>
- <MessageSquare className="h-5 w-5 text-muted-foreground" />
+        <MessageSquare className="h-5 w-5 text-muted" aria-hidden="true" />
  </div>
  </CardContent>
  </Card>
@@ -267,8 +276,8 @@ export default function Support() {
  )}
  </div>
 
- <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
- <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
+        <DialogContent className="max-h-pane-lg max-w-4xl overflow-y-auto">
  <DialogHeader>
  <DialogTitle>{ticketDetail?.subject}</DialogTitle>
  <DialogDescription>
@@ -310,7 +319,7 @@ export default function Support() {
  <div className="space-y-3">
  <div>
  <p className="text-xs text-muted-foreground">Priority</p>
- <Badge className={getPriorityColor(ticketDetail.priority)}>
+          <Badge variant={getPriorityVariant(ticketDetail.priority)}>
  {ticketDetail.priority}
  </Badge>
  </div>
@@ -321,8 +330,8 @@ export default function Support() {
  </div>
  </div>
 
- {ticketDetail.context && (
- <Card className="bg-card">
+        {ticketDetail.context && (
+          <Card>
  <CardHeader>
  <CardTitle className="text-sm">Context</CardTitle>
  </CardHeader>
@@ -330,34 +339,34 @@ export default function Support() {
  {ticketDetail.context.job_id && (
  <div className="flex items-center justify-between">
  <span className="text-sm text-muted-foreground">Job ID</span>
- <Button size="sm" variant="ghost" asChild>
- <a href={`/admin/agents?job=${ticketDetail.context.job_id}`}>
- {ticketDetail.context.job_id.slice(0, 8)}
- <ExternalLink className="h-3 w-3 ml-1" />
- </a>
- </Button>
+          <Button size="sm" variant="ghost" asChild className="transition-standard">
+            <a href={`/admin/agents?job=${ticketDetail.context.job_id}`}>
+              {ticketDetail.context.job_id.slice(0, 8)}
+              <ExternalLink className="ml-1 h-4 w-4" aria-hidden="true" />
+            </a>
+          </Button>
  </div>
  )}
  {ticketDetail.context.content_id && (
  <div className="flex items-center justify-between">
  <span className="text-sm text-muted-foreground">Content ID</span>
- <Button size="sm" variant="ghost" asChild>
- <a href={`/admin/content?id=${ticketDetail.context.content_id}`}>
- {ticketDetail.context.content_id.slice(0, 8)}
- <ExternalLink className="h-3 w-3 ml-1" />
- </a>
- </Button>
+          <Button size="sm" variant="ghost" asChild className="transition-standard">
+            <a href={`/admin/content?id=${ticketDetail.context.content_id}`}>
+              {ticketDetail.context.content_id.slice(0, 8)}
+              <ExternalLink className="ml-1 h-4 w-4" aria-hidden="true" />
+            </a>
+          </Button>
  </div>
  )}
  {ticketDetail.context.payment_id && (
  <div className="flex items-center justify-between">
  <span className="text-sm text-muted-foreground">Payment ID</span>
- <Button size="sm" variant="ghost" asChild>
- <a href={`/admin/payments?id=${ticketDetail.context.payment_id}`}>
- {ticketDetail.context.payment_id.slice(0, 8)}
- <ExternalLink className="h-3 w-3 ml-1" />
- </a>
- </Button>
+          <Button size="sm" variant="ghost" asChild className="transition-standard">
+            <a href={`/admin/payments?id=${ticketDetail.context.payment_id}`}>
+              {ticketDetail.context.payment_id.slice(0, 8)}
+              <ExternalLink className="ml-1 h-4 w-4" aria-hidden="true" />
+            </a>
+          </Button>
  </div>
  )}
  </CardContent>
@@ -369,14 +378,14 @@ export default function Support() {
  <div className="space-y-4">
  <h4 className="font-semibold">Conversation</h4>
  {ticketDetail.messages?.map((message: TicketMessage) => (
- <div
- key={message.id}
- className={`p-4 rounded-lg ${
- message.author_type === "admin"
- ? "bg-primary/5"
- : "bg-muted"
- }`}
- >
+          <div
+            key={message.id}
+            className={`rounded-lg p-4 ${
+              message.author_type === "admin"
+                ? "bg-primary/10"
+                : "bg-surface-subtle"
+            }`}
+          >
  <div className="flex items-center justify-between mb-2">
  <span className="font-medium text-sm">
  {message.author_name}
@@ -400,26 +409,27 @@ export default function Support() {
  <div className="space-y-3">
  <div className="flex items-center justify-between">
  <h4 className="font-semibold">Reply</h4>
- <Button
- size="sm"
- variant="outline"
- onClick={() => setShowCannedReplies(!showCannedReplies)}
- >
- <Zap className="h-3 w-3 mr-1" />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowCannedReplies(!showCannedReplies)}
+          className="transition-standard"
+        >
+          <Zap className="mr-1 h-4 w-4" aria-hidden="true" />
  Canned Replies
  </Button>
  </div>
 
  {showCannedReplies && (
- <div className="grid gap-2 p-3 bg-muted rounded-lg">
+        <div className="grid gap-2 rounded-lg bg-surface-subtle p-3">
  {cannedRepliesData?.replies?.map((reply: CannedReply) => (
- <Button
- key={reply.id}
- size="sm"
- variant="ghost"
- className="justify-start h-auto p-2 text-left"
- onClick={() => applyCannedReply(reply.content)}
- >
+          <Button
+            key={reply.id}
+            size="sm"
+            variant="ghost"
+            className="h-auto justify-start p-2 text-left transition-standard"
+            onClick={() => applyCannedReply(reply.content)}
+          >
  <div>
  <div className="font-medium text-xs">{reply.title}</div>
  <div className="text-xs text-muted-foreground line-clamp-1">
@@ -431,20 +441,20 @@ export default function Support() {
  </div>
  )}
 
- <Textarea
- placeholder="Type your reply..."
- value={replyContent}
- onChange={(e) => setReplyContent(e.target.value)}
- rows={4}
- />
- <Button
- onClick={handleReply}
- disabled={!replyContent.trim() || replyMutation.isPending}
- className="w-full"
- >
- <Send className="h-4 w-4 mr-2" />
- Send Reply
- </Button>
+      <Textarea
+        placeholder="Type your reply..."
+        value={replyContent}
+        onChange={(e) => setReplyContent(e.target.value)}
+        rows={4}
+      />
+      <Button
+        onClick={handleReply}
+        disabled={!replyContent.trim() || replyMutation.isPending}
+        className="w-full transition-standard"
+      >
+        <Send className="h-4 w-4 mr-2" />
+        Send Reply
+      </Button>
  </div>
  </div>
  )}

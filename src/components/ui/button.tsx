@@ -22,39 +22,39 @@ import { cn } from "@/lib/utils";
  * - Focus: 2px ring-primary at 3:1 contrast
  */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-colors transition-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         // Primary: Uses --primary token
         default:
-          "bg-primary text-primary-foreground hover:brightness-110 active:brightness-125",
-        
+          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80",
+
         // Secondary: Surface with border
         secondary:
-          "bg-surface text-text border border-border hover:bg-accent hover:text-accent-foreground",
-        
+          "border border-border bg-surface text-foreground hover:bg-accent hover:text-accent-foreground",
+
         // Danger: High risk actions
         danger:
-          "bg-danger text-danger-foreground hover:brightness-110 active:brightness-125",
-        
+          "bg-danger text-danger-foreground hover:bg-danger/90 active:bg-danger/80",
+
         // Ghost: Transparent with hover
         ghost:
-          "hover:bg-accent hover:text-accent-foreground",
-        
+          "text-foreground hover:bg-accent hover:text-accent-foreground",
+
         // Link: Text-only
         link:
           "text-primary underline-offset-4 hover:underline",
-        
+
         // Outline: Border only (no white)
         outline:
-          "border border-border bg-transparent text-text hover:bg-accent hover:text-accent-foreground",
+          "border border-border bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground",
       },
       size: {
-        default: "h-10 px-4 py-2",       // 40px height
-        sm: "h-9 px-3 text-xs",          // 36px height
-        lg: "h-11 px-6 text-base",       // 44px height
-        icon: "h-10 w-10",               // Square
+        default: "h-11 px-5", // 44px height
+        sm: "h-10 px-4 text-sm",
+        lg: "h-12 px-6 text-base",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {

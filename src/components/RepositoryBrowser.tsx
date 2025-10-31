@@ -278,20 +278,20 @@ export function RepositoryBrowser({ files, onFileSelect, selectedPath }: Reposit
       <CardContent className="space-y-4">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted" aria-hidden="true" />
           <Input
             placeholder="Search files..."
-            className="pl-8"
+            className="pl-10 pr-12"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           {searchQuery && (
             <Button
               variant="ghost"
-              size="sm"
-              className="absolute right-1 top-1 h-7 w-7 p-0"
+              size="icon"
+              className="absolute right-2 top-2"
               onClick={() => setSearchQuery('')}
-            >
+              >
               <X className="h-4 w-4" />
             </Button>
           )}
@@ -321,14 +321,14 @@ export function RepositoryBrowser({ files, onFileSelect, selectedPath }: Reposit
         )}
 
         {/* File Tree */}
-        <ScrollArea className="h-[500px] rounded-md border">
+        <ScrollArea className="max-h-pane-lg rounded-lg border-default">
           <div className="p-2">
             {fileTree.children?.map(node => renderTreeNode(node, 0))}
           </div>
         </ScrollArea>
 
         {/* Stats */}
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted">
           Showing {filteredFiles.length} of {Object.keys(files).length} files
         </div>
       </CardContent>
