@@ -1,8 +1,9 @@
-import { Check, Sparkles, Zap, Crown } from "lucide-react";
+import { Check, Crown, Sparkles, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
 
 const tiers = [
   {
@@ -14,12 +15,11 @@ const tiers = [
       "15-30 min generation time",
       "10-20 chapters",
       "Standard voice quality",
-      "Basic code analysis",
+      "Baseline code analysis",
       "1-2 hour audio length",
-      "Download MP3"
+      "Downloadable MP3",
     ],
-    gradient: "from-blue-500 to-cyan-400",
-    popular: false
+    popular: false,
   },
   {
     name: "Standard",
@@ -32,12 +32,11 @@ const tiers = [
       "Premium voice quality",
       "Deep code analysis",
       "3-5 hour audio length",
-      "Download MP3",
+      "Downloadable MP3",
       "Chapter navigation",
-      "Variable playback speed"
+      "Variable playback speed",
     ],
-    gradient: "from-primary to-accent",
-    popular: true
+    popular: true,
   },
   {
     name: "Comprehensive",
@@ -47,127 +46,92 @@ const tiers = [
     features: [
       "35-50 min generation time",
       "40-60 chapters",
-      "Ultra premium voices",
+      "Expert voice talent",
       "Expert-level analysis",
       "6-10 hour audio length",
-      "Download MP3",
+      "Downloadable MP3",
       "Chapter navigation",
       "Variable playback speed",
       "Code synchronization",
-      "Priority generation"
+      "Priority generation",
     ],
-    gradient: "from-purple-500 to-pink-400",
-    popular: false
-  }
+    popular: false,
+  },
 ];
 
 export const Pricing = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="px-6 py-24 relative overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/10 to-transparent" />
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] animate-float" style={{ animationDuration: '20s' }} />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/15 rounded-full blur-[120px] animate-float" style={{ animationDuration: '25s', animationDelay: '3s' }} />
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center space-y-4 mb-20">
-          <h2 className="text-4xl md:text-5xl font-bold">
-            Simple, <span className="gradient-text-accent">Transparent</span> Pricing
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Choose the depth that matches your learning goals
+    <section className="section-spacing bg-background">
+      <div className="mx-auto max-w-content px-4 sm:px-6">
+        <div className="mb-12 space-y-4 text-center">
+          <h2 className="text-balance text-3xl font-semibold sm:text-4xl">Simple, transparent pricing</h2>
+          <p className="mx-auto max-w-2xl text-muted">
+            Choose the depth that matches your learning goals. Every plan includes high quality narration and downloadable audio files.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {tiers.map((tier, index) => {
+        <div className="grid gap-6 md:grid-cols-3">
+          {tiers.map((tier) => {
             const Icon = tier.icon;
             return (
               <Card
-                key={index}
-                className={`p-8 bg-card transition-all duration-500 hover-lift relative overflow-hidden group ${
-                  tier.popular ? 'scale-105' : ''
-                }`}
+                key={tier.name}
+                className={`flex h-full flex-col gap-6 p-6 transition-standard ${tier.popular ? "border-primary" : ""}`}
               >
-                {/* Popular badge */}
-                {tier.popular && (
-                  <div className="absolute top-0 right-0 bg-gradient-to-r from-primary to-accent px-6 py-2 rounded-bl-2xl">
-                    <span className="text-xs font-bold text-primary-foreground">MOST POPULAR</span>
-                  </div>
-                )}
-
-                {/* Hover gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                <div className="relative z-10 space-y-6">
-                  {/* Icon & Name */}
-                  <div className="space-y-4">
-                    <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${tier.gradient} p-[2px] hover:shadow-lg`}>
-                      <div className="w-full h-full rounded-lg bg-background flex items-center justify-center">
-                        <Icon className="w-8 h-8 text-primary" />
-                      </div>
-                    </div>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full border-default bg-surface-subtle">
+                      <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                    </span>
                     <div>
-                      <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
-                      <p className="text-sm text-muted-foreground">{tier.description}</p>
+                      <h3 className="text-xl font-semibold text-foreground">{tier.name}</h3>
+                      <p className="text-sm text-muted">{tier.description}</p>
                     </div>
                   </div>
-
-                  {/* Price */}
-                  <div className="py-4">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold gradient-text-primary">${tier.price}</span>
-                      <span className="text-muted-foreground">/ audiobook</span>
-                    </div>
-                  </div>
-
-                  {/* Features */}
-                  <ul className="space-y-3">
-                    {tier.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          <Check className="w-5 h-5 text-success" />
-                        </div>
-                        <span className="text-sm text-muted-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* CTA Button */}
-                  <Button
-                    onClick={() => navigate('/auth')}
-                    className={`w-full h-12 font-bold transition-all duration-300 ${
-                      tier.popular
-                        ? 'bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] hover:bg-right-bottom shadow-[0_0_30px_rgba(138,43,226,0.4)] hover:shadow-[0_0_50px_rgba(0,255,255,0.5)] hover:scale-105'
-                        : 'bg-secondary hover:bg-gradient-to-r hover:from-primary hover:to-accent hover-scale'
-                    }`}
-                  >
-                    Get Started
-                  </Button>
+                  {tier.popular ? <Badge variant="outline">Most popular</Badge> : null}
                 </div>
+
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-foreground">${tier.price}</span>
+                  <span className="text-sm text-muted">per audiobook</span>
+                </div>
+
+                <ul className="flex flex-1 flex-col gap-3 text-sm text-muted">
+                  {tier.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3 text-left">
+                      <Check className="mt-0.5 h-5 w-5 text-success" aria-hidden="true" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  onClick={() => navigate("/auth")}
+                  className="w-full transition-standard"
+                  variant={tier.popular ? "default" : "secondary"}
+                >
+                  Get started
+                </Button>
               </Card>
             );
           })}
         </div>
 
-        {/* Additional info */}
-        <div className="text-center mt-12 space-y-4">
-          <p className="text-sm text-muted-foreground">
-            All plans include unlimited access to your generated audiobooks
-          </p>
-          <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
+        <div className="mt-12 space-y-4 text-center">
+          <p className="text-sm text-muted">All plans include unlimited access to your generated audiobooks.</p>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted">
             <span className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-success" />
+              <Check className="h-4 w-4 text-success" aria-hidden="true" />
               No monthly fees
             </span>
             <span className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-success" />
+              <Check className="h-4 w-4 text-success" aria-hidden="true" />
               Pay per audiobook
             </span>
             <span className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-success" />
+              <Check className="h-4 w-4 text-success" aria-hidden="true" />
               Lifetime access
             </span>
           </div>

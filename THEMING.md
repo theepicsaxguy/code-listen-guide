@@ -1,146 +1,49 @@
-# Codebase Audiobook - Theming Guide
+# Codebase Audiobook – Theming Guide
 
-## Brand Colors
+Our design system is token-first. Tailwind consumes tokens declared in `src/index.css` via `@theme`, while the concrete dark/light values live in `src/styles/design-tokens.css`. Use semantic utilities (`bg-surface`, `text-muted`, `border-default`, etc.) everywhere—never fall back to raw Tailwind gray/brand palettes.
 
-- **Primary**: Electric Purple = `text-purple-500`, `bg-purple-500`
-- **Accent**: Cyan = `text-cyan-500`, `bg-cyan-500`
-- **Background**: `bg-gray-950` (page), `bg-gray-900` (cards)
-- **Borders**: `border-gray-800`
-- **Text**: `text-white` (headings), `text-gray-400` (descriptions)
+## Semantic Roles
 
-## ⚠️ CRITICAL RULE
+| Role            | Utility examples                                    | Purpose                                 |
+|-----------------|------------------------------------------------------|-----------------------------------------|
+| Backgrounds     | `bg-background`, `bg-surface`, `bg-surface-subtle`    | Page, card, and inset surfaces          |
+| Text            | `text-foreground`, `text-muted`                      | Primary/secondary copy                  |
+| Borders & rings | `border-default`, `focus-ring`                       | Structural lines + focus states         |
+| Primary action  | `bg-primary`, `text-primary`, `ring-primary`         | High emphasis actions & highlights      |
+| Secondary       | `bg-secondary`, `text-secondary`                     | Secondary accents                       |
+| Status          | `bg-success`, `bg-warning`, `bg-danger`              | Success / warning / failure indicators  |
+| Sidebar         | `bg-sidebar`, `text-sidebar-foreground`              | Navigation shell                        |
 
-**ALWAYS use explicit Tailwind gray classes instead of CSS variables!**
+## Layout & Spacing
 
-```tsx
-// ✅ GOOD - Explicit colors
-<div className="bg-gray-900 border border-gray-800">
-<h1 className="text-white">Title</h1>
-<p className="text-gray-400">Description</p>
-
-// ❌ BAD - CSS variables (inconsistent)
-<div className="bg-card border border-border">
-<h1 className="text-foreground">Title</h1>
-<p className="text-muted-foreground">Description</p>
-```
-
-## Standard Color Palette
-
-### Backgrounds
-- `bg-gray-950` - Page background
-- `bg-gray-900` - Card/section background
-- `bg-gray-800` - Hover states
-- `bg-gray-800/50` - Subtle backgrounds
-
-### Borders
-- `border-gray-800` - Default borders
-- `border-gray-700` - Lighter borders (inputs)
-
-### Text
-- `text-white` - Headings, important text
-- `text-gray-300` - Body text
-- `text-gray-400` - Descriptions, secondary text
-- `text-gray-500` - Muted/disabled text
-
-### Brand Accents
-- `text-purple-500` / `bg-purple-500` - Primary actions, highlights
-- `text-cyan-500` / `bg-cyan-500` - Secondary highlights
-- Gradients: `bg-gradient-to-r from-purple-500 to-cyan-500`
-
-## Components
-
-### Admin Components (Reusable)
-
-1. **StatusBadge** (`/src/components/admin/StatusBadge.tsx`)
-   - Automatic colors based on status
-   - Built-in icons
-   
-2. **StatCard** (`/src/components/admin/StatCard.tsx`)
-   - Dashboard statistics
-   - Consistent styling
-   
-3. **DataTable** (`/src/components/admin/DataTable.tsx`)
-   - Table wrapper with proper styling
-   - Empty state included
-
-### Theme Utilities (`/src/lib/theme.ts`)
+Tokens expose named sizes to avoid arbitrary values:
 
 ```tsx
-import { formatCurrency, formatNumber, getStatusClasses } from "@/lib/theme";
-
-// Format money
-formatCurrency(1250) // "$12.50"
-
-// Format numbers
-formatNumber(1000000) // "1,000,000"
-
-// Get status colors
-const classes = getStatusClasses("completed");
-// Returns: { bg: "bg-green-500/10", text: "text-green-500", ... }
+<div className="w-sidebar-expanded border-default" />
+<section className="section-spacing">
+  <div className="max-w-content px-4">…</div>
+</section>
 ```
 
-## Page Structure Template
+For dialog and viewer heights use `max-h-pane-md` or `max-h-pane-lg` (defined in `src/index.css`). Avoid hard-coded pixel heights.
 
-```tsx
-export default function AdminPage() {
-  return (
-    <div className="p-8 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white">Page Title</h1>
-        <p className="text-gray-400 mt-1">Page description</p>
-      </div>
+## Elevation & Motion
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard title="Total" value={123} icon={Icon} />
-      </div>
+- Use `elevation-flat` or `elevation-raised` for shadows—no custom glow strings.
+- Apply `transition-standard` alongside Tailwind transition utilities for consistent duration/easing.
 
-      {/* Content Card */}
-      <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Section</h3>
-        {/* Content */}
-      </div>
+## Typography
 
-      {/* Table */}
-      <DataTable>
-        <Table>
-          {/* Table content */}
-        </Table>
-      </DataTable>
-    </div>
-  );
-}
-```
+Base heading/body sizes are set in `src/index.css`. Use semantic utilities (`text-3xl`, `font-semibold`, etc.) in combination with tokens—avoid gradients or manual pixel values for marketing copy.
 
-## Migration Checklist
+## Dark Mode
 
-For each admin page:
+Dark mode is handled via a custom `dark:` variant defined in CSS. Theme overrides live in `src/styles/design-tokens.css`. No JS configuration is required—when `.dark` or `[data-theme="dark"]` is present the token values swap automatically.
 
-- [ ] Replace `bg-card` → `bg-gray-900`
-- [ ] Replace `border-border` → `border-gray-800`
-- [ ] Replace `text-foreground` → `text-white`
-- [ ] Replace `text-muted-foreground` → `text-gray-400`
-- [ ] Use `<StatusBadge>` for status indicators
-- [ ] Use `<DataTable>` for tables
-- [ ] Use `formatCurrency()` for money
-- [ ] Use `formatNumber()` for large numbers
+## Checklist When Updating Screens
 
-## Files Updated
-
-- ✅ `/src/lib/theme.ts` - Centralized utilities
-- ✅ `/src/components/admin/StatusBadge.tsx` - Status component
-- ✅ `/src/components/admin/DataTable.tsx` - Table wrapper
-- ✅ `/src/pages/admin/Dashboard.tsx` - Admin dashboard
-- ✅ `/src/pages/admin/AgentMonitoring.tsx` - Agent monitoring
-- ✅ `/src/pages/admin/AuditLogs.tsx` - Already using hardcoded colors
-
-## Files TODO
-
-- [ ] `/src/pages/admin/Users.tsx`
-- [ ] `/src/pages/admin/Content.tsx`
-- [ ] `/src/pages/admin/Payments.tsx`
-- [ ] `/src/pages/admin/JobTracing.tsx`
-- [ ] `/src/pages/admin/Agents.tsx`
-- [ ] `/src/pages/admin/Settings.tsx`
-- [ ] `/src/pages/admin/Support.tsx`
+- [ ] Replace palette classes (e.g., `bg-gray-900`, `text-blue-500`) with semantic token utilities.
+- [ ] Ensure borders use `border-default` and interactive states use `focus-ring`.
+- [ ] Swap arbitrary spacing/widths (`w-[264px]`, `h-[400px]`) for named tokens (`w-sidebar-expanded`, `max-h-pane-lg`, `section-spacing`).
+- [ ] Remove gradient or glow text in primary actions/headings.
+- [ ] Use `Button`, `Input`, `Textarea`, and other primitives instead of custom class stacks.

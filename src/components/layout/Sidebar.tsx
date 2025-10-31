@@ -55,16 +55,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       className={cn(
-        isCollapsed ? 'w-20' : 'w-[264px]',
-        'h-screen border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300',
-        'flex flex-col',
+        isCollapsed ? 'w-sidebar-collapsed' : 'w-sidebar-expanded',
+        'flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200',
         className,
       )}
     >
       <div className="relative flex items-center border-b border-sidebar-border px-4 py-5">
         <button
           onClick={onToggleCollapse}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full border border-border bg-surface p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 rounded-full border border-sidebar-border bg-surface p-2 text-muted transition-standard hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -72,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className={cn('flex items-center', isCollapsed ? 'justify-center w-full' : 'gap-3')}>
           {isCollapsed ? (
             brand?.collapsedLogo || brand?.logo || (
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-sm font-semibold text-primary">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
                 CA
               </div>
             )
@@ -93,12 +92,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           const Icon = item.icon;
           const isActive = isItemActive(item);
           const commonClasses = cn(
-            'group relative flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
+            'group relative flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-standard',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
             isCollapsed && 'justify-center gap-0 px-0',
             isActive
-              ? 'bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:rounded-full before:bg-primary'
-              : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+              : 'text-muted hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
           );
 
           if (item.path) {
@@ -134,7 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {footer && <div className="border-t border-sidebar-border px-4 py-4">{footer}</div>}
+      {footer && <div className="border-t border-sidebar-border px-4 py-4 text-muted">{footer}</div>}
     </aside>
   );
 };

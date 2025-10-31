@@ -5,10 +5,10 @@
 Developer-grade design system with strict tokens, WCAG AA compliance, and systematic component architecture modeled after GitHub's Primer.
 
 **Status:** ✅ Foundation Complete
-- Design tokens in `src/styles/design-tokens.css`
-- Tailwind configured with HSL alpha-value support
-- Button component updated
-- Ready for component migration
+- Design tokens defined in `src/index.css` via `@theme`
+- Runtime values managed in `src/styles/design-tokens.css`
+- Tailwind config reduced to container + plugins (CSS-first setup)
+- Core primitives (Button, Input, Card, Sidebar) aligned to token scale
 
 ---
 
@@ -16,19 +16,23 @@ Developer-grade design system with strict tokens, WCAG AA compliance, and system
 
 ### Tokens
 ```css
---bg, --surface, --text, --text-muted, --border
---primary, --secondary, --success, --warning, --danger
---card, --popover, --muted, --accent
+--color-background, --color-surface, --color-surface-subtle
+--color-foreground, --color-muted, --color-border, --color-ring
+--color-primary, --color-secondary, --color-success, --color-warning, --color-danger
+--size-sidebar-expanded, --size-sidebar-collapsed, --size-content-max
+--spacing-1 … --spacing-16, --spacing-section
+--shadow-flat, --shadow-raised, --shadow-overlay
 ```
 
 ### Usage
 ```tsx
 // ✅ CORRECT
-<div className="bg-surface text-text border-border" />
-<Button className="bg-primary text-primary-foreground" />
+<div className="rounded-lg border-default bg-surface text-foreground" />
+<Button className="transition-standard" />
 
 // ❌ WRONG
 <div className="bg-gray-800 text-white border-gray-700" />
+<div className="shadow-[0_0_10px_rgba(0,0,0,0.5)]" />
 ```
 
 ### Contrast Ratios (WCAG AA)

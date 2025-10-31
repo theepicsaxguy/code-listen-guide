@@ -67,17 +67,17 @@ export function FileViewer({ file }: FileViewerProps) {
 
           <TabsContent value="content" className="space-y-4">
             {file.summary && (
-              <div className="bg-muted p-4 rounded-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="h-4 w-4" />
+              <div className="rounded-lg border-default bg-surface-subtle p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
                   <span className="font-semibold">Summary</span>
                 </div>
-                <p className="text-sm">{file.summary}</p>
+                <p className="text-sm text-muted">{file.summary}</p>
               </div>
             )}
-            
-            <ScrollArea className="h-[400px] w-full rounded-md border">
-              <pre className="p-4 text-sm">
+
+            <ScrollArea className="max-h-pane-lg w-full rounded-lg border-default">
+              <pre className="p-4 text-sm text-muted">
                 <code>{file.content || 'No content available'}</code>
               </pre>
             </ScrollArea>
@@ -98,7 +98,7 @@ export function FileViewer({ file }: FileViewerProps) {
 
               {file.tags && file.tags.length > 0 && (
                 <div>
-                  <label className="text-sm font-semibold flex items-center gap-2 mb-2">
+                  <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
                     <Tag className="h-4 w-4" />
                     Tags
                   </label>
@@ -151,26 +151,26 @@ export function FileViewer({ file }: FileViewerProps) {
           <TabsContent value="chunks" className="space-y-4">
             {file.num_chunks ? (
               <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted rounded-lg">
+                <div className="grid grid-cols-3 gap-4 rounded-lg border-default bg-surface-subtle p-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold">{file.num_chunks}</div>
-                    <div className="text-xs text-muted-foreground">Total Chunks</div>
+                    <div className="text-2xl font-bold text-foreground">{file.num_chunks}</div>
+                    <div className="text-xs text-muted">Total chunks</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-bold text-foreground">
                       {file.total_tokens?.toLocaleString() || 'N/A'}
                     </div>
-                    <div className="text-xs text-muted-foreground">Total Tokens</div>
+                    <div className="text-xs text-muted">Total tokens</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-bold text-foreground">
                       {Math.round(file.total_tokens! / file.num_chunks) || 'N/A'}
                     </div>
-                    <div className="text-xs text-muted-foreground">Avg Tokens/Chunk</div>
+                    <div className="text-xs text-muted">Avg tokens per chunk</div>
                   </div>
                 </div>
-                
-                <div className="text-sm text-muted-foreground">
+
+                <div className="text-sm text-muted">
                   <p>
                     This file has been split into {file.num_chunks} semantic chunks for
                     processing. Each chunk maintains context and code structure.
@@ -178,8 +178,8 @@ export function FileViewer({ file }: FileViewerProps) {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <BarChart className="h-12 w-12 mx-auto mb-2 opacity-20" />
+              <div className="rounded-lg border-default bg-surface-subtle py-8 text-center text-muted">
+                <BarChart className="mx-auto mb-2 h-12 w-12 text-muted" />
                 <p>No chunk information available</p>
               </div>
             )}
