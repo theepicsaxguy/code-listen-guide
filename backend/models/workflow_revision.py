@@ -1,9 +1,11 @@
-from sqlalchemy import Column, Integer, Boolean, DateTime, ForeignKey, JSON, UniqueConstraint
+from datetime import datetime
+import uuid
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, JSON, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
 from backend.db.base import Base
-import uuid
-from datetime import datetime
 
 class WorkflowRevision(Base):
     __tablename__ = "workflow_revisions"
@@ -19,6 +21,13 @@ class WorkflowRevision(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     published_at = Column(DateTime)
 
-    # TODO: Add relationships after initial seeding
-    # workflow_definition = relationship("WorkflowDefinition", back_populates="revisions")
-    # steps = relationship("WorkflowStep", back_populates="revision")
+    workflow_definition = relationship(
+        "WorkflowDefinition",
+        back_populates="revisions",
+    )
+    steps = relationship(
+        "WorkflowStep",
+        back_populates="revision",
+        cascade="all, delete-orphan",
+        order_by="WorkflowStep.step_order",
+    )

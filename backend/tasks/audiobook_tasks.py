@@ -1,10 +1,16 @@
+"""Task entry points for starting and resuming audiobook workflows."""
+
+from __future__ import annotations
+
 import asyncio
 import json
+import logging
 from typing import Any, Awaitable
 
 from opentelemetry import trace
 
 tracer = trace.get_tracer(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _run_coroutine(coro: Awaitable[Any]) -> None:
@@ -37,6 +43,7 @@ async def _resume_audiobook_workflow(job_id: str) -> None:
     ):
         job = _get_job(job_id)
         if job is None:
+            logger.warning("Job %s not found when attempting resume", job_id)
             return
         workflow = _create_workflow(
             job_id=job_id, repo_url=job.repo_url, depth_tier=job.depth_tier
