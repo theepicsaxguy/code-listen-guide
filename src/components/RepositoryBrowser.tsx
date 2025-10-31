@@ -321,7 +321,7 @@ export function RepositoryBrowser({ files, onFileSelect, selectedPath }: Reposit
         )}
 
         {/* File Tree */}
-        <ScrollArea className="max-h-pane-lg rounded-card border-default">
+        <ScrollArea className="max-h-pane-lg rounded-card bg-surface-secondary shadow-sm">
           <div className="p-2">
             {fileTree.children?.map(node => renderTreeNode(node, 0))}
           </div>

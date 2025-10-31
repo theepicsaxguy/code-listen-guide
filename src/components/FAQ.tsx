@@ -80,8 +80,8 @@ export const FAQ = () => {
     <section className="section-spacing bg-background">
       <div className="mx-auto max-w-content px-4 sm:px-6">
         <div className="mb-12 space-y-4 text-center">
-          <h2 className="text-balance text-3xl font-semibold sm:text-4xl">Frequently asked questions</h2>
-          <p className="mx-auto max-w-2xl text-muted">
+          <h2 className="text-balance text-heading font-semibold">Frequently asked questions</h2>
+          <p className="mx-auto max-w-2xl text-body text-muted-foreground">
             Everything you need to know about how Codebase Audiobook works and what to expect.
           </p>
         </div>
@@ -104,21 +104,21 @@ export const FAQ = () => {
             filteredFaqs.map((faq, index) => {
               const isOpen = openIndex === index;
               return (
-                <div key={faq.question} className="rounded-lg border-default bg-surface">
+                <div key={faq.question} className="rounded-card bg-surface-secondary shadow-sm hover:shadow-md transition-standard">
                   <button
                     type="button"
                     onClick={() => setOpenIndex(isOpen ? null : index)}
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-standard hover:bg-surface-subtle"
+                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-standard hover:bg-surface-tertiary rounded-card"
                     aria-expanded={isOpen}
                   >
-                    <span className="text-base font-semibold text-foreground">{faq.question}</span>
+                    <span className="text-body font-semibold text-foreground">{faq.question}</span>
                     <ChevronDown
                       className={`h-5 w-5 text-primary transition-standard ${isOpen ? "rotate-180" : ""}`}
                       aria-hidden="true"
                     />
                   </button>
                   {isOpen ? (
-                    <div className="border-t border-border px-5 py-4 text-sm leading-relaxed text-muted">
+                    <div className="bg-surface-tertiary px-5 py-4 text-body-sm leading-relaxed text-muted-foreground rounded-b-card">
                       {faq.answer}
                     </div>
                   ) : null}
@@ -126,15 +126,15 @@ export const FAQ = () => {
               );
             })
           ) : (
-            <div className="rounded-lg border-default bg-surface px-6 py-12 text-center text-muted">
+            <div className="rounded-card bg-surface-secondary shadow-sm px-6 py-12 text-center text-body text-muted-foreground">
               No questions found matching "{searchQuery}"
             </div>
           )}
         </div>
 
-        <div className="mt-12 rounded-lg border-default bg-surface p-8 text-center">
-          <h3 className="text-2xl font-semibold text-foreground">Still have questions?</h3>
-          <p className="mt-2 text-muted">
+        <div className="mt-12 rounded-card bg-surface-secondary shadow-md p-8 text-center">
+          <h3 className="text-subheading font-semibold text-foreground">Still have questions?</h3>
+          <p className="mt-2 text-body text-muted-foreground">
             Can't find the answer you're looking for? Our support team is ready to help.
           </p>
           <Button asChild variant="secondary" className="mt-4">

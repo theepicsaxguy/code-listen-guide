@@ -103,10 +103,10 @@ export const Stats = () => {
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center space-y-4 mb-20">
-          <h2 className="text-4xl md:text-5xl font-bold">
+          <h2 className="text-heading md:text-display font-bold">
             Trusted by <span className="gradient-text-primary">Developers</span> Worldwide
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-body text-muted-foreground max-w-2xl mx-auto">
             Join thousands of developers learning code through audio
           </p>
         </div>
@@ -117,7 +117,7 @@ export const Stats = () => {
             return (
               <div
                 key={index}
-                className="glass p-8 rounded-lg hover-lift group text-center relative overflow-hidden"
+                className="bg-surface-secondary p-8 rounded-card shadow-sm hover:shadow-md hover-lift group text-center relative overflow-hidden transition-standard"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Background glow effect */}
@@ -135,7 +135,7 @@ export const Stats = () => {
                       <CountUp end={stat.value} />
                       <span className="text-3xl font-bold gradient-text-primary">{stat.suffix}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
+                    <p className="text-body-sm text-muted-foreground font-medium">{stat.label}</p>
                   </div>
                 </div>
               </div>
