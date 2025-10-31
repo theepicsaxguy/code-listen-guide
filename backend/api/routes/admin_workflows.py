@@ -94,7 +94,7 @@ def _validate_revision(revision: WorkflowRevision) -> RevisionValidationResult:
     return RevisionValidationResult(is_valid=not errors, errors=errors)
 
 
-@router.get("/", response_model=List[WorkflowDefinitionOut])
+@router.get("", response_model=List[WorkflowDefinitionOut])
 async def list_workflows(
     db: Session = Depends(get_db),
     _current_admin=Depends(require_admin),
@@ -108,7 +108,7 @@ async def list_workflows(
     return [_definition_to_out(defn) for defn in definitions]
 
 
-@router.post("/", response_model=WorkflowDefinitionOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=WorkflowDefinitionOut, status_code=status.HTTP_201_CREATED)
 async def create_workflow_definition(
     payload: WorkflowDefinitionCreate,
     db: Session = Depends(get_db),

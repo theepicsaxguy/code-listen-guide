@@ -370,6 +370,14 @@ export class ApiClient {
           `/admin/content?${params}`
         );
       }
+
+      async getAdminContent(page = 1, statusFilter?: string) {
+        const params = new URLSearchParams({ page: page.toString() });
+        if (statusFilter) params.append('status_filter', statusFilter);
+        return this.request<{ jobs: any[]; total: number; page: number; per_page: number }>(
+          `/admin/content?${params}`
+        );
+      }
     
       async getJobTrace(jobId: string) {
         return this.request<import('@/types/admin').JobTrace>(`/admin/jobs/${jobId}/trace`);
@@ -455,6 +463,203 @@ export class ApiClient {
       async restartAgentJob(jobId: string) {
         return this.request<{ success: boolean }>(`/admin/agents/jobs/${jobId}/restart`, {
           method: 'POST',
+        });
+      }
+
+      // Agent CRUD endpoints
+      async listAgents() {
+        return this.request<Array<{
+          id: string;
+          name: string;
+          module_path: string;
+          factory_function: string;
+          description?: string;
+          config_schema?: Record<string, any>;
+          tools?: Array<{
+            id: string;
+            name: string;
+            module_path: string;
+            function_name: string;
+            description?: string;
+          }>;
+          created_at: string;
+          updated_at: string;
+        }>>('/admin/agents/list');
+      }
+
+      async createAgent(agent: {
+        name: string;
+        module_path: string;
+        factory_function: string;
+        description?: string;
+        config_schema?: Record<string, any>;
+        tools?: string[];
+      }) {
+        return this.request<{
+          id: string;
+          name: string;
+          module_path: string;
+          factory_function: string;
+          description?: string;
+          config_schema?: Record<string, any>;
+          tools?: Array<any>;
+          created_at: string;
+          updated_at: string;
+        }>('/admin/agents', {
+          method: 'POST',
+          body: JSON.stringify(agent),
+        });
+      }
+
+      async getAgent(agentId: string) {
+        return this.request<{
+          id: string;
+          name: string;
+          module_path: string;
+          factory_function: string;
+          description?: string;
+          config_schema?: Record<string, any>;
+          tools?: Array<any>;
+          created_at: string;
+          updated_at: string;
+        }>(`/admin/agents/${agentId}`);
+      }
+
+      async updateAgent(agentId: string, updates: {
+        module_path?: string;
+        factory_function?: string;
+        description?: string;
+        config_schema?: Record<string, any>;
+        tools?: string[];
+      }) {
+        return this.request<{
+          id: string;
+          name: string;
+          module_path: string;
+          factory_function: string;
+          description?: string;
+          config_schema?: Record<string, any>;
+          tools?: Array<any>;
+          created_at: string;
+          updated_at: string;
+        }>(`/admin/agents/${agentId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(updates),
+        });
+      }
+
+      async deleteAgent(agentId: string) {
+        return this.request<void>(`/admin/agents/${agentId}`, {
+          method: 'DELETE',
+        });
+      }
+
+      // Plugin/Tool management endpoints
+      async listPlugins() {
+        return this.request<Array<{
+          id: string;
+          name: string;
+          module_path: string;
+          function_name: string;
+          description?: string;
+          input_schema?: Record<string, any>;
+          output_schema?: Record<string, any>;
+          created_at: string;
+        }>>('/admin/plugins');
+      }
+
+      async createPlugin(plugin: {
+        name: string;
+        module_path: string;
+        function_name: string;
+        description?: string;
+        input_schema?: Record<string, any>;
+        output_schema?: Record<string, any>;
+      }) {
+        return this.request<{
+          id: string;
+          name: string;
+          module_path: string;
+          function_name: string;
+          description?: string;
+          input_schema?: Record<string, any>;
+          output_schema?: Record<string, any>;
+          created_at: string;
+        }>('/admin/plugins', {
+          method: 'POST',
+          body: JSON.stringify(plugin),
+        });
+      }
+
+      async getPlugin(pluginId: string) {
+        return this.request<{
+          id: string;
+          name: string;
+          module_path: string;
+          function_name: string;
+          description?: string;
+          input_schema?: Record<string, any>;
+          output_schema?: Record<string, any>;
+          created_at: string;
+        }>(`/admin/plugins/${pluginId}`);
+      }
+
+      async updatePlugin(pluginId: string, updates: {
+        module_path?: string;
+        function_name?: string;
+        description?: string;
+        input_schema?: Record<string, any>;
+        output_schema?: Record<string, any>;
+      }) {
+        return this.request<{
+          id: string;
+          name: string;
+          module_path: string;
+          function_name: string;
+          description?: string;
+          input_schema?: Record<string, any>;
+          output_schema?: Record<string, any>;
+          created_at: string;
+        }>(`/admin/plugins/${pluginId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(updates),
+        });
+      }
+
+      async deletePlugin(pluginId: string) {
+        return this.request<void>(`/admin/plugins/${pluginId}`, {
+          method: 'DELETE',
+        });
+      }
+
+      // Workflow endpoints
+      async listWorkflows() {
+        return this.request<Array<{
+          id: string;
+          name: string;
+          description?: string;
+          current_revision_id?: string;
+          current_version?: number;
+          created_at: string;
+          updated_at: string;
+        }>>('/admin/workflows');
+      }
+
+      async createWorkflow(workflow: {
+        name: string;
+        description?: string;
+      }) {
+        return this.request<{
+          id: string;
+          name: string;
+          description?: string;
+          current_revision_id?: string;
+          current_version?: number;
+          created_at: string;
+          updated_at: string;
+        }>('/admin/workflows', {
+          method: 'POST',
+          body: JSON.stringify(workflow),
         });
       }
 

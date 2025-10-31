@@ -28,8 +28,8 @@ export default function AdminContent() {
  const navigate = useNavigate();
 
  const { data, isLoading } = useQuery({
- queryKey: ["admin-jobs", statusFilter, page],
- queryFn: () => apiClient.getJobs(page, statusFilter === "all" ? undefined : statusFilter),
+ queryKey: ["admin-content", statusFilter, page],
+ queryFn: () => apiClient.getAdminContent(page, statusFilter === "all" ? undefined : statusFilter),
  });
 
 const getStatusColor = (status: string) => {
@@ -49,10 +49,10 @@ const getStatusColor = (status: string) => {
  <div className="p-8 space-y-6">
  <div>
  <h1 className="text-3xl font-bold bg-primary bg-clip-text text-transparent">
- Content Management
+ Podcast Management
  </h1>
  <p className="text-muted-foreground mt-1">
- Manage audiobook content and monitor generation progress
+ Manage completed audiobooks (podcasts) and their deliverables
  </p>
  </div>
 
@@ -80,23 +80,23 @@ const getStatusColor = (status: string) => {
  </div>
 
  {isLoading ? (
- <p className="text-center text-muted-foreground py-8">Loading content...</p>
+ <p className="text-center text-muted-foreground py-8">Loading podcasts...</p>
  ) : !data?.jobs || data.jobs.length === 0 ? (
  <div className="text-center text-muted-foreground py-8">
- <p>No jobs found</p>
+ <p>No podcasts found</p>
+ <p className="text-sm mt-2">Only completed audiobooks with deliverables are shown here.</p>
  </div>
  ) : (
  <div className="rounded-md border">
  <Table>
  <TableHeader>
  <TableRow>
- <TableHead>Job ID</TableHead>
+ <TableHead>Podcast ID</TableHead>
  <TableHead>Repository</TableHead>
  <TableHead>User</TableHead>
  <TableHead>Status</TableHead>
- <TableHead>Progress</TableHead>
- <TableHead>Tier</TableHead>
- <TableHead>Created</TableHead>
+ <TableHead>Deliverables</TableHead>
+ <TableHead>Completed</TableHead>
  <TableHead className="text-right">Actions</TableHead>
  </TableRow>
  </TableHeader>
@@ -119,18 +119,18 @@ const getStatusColor = (status: string) => {
  </Badge>
  </TableCell>
  <TableCell>
- <div className="flex items-center gap-2">
- <span className="text-sm">{job.progress_percentage}%</span>
- <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
- <div
- className="h-full bg-primary transition-all"
- style={{ width: `${job.progress_percentage}%` }}
- />
- </div>
- </div>
+ <Badge variant="outline">
+ {job.deliverables_count || 0} file{job.deliverables_count !== 1 ? 's' : ''}
+ </Badge>
+ {job.audio_url && (
+ <a href={job.audio_url} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-primary hover:underline">
+ Listen
+ </a>
+ )}
  </TableCell>
- <TableCell className="capitalize">{job.depth_tier}</TableCell>
- <TableCell>{new Date(job.created_at).toLocaleDateString()}</TableCell>
+ <TableCell>
+ {job.completed_at ? new Date(job.completed_at).toLocaleDateString() : 'N/A'}
+ </TableCell>
  <TableCell className="text-right">
  <div className="flex items-center justify-end gap-2">
  <Button
