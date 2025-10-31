@@ -132,5 +132,54 @@ All colors MUST be HSL.
   .bg-surface {
     background-color: hsl(var(--surface) / 1);
   }
+
+  /* Replace legacy gradient helpers with flat token-based colors */
+  .bg-gradient-primary,
+  .bg-gradient-card-primary,
+  .bg-gradient-card-accent,
+  .bg-gradient-card-secondary,
+  .bg-gradient-stat {
+    background-image: none !important;
+  }
+
+  .bg-gradient-primary {
+    background-color: hsl(var(--primary) / 1) !important;
+    color: hsl(var(--primary-foreground) / 1);
+  }
+
+  .bg-gradient-card-primary,
+  .bg-gradient-card-accent,
+  .bg-gradient-card-secondary,
+  .bg-gradient-stat {
+    background-color: hsl(var(--surface) / 1) !important;
+    color: hsl(var(--text) / 1);
+  }
+
+  .gradient-text-primary,
+  .gradient-text-accent {
+    background-image: none !important;
+    -webkit-background-clip: initial;
+    color: hsl(var(--primary) / 1) !important;
+  }
+
+  .hover-card {
+    transition: background-color 150ms ease;
+  }
+
+  .hover-card:hover {
+    background-color: hsl(var(--surface) / 0.9);
+  }
+
+  .card-elevation,
+  .shadow-glow,
+  .hover-glow {
+    box-shadow: none !important;
+  }
+
+  .rounded-xl,
+  .rounded-2xl,
+  .rounded-3xl {
+    border-radius: var(--radius-lg, 0.75rem) !important;
+  }
 }
 

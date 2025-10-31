@@ -1,5 +1,12 @@
-import React, { useState } from 'react';
-import { Search, Clock, Library, GitBranch, AlertCircle, Play } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Clock, Library, GitBranch, AlertCircle, Play } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+
 import { useAudiobooks } from '../hooks';
 import { StatusBadge } from './StatusBadge';
 import { formatDuration } from '../utils';
@@ -7,10 +14,10 @@ import type { Job } from '../../../lib/types';
 
 interface AudiobooksPageProps {
   onNavigateToAudiobook: (id: string) => void;
+  searchQuery: string;
 }
 
-export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudiobook }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudiobook, searchQuery }) => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'processing' | 'failed'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'duration'>('date');
 
@@ -18,155 +25,191 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton key={index} className="h-32 rounded-lg" />
+          ))}
+        </div>
+        <Card className="rounded-lg border border-border bg-surface">
+          <CardHeader>
+            <CardTitle className="text-lg">Audiobooks</CardTitle>
+            <CardDescription>Loading your most recent jobs…</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} className="h-20 rounded-md" />
+            ))}
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   const audiobooks = audiobooksData?.jobs || [];
 
-  const filteredAudiobooks = audiobooks
-    .filter((book: Job) => {
-      const matchesSearch = book.repo_name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter =
-        filterStatus === 'all' ||
-        (filterStatus === 'processing' && !['completed', 'failed'].includes(book.status)) ||
-        book.status === filterStatus;
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a: Job, b: Job) => {
-      if (sortBy === 'date') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (sortBy === 'name') return a.repo_name.localeCompare(b.repo_name);
-      return 0;
-    });
+  const filteredAudiobooks = useMemo(() => {
+    return audiobooks
+      .filter((book: Job) => {
+        const matchesSearch = book.repo_name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesFilter =
+          filterStatus === 'all' ||
+          (filterStatus === 'processing' && !['completed', 'failed'].includes(book.status)) ||
+          book.status === filterStatus;
+        return matchesSearch && matchesFilter;
+      })
+      .sort((a: Job, b: Job) => {
+        if (sortBy === 'date') {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+        if (sortBy === 'name') {
+          return a.repo_name.localeCompare(b.repo_name);
+        }
+        if (sortBy === 'duration') {
+          return (b.estimated_duration_minutes || 0) - (a.estimated_duration_minutes || 0);
+        }
+        return 0;
+      });
+  }, [audiobooks, filterStatus, searchQuery, sortBy]);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-          <input
-            type="text"
-            placeholder="Search audiobooks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-card rounded-xl text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:bg-primary/5 transition-all"
-          />
-        </div>
-        <div className="flex gap-3">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="px-4 py-3 bg-card rounded-xl text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:bg-primary/5 transition-all"
-          >
-            <option value="all">All Status</option>
-            <option value="completed">Completed</option>
-            <option value="processing">Processing</option>
-            <option value="failed">Failed</option>
-          </select>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-4 py-3 bg-card rounded-xl text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:bg-primary/5 transition-all"
-          >
-            <option value="date">Sort by Date</option>
-            <option value="name">Sort by Name</option>
-            <option value="duration">Sort by Duration</option>
-          </select>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card className="rounded-lg border border-border bg-surface">
+        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <CardTitle className="text-lg">Filters</CardTitle>
+            <CardDescription>Refine the list of generated audiobooks.</CardDescription>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as typeof filterStatus)}>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder="Filter status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="processing">Processing</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">Newest first</SelectItem>
+                <SelectItem value="name">Alphabetical</SelectItem>
+                <SelectItem value="duration">Longest duration</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-xs text-muted-foreground">
+              Showing {filteredAudiobooks.length} of {audiobooks.length} audiobooks
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {filteredAudiobooks.map((book: Job) => (
-          <div
+          <Card
             key={book.id}
-            className="bg-gradient-card-primary rounded-xl p-6 transition-all cursor-pointer group hover-card card-elevation relative overflow-hidden"
+            className="group h-full cursor-pointer rounded-lg border border-border bg-surface transition-colors hover:bg-surface/70"
             onClick={() => onNavigateToAudiobook(book.id)}
           >
-            <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-3 transition-opacity" />
-            <div className="relative z-10">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
-                    <GitBranch className="text-primary-foreground" size={28} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors mb-1">{book.repo_name}</h3>
-                    <p className="text-sm text-muted-foreground font-medium">{book.metadata?.language || 'Unknown'}</p>
-                  </div>
+            <CardHeader className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <GitBranch className="h-5 w-5" />
                 </div>
-                <StatusBadge status={book.status} />
+                <div className="min-w-0">
+                  <CardTitle className="truncate text-base font-semibold text-text">{book.repo_name}</CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">
+                    {book.metadata?.language || 'Language unknown'}
+                  </CardDescription>
+                </div>
               </div>
+              <StatusBadge status={book.status} />
+            </CardHeader>
+            <CardContent className="space-y-4">
               {book.metadata?.frameworks && book.metadata.frameworks.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {book.metadata.frameworks.map((framework: string, idx: number) => (
-                    <span key={idx} className="px-2.5 py-1 bg-secondary/30 rounded-md text-xs font-semibold text-foreground">{framework}</span>
+                <div className="flex flex-wrap gap-2">
+                  {book.metadata.frameworks.map((framework: string) => (
+                    <Badge key={`${book.id}-${framework}`} variant="outline" className="rounded-md text-xs">
+                      {framework}
+                    </Badge>
                   ))}
                 </div>
               )}
               {book.status !== 'completed' && book.status !== 'failed' && (
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2 text-sm">
-                    <span className="text-muted-foreground font-medium">Processing...</span>
-                    <span className="text-foreground font-bold">{book.progress_percentage}%</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Processing</span>
+                    <span className="font-medium text-text">{book.progress_percentage}%</span>
                   </div>
-                  <div className="w-full bg-secondary/30 rounded-full h-2.5 overflow-hidden">
-                    <div className="bg-gradient-primary h-full rounded-full transition-all duration-500 shadow-sm shadow-primary/30" style={{ width: `${book.progress_percentage}%` }} />
+                  <div className="h-2 rounded-full bg-border/50">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${book.progress_percentage}%` }}
+                    />
                   </div>
                 </div>
               )}
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-4 text-muted-foreground flex-wrap">
+              <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-4">
                   {book.estimated_duration_minutes && (
-                    <span className="flex items-center gap-1.5 font-medium">
-                      <Clock size={14} />
-                      {Math.floor(book.estimated_duration_minutes / 60)}h {book.estimated_duration_minutes % 60}m
+                    <span className="inline-flex items-center gap-1 font-medium text-text">
+                      <Clock className="h-4 w-4" />
+                      {formatDuration(book.estimated_duration_minutes)}
                     </span>
                   )}
                   {book.estimated_chapters && (
-                    <span className="px-2.5 py-1 bg-primary/10 text-primary rounded-md font-semibold">
+                    <Badge variant="outline" className="rounded-md text-xs">
                       {book.estimated_chapters} chapters
-                    </span>
+                    </Badge>
                   )}
-                  {book.repo_size_bytes && (
-                    <span className="text-xs">
-                      {(book.repo_size_bytes / (1024 * 1024)).toFixed(0)} MB
-                    </span>
-                  )}
+                  {book.repo_size_bytes && <span>{(book.repo_size_bytes / (1024 * 1024)).toFixed(0)} MB</span>}
                 </div>
                 {book.status === 'completed' && (
-                  <button 
-                    className="p-2.5 hover:bg-accent/20 rounded-xl transition-all group/play hover:scale-110" 
-                    aria-label="Play audiobook"
-                    onClick={(e) => {
-                      e.stopPropagation();
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(event) => {
+                      event.stopPropagation();
                       onNavigateToAudiobook(book.id);
                     }}
+                    aria-label="Play audiobook"
                   >
-                    <Play size={18} className="text-primary group-hover/play:text-accent transition-colors" />
-                  </button>
+                    <Play className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
               {book.status === 'failed' && book.error_message && (
-                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
-                  <p className="text-xs text-destructive flex items-center gap-2 font-medium">
-                    <AlertCircle size={14} />
-                    {book.error_message}
-                  </p>
+                <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="mt-0.5 h-4 w-4" />
+                    <span>{book.error_message}</span>
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
       {filteredAudiobooks.length === 0 && (
-        <div className="text-center py-16 bg-gradient-card-secondary rounded-xl card-elevation">
-          <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Library size={40} className="text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-bold text-foreground mb-2">No audiobooks found</h3>
-          <p className="text-sm text-muted-foreground">Try adjusting your search or filters</p>
-        </div>
+        <Card className="rounded-lg border border-border bg-surface text-center">
+          <CardContent className="space-y-4 py-12">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted/20">
+              <Library className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-text">No audiobooks found</h3>
+              <p className="text-sm text-muted-foreground">Try a different search term or adjust the filters.</p>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

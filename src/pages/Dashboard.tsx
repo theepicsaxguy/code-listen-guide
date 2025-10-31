@@ -1,7 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
+
 import { useUser } from './Dashboard/hooks';
 import {
   Sidebar,
@@ -9,7 +22,7 @@ import {
   AudiobooksPage,
   AudiobookDetailPage,
   SettingsPage,
-  BillingPage
+  BillingPage,
 } from './Dashboard/components';
 
 const Dashboard: React.FC = () => {
@@ -75,8 +88,59 @@ const Dashboard: React.FC = () => {
     navigate('/submit');
   };
 
+  const { title, description, crumbs } = useMemo(() => {
+    if (activeTab === 'audiobook-detail' && selectedAudiobookId) {
+      return {
+        title: 'Audiobook Player',
+        description: 'Listen to generated chapters and review production notes.',
+        crumbs: [
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Audiobooks', href: '#audiobooks' },
+        ],
+      };
+    }
+
+    if (activeTab === 'audiobooks') {
+      return {
+        title: 'Audiobooks',
+        description: 'Manage generated audiobooks and track production status.',
+        crumbs: [
+          { label: 'Dashboard', href: '/dashboard' },
+        ],
+      };
+    }
+
+    if (activeTab === 'settings') {
+      return {
+        title: 'Settings',
+        description: 'Update account preferences and defaults for new jobs.',
+        crumbs: [
+          { label: 'Dashboard', href: '/dashboard' },
+        ],
+      };
+    }
+
+    if (activeTab === 'billing') {
+      return {
+        title: 'Billing',
+        description: 'Review your plan, invoices, and usage summary.',
+        crumbs: [
+          { label: 'Dashboard', href: '/dashboard' },
+        ],
+      };
+    }
+
+    return {
+      title: 'Overview',
+      description: 'Stay on top of progress across jobs, credits, and usage.',
+      crumbs: [
+        { label: 'Dashboard', href: '/dashboard' },
+      ],
+    };
+  }, [activeTab, selectedAudiobookId]);
+
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background text-text">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -84,53 +148,62 @@ const Dashboard: React.FC = () => {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
-      <div className="flex-1 overflow-auto">
-        <header className="bg-gradient-to-r from-card via-primary/5 to-card backdrop-blur-sm sticky top-0 z-10">
-          <div className="px-8 py-5 flex items-center justify-between">
-            <div className="flex items-center gap-6 flex-1">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                  {activeTab === 'home' && 'Overview'}
-                  {activeTab === 'audiobooks' && 'Audiobooks'}
-                  {activeTab === 'audiobook-detail' && 'Player'}
-                  {activeTab === 'settings' && 'Settings'}
-                  {activeTab === 'billing' && 'Billing'}
-                </h1>
-                {(activeTab === 'home' || activeTab === 'audiobooks') && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {activeTab === 'home' && 'Your audiobook overview and activity'}
-                    {activeTab === 'audiobooks' && 'Manage your audiobook collection'}
-                  </p>
-                )}
+      <div className="flex-1 overflow-hidden">
+        <div className="border-b border-border bg-surface/60 backdrop-blur">
+          <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 py-6">
+            <div className="space-y-3">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {crumbs.map((crumb, index) => (
+                    <React.Fragment key={crumb.label}>
+                      <BreadcrumbItem>
+                        <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                      </BreadcrumbItem>
+                      {index < crumbs.length - 1 && <BreadcrumbSeparator />}
+                    </React.Fragment>
+                  ))}
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{title}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+              <div className="flex flex-col gap-2">
+                <h1 className="text-4xl font-semibold text-text">{title}</h1>
+                <p className="text-sm text-muted-foreground">{description}</p>
               </div>
+            </div>
+            <div className={cn('flex flex-col gap-3', (activeTab === 'home' || activeTab === 'audiobooks') && 'md:flex-row md:items-center md:justify-between')}>
               {(activeTab === 'home' || activeTab === 'audiobooks') && (
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                  <input
-                    type="text"
-                    placeholder="Search repositories..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-11 pr-4 py-2.5 bg-card rounded-xl text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
-                  />
+                <div className="w-full md:max-w-sm">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder="Search repositories or jobs"
+                      className="pl-9"
+                      aria-label="Search audiobooks"
+                    />
+                  </div>
+                </div>
+              )}
+              {activeTab !== 'audiobook-detail' && (
+                <div className="flex justify-end">
+                  <Button onClick={handleCreateNewAudiobook} className="min-w-[160px]">
+                    <Plus className="h-4 w-4" />
+                    <span className="ml-2">New Audiobook</span>
+                  </Button>
                 </div>
               )}
             </div>
-            {activeTab !== 'audiobook-detail' && (
-              <button
-                onClick={handleCreateNewAudiobook}
-                className="bg-gradient-primary hover:opacity-90 text-primary-foreground px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
-                aria-label="Create New Audiobook"
-              >
-                <Plus size={18} />
-                New Audiobook
-              </button>
-            )}
           </div>
-        </header>
-        <main className="p-8 animate-slide-up">
+        </div>
+        <main className="mx-auto max-w-[1280px] space-y-6 px-6 py-6">
           {activeTab === 'home' && <OverviewPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
-          {activeTab === 'audiobooks' && <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
+          {activeTab === 'audiobooks' && (
+            <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} searchQuery={searchQuery} />
+          )}
           {activeTab === 'audiobook-detail' && selectedAudiobookId && (
             <AudiobookDetailPage audiobookId={selectedAudiobookId} onBack={handleBackToAudiobooks} />
           )}

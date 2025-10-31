@@ -344,10 +344,10 @@ p-8  /* 64px */
 - [x] Design tokens created
 - [x] Tailwind config updated
 - [x] Button migrated
-- [ ] Input
-- [ ] Badge
-- [ ] Card
-- [ ] Table
+- [x] Input migrated
+- [x] Badge migrated
+- [x] Card migrated
+- [x] Table migrated
 
 ### Phase 2: Find and Replace
 
@@ -373,6 +373,12 @@ bg-gray-700 → bg-muted
 border-white → border-border
 border-gray-700 → border-border
 ```
+
+**Legacy Gradient Utilities:**
+
+- Remove `bg-gradient-*` helpers in favor of flat token backgrounds (`bg-surface`, `bg-primary`).
+- Replace glow classes (`shadow-glow`, `hover-glow`, `card-elevation`) with semantic borders or `shadow-none`.
+- Normalize radii by mapping `rounded-xl+` to `rounded-lg` for app surfaces.
 
 ### Phase 3: Spacing Alignment
 
