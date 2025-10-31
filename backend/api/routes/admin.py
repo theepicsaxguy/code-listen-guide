@@ -781,6 +781,9 @@ async def refund_payment(
         "reason": "requested_by_customer"  // Optional: duplicate, fraudulent, requested_by_customer
     }
     """
+    logger.info(f"Refund request for payment {payment_id} by admin {current_user.email}")
+    logger.info(f"Refund data: {refund_data.dict() if refund_data else 'None'}")
+
     try:
         import stripe
         from backend.config import get_settings
@@ -788,18 +791,23 @@ async def refund_payment(
         # Get payment from database
         payment = db.query(Payment).filter(Payment.id == payment_id).first()
         if not payment:
+            logger.error(f"Payment {payment_id} not found")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Payment not found"
             )
 
+        logger.info(f"Payment found: id={payment.id}, status={payment.status}, amount_cents={payment.amount_cents}, stripe_id={payment.stripe_payment_intent_id}")
+
         if payment.status != 'succeeded':
+            logger.error(f"Cannot refund payment with status: {payment.status}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Cannot refund payment with status: {payment.status}"
             )
 
         if not payment.stripe_payment_intent_id:
+            logger.error("Payment has no Stripe payment intent ID")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Payment has no Stripe payment intent ID"
@@ -807,7 +815,15 @@ async def refund_payment(
 
         # Initialize Stripe
         settings = get_settings()
+        if not settings.STRIPE_SECRET_KEY:
+            logger.error("Stripe secret key not configured")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Stripe not configured"
+            )
+
         stripe.api_key = settings.STRIPE_SECRET_KEY
+        logger.info("Stripe initialized")
 
         # Prepare refund parameters
         refund_params = {
@@ -818,28 +834,36 @@ async def refund_payment(
         if refund_data.amount is not None:
             amount_dollars = refund_data.amount
             if payment.amount_cents is None:
+                logger.error("Payment has no amount recorded")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Payment has no amount recorded"
                 )
             if amount_dollars > (payment.amount_cents / 100):
+                logger.error(f"Refund amount {amount_dollars} exceeds payment amount {payment.amount_cents / 100}")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Refund amount cannot exceed payment amount"
                 )
             refund_params["amount"] = int(amount_dollars * 100)
+            logger.info(f"Refund amount: {amount_dollars} dollars = {refund_params['amount']} cents")
 
         # Add optional reason
         if refund_data.reason:
             refund_params["reason"] = refund_data.reason
+            logger.info(f"Refund reason: {refund_data.reason}")
+
+        logger.info(f"Creating Stripe refund with params: {refund_params}")
 
         # Create refund in Stripe
         refund = stripe.Refund.create(**refund_params)
+        logger.info(f"Stripe refund created: {refund}")
 
         # Update payment status in database
         if refund["status"] == "succeeded":
             payment.status = "refunded"
             db.commit()
+            logger.info(f"Payment {payment_id} status updated to refunded")
 
         logger.info(
             f"Admin {current_user.email} issued refund for payment {payment_id}. "
@@ -862,7 +886,7 @@ async def refund_payment(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error refunding payment {payment_id}: {e}")
+        logger.error(f"Unexpected error refunding payment {payment_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to process refund"
