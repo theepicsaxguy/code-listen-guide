@@ -17,6 +17,7 @@ import {
   FileCode2,
   Zap,
   ArrowLeft,
+  GitBranch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +28,7 @@ const navItems = [
   { path: "/admin/payments", label: "Payments", icon: CreditCard },
   { path: "/admin/content", label: "Content", icon: BookOpen },
   { path: "/admin/versioning", label: "Versioning", icon: History },
+  { path: "/admin/workflows", label: "Workflows", icon: GitBranch },
   { path: "/admin/agents", label: "Agents", icon: Activity },
   { path: "/admin/tracing", label: "Job Tracing", icon: ActivityIcon },
   { path: "/admin/chonkie-test", label: "chonkie Test", icon: FileCode2 },

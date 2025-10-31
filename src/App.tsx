@@ -29,6 +29,8 @@ import AdminSettings from "./pages/admin/Settings";
 import ChonkieTest from "./pages/admin/ChonkieTest";
 import AgentTest from "./pages/admin/AgentTest";
 import AdminParse from "./pages/AdminParse";
+import WorkflowList from "./pages/admin/workflows/WorkflowList";
+import WorkflowDetails from "./pages/admin/workflows/WorkflowDetails";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +63,8 @@ const App = () => (
                 <Route path="chonkie-test" element={<ChonkieTest />} />
                 <Route path="agent-test" element={<AgentTest />} />
                 <Route path="parse" element={<AdminParse />} />
+                <Route path="workflows" element={<WorkflowList />} />
+                <Route path="workflows/:workflowId" element={<WorkflowDetails />} />
                 <Route path="support" element={<Support />} />
                 <Route path="audit" element={<AdminAuditLogs />} />
                 <Route path="settings" element={<AdminSettings />} />
