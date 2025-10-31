@@ -44,7 +44,7 @@ Developer-grade design system with strict tokens, WCAG AA compliance, and system
 
 ## Implementation Details
 
-See full documentation in `DESIGN_SYSTEM_GUIDE.md` for:
+All design tokens are defined in `src/index.css` via `@theme`:
 - Complete token reference
 - Component standards
 - Typography system
