@@ -13,37 +13,24 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen">
-      <nav className="fixed top-0 w-full z-50 bg-card">
-        <div className="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl sm:text-2xl font-bold gradient-text-primary">
-            Codebase Audiobook
-          </h1>
-          <div className="flex gap-2 sm:gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/why-we-exist')}
-              className="hover:bg-primary/10 hover:text-primary transition-colors"
-            >
+    <div className="min-h-screen bg-background">
+      <nav className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
+        <div className="mx-auto flex max-w-content items-center justify-between px-4 py-4 sm:px-6">
+          <p className="text-lg font-semibold text-foreground">Codebase Audiobook</p>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="ghost" onClick={() => navigate('/why-we-exist')} className="hidden sm:inline-flex">
               Why we exist
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/auth')}
-              className="hidden sm:inline-flex hover:bg-primary/10 hover:text-primary transition-colors"
-            >
+            <Button variant="ghost" onClick={() => navigate('/auth')} className="hidden sm:inline-flex">
               Login
             </Button>
-            <Button
-              onClick={() => navigate('/auth')}
-              className="bg-gradient-to-r from-primary to-accent hover:scale-105 shadow-[0_0_20px_rgba(138,43,226,0.3)] hover:shadow-[0_0_30px_rgba(0,255,255,0.4)] transition-all duration-300"
-            >
-              Get Started
+            <Button onClick={() => navigate('/auth')} className="transition-standard">
+              Get started
             </Button>
           </div>
         </div>
       </nav>
-      <div className="pt-16">
+      <div className="pt-20">
         <Hero />
         <Stats />
         <HowItWorks />
