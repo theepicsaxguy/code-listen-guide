@@ -31,6 +31,8 @@ import AgentTest from "./pages/admin/AgentTest";
 import AdminParse from "./pages/AdminParse";
 import WorkflowList from "./pages/admin/workflows/WorkflowList";
 import WorkflowDetails from "./pages/admin/workflows/WorkflowDetails";
+import AdminPlugins from "./pages/admin/Plugins";
+import AgentManagement from "./pages/admin/AgentManagement";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,8 @@ const App = () => (
                 <Route path="content" element={<AdminContent />} />
                 <Route path="versioning" element={<ContentVersioning />} />
                 <Route path="agents" element={<AgentMonitoring />} />
+                <Route path="agents/manage" element={<AgentManagement />} />
+                <Route path="plugins" element={<AdminPlugins />} />
                 <Route path="tracing" element={<JobTracing />} />
                 <Route path="chonkie-test" element={<ChonkieTest />} />
                 <Route path="agent-test" element={<AgentTest />} />
