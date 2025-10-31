@@ -28,7 +28,7 @@ const buttonVariants = cva(
       variant: {
         // Primary: High contrast cyan with white text
         default:
-          "bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-active",
+          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80",
 
         // Secondary: Ghost style - text/icon with hover only
         secondary:
@@ -36,7 +36,7 @@ const buttonVariants = cva(
 
         // Danger: High risk actions
         danger:
-          "bg-danger text-danger-foreground hover:bg-danger-hover active:bg-danger/80",
+          "bg-danger text-danger-foreground hover:bg-danger/90 active:bg-danger/80",
 
         // Ghost: Transparent with hover
         ghost:
