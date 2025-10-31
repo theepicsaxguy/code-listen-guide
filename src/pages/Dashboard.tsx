@@ -56,38 +56,7 @@ const Dashboard: React.FC = () => {
     }
   }, [authUser, isAuthLoading, navigate]);
 
-  // Show loading while checking auth
-  if (isAuthLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render dashboard if not authenticated
-  if (!authUser) {
-    return null;
-  }
-
-  const handleNavigateToAudiobook = (id: string) => {
-    setSelectedAudiobookId(id);
-    setActiveTab('audiobook-detail');
-  };
-
-  const handleBackToAudiobooks = () => {
-    setSelectedAudiobookId(null);
-    setActiveTab('audiobooks');
-  };
-
-  const handleCreateNewAudiobook = () => {
-    // Navigate to the submit page where users can create new audiobooks
-    navigate('/submit');
-  };
-
+  // Memoize title/description/crumbs BEFORE early returns to ensure hooks order consistency
   const { title, description, crumbs } = useMemo(() => {
     if (activeTab === 'audiobook-detail' && selectedAudiobookId) {
       return {
@@ -138,6 +107,38 @@ const Dashboard: React.FC = () => {
       ],
     };
   }, [activeTab, selectedAudiobookId]);
+
+  // Show loading while checking auth
+  if (isAuthLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!authUser) {
+    return null;
+  }
+
+  const handleNavigateToAudiobook = (id: string) => {
+    setSelectedAudiobookId(id);
+    setActiveTab('audiobook-detail');
+  };
+
+  const handleBackToAudiobooks = () => {
+    setSelectedAudiobookId(null);
+    setActiveTab('audiobooks');
+  };
+
+  const handleCreateNewAudiobook = () => {
+    // Navigate to the submit page where users can create new audiobooks
+    navigate('/submit');
+  };
 
   return (
     <div className="flex min-h-screen bg-background text-foreground relative">
