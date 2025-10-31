@@ -161,3 +161,28 @@ def verify_webhook_signature(payload: str, signature: str, secret: str) -> bool:
         return False
     except Exception:
         return False
+
+
+class RefundRequest(BaseModel):
+    """Schema for refund request."""
+
+    amount: Optional[float] = None
+    reason: Optional[str] = "requested_by_customer"
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: Optional[str]) -> Optional[str]:
+        """Validate refund reason."""
+        if v is not None:
+            allowed_reasons = ["duplicate", "fraudulent", "requested_by_customer"]
+            if v not in allowed_reasons:
+                raise ValueError(f"Reason must be one of: {', '.join(allowed_reasons)}")
+        return v
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v: Optional[float]) -> Optional[float]:
+        """Validate refund amount."""
+        if v is not None and v <= 0:
+            raise ValueError("Amount must be greater than 0")
+        return v

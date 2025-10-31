@@ -18,6 +18,7 @@ from backend.models.user import User
 from backend.models.job import Job
 from backend.models.payment import Payment
 from backend.api.dependencies import require_admin
+from backend.api.schemas.payment import RefundRequest
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -727,13 +728,14 @@ async def get_payment_stats(
 
         # Revenue by day for last 30 days (for charts)
         thirty_days_ago = now - timedelta(days=30)
+        from sqlalchemy import cast, Date
         daily_revenue = db.query(
-            func.date(Payment.created_at).label('date'),
+            cast(Payment.created_at, Date).label('date'),
             func.sum(Payment.amount_cents).label('revenue')
         ).filter(
             Payment.status == 'succeeded',
             Payment.created_at >= thirty_days_ago
-        ).group_by(func.date(Payment.created_at)).order_by(func.date(Payment.created_at)).all()
+        ).group_by(cast(Payment.created_at, Date)).order_by(cast(Payment.created_at, Date)).all()
 
         revenue_chart = [
             {
@@ -764,7 +766,7 @@ async def get_payment_stats(
 @router.post("/payments/{payment_id}/refund")
 async def refund_payment(
     payment_id: str,
-    refund_data: dict,
+    refund_data: RefundRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -813,24 +815,23 @@ async def refund_payment(
         }
 
         # Add optional amount (convert dollars to cents)
-        if "amount" in refund_data:
-            amount_dollars = refund_data["amount"]
-            if amount_dollars <= 0 or amount_dollars > (payment.amount_cents / 100):
+        if refund_data.amount is not None:
+            amount_dollars = refund_data.amount
+            if payment.amount_cents is None:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid refund amount"
+                    detail="Payment has no amount recorded"
+                )
+            if amount_dollars > (payment.amount_cents / 100):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Refund amount cannot exceed payment amount"
                 )
             refund_params["amount"] = int(amount_dollars * 100)
 
         # Add optional reason
-        if "reason" in refund_data:
-            reason = refund_data["reason"]
-            if reason not in ["duplicate", "fraudulent", "requested_by_customer"]:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid refund reason"
-                )
-            refund_params["reason"] = reason
+        if refund_data.reason:
+            refund_params["reason"] = refund_data.reason
 
         # Create refund in Stripe
         refund = stripe.Refund.create(**refund_params)
