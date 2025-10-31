@@ -245,4 +245,4 @@ Block patterns:
 ---
 
 **Last Updated:** 2025-10-31  
-**See Also:** `docs/DESIGN_SYSTEM_GUIDE.md` for detailed examples
+**See Also:** `DESIGN_SYSTEM.md` and `src/index.css` for design tokens and component standards
