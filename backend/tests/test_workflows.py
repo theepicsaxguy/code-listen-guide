@@ -449,6 +449,95 @@ class TestWorkflowTasks:
 class TestCheckpointing:
     """Test workflow checkpoint functionality."""
 
+    def _make_workflow(
+        self,
+        monkeypatch,
+        agent_descriptor,
+    ):
+        from types import SimpleNamespace
+        from uuid import UUID, uuid4
+
+        from backend.workflows import audiobook_workflow as workflow_module
+        from backend.workflows.dynamic_loader import RevisionDescriptor, StepDescriptor
+
+        class DummyManager:
+            def __init__(self) -> None:
+                self.instance_state: Dict[str, Any] = {"steps": {}}
+                self.updated: List[Any] = []
+
+            def ensure_instance(
+                self,
+                *,
+                job_id: UUID,
+                revision: Any,
+                job_context: Any,
+            ) -> Dict[str, Any]:
+                return dict(self.instance_state)
+
+            def update_instance(
+                self,
+                *,
+                job_id: UUID,
+                current_step_id: Optional[UUID] = None,
+                state: Optional[Dict[str, Any]] = None,
+                **_: Any,
+            ) -> None:
+                if state is not None:
+                    self.instance_state = state
+                self.updated.append((job_id, current_step_id))
+
+        step_descriptor = StepDescriptor(
+            id=uuid4(),
+            order=1,
+            name="analysis",
+            execution_mode="sequential",
+            checkpoint_enabled=True,
+            input_mapping={},
+            output_mapping={},
+            retry_policy=None,
+            step_config={},
+            agent=agent_descriptor,
+        )
+        revision_descriptor = RevisionDescriptor(
+            id=uuid4(),
+            workflow_id=uuid4(),
+            workflow_name="audiobook_generation",
+            version=1,
+            is_published=True,
+            metadata={},
+            steps=[step_descriptor],
+        )
+        dummy_manager = DummyManager()
+
+        monkeypatch.setattr(
+            workflow_module.AudiobookWorkflow,
+            "_load_revision",
+            lambda self, revision_id: revision_descriptor,
+        )
+        monkeypatch.setattr(
+            workflow_module,
+            "get_tool_registry_manager",
+            lambda: SimpleNamespace(resolve_agent_tools=lambda _refs: []),
+        )
+        monkeypatch.setattr(
+            workflow_module,
+            "get_job_by_id",
+            lambda _job_id: SimpleNamespace(repo_name="repo", repo_owner="owner", git_ref="main"),
+        )
+        monkeypatch.setattr(
+            workflow_module,
+            "PostgresCheckpointStorage",
+            lambda workflow_id: SimpleNamespace(workflow_id=workflow_id),
+        )
+
+        workflow = workflow_module.AudiobookWorkflow(
+            job_id=str(uuid4()),
+            repo_url="https://example.com/repo.git",
+            depth_tier="standard",
+            workflow_manager=dummy_manager,
+        )
+        return workflow, dummy_manager, step_descriptor
+
     @pytest.mark.asyncio
     async def test_save_checkpoint_persists_record(self, test_db):
         """Persist a checkpoint using the helper."""
@@ -579,15 +668,9 @@ class TestCheckpointing:
         """Ensure tool instrumentation emits billing and audit payloads."""
         from datetime import datetime
         from types import SimpleNamespace
-        from uuid import UUID, uuid4
+        from uuid import uuid4
 
-        from backend.workflows import audiobook_workflow as workflow_module
-        from backend.workflows.dynamic_loader import (
-            AgentDescriptor,
-            RevisionDescriptor,
-            StepDescriptor,
-            ToolDescriptor,
-        )
+        from backend.workflows.dynamic_loader import AgentDescriptor, ToolDescriptor
 
         agent_descriptor = AgentDescriptor(
             id=uuid4(),
@@ -605,83 +688,11 @@ class TestCheckpointing:
             rollout_stage="beta",
             access_policies={"default": {"allow": [], "deny": [], "metadata": {}}, "overrides": []},
             quota_limits={"default": {"limit": None, "window": None, "cooldown_seconds": None, "metadata": {}}, "overrides": []},
+            approval_requirements={"default": {"mode": "auto", "metadata": {}}, "overrides": []},
         )
-        step_descriptor = StepDescriptor(
-            id=uuid4(),
-            order=1,
-            name="analysis",
-            execution_mode="sequential",
-            checkpoint_enabled=True,
-            input_mapping={},
-            output_mapping={},
-            retry_policy=None,
-            step_config={},
-            agent=agent_descriptor,
-        )
-        revision_descriptor = RevisionDescriptor(
-            id=uuid4(),
-            workflow_id=uuid4(),
-            workflow_name="audiobook_generation",
-            version=1,
-            is_published=True,
-            metadata={},
-            steps=[step_descriptor],
-        )
-
-        class DummyManager:
-            def __init__(self) -> None:
-                self.instance_state: Dict[str, Any] = {"steps": {}}
-                self.updated: List[Any] = []
-
-            def ensure_instance(
-                self,
-                *,
-                job_id: UUID,
-                revision: Any,
-                job_context: Any,
-            ) -> Dict[str, Any]:
-                return dict(self.instance_state)
-
-            def update_instance(
-                self,
-                *,
-                job_id: UUID,
-                current_step_id: Optional[UUID] = None,
-                state: Optional[Dict[str, Any]] = None,
-                **_: Any,
-            ) -> None:
-                if state is not None:
-                    self.instance_state = state
-                self.updated.append((job_id, current_step_id))
-
-        dummy_manager = DummyManager()
-
-        monkeypatch.setattr(
-            workflow_module.AudiobookWorkflow,
-            "_load_revision",
-            lambda self, revision_id: revision_descriptor,
-        )
-        monkeypatch.setattr(
-            workflow_module,
-            "get_tool_registry_manager",
-            lambda: SimpleNamespace(resolve_agent_tools=lambda _refs: []),
-        )
-        monkeypatch.setattr(
-            workflow_module,
-            "get_job_by_id",
-            lambda _job_id: SimpleNamespace(repo_name="repo", repo_owner="owner", git_ref="main"),
-        )
-        monkeypatch.setattr(
-            workflow_module,
-            "PostgresCheckpointStorage",
-            lambda workflow_id: SimpleNamespace(workflow_id=workflow_id),
-        )
-
-        workflow = workflow_module.AudiobookWorkflow(
-            job_id=str(uuid4()),
-            repo_url="https://example.com/repo.git",
-            depth_tier="standard",
-            workflow_manager=dummy_manager,
+        workflow, dummy_manager, step_descriptor = self._make_workflow(
+            monkeypatch,
+            agent_descriptor,
         )
 
         billing_events: List[Dict[str, Any]] = []
@@ -745,6 +756,208 @@ class TestCheckpointing:
         assert audit_events[0]["cost"]["estimated_cost_cents"] == 10
         assert tool_id in dummy_manager.instance_state["billing_summary"]["tools"]
         assert dummy_manager.updated, "workflow manager should persist state"
+
+    def test_policy_denies_tool_calls(self, monkeypatch):
+        """Agent access policies should block forbidden tools."""
+        from uuid import uuid4
+
+        import pytest
+
+        from backend.workflows.audiobook_workflow import ToolAuthorizationError
+        from backend.workflows.dynamic_loader import AgentDescriptor, ToolDescriptor
+
+        agent_descriptor = AgentDescriptor(
+            id=uuid4(),
+            name="outline-agent",
+            module_path="pkg.agents",
+            factory_function="build",
+            description=None,
+            config_schema={},
+            allowed_tools=("doc-search",),
+            model_identifier=None,
+            provider=None,
+            system_prompt=None,
+            memory_pointers=(),
+            rollout_enabled=True,
+            rollout_stage="beta",
+            access_policies={
+                "default": {"allow": ["scope:internal"], "deny": [], "metadata": {}},
+                "overrides": [
+                    {
+                        "subject": "tool:doc-search",
+                        "allow": [],
+                        "deny": ["tool:doc-search"],
+                        "metadata": {"reason": "blocked by security"},
+                    }
+                ],
+            },
+            quota_limits={"default": {"limit": None, "window": None, "cooldown_seconds": None, "metadata": {}}, "overrides": []},
+            approval_requirements={"default": {"mode": "auto", "metadata": {}}, "overrides": []},
+        )
+        workflow, dummy_manager, _ = self._make_workflow(monkeypatch, agent_descriptor)
+        tool_descriptor = ToolDescriptor(
+            id=uuid4(),
+            name="Doc Search",
+            stable_slug="doc-search",
+            semantic_version="1.0.0",
+            module_path="pkg.tools",
+            function_name="run",
+            description=None,
+            input_schema={},
+            output_schema={},
+            owning_team="core-platform",
+            authorization_scope="internal",
+            approval_mode="auto",
+            cost_profile={},
+        )
+
+        with pytest.raises(ToolAuthorizationError) as excinfo:
+            workflow._validate_tool_authorization(agent_descriptor, tool_descriptor)
+
+        message = str(excinfo.value)
+        assert "blocked" in message or "denies" in message
+        policy = excinfo.value.context.get("policy", {})
+        assert policy.get("rule") == "tool:doc-search"
+        assert dummy_manager.instance_state["steps"] == {}
+
+    def test_quota_enforcement_blocks_second_call(self, monkeypatch):
+        """Quota limits should prevent repeated usage within the same job."""
+        from uuid import uuid4
+
+        import pytest
+
+        from backend.workflows.audiobook_workflow import ToolAuthorizationError
+        from backend.workflows.dynamic_loader import AgentDescriptor, ToolDescriptor
+
+        quota_limits = {
+            "default": {"limit": None, "window": None, "cooldown_seconds": None, "metadata": {}},
+            "overrides": [
+                {
+                    "subject": "tool:doc-search",
+                    "limit": 1,
+                    "window": None,
+                    "metadata": {"reason": "one call per job"},
+                }
+            ],
+        }
+        agent_descriptor = AgentDescriptor(
+            id=uuid4(),
+            name="quota-agent",
+            module_path="pkg.agents",
+            factory_function="build",
+            description=None,
+            config_schema={},
+            allowed_tools=("doc-search",),
+            model_identifier=None,
+            provider=None,
+            system_prompt=None,
+            memory_pointers=(),
+            rollout_enabled=True,
+            rollout_stage="beta",
+            access_policies={"default": {"allow": ["tool:doc-search"], "deny": [], "metadata": {}}, "overrides": []},
+            quota_limits=quota_limits,
+            approval_requirements={"default": {"mode": "auto", "metadata": {}}, "overrides": []},
+        )
+        workflow, dummy_manager, _ = self._make_workflow(monkeypatch, agent_descriptor)
+        tool_descriptor = ToolDescriptor(
+            id=uuid4(),
+            name="Doc Search",
+            stable_slug="doc-search",
+            semantic_version="1.0.0",
+            module_path="pkg.tools",
+            function_name="run",
+            description=None,
+            input_schema={},
+            output_schema={},
+            owning_team="core-platform",
+            authorization_scope="internal",
+            approval_mode="auto",
+            cost_profile={},
+        )
+
+        context = workflow._validate_tool_authorization(agent_descriptor, tool_descriptor)
+        assert context["quota"]["applied"][0]["count"] == 1
+        quota_state = dummy_manager.instance_state.get("quota_usage", {})
+        agent_state = quota_state[str(agent_descriptor.id)]
+        assert agent_state["tool:doc-search"]["count"] == 1
+
+        with pytest.raises(ToolAuthorizationError) as excinfo:
+            workflow._validate_tool_authorization(agent_descriptor, tool_descriptor)
+        quota_context = excinfo.value.context.get("quota", {})
+        assert quota_context.get("limit") == 1
+
+    def test_manual_approval_emits_event(self, monkeypatch):
+        """Manual approval policies should persist requests and emit events."""
+        from uuid import uuid4
+
+        import pytest
+
+        from backend.workflows import audiobook_workflow as workflow_module
+        from backend.workflows.audiobook_workflow import ToolApprovalRequiredError
+        from backend.workflows.dynamic_loader import AgentDescriptor, ToolDescriptor
+
+        approvals = {
+            "default": {"mode": "auto", "metadata": {}},
+            "overrides": [
+                {
+                    "subject": "tool:doc-search",
+                    "mode": "human",
+                    "metadata": {"reason": "needs review"},
+                }
+            ],
+        }
+        agent_descriptor = AgentDescriptor(
+            id=uuid4(),
+            name="approval-agent",
+            module_path="pkg.agents",
+            factory_function="build",
+            description=None,
+            config_schema={},
+            allowed_tools=("doc-search",),
+            model_identifier=None,
+            provider=None,
+            system_prompt=None,
+            memory_pointers=(),
+            rollout_enabled=True,
+            rollout_stage="beta",
+            access_policies={"default": {"allow": ["tool:doc-search"], "deny": [], "metadata": {}}, "overrides": []},
+            quota_limits={"default": {"limit": None, "window": None, "cooldown_seconds": None, "metadata": {}}, "overrides": []},
+            approval_requirements=approvals,
+        )
+        workflow, dummy_manager, _ = self._make_workflow(monkeypatch, agent_descriptor)
+        captured_events: List[Dict[str, Any]] = []
+        monkeypatch.setattr(
+            workflow_module,
+            "emit_job_event",
+            lambda job_id, payload: captured_events.append({"job_id": job_id, **payload}),
+        )
+        tool_descriptor = ToolDescriptor(
+            id=uuid4(),
+            name="Doc Search",
+            stable_slug="doc-search",
+            semantic_version="1.0.0",
+            module_path="pkg.tools",
+            function_name="run",
+            description=None,
+            input_schema={},
+            output_schema={},
+            owning_team="core-platform",
+            authorization_scope="internal",
+            approval_mode="guarded",
+            cost_profile={},
+        )
+
+        with pytest.raises(ToolApprovalRequiredError):
+            workflow._validate_tool_authorization(agent_descriptor, tool_descriptor)
+
+        approvals_state = dummy_manager.instance_state.get("pending_tool_approvals", {})
+        assert approvals_state
+        request = next(iter(approvals_state.values()))
+        assert request["status"] == "pending"
+        assert captured_events
+        event = captured_events[0]
+        assert event["stage"] == "tool_approval_wait"
+        assert event.get("reason") == "needs review"
 
 
 @pytest.mark.workflows

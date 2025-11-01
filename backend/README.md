@@ -118,6 +118,16 @@ Registry rows also include operational metadata that keeps cache keys and govern
 
 `backend/scripts/seed_workflow_registry.py` imports these schema constants directly, so the runtime registry, the database seed data, and the LLM-facing tool surface stay in sync. When you add a new tool, follow the same pattern: define the callable, export the schema dictionaries, then register it in the seed script.
 
+### Agent policy enforcement
+
+Agent registrations now ship with three JSON blobs that govern runtime behavior: `access_policies`, `quota_limits`, and `approval_requirements`. The dynamic loader normalizes each payload when it builds the in-memory `AgentDescriptor`, so downstream callers always see predictable structures (`default` plus optional `overrides`). The audiobook workflow enforces these rules before every tool call:
+
+- **Access policies** resolve against tool metadata tokens (name, slug, module path, scope, owning team, approval mode). Matching overrides take precedence, and allow/deny lists decide the outcome. Violations raise a `ToolAuthorizationError` with context that gets logged, audited, and emitted to clients.
+- **Quota limits** track per-agent/tool usage inside the workflow instance state (`quota_usage`). The counters persist to the database through `WorkflowInstance.instance_state`, so retries and multi-worker deployments honor prior consumption. Limits and cooldowns surface descriptive errors when exceeded.
+- **Approval requirements** coordinate human-in-the-loop gates. When a policy or tool declares manual/guarded use, the workflow stores a `pending_tool_approvals` entry, emits a `tool_approval_wait` job event, and raises `ToolApprovalRequiredError`. Downstream services can listen for that event and unblock execution once the request is approved.
+
+Because state changes are saved back through `WorkflowManager.update_instance`, quota and approval metadata survive process restarts and appear in admin dashboards alongside the existing step traces.
+
 ## Setup Instructions
 
 ### Prerequisites
