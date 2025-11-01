@@ -587,6 +587,7 @@ class TestCheckpointing:
             RevisionDescriptor,
             StepDescriptor,
             ToolDescriptor,
+            ToolCostProfile,
         )
 
         agent_descriptor = AgentDescriptor(
@@ -698,19 +699,19 @@ class TestCheckpointing:
             module_path="pkg.tools",
             function_name="run",
             description=None,
-            input_schema={
-                "metadata": {
-                    "billing": {
-                        "cost_per_1k_tokens_cents": 20,
-                        "provider": "llm-provider",
-                    }
-                }
-            },
+            input_schema={},
             output_schema={},
             owning_team="core-platform",
             authorization_scope="internal",
             approval_mode="auto",
-            cost_profile={"unit": "call", "estimated_cost_usd": 0.02},
+            cost_profile=ToolCostProfile(
+                cost_per_call_cents=None,
+                cost_per_1k_tokens_cents=20,
+                cost_per_second_cents=None,
+                currency="USD",
+                provider="llm-provider",
+                metadata={"unit": "call", "estimated_cost_usd": 0.02},
+            ),
         )
 
         trace: Dict[str, Any] = {
@@ -738,11 +739,16 @@ class TestCheckpointing:
         assert billing_events, "billing payload should be sent"
         billing_payload = billing_events[0]
         assert billing_payload["estimated_cost_cents"] == 10
+        assert billing_payload["provider"] == "llm-provider"
+        assert billing_payload["cost_profile"]["cost_per_1k_tokens_cents"] == 20
+        assert billing_payload["cost_profile"]["currency"] == "USD"
         tool_id = str(tool_descriptor.id)
         assert workflow._billing_summary[tool_id]["estimated_cost_cents"] == 10
         assert workflow._billing_summary[tool_id]["successful_calls"] == 1
+        assert workflow._billing_summary[tool_id]["provider"] == "llm-provider"
         assert audit_events, "audit payload should be emitted"
         assert audit_events[0]["cost"]["estimated_cost_cents"] == 10
+        assert audit_events[0]["cost"]["provider"] == "llm-provider"
         assert tool_id in dummy_manager.instance_state["billing_summary"]["tools"]
         assert dummy_manager.updated, "workflow manager should persist state"
 

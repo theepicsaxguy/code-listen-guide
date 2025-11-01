@@ -578,6 +578,11 @@ class TestToolRegistryModel:
         assert tool.authorization_scope == "internal"
         assert tool.approval_mode == "auto"
         assert tool.cost_profile == {}
+        assert tool.cost_per_call_cents is None
+        assert tool.cost_per_1k_tokens_cents is None
+        assert tool.cost_per_second_cents is None
+        assert tool.cost_currency is None
+        assert tool.cost_provider is None
 
     def test_tool_registry_unique_module_function(self, test_db):
         """Duplicate module/function pairs are rejected."""

@@ -3,10 +3,11 @@
 import re
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 from sqlalchemy import Column, DateTime, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import validates
 
 from backend.db.base import Base
 
@@ -91,16 +92,133 @@ class ToolRegistry(Base):
     authorization_scope = Column(String(255), nullable=False, default="internal")
     approval_mode = Column(String(64), nullable=False, default="auto")
     cost_profile = Column(JSON, nullable=False, default=dict)
+    cost_per_call_cents = Column(Integer)
+    cost_per_1k_tokens_cents = Column(Integer)
+    cost_per_second_cents = Column(Integer)
+    cost_currency = Column(String(16))
+    cost_provider = Column(String(255))
     last_validated_at = Column(DateTime)
     last_validation_error = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     @staticmethod
-    def normalize_cost_profile(value: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    def _coerce_cost_value(raw: Any) -> Optional[int]:
+        if raw is None or isinstance(raw, bool):
+            return None
+        if isinstance(raw, (int, float)):
+            return int(round(raw))
+        if isinstance(raw, str):
+            text = raw.strip()
+            if not text:
+                return None
+            try:
+                numeric = float(text)
+            except ValueError:
+                return None
+            return int(round(numeric))
+        return None
+
+    @classmethod
+    def _extract_cost_fields(cls, payload: Mapping[str, Any]) -> Dict[str, Optional[Any]]:
+        def _lookup(keys: List[str]) -> Optional[Any]:
+            for candidate in keys:
+                if candidate in payload and payload[candidate] is not None:
+                    return payload[candidate]
+            return None
+
+        billing_block = payload.get("billing")
+        billing_mapping: Mapping[str, Any] = billing_block if isinstance(billing_block, Mapping) else {}
+
+        per_call = cls._coerce_cost_value(
+            _lookup(["cost_per_call_cents", "costPerCallCents", "x-cost-per-call-cents"])
+            or cls._coerce_cost_value(billing_mapping.get("cost_per_call_cents"))
+        )
+        per_tokens = cls._coerce_cost_value(
+            _lookup(
+                [
+                    "cost_per_1k_tokens_cents",
+                    "costPer1kTokensCents",
+                    "x-cost-per-1k-tokens-cents",
+                ]
+            )
+            or cls._coerce_cost_value(billing_mapping.get("cost_per_1k_tokens_cents"))
+        )
+        per_second = cls._coerce_cost_value(
+            _lookup(["cost_per_second_cents", "costPerSecondCents", "x-cost-per-second-cents"])
+            or cls._coerce_cost_value(billing_mapping.get("cost_per_second_cents"))
+        )
+
+        currency_candidate = _lookup(["currency", "cost_currency", "billing_currency"])
+        if currency_candidate is None and isinstance(billing_mapping.get("currency"), str):
+            currency_candidate = billing_mapping.get("currency")
+        currency_value = currency_candidate.strip() if isinstance(currency_candidate, str) else None
+
+        provider_candidate = _lookup(["provider", "vendor", "billing_provider"])
+        if provider_candidate is None and isinstance(billing_mapping.get("provider"), str):
+            provider_candidate = billing_mapping.get("provider")
+        provider_value = provider_candidate.strip() if isinstance(provider_candidate, str) else None
+
+        return {
+            "cost_per_call_cents": per_call,
+            "cost_per_1k_tokens_cents": per_tokens,
+            "cost_per_second_cents": per_second,
+            "currency": currency_value or None,
+            "provider": provider_value or None,
+        }
+
+    @classmethod
+    def normalize_cost_profile(cls, value: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
         if not value:
             return {}
-        return dict(value)
+        if not isinstance(value, Mapping):
+            raise TypeError("cost_profile must be a mapping")
+        normalized: Dict[str, Any] = {}
+        for key, item in value.items():
+            if isinstance(item, Mapping):
+                normalized[key] = dict(item)
+            else:
+                normalized[key] = item
+        extracted = cls._extract_cost_fields(normalized)
+        for field, payload_value in extracted.items():
+            if payload_value is not None:
+                normalized[field] = payload_value
+        return normalized
+
+    @validates("cost_profile")
+    def _sync_cost_columns(self, _key: str, value: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
+        normalized = self.normalize_cost_profile(value)
+        extracted = self._extract_cost_fields(normalized)
+        self.cost_per_call_cents = extracted["cost_per_call_cents"]
+        self.cost_per_1k_tokens_cents = extracted["cost_per_1k_tokens_cents"]
+        self.cost_per_second_cents = extracted["cost_per_second_cents"]
+        currency = extracted["currency"]
+        provider = extracted["provider"]
+        has_pricing = any(
+            metric is not None
+            for metric in (
+                self.cost_per_call_cents,
+                self.cost_per_1k_tokens_cents,
+                self.cost_per_second_cents,
+            )
+        )
+        self.cost_currency = currency or ("USD" if has_pricing else None)
+        self.cost_provider = provider
+        return normalized
+
+    def export_cost_profile(self) -> Dict[str, Any]:
+        payload = self.normalize_cost_profile(self.cost_profile)
+        if self.cost_per_call_cents is not None:
+            payload["cost_per_call_cents"] = self.cost_per_call_cents
+        if self.cost_per_1k_tokens_cents is not None:
+            payload["cost_per_1k_tokens_cents"] = self.cost_per_1k_tokens_cents
+        if self.cost_per_second_cents is not None:
+            payload["cost_per_second_cents"] = self.cost_per_second_cents
+        if self.cost_currency:
+            payload["currency"] = self.cost_currency
+        if self.cost_provider:
+            payload["provider"] = self.cost_provider
+        return {key: value for key, value in payload.items() if value is not None}
 
 
 CORE_TOOL_REGISTRY_SEED_DATA: List[Dict[str, Any]] = [

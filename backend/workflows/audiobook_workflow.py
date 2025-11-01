@@ -33,6 +33,7 @@ from backend.workflows.dynamic_loader import (
     RevisionDescriptor,
     StepDescriptor,
     ToolDescriptor,
+    ToolCostProfile,
     WorkflowManager,
     get_tool_registry_manager,
     get_workflow_manager,
@@ -802,7 +803,7 @@ class AudiobookWorkflow:
     ) -> Optional[Dict[str, Any]]:
         cost_profile = self._extract_cost_profile(tool_descriptor)
         tokens_used = self._extract_token_usage(trace)
-        if not cost_profile and tokens_used is None:
+        if not cost_profile.has_pricing() and tokens_used is None:
             return None
         estimated_cost = self._estimate_cost(cost_profile, duration, tokens_used)
         if estimated_cost is None:
@@ -820,11 +821,11 @@ class AudiobookWorkflow:
         }
         if tokens_used is not None:
             record["tokens_used"] = int(tokens_used)
-        provider = cost_profile.get("provider")
-        if provider:
-            record["provider"] = provider
-        if cost_profile:
-            record["cost_profile"] = self._coerce_jsonable(cost_profile)
+        if cost_profile.provider:
+            record["provider"] = cost_profile.provider
+        cost_payload = cost_profile.as_dict()
+        if cost_payload:
+            record["cost_profile"] = self._coerce_jsonable(cost_payload)
         self._update_billing_summary(record)
         self._billing_client.send(record)
         return record
@@ -876,77 +877,29 @@ class AudiobookWorkflow:
             if record.get("provider"):
                 summary["provider"] = record["provider"]
 
-    def _extract_cost_profile(self, descriptor: ToolDescriptor) -> Dict[str, Any]:
-        profile: Dict[str, Any] = {}
-        schemas = [descriptor.input_schema or {}, descriptor.output_schema or {}]
-        for schema in schemas:
-            if not isinstance(schema, Mapping):
-                continue
-            for candidate_key in ("metadata", "x-metadata", "x_metadata", "$metadata"):
-                candidate = schema.get(candidate_key)
-                if isinstance(candidate, Mapping):
-                    self._merge_cost_metadata(profile, candidate)
-            self._merge_cost_metadata(profile, schema)
-        return {key: value for key, value in profile.items() if value is not None}
-
-    def _merge_cost_metadata(self, target: Dict[str, Any], source: Mapping[str, Any]) -> None:
-        numeric_keys = {
-            "cost_per_call_cents": "cost_per_call_cents",
-            "costPerCallCents": "cost_per_call_cents",
-            "x-cost-per-call-cents": "cost_per_call_cents",
-            "cost_per_1k_tokens_cents": "cost_per_1k_tokens_cents",
-            "costPer1kTokensCents": "cost_per_1k_tokens_cents",
-            "x-cost-per-1k-tokens-cents": "cost_per_1k_tokens_cents",
-            "cost_per_second_cents": "cost_per_second_cents",
-            "costPerSecondCents": "cost_per_second_cents",
-            "estimated_tokens": "estimated_tokens",
-            "estimatedTokens": "estimated_tokens",
-        }
-        passthrough_keys = {
-            "provider": "provider",
-            "currency": "currency",
-            "billing_category": "billing_category",
-            "usage_parameter": "usage_parameter",
-        }
-        for key, normalized in numeric_keys.items():
-            if normalized in target:
-                continue
-            value = source.get(key)
-            if value is not None:
-                target[normalized] = value
-        for key, normalized in passthrough_keys.items():
-            if normalized in target:
-                continue
-            value = source.get(key)
-            if value is not None:
-                target[normalized] = value
-        billing_block = source.get("billing")
-        if isinstance(billing_block, Mapping):
-            for key, value in billing_block.items():
-                if value is None or key in target:
-                    continue
-                target[key] = value
-
     def _estimate_cost(
         self,
-        profile: Mapping[str, Any],
+        profile: ToolCostProfile,
         duration: float,
         tokens_used: Optional[int],
     ) -> Optional[int]:
-        cost_per_call = self._to_number(profile.get("cost_per_call_cents"))
+        cost_per_call = self._to_number(profile.cost_per_call_cents)
         if cost_per_call is not None:
             return int(round(cost_per_call))
-        rate_per_tokens = self._to_number(profile.get("cost_per_1k_tokens_cents"))
+        rate_per_tokens = self._to_number(profile.cost_per_1k_tokens_cents)
         if rate_per_tokens is not None:
             token_count = tokens_used
             if token_count is None:
-                token_count = self._to_int(profile.get("estimated_tokens"))
+                token_count = self._to_int(profile.metadata.get("estimated_tokens"))
             if token_count is not None:
                 return int(round((rate_per_tokens * token_count) / 1000))
-        per_second = self._to_number(profile.get("cost_per_second_cents"))
+        per_second = self._to_number(profile.cost_per_second_cents)
         if per_second is not None:
             return int(round(per_second * duration))
         return None
+
+    def _extract_cost_profile(self, descriptor: ToolDescriptor) -> ToolCostProfile:
+        return descriptor.cost_profile
 
     def _to_number(self, value: Any) -> Optional[float]:
         if isinstance(value, (int, float)):

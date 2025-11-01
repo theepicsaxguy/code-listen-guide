@@ -42,6 +42,42 @@ class AgentDescriptor:
 
 
 @dataclass(frozen=True)
+class ToolCostProfile:
+    """Structured pricing metadata loaded from the registry."""
+
+    cost_per_call_cents: Optional[int]
+    cost_per_1k_tokens_cents: Optional[int]
+    cost_per_second_cents: Optional[int]
+    currency: Optional[str]
+    provider: Optional[str]
+    metadata: Dict[str, Any]
+
+    def as_dict(self) -> Dict[str, Any]:
+        payload = dict(self.metadata)
+        if self.cost_per_call_cents is not None:
+            payload["cost_per_call_cents"] = self.cost_per_call_cents
+        if self.cost_per_1k_tokens_cents is not None:
+            payload["cost_per_1k_tokens_cents"] = self.cost_per_1k_tokens_cents
+        if self.cost_per_second_cents is not None:
+            payload["cost_per_second_cents"] = self.cost_per_second_cents
+        if self.currency:
+            payload["currency"] = self.currency
+        if self.provider:
+            payload["provider"] = self.provider
+        return {key: value for key, value in payload.items() if value is not None}
+
+    def has_pricing(self) -> bool:
+        return any(
+            metric is not None
+            for metric in (
+                self.cost_per_call_cents,
+                self.cost_per_1k_tokens_cents,
+                self.cost_per_second_cents,
+            )
+        )
+
+
+@dataclass(frozen=True)
 class ToolDescriptor:
     """Description of a plugin/tool exposed to the orchestration runtime."""
 
@@ -57,7 +93,7 @@ class ToolDescriptor:
     owning_team: str
     authorization_scope: str
     approval_mode: str
-    cost_profile: Dict[str, Any]
+    cost_profile: ToolCostProfile
 
 
 class ToolRegistryManager:
@@ -148,6 +184,25 @@ class ToolRegistryManager:
         self._by_slug_version[(slug_key, descriptor.semantic_version)] = descriptor
 
     def _build_descriptor(self, tool: ToolRegistry) -> ToolDescriptor:
+        raw_cost_metadata = tool.export_cost_profile()
+        canonical_fields = {
+            "cost_per_call_cents",
+            "cost_per_1k_tokens_cents",
+            "cost_per_second_cents",
+            "currency",
+            "provider",
+        }
+        ambient_metadata = {
+            key: value for key, value in raw_cost_metadata.items() if key not in canonical_fields
+        }
+        cost_profile = ToolCostProfile(
+            cost_per_call_cents=tool.cost_per_call_cents,
+            cost_per_1k_tokens_cents=tool.cost_per_1k_tokens_cents,
+            cost_per_second_cents=tool.cost_per_second_cents,
+            currency=tool.cost_currency,
+            provider=tool.cost_provider,
+            metadata=ambient_metadata,
+        )
         return ToolDescriptor(
             id=tool.id,
             name=tool.name,
@@ -161,7 +216,7 @@ class ToolRegistryManager:
             owning_team=tool.owning_team,
             authorization_scope=tool.authorization_scope,
             approval_mode=tool.approval_mode,
-            cost_profile=ToolRegistry.normalize_cost_profile(tool.cost_profile),
+            cost_profile=cost_profile,
         )
 
     def _load_from_db(self, reference: Any) -> Optional[ToolDescriptor]:

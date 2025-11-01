@@ -223,7 +223,7 @@ def _validate_tool(tool: ToolRegistry, timestamp: datetime) -> ToolValidationRes
             issues.append("authorization scope mismatch")
         if tool.approval_mode != derived.approval_mode:
             issues.append("approval mode mismatch")
-        if ToolRegistry.normalize_cost_profile(tool.cost_profile) != derived.cost_profile:
+        if tool.export_cost_profile() != derived.cost_profile:
             issues.append("cost profile mismatch")
     tool.last_validated_at = timestamp
     tool.last_validation_error = None if not issues else "; ".join(issues)
