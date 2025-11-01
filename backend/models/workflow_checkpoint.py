@@ -1,7 +1,7 @@
 from sqlalchemy import Column, DateTime, JSON, String
 from sqlalchemy.sql import func
 
-from backend.db.session import Base
+from backend.db.base import Base
 
 
 class WorkflowCheckpoint(Base):

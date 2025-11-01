@@ -5,9 +5,10 @@ from importlib import import_module
 from typing import Generator
 
 from sqlalchemy import create_engine, text, inspect
-from sqlalchemy.orm import Session, declarative_base, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from backend.config import get_settings
+from backend.db.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +26,6 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
-
-Base = declarative_base()
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -59,7 +58,7 @@ def run_migrations() -> None:
 def init_db() -> None:
     """Create database tables for the registered SQLAlchemy models."""
 
-    module_name = "backend.models.workflow_checkpoint"
+    module_name = "backend.models"
 
     try:
         import_module(module_name)

@@ -22,6 +22,60 @@ from sqlalchemy.orm import Session
 from backend.db.session import SessionLocal
 from backend.models.agent_registry import AgentRegistry
 from backend.models.tool_registry import ToolRegistry
+from backend.tools.audio_tools import (
+    CONCAT_INPUT_SCHEMA,
+    CONCAT_OUTPUT_SCHEMA,
+    TTS_INPUT_SCHEMA,
+    TTS_OUTPUT_SCHEMA,
+    UPLOAD_INPUT_SCHEMA,
+    UPLOAD_OUTPUT_SCHEMA,
+)
+from backend.tools.banned_word_checker import (
+    BANNED_WORD_TOOL_INPUT_SCHEMA,
+    BANNED_WORD_TOOL_OUTPUT_SCHEMA,
+)
+from backend.tools.datetime_tools import (
+    DATETIME_TOOL_INPUT_SCHEMA,
+    DATETIME_TOOL_OUTPUT_SCHEMA,
+)
+from backend.tools.knowledge_base import (
+    KNOWLEDGE_BASE_INPUT_SCHEMA,
+    KNOWLEDGE_BASE_OUTPUT_SCHEMA,
+)
+from backend.tools.logger_tools import (
+    LOGGER_TOOL_INPUT_SCHEMA,
+    LOGGER_TOOL_OUTPUT_SCHEMA,
+)
+from backend.tools.markdown_formatter import (
+    MARKDOWN_FORMATTER_INPUT_SCHEMA,
+    MARKDOWN_FORMATTER_OUTPUT_SCHEMA,
+)
+from backend.tools.math_tools import MATH_TOOL_INPUT_SCHEMA, MATH_TOOL_OUTPUT_SCHEMA
+from backend.tools.moderation_tools import (
+    MODERATION_INPUT_SCHEMA,
+    MODERATION_OUTPUT_SCHEMA,
+)
+from backend.tools.regex_extractor import (
+    REGEX_EXTRACTOR_INPUT_SCHEMA,
+    REGEX_EXTRACTOR_OUTPUT_SCHEMA,
+)
+from backend.tools.sentiment_tools import (
+    SENTIMENT_INPUT_SCHEMA,
+    SENTIMENT_OUTPUT_SCHEMA,
+)
+from backend.tools.summarizer import (
+    SUMMARIZER_INPUT_SCHEMA,
+    SUMMARIZER_OUTPUT_SCHEMA,
+)
+from backend.tools.timer_tools import TIMER_TOOL_INPUT_SCHEMA, TIMER_TOOL_OUTPUT_SCHEMA
+from backend.tools.unit_converter import (
+    UNIT_CONVERTER_INPUT_SCHEMA,
+    UNIT_CONVERTER_OUTPUT_SCHEMA,
+)
+from backend.tools.weather_tools import (
+    WEATHER_TOOL_INPUT_SCHEMA,
+    WEATHER_TOOL_OUTPUT_SCHEMA,
+)
 
 
 def seed_agents(db: Session):
@@ -209,60 +263,129 @@ def seed_tools(db: Session):
             "module_path": "backend.tools.audio_tools",
             "function_name": "_ai_tts",
             "description": "Convert text to speech using OpenAI TTS API",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "text": {"type": "string"},
-                    "voice": {"type": "string"}
-                },
-                "required": ["text"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "audio_file": {"type": "string"}
-                }
-            }
+            "input_schema": TTS_INPUT_SCHEMA,
+            "output_schema": TTS_OUTPUT_SCHEMA,
         },
         {
             "name": "upload_to_s3",
             "module_path": "backend.tools.audio_tools",
             "function_name": "_ai_upload",
             "description": "Upload audio file to AWS S3",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "file_path": {"type": "string"},
-                    "s3_key": {"type": "string"}
-                },
-                "required": ["file_path", "s3_key"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "url": {"type": "string"}
-                }
-            }
+            "input_schema": UPLOAD_INPUT_SCHEMA,
+            "output_schema": UPLOAD_OUTPUT_SCHEMA,
         },
         {
             "name": "concatenate_audio",
             "module_path": "backend.tools.audio_tools",
             "function_name": "_ai_concat",
             "description": "Concatenate multiple audio files with chapter markers",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "audio_files": {"type": "array", "items": {"type": "string"}}
-                },
-                "required": ["audio_files"]
-            },
-            "output_schema": {
-                "type": "object",
-                "properties": {
-                    "output_file": {"type": "string"}
-                }
-            }
-        }
+            "input_schema": CONCAT_INPUT_SCHEMA,
+            "output_schema": CONCAT_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "current_datetime",
+            "module_path": "backend.tools.datetime_tools",
+            "function_name": "_ai_get_datetime",
+            "description": "Return the current datetime for the requested timezone",
+            "input_schema": DATETIME_TOOL_INPUT_SCHEMA,
+            "output_schema": DATETIME_TOOL_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "calculate_math",
+            "module_path": "backend.tools.math_tools",
+            "function_name": "_ai_calculate",
+            "description": "Perform a basic math operation on numeric values",
+            "input_schema": MATH_TOOL_INPUT_SCHEMA,
+            "output_schema": MATH_TOOL_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "check_banned_words",
+            "module_path": "backend.tools.banned_word_checker",
+            "function_name": "_ai_check_banned_words",
+            "description": "Detect banned words inside the supplied text",
+            "input_schema": BANNED_WORD_TOOL_INPUT_SCHEMA,
+            "output_schema": BANNED_WORD_TOOL_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "summarize_text",
+            "module_path": "backend.tools.summarizer",
+            "function_name": "_ai_summarize",
+            "description": "Generate a concise summary using the first sentences",
+            "input_schema": SUMMARIZER_INPUT_SCHEMA,
+            "output_schema": SUMMARIZER_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "analyze_sentiment",
+            "module_path": "backend.tools.sentiment_tools",
+            "function_name": "_ai_analyze_sentiment",
+            "description": "Provide a rule-based sentiment score for text",
+            "input_schema": SENTIMENT_INPUT_SCHEMA,
+            "output_schema": SENTIMENT_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "convert_units",
+            "module_path": "backend.tools.unit_converter",
+            "function_name": "_ai_convert_units",
+            "description": "Convert values between supported measurement units",
+            "input_schema": UNIT_CONVERTER_INPUT_SCHEMA,
+            "output_schema": UNIT_CONVERTER_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "weather_metrics",
+            "module_path": "backend.tools.weather_tools",
+            "function_name": "_ai_weather_metrics",
+            "description": "Calculate derived weather comfort metrics",
+            "input_schema": WEATHER_TOOL_INPUT_SCHEMA,
+            "output_schema": WEATHER_TOOL_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "knowledge_base_lookup",
+            "module_path": "backend.tools.knowledge_base",
+            "function_name": "_ai_query_knowledge_base",
+            "description": "Return the best matching knowledge base entries",
+            "input_schema": KNOWLEDGE_BASE_INPUT_SCHEMA,
+            "output_schema": KNOWLEDGE_BASE_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "structured_log",
+            "module_path": "backend.tools.logger_tools",
+            "function_name": "_ai_log_message",
+            "description": "Emit structured logs to the platform logger",
+            "input_schema": LOGGER_TOOL_INPUT_SCHEMA,
+            "output_schema": LOGGER_TOOL_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "regex_extract",
+            "module_path": "backend.tools.regex_extractor",
+            "function_name": "_ai_regex_extract",
+            "description": "Extract regex matches from text",
+            "input_schema": REGEX_EXTRACTOR_INPUT_SCHEMA,
+            "output_schema": REGEX_EXTRACTOR_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "moderate_text",
+            "module_path": "backend.tools.moderation_tools",
+            "function_name": "_ai_moderate_text",
+            "description": "Check text for policy violations using keyword rules",
+            "input_schema": MODERATION_INPUT_SCHEMA,
+            "output_schema": MODERATION_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "format_markdown",
+            "module_path": "backend.tools.markdown_formatter",
+            "function_name": "_ai_format_markdown",
+            "description": "Render markdown in a requested layout",
+            "input_schema": MARKDOWN_FORMATTER_INPUT_SCHEMA,
+            "output_schema": MARKDOWN_FORMATTER_OUTPUT_SCHEMA,
+        },
+        {
+            "name": "timer_window",
+            "module_path": "backend.tools.timer_tools",
+            "function_name": "_ai_timer",
+            "description": "Compute timer boundaries from a start time and duration",
+            "input_schema": TIMER_TOOL_INPUT_SCHEMA,
+            "output_schema": TIMER_TOOL_OUTPUT_SCHEMA,
+        },
     ]
     
     for tool_data in tools:

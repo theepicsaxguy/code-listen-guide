@@ -152,6 +152,7 @@ export interface JobTrace {
   error?: string;
   stages: JobStage[];
   workflow_trace?: WorkflowInstanceTrace | null;
+  tool_traces?: Record<string, Record<string, any>[]>;
 }
 
 export interface JobStage {
@@ -201,6 +202,12 @@ export interface PolicyQuotaMetrics {
   quotas: QuotaUsageMetric[];
   blocked_calls: BlockedCallMetric[];
   agent_acls: AgentAclMetric[];
+export interface StageReplayResponse {
+  success: boolean;
+  job_id: string;
+  stage: string;
+  requested_at: string;
+  message: string;
 }
 
 export interface SupportTicket {

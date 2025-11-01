@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     sentry_dsn: Optional[str] = Field(default=None)
     otel_exporter_otlp_endpoint: Optional[str] = Field(default=None)
     service_name: str = Field(default="cba-backend")
+    billing_service_url: Optional[str] = Field(default=None)
+    observability_ingest_url: Optional[str] = Field(default=None)
 
     rate_limit_per_minute: int = Field(default=60)
     rate_limit_storage_uri: str = Field(default="memory://")
@@ -54,6 +56,7 @@ class Settings(BaseSettings):
     max_concurrent_jobs_per_user: int = Field(default=3)
     redis_url: str = Field(..., min_length=1)
     log_level: str = Field(default="INFO")
+    tool_registry_check_interval_seconds: int = Field(default=900, ge=60)
 
     @model_validator(mode="after")
     def ensure_postgres(cls, values: "Settings") -> "Settings":

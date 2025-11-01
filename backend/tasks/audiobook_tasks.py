@@ -25,9 +25,15 @@ async def _start_audiobook_workflow(
     with tracer.start_as_current_span(
         "start_audiobook_workflow", attributes={"job_id": job_id}
     ):
-        workflow = _create_workflow(
-            job_id=job_id, repo_url=repo_url, depth_tier=depth_tier
-        )
+        try:
+            workflow = _create_workflow(
+                job_id=job_id, repo_url=repo_url, depth_tier=depth_tier
+            )
+        except ValueError as exc:
+            logger.warning(
+                "Skipping workflow start for job %s: %s", job_id, exc
+            )
+            return
         await workflow.execute()
 
 
@@ -45,9 +51,15 @@ async def _resume_audiobook_workflow(job_id: str) -> None:
         if job is None:
             logger.warning("Job %s not found when attempting resume", job_id)
             return
-        workflow = _create_workflow(
-            job_id=job_id, repo_url=job.repo_url, depth_tier=job.depth_tier
-        )
+        try:
+            workflow = _create_workflow(
+                job_id=job_id, repo_url=job.repo_url, depth_tier=job.depth_tier
+            )
+        except ValueError as exc:
+            logger.warning(
+                "Skipping workflow resume for job %s: %s", job_id, exc
+            )
+            return
         outline_record = _load_outline(job_id)
         if outline_record is None:
             await workflow.execute()

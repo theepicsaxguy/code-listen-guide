@@ -2,15 +2,29 @@
 
 import json
 import uuid
+from datetime import datetime
 
 import pytest
 from fastapi import status
 
+from backend.models.agent_registry import AgentRegistry
 from backend.models.chapter import Chapter
 from backend.models.deliverable import Deliverable
 from backend.models.job import Job
 from backend.models.outline import Outline
 from backend.models.payment import Payment
+from backend.models.tool_registry import ToolRegistry
+from backend.models.workflow_definition import WorkflowDefinition
+from backend.models.workflow_instance import WorkflowInstance
+from backend.models.workflow_revision import WorkflowRevision
+from backend.models.workflow_step import WorkflowStep
+from backend.utils.auth import create_access_token
+
+
+def _make_admin_headers(create_user):
+    admin = create_user(is_admin=True)
+    token = create_access_token({"sub": str(admin.id), "is_admin": True})
+    return {"Authorization": f"Bearer {token}"}, admin
 
 
 @pytest.mark.api
@@ -342,6 +356,15 @@ class TestPaymentRoutes:
         async def fake_create_payment_intent(**_kwargs):
             return DummyIntent()
 
+        class DummyStripeService:
+            async def create_customer(self, **_kwargs):
+                return "cus_test"
+
+        monkeypatch.setattr(
+            "backend.api.routes.payments.get_stripe_service",
+            lambda: DummyStripeService(),
+        )
+
         monkeypatch.setattr(
             "backend.api.routes.payments.create_payment_intent",
             fake_create_payment_intent,
@@ -415,6 +438,11 @@ class TestPaymentRoutes:
 
         monkeypatch.setattr(
             "backend.api.routes.payments.get_stripe_service", dummy_get_service
+        )
+
+        monkeypatch.setattr(
+            "backend.api.routes.payments.stripe.Charge.retrieve",
+            lambda charge_id: {"receipt_url": f"https://stripe.example/{charge_id}"},
         )
 
         payload = {
@@ -532,3 +560,250 @@ class TestPlayerRoutes:
         response = test_client.get(f"/api/v1/player/{job.id}/download/full")
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.json()["detail"] == "Deliverable not found"
+
+
+@pytest.mark.api
+@pytest.mark.unit
+class TestAdminRegistryRoutes:
+    def test_agent_registry_returns_paginated_metadata(
+        self,
+        test_client,
+        test_db,
+        create_user,
+    ):
+        headers, _ = _make_admin_headers(create_user)
+        tool = ToolRegistry(
+            name="test-tool",
+            module_path="backend.tools.example",
+            function_name="run",
+            description="Example",
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+        )
+        test_db.add(tool)
+        test_db.flush()
+        agent = AgentRegistry(
+            name="test-agent",
+            module_path="backend.agents.sample",
+            factory_function="build",
+            description="Demo agent",
+            config_schema={"level": "basic"},
+            tools=[str(tool.id)],
+        )
+        test_db.add(agent)
+        test_db.commit()
+
+        response = test_client.get("/api/v1/admin/agents/registry", headers=headers)
+        assert response.status_code == status.HTTP_200_OK
+        payload = response.json()
+        assert payload["total"] == 1
+        assert payload["page"] == 1
+        assert payload["page_size"] == 20
+        assert payload["agents"][0]["name"] == "test-agent"
+        assert payload["agents"][0]["tools"] == [str(tool.id)]
+
+    def test_agent_registry_requires_admin(self, test_client, auth_header):
+        headers, _ = auth_header()
+        response = test_client.get("/api/v1/admin/agents/registry", headers=headers)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_tool_registry_returns_paginated_metadata(
+        self,
+        test_client,
+        test_db,
+        create_user,
+    ):
+        headers, _ = _make_admin_headers(create_user)
+        tool = ToolRegistry(
+            name="alpha-tool",
+            module_path="backend.tools.alpha",
+            function_name="execute",
+            description="Alpha",
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+        )
+        test_db.add(tool)
+        test_db.commit()
+
+        response = test_client.get("/api/v1/admin/tools/registry", headers=headers)
+        assert response.status_code == status.HTTP_200_OK
+        payload = response.json()
+        assert payload["total"] == 1
+        assert payload["tools"][0]["name"] == "alpha-tool"
+        assert payload["tools"][0]["description"] == "Alpha"
+
+    def test_tool_registry_requires_admin(self, test_client, auth_header):
+        headers, _ = auth_header()
+        response = test_client.get("/api/v1/admin/tools/registry", headers=headers)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.api
+@pytest.mark.unit
+class TestTraceRoutes:
+    def _create_workflow(self, test_db, job):
+        definition = WorkflowDefinition(
+            name=f"trace-workflow-{job.id}", description="Test workflow"
+        )
+        test_db.add(definition)
+        test_db.commit()
+        revision = WorkflowRevision(
+            workflow_definition_id=definition.id,
+            version=1,
+            is_published=True,
+            revision_metadata={},
+        )
+        test_db.add(revision)
+        test_db.commit()
+        definition.current_revision_id = revision.id
+        test_db.commit()
+        steps = [
+            WorkflowStep(
+                revision_id=revision.id,
+                step_order=1,
+                step_name="analysis",
+                execution_mode="sequential",
+                input_mapping={},
+                output_mapping={},
+                checkpoint_enabled=True,
+                retry_policy=None,
+                step_config={},
+            ),
+            WorkflowStep(
+                revision_id=revision.id,
+                step_order=2,
+                step_name="outline",
+                execution_mode="sequential",
+                input_mapping={},
+                output_mapping={},
+                checkpoint_enabled=True,
+                retry_policy=None,
+                step_config={},
+            ),
+            WorkflowStep(
+                revision_id=revision.id,
+                step_order=3,
+                step_name="audio",
+                execution_mode="sequential",
+                input_mapping={},
+                output_mapping={},
+                checkpoint_enabled=True,
+                retry_policy=None,
+                step_config={},
+            ),
+        ]
+        test_db.add_all(steps)
+        test_db.commit()
+        instance = WorkflowInstance(
+            id=job.id,
+            job_id=job.id,
+            revision_id=revision.id,
+            current_step_id=steps[1].id,
+            instance_state={
+                "revision_id": str(revision.id),
+                "job": {"id": str(job.id)},
+                "steps": {
+                    "analysis": {
+                        "tool_calls": [
+                            {
+                                "tool": "analyzer",
+                                "called_at": "2024-01-01T00:00:00Z",
+                                "duration_ms": 1250,
+                                "status": "ok",
+                            }
+                        ],
+                        "updated_at": "2024-01-01T00:00:01Z",
+                    }
+                },
+            },
+            started_at=datetime.utcnow(),
+            status="running",
+        )
+        test_db.add(instance)
+        test_db.commit()
+
+    def test_get_job_trace_returns_stages_for_owner(
+        self,
+        test_client,
+        test_db,
+        create_user,
+        create_job,
+        auth_header,
+    ):
+        owner = create_user()
+        job = create_job(user=owner, status="running")
+        job.current_stage = "outline"
+        job.started_at = datetime.utcnow()
+        test_db.commit()
+        self._create_workflow(test_db, job)
+        headers, _ = auth_header(user=owner)
+
+        response = test_client.get(f"/api/v1/traces/{job.id}", headers=headers)
+        assert response.status_code == status.HTTP_200_OK
+        payload = response.json()
+        assert payload["id"] == str(job.id)
+        assert len(payload["stages"]) == 3
+        analysis_stage = next(stage for stage in payload["stages"] if stage["name"] == "analysis")
+        outline_stage = next(stage for stage in payload["stages"] if stage["name"] == "outline")
+        audio_stage = next(stage for stage in payload["stages"] if stage["name"] == "audio")
+        assert analysis_stage["status"] == "completed"
+        assert outline_stage["status"] in {"running", "completed"}
+        assert audio_stage["status"] == "pending"
+        assert payload["tool_traces"]["analysis"][0]["status"] == "ok"
+
+    def test_get_job_trace_rejects_non_owner(
+        self,
+        test_client,
+        create_user,
+        create_job,
+        auth_header,
+    ):
+        owner = create_user()
+        other = create_user(email="other@example.com")
+        job = create_job(user=owner)
+        headers, _ = auth_header(user=other)
+        response = test_client.get(f"/api/v1/traces/{job.id}", headers=headers)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_replay_stage_records_request(
+        self,
+        test_client,
+        test_db,
+        create_user,
+        create_job,
+    ):
+        owner = create_user()
+        job = create_job(user=owner, status="running")
+        job.current_stage = "analysis"
+        test_db.commit()
+        self._create_workflow(test_db, job)
+        headers, _ = _make_admin_headers(create_user)
+        response = test_client.post(
+            f"/api/v1/traces/{job.id}/stages/analysis/replay",
+            headers=headers,
+        )
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        data = response.json()
+        assert data["success"] is True
+        test_db.refresh(job)
+        history = job.metadata_json.get("replay_requests", []) if job.metadata_json else []
+        assert len(history) == 1
+        assert history[0]["stage"] == "analysis"
+
+    def test_replay_stage_requires_admin(
+        self,
+        test_client,
+        test_db,
+        create_user,
+        create_job,
+        auth_header,
+    ):
+        owner = create_user()
+        job = create_job(user=owner, status="running")
+        self._create_workflow(test_db, job)
+        headers, _ = auth_header(user=owner)
+        response = test_client.post(
+            f"/api/v1/traces/{job.id}/stages/analysis/replay",
+            headers=headers,
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN

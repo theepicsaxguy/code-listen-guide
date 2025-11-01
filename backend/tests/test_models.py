@@ -547,3 +547,126 @@ class TestModelRelationships:
         # Chapters should be deleted too (if cascade is configured)
         chapters = test_db.query(Chapter).filter_by(job_id=job.id).all()
         assert len(chapters) == 0
+
+
+@pytest.mark.models
+@pytest.mark.unit
+class TestToolRegistryModel:
+    """Validate tool registry defaults, constraints, and seed definitions."""
+
+    def test_tool_registry_defaults(self, test_db):
+        """New tool entries gain default versioning metadata."""
+        from backend.models.tool_registry import ToolRegistry
+
+        ToolRegistry.__table__.create(bind=test_db.get_bind(), checkfirst=True)
+
+        tool = ToolRegistry(
+            name="sample_tool",
+            module_path="example.module",
+            function_name="do_work",
+        )
+        test_db.add(tool)
+        test_db.commit()
+        test_db.refresh(tool)
+
+        assert tool.schema_version == 1
+        assert tool.updated_at is not None
+
+    def test_tool_registry_unique_module_function(self, test_db):
+        """Duplicate module/function pairs are rejected."""
+        from backend.models.tool_registry import ToolRegistry
+        from sqlalchemy.exc import IntegrityError
+
+        ToolRegistry.__table__.create(bind=test_db.get_bind(), checkfirst=True)
+
+        first = ToolRegistry(
+            name="first_tool",
+            module_path="example.module",
+            function_name="shared",
+        )
+        test_db.add(first)
+        test_db.commit()
+
+        duplicate = ToolRegistry(
+            name="second_tool",
+            module_path="example.module",
+            function_name="shared",
+        )
+        test_db.add(duplicate)
+
+        with pytest.raises(IntegrityError):
+            test_db.commit()
+        test_db.rollback()
+
+    def test_core_seed_set_inserts_cleanly(self, test_db):
+        """The curated core tool definitions satisfy model constraints."""
+        from backend.models.tool_registry import (
+            CORE_TOOL_REGISTRY_SEED_DATA,
+            ToolRegistry,
+        )
+
+        ToolRegistry.__table__.create(bind=test_db.get_bind(), checkfirst=True)
+
+        test_db.query(ToolRegistry).delete()
+        test_db.flush()
+
+        for definition in CORE_TOOL_REGISTRY_SEED_DATA:
+            record = ToolRegistry(
+                name=definition["name"],
+                module_path=definition["module_path"],
+                function_name=definition["function_name"],
+                description=definition.get("description"),
+                input_schema=definition.get("input_schema"),
+                output_schema=definition.get("output_schema"),
+                schema_version=definition.get("schema_version", 1),
+            )
+            test_db.add(record)
+
+        test_db.commit()
+
+        stored = test_db.query(ToolRegistry).all()
+        assert len(stored) == len(CORE_TOOL_REGISTRY_SEED_DATA)
+
+
+@pytest.mark.models
+@pytest.mark.unit
+class TestAgentRegistryModel:
+    """Validate ACL and quota metadata on registered agents."""
+
+    def test_agent_registry_acl_defaults(self, test_db):
+        """Agents default to empty policy structures."""
+        from backend.models.agent_registry import AgentRegistry
+
+        AgentRegistry.__table__.create(bind=test_db.get_bind(), checkfirst=True)
+
+        agent = AgentRegistry(
+            name="example_agent",
+            module_path="example.module",
+            factory_function="make",
+        )
+        test_db.add(agent)
+        test_db.commit()
+        test_db.refresh(agent)
+
+        assert agent.access_policies == {}
+        assert agent.quota_limits == {}
+
+    def test_agent_registry_policy_updates(self, test_db):
+        """ACL and quota metadata persist round-trip."""
+        from backend.models.agent_registry import AgentRegistry
+
+        AgentRegistry.__table__.create(bind=test_db.get_bind(), checkfirst=True)
+
+        agent = AgentRegistry(
+            name="policy_agent",
+            module_path="example.module",
+            factory_function="build",
+            access_policies={"allow": ["clone_repository"]},
+            quota_limits={"daily_calls": 10},
+        )
+        test_db.add(agent)
+        test_db.commit()
+        test_db.refresh(agent)
+
+        assert agent.access_policies == {"allow": ["clone_repository"]}
+        assert agent.quota_limits == {"daily_calls": 10}
