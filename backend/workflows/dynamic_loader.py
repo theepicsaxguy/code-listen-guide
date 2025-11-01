@@ -30,6 +30,8 @@ class AgentDescriptor:
     description: Optional[str]
     config_schema: Dict[str, Any]
     allowed_tools: Tuple[str, ...]
+    account_acl: Tuple[str, ...]
+    quota_limits: Tuple[Dict[str, Any], ...]
 
 
 @dataclass(frozen=True)
@@ -237,6 +239,12 @@ class WorkflowManager:
             tool_refs = (text,) if text else ()
         else:
             tool_refs = ()
+        raw_acl = agent.account_acl if isinstance(agent.account_acl, (list, tuple, set)) else ()
+        account_acl = tuple(str(item).strip() for item in raw_acl if str(item).strip())
+        raw_quota = agent.quota_limits if isinstance(agent.quota_limits, (list, tuple)) else ()
+        quota_limits: Tuple[Dict[str, Any], ...] = tuple(
+            dict(entry) for entry in raw_quota if isinstance(entry, dict)
+        )
         return AgentDescriptor(
             id=agent.id,
             name=agent.name,
@@ -245,6 +253,8 @@ class WorkflowManager:
             description=agent.description,
             config_schema=agent.config_schema or {},
             allowed_tools=tool_refs,
+            account_acl=account_acl,
+            quota_limits=quota_limits,
         )
 
     def _build_step_descriptor(self, step: WorkflowStep) -> StepDescriptor:

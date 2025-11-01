@@ -110,6 +110,8 @@ def seed_agents(db: Session):
             description=agent_data["description"],
             config_schema=agent_data["config_schema"],
             tools=agent_data["tools"],
+            account_acl=agent_data.get("account_acl", []),
+            quota_limits=agent_data.get("quota_limits", []),
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )

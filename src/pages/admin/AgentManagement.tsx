@@ -159,13 +159,15 @@ export default function AgentManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Module</TableHead>
-                    <TableHead>Factory</TableHead>
-                    <TableHead>Plugins</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Module</TableHead>
+                  <TableHead>Factory</TableHead>
+                  <TableHead>Plugins</TableHead>
+                  <TableHead>Account ACL</TableHead>
+                  <TableHead>Quota Limits</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -181,6 +183,35 @@ export default function AgentManagement() {
                               <Badge key={idx} variant="outline" className="text-xs">
                                 {tool.name}
                               </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">None</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {agent.account_acl && agent.account_acl.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {agent.account_acl.map((entry: string) => (
+                              <Badge key={entry} variant="outline" className="text-xs">
+                                {entry}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">Open</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        {agent.quota_limits && agent.quota_limits.length > 0 ? (
+                          <div className="space-y-1">
+                            {agent.quota_limits.map((entry: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="text-xs font-mono bg-muted/40 rounded px-2 py-1 break-words"
+                              >
+                                {JSON.stringify(entry)}
+                              </div>
                             ))}
                           </div>
                         ) : (
@@ -265,16 +296,31 @@ function AgentForm({
       ? JSON.stringify(initialData.config_schema, null, 2)
       : "",
     selectedTools: initialData?.tools?.map((t: any) => t.id || t.name) || [],
+    accountAclText:
+      initialData?.account_acl && initialData.account_acl.length > 0
+        ? (initialData.account_acl as string[]).join("\n")
+        : "",
+    quotaLimitsText:
+      initialData?.quota_limits && initialData.quota_limits.length > 0
+        ? JSON.stringify(initialData.quota_limits, null, 2)
+        : "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const accountAcl = formData.accountAclText
+        .split(/\r?\n/)
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0);
+
       const data: any = {
         module_path: formData.module_path,
         factory_function: formData.factory_function,
         description: formData.description || undefined,
-        tools: formData.selectedTools.length > 0 ? formData.selectedTools : undefined,
+        tools: [...formData.selectedTools],
+        account_acl: accountAcl,
+        quota_limits: [],
       };
 
       if (formData.config_schema) {
@@ -282,6 +328,20 @@ function AgentForm({
           data.config_schema = JSON.parse(formData.config_schema);
         } catch {
           toast.error("Invalid JSON in config schema");
+          return;
+        }
+      }
+
+      if (formData.quotaLimitsText.trim()) {
+        try {
+          const parsed = JSON.parse(formData.quotaLimitsText);
+          if (!Array.isArray(parsed)) {
+            toast.error("Quota limits must be a JSON array");
+            return;
+          }
+          data.quota_limits = parsed;
+        } catch {
+          toast.error("Quota limits must be valid JSON");
           return;
         }
       }
@@ -391,6 +451,31 @@ function AgentForm({
             })}
           </div>
         )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="account_acl">Account Allowlist</Label>
+        <Textarea
+          id="account_acl"
+          value={formData.accountAclText}
+          onChange={(e) => setFormData({ ...formData, accountAclText: e.target.value })}
+          placeholder="team-alpha\nenterprise-customer"
+        />
+        <p className="text-xs text-muted-foreground">
+          One identifier per line. Leave blank to allow all accounts.
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="quota_limits">Quota Limits (JSON array)</Label>
+        <Textarea
+          id="quota_limits"
+          value={formData.quotaLimitsText}
+          onChange={(e) => setFormData({ ...formData, quotaLimitsText: e.target.value })}
+          placeholder='[{"scope":"daily","limit":100}]'
+          className="font-mono"
+        />
+        <p className="text-xs text-muted-foreground">
+          Provide structured quota rules as JSON. Use an empty value for no quotas.
+        </p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="config_schema">Config Schema (JSON)</Label>

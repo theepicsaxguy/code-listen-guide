@@ -1,6 +1,6 @@
 """Admin API for CRUD operations on agents."""
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -16,13 +16,38 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/api/v1/admin/agents", tags=["admin", "agents"])
 
 
+def _normalize_account_acl(values: Optional[Sequence[Any]]) -> List[str]:
+    if not values:
+        return []
+    if isinstance(values, str):
+        values = [values]
+    normalized: List[str] = []
+    for entry in values:
+        text = str(entry).strip()
+        if text:
+            normalized.append(text)
+    return normalized
+
+
+def _normalize_quota_limits(values: Optional[Sequence[Any]]) -> List[Dict[str, Any]]:
+    if not values:
+        return []
+    normalized: List[Dict[str, Any]] = []
+    for entry in values:
+        if isinstance(entry, dict):
+            normalized.append(dict(entry))
+    return normalized
+
+
 class AgentCreate(BaseModel):
     name: str
     module_path: str
     factory_function: str
     description: Optional[str] = None
     config_schema: Optional[dict] = None
-    tools: Optional[List[str]] = None  # List of tool/plugin names or IDs
+    tools: Optional[List[str]] = None
+    account_acl: Optional[List[str]] = None
+    quota_limits: Optional[List[Dict[str, Any]]] = None
 
 
 class AgentUpdate(BaseModel):
@@ -30,7 +55,9 @@ class AgentUpdate(BaseModel):
     factory_function: Optional[str] = None
     description: Optional[str] = None
     config_schema: Optional[dict] = None
-    tools: Optional[List[str]] = None  # List of tool/plugin names or IDs
+    tools: Optional[List[str]] = None
+    account_acl: Optional[List[str]] = None
+    quota_limits: Optional[List[Dict[str, Any]]] = None
 
 
 class AgentOut(BaseModel):
@@ -40,7 +67,9 @@ class AgentOut(BaseModel):
     factory_function: str
     description: Optional[str] = None
     config_schema: Optional[dict] = None
-    tools: Optional[List[dict]] = None  # Full tool details
+    tools: Optional[List[Dict[str, Any]]] = None
+    account_acl: List[str]
+    quota_limits: List[Dict[str, Any]]
     created_at: str
     updated_at: str
 
@@ -84,13 +113,15 @@ async def list_agents(
 ):
     """List all registered agents."""
     agents = db.query(AgentRegistry).order_by(AgentRegistry.name.asc()).all()
-    result = []
+    result: List[AgentOut] = []
     for agent in agents:
         tools = None
         if agent.tools:
             # agent.tools is stored as JSON, could be list of tool IDs/names
             tool_refs = agent.tools if isinstance(agent.tools, list) else []
             tools = _resolve_tools(db, tool_refs)
+        account_acl = _normalize_account_acl(agent.account_acl)
+        quota_limits = _normalize_quota_limits(agent.quota_limits)
 
         result.append(
             AgentOut(
@@ -101,6 +132,8 @@ async def list_agents(
                 description=agent.description,
                 config_schema=agent.config_schema,
                 tools=tools,
+                account_acl=account_acl,
+                quota_limits=quota_limits,
                 created_at=agent.created_at.isoformat() if agent.created_at else "",
                 updated_at=agent.updated_at.isoformat() if agent.updated_at else "",
             )
@@ -123,9 +156,8 @@ async def create_agent(
         )
 
     # Validate tool references if provided
-    tools_data = None
+    tools_data: List[str] = []
     if payload.tools:
-        tools_data = []
         for tool_ref in payload.tools:
             tool = None
             # Try by ID first if it looks like a UUID
@@ -143,6 +175,9 @@ async def create_agent(
                 )
             tools_data.append(tool_ref)  # Store as list of IDs/names
 
+    account_acl = _normalize_account_acl(payload.account_acl)
+    quota_limits = _normalize_quota_limits(payload.quota_limits)
+
     agent = AgentRegistry(
         name=payload.name,
         module_path=payload.module_path,
@@ -150,6 +185,8 @@ async def create_agent(
         description=payload.description,
         config_schema=payload.config_schema,
         tools=tools_data,
+        account_acl=account_acl,
+        quota_limits=quota_limits,
     )
     db.add(agent)
     db.commit()
@@ -165,6 +202,8 @@ async def create_agent(
         description=agent.description,
         config_schema=agent.config_schema,
         tools=resolved_tools,
+        account_acl=account_acl,
+        quota_limits=quota_limits,
         created_at=agent.created_at.isoformat() if agent.created_at else "",
         updated_at=agent.updated_at.isoformat() if agent.updated_at else "",
     )
@@ -185,6 +224,8 @@ async def get_agent(
     if agent.tools:
         tool_refs = agent.tools if isinstance(agent.tools, list) else []
         tools = _resolve_tools(db, tool_refs)
+    account_acl = _normalize_account_acl(agent.account_acl)
+    quota_limits = _normalize_quota_limits(agent.quota_limits)
 
     return AgentOut(
         id=str(agent.id),
@@ -194,6 +235,8 @@ async def get_agent(
         description=agent.description,
         config_schema=agent.config_schema,
         tools=tools,
+        account_acl=account_acl,
+        quota_limits=quota_limits,
         created_at=agent.created_at.isoformat() if agent.created_at else "",
         updated_at=agent.updated_at.isoformat() if agent.updated_at else "",
     )
@@ -239,6 +282,10 @@ async def update_agent(
                 )
             tools_data.append(tool_ref)
         agent.tools = tools_data
+    if payload.account_acl is not None:
+        agent.account_acl = _normalize_account_acl(payload.account_acl)
+    if payload.quota_limits is not None:
+        agent.quota_limits = _normalize_quota_limits(payload.quota_limits)
 
     db.commit()
     db.refresh(agent)
@@ -248,6 +295,9 @@ async def update_agent(
         tool_refs = agent.tools if isinstance(agent.tools, list) else []
         tools = _resolve_tools(db, tool_refs)
 
+    account_acl = _normalize_account_acl(agent.account_acl)
+    quota_limits = _normalize_quota_limits(agent.quota_limits)
+
     return AgentOut(
         id=str(agent.id),
         name=agent.name,
@@ -256,6 +306,8 @@ async def update_agent(
         description=agent.description,
         config_schema=agent.config_schema,
         tools=tools,
+        account_acl=account_acl,
+        quota_limits=quota_limits,
         created_at=agent.created_at.isoformat() if agent.created_at else "",
         updated_at=agent.updated_at.isoformat() if agent.updated_at else "",
     )

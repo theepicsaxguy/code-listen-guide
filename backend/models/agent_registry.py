@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, JSON, String, Text, UniqueConstraint
+from sqlalchemy import Column, DateTime, JSON, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -21,7 +21,9 @@ class AgentRegistry(Base):
     factory_function = Column(String(255), nullable=False)
     description = Column(Text)
     config_schema = Column(JSON)
-    tools = Column(JSON)
+    tools = Column(JSON, default=list, server_default=text("'[]'::jsonb"), nullable=False)
+    account_acl = Column(JSON, default=list, server_default=text("'[]'::jsonb"), nullable=False)
+    quota_limits = Column(JSON, default=list, server_default=text("'[]'::jsonb"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

@@ -21,10 +21,16 @@ def upgrade():
         sa.Column('factory_function', sa.String(255), nullable=False),
         sa.Column('description', sa.Text),
         sa.Column('config_schema', postgresql.JSONB),
-        sa.Column('tools', postgresql.JSONB),
+        sa.Column('tools', postgresql.JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
+        sa.Column('account_acl', postgresql.JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
+        sa.Column('quota_limits', postgresql.JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
     )
+
+    op.execute("UPDATE agents_registry SET tools = '[]'::jsonb WHERE tools IS NULL")
+    op.execute("UPDATE agents_registry SET account_acl = '[]'::jsonb WHERE account_acl IS NULL")
+    op.execute("UPDATE agents_registry SET quota_limits = '[]'::jsonb WHERE quota_limits IS NULL")
 
     # tools_registry (no dependencies)
     op.create_table(

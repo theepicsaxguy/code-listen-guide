@@ -475,13 +475,9 @@ export class ApiClient {
           factory_function: string;
           description?: string;
           config_schema?: Record<string, any>;
-          tools?: Array<{
-            id: string;
-            name: string;
-            module_path: string;
-            function_name: string;
-            description?: string;
-          }>;
+          tools?: import('@/lib/types/workflow').AgentToolSummary[];
+          account_acl: string[];
+          quota_limits: Array<Record<string, any>>;
           created_at: string;
           updated_at: string;
         }>>('/admin/agents/list');
@@ -494,6 +490,8 @@ export class ApiClient {
         description?: string;
         config_schema?: Record<string, any>;
         tools?: string[];
+        account_acl?: string[];
+        quota_limits?: Array<Record<string, any>>;
       }) {
         return this.request<{
           id: string;
@@ -502,7 +500,9 @@ export class ApiClient {
           factory_function: string;
           description?: string;
           config_schema?: Record<string, any>;
-          tools?: Array<any>;
+          tools?: import('@/lib/types/workflow').AgentToolSummary[];
+          account_acl: string[];
+          quota_limits: Array<Record<string, any>>;
           created_at: string;
           updated_at: string;
         }>('/admin/agents', {
@@ -519,7 +519,9 @@ export class ApiClient {
           factory_function: string;
           description?: string;
           config_schema?: Record<string, any>;
-          tools?: Array<any>;
+          tools?: import('@/lib/types/workflow').AgentToolSummary[];
+          account_acl: string[];
+          quota_limits: Array<Record<string, any>>;
           created_at: string;
           updated_at: string;
         }>(`/admin/agents/${agentId}`);
@@ -531,6 +533,8 @@ export class ApiClient {
         description?: string;
         config_schema?: Record<string, any>;
         tools?: string[];
+        account_acl?: string[];
+        quota_limits?: Array<Record<string, any>>;
       }) {
         return this.request<{
           id: string;
@@ -539,7 +543,9 @@ export class ApiClient {
           factory_function: string;
           description?: string;
           config_schema?: Record<string, any>;
-          tools?: Array<any>;
+          tools?: import('@/lib/types/workflow').AgentToolSummary[];
+          account_acl: string[];
+          quota_limits: Array<Record<string, any>>;
           created_at: string;
           updated_at: string;
         }>(`/admin/agents/${agentId}`, {

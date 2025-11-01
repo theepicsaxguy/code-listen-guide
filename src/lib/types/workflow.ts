@@ -2,6 +2,14 @@
  * Workflow management types for dynamic workflow system
  */
 
+export interface AgentToolSummary {
+  id: string;
+  name: string;
+  module_path: string;
+  function_name: string;
+  description?: string;
+}
+
 export interface AgentRegistry {
   id: string;
   name: string;
@@ -9,7 +17,9 @@ export interface AgentRegistry {
   factory_function: string;
   description: string;
   config_schema: Record<string, any>;
-  tools: string[];
+  tools: AgentToolSummary[];
+  account_acl: string[];
+  quota_limits: Array<Record<string, any>>;
   created_at: string;
   updated_at: string;
 }
