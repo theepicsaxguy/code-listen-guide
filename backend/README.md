@@ -70,10 +70,23 @@ backend/
 ├── tools/                 # Helper functions exposed as agent tools
 │   ├── __init__.py
 │   ├── audio_tools.py
+│   ├── banned_word_checker.py
 │   ├── code_parser_tools.py
+│   ├── datetime_tools.py
 │   ├── db_tools.py
 │   ├── git_tools.py
-│   └── storage_tools.py
+│   ├── knowledge_base.py
+│   ├── logger_tools.py
+│   ├── markdown_formatter.py
+│   ├── math_tools.py
+│   ├── moderation_tools.py
+│   ├── regex_extractor.py
+│   ├── sentiment_tools.py
+│   ├── storage_tools.py
+│   ├── summarizer.py
+│   ├── timer_tools.py
+│   ├── unit_converter.py
+│   └── weather_tools.py
 ├── utils/
 │   ├── auth.py
 │   ├── checkpointing.py
@@ -85,6 +98,16 @@ backend/
 ├── requirements.txt
 └── .env.example
 ```
+
+### Tool registry helpers
+
+The modules under `backend/tools` now pair each callable with JSON Schema metadata. Every tool exposes:
+
+- A synchronous implementation whose name matches the registry entry (for example, `_ai_get_datetime`, `_ai_tts`).
+- An async wrapper that dispatches to the sync logic with `asyncio.to_thread` when concurrency helps.
+- `*_INPUT_SCHEMA` and `*_OUTPUT_SCHEMA` constants that the seeding script uses when it writes to the database.
+
+`backend/scripts/seed_workflow_registry.py` imports these schema constants directly, so the runtime registry, the database seed data, and the LLM-facing tool surface stay in sync. When you add a new tool, follow the same pattern: define the callable, export the schema dictionaries, then register it in the seed script.
 
 ## Setup Instructions
 

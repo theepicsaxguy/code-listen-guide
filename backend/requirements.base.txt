@@ -21,6 +21,7 @@ pydantic-settings==2.11.0
 # Utilities (REQUIRED)
 requests==2.32.5
 slowapi==0.1.9
+jsonschema==4.23.0
 
 # ============================================
 # Optional packages - uncomment when needed
