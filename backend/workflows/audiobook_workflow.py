@@ -10,15 +10,19 @@ import logging
 import threading
 import time
 from collections.abc import Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+from dataclasses import dataclass, replace
 from datetime import datetime
 from importlib import import_module
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from agent_framework import AgentExecutor, ChatMessage, Role, TextContent, WorkflowBuilder
 
 from backend.api.events import emit_job_event
 from backend.config import get_settings
+from backend.db.session import SessionLocal
+from backend.models.usage_log import UsageLog
 from backend.tools.db_tools import (
     get_job_by_id,
     mark_job_status,
@@ -41,8 +45,176 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class QuotaDecision:
+    reason: str
+    quota_limit: Optional[int]
+    quota_remaining: Optional[int]
+
+
+@dataclass(frozen=True)
+class AgentPolicy:
+    tool_quotas: Dict[str, int]
+    default_tool_quota: Optional[int]
+
+    @staticmethod
+    def _coerce_limit(value: Any) -> Optional[int]:
+        candidate = value
+        if isinstance(candidate, Mapping):
+            for key in ("limit", "remaining", "value"):
+                if key in candidate:
+                    candidate = candidate[key]
+                    break
+        if isinstance(candidate, (int, float)):
+            limit = int(candidate)
+            return max(limit, 0)
+        return None
+
+    @classmethod
+    def from_payload(cls, payload: Optional[Mapping[str, Any]]) -> "AgentPolicy":
+        quotas: Dict[str, int] = {}
+        default_quota: Optional[int] = None
+        if isinstance(payload, Mapping):
+            raw_quotas = payload.get("tool_quotas")
+            if isinstance(raw_quotas, Mapping):
+                for key, value in raw_quotas.items():
+                    limit = cls._coerce_limit(value)
+                    if limit is None:
+                        continue
+                    quotas[str(key).lower()] = limit
+            default_quota = cls._coerce_limit(payload.get("default_quota"))
+        return cls(tool_quotas=quotas, default_tool_quota=default_quota)
+
+    def resolve_quota(self, candidates: Sequence[str]) -> Optional[Tuple[str, int]]:
+        for token in candidates:
+            normalized = token.lower()
+            if normalized in self.tool_quotas:
+                return normalized, self.tool_quotas[normalized]
+        if self.default_tool_quota is None:
+            return None
+        canonical = next(iter(candidates), None)
+        if canonical is None:
+            return None
+        return canonical.lower(), self.default_tool_quota
+
+
+@dataclass(frozen=True)
+class ToolExecutionPolicy:
+    timeout_seconds: float
+    risk_level: str
+    execution_strategy: str
+    expected_cost_cents: Optional[int]
+
+    @classmethod
+    def from_payload(
+        cls,
+        payload: Optional[Mapping[str, Any]],
+        *,
+        default_timeout: float,
+    ) -> "ToolExecutionPolicy":
+        source: Mapping[str, Any] = payload or {}
+        raw_timeout = source.get("timeout_seconds")
+        timeout = float(raw_timeout) if isinstance(raw_timeout, (int, float)) and raw_timeout > 0 else default_timeout
+        raw_risk = str(source.get("risk_level", "low")).lower()
+        risk = raw_risk if raw_risk in {"low", "medium", "high", "critical"} else "low"
+        raw_strategy = str(source.get("execution_strategy", "thread")).lower()
+        strategy = raw_strategy if raw_strategy in {"thread", "sandbox"} else "thread"
+        raw_cost = source.get("expected_cost_cents")
+        expected_cost = int(raw_cost) if isinstance(raw_cost, (int, float)) else None
+        return cls(
+            timeout_seconds=timeout,
+            risk_level=risk,
+            execution_strategy=strategy,
+            expected_cost_cents=expected_cost,
+        )
+
+
+class WorkflowAuditSink:
+    def __init__(self, job_id: UUID, revision_id: UUID) -> None:
+        self.job_id = job_id
+        self.revision_id = revision_id
+        self._logger = logging.getLogger("backend.audit")
+        self._lock = threading.RLock()
+
+    def log_authorization(
+        self,
+        *,
+        agent: AgentDescriptor,
+        tool: ToolDescriptor,
+        step: Optional[str],
+        status: str,
+        reason: str,
+        quota_limit: Optional[int],
+        quota_remaining: Optional[int],
+    ) -> None:
+        payload: Dict[str, Any] = {
+            "event": "tool_authorization",
+            "job_id": str(self.job_id),
+            "revision_id": str(self.revision_id),
+            "agent_id": str(agent.id),
+            "agent_name": agent.name,
+            "tool_id": str(tool.id),
+            "tool_name": tool.name,
+            "status": status,
+            "reason": reason,
+        }
+        if step:
+            payload["step"] = step
+        if quota_limit is not None:
+            payload["quota_limit"] = quota_limit
+        if quota_remaining is not None:
+            payload["quota_remaining"] = quota_remaining
+        self._emit(payload)
+
+    def log_cost_estimate(
+        self,
+        *,
+        agent: AgentDescriptor,
+        tool: ToolDescriptor,
+        step: Optional[str],
+        expected_cost_cents: Optional[int],
+    ) -> None:
+        if expected_cost_cents is None:
+            return
+        payload: Dict[str, Any] = {
+            "event": "tool_cost_estimate",
+            "job_id": str(self.job_id),
+            "revision_id": str(self.revision_id),
+            "agent_id": str(agent.id),
+            "agent_name": agent.name,
+            "tool_id": str(tool.id),
+            "tool_name": tool.name,
+            "expected_cost_cents": expected_cost_cents,
+        }
+        if step:
+            payload["step"] = step
+        self._emit(payload)
+        self._persist_cost(expected_cost_cents, tool)
+
+    def _emit(self, payload: Dict[str, Any]) -> None:
+        try:
+            self._logger.info("audit_event %s", json.dumps(payload, sort_keys=True))
+        except Exception:
+            logger.exception("Failed to emit audit payload")
+
+    def _persist_cost(self, cost_cents: int, tool: ToolDescriptor) -> None:
+        try:
+            with SessionLocal() as session:
+                log_entry = UsageLog(
+                    job_id=self.job_id,
+                    event_type="tool_cost_estimate",
+                    cost_cents=int(cost_cents),
+                    provider=tool.module_path,
+                )
+                session.add(log_entry)
+                session.commit()
+        except Exception:
+            self._logger.exception("Failed to persist cost estimate for tool %s", tool.name)
+
 class AudiobookWorkflow:
     """Execute the audiobook workflow using dynamic workflow revisions."""
+
+    DEFAULT_TOOL_TIMEOUT = 60.0
 
     def __init__(
         self,
@@ -70,6 +242,25 @@ class AudiobookWorkflow:
         self._state_lock = threading.RLock()
         self._step_lookup: Dict[str, UUID] = {step.name: step.id for step in self.revision.steps}
         self._agent_allowed_cache: Dict[UUID, set[str]] = {}
+        self._governance_lock = threading.RLock()
+        self._agent_quota_counters: Dict[UUID, Dict[str, int]] = {}
+        self._audit_sink = WorkflowAuditSink(self.job_uuid, self.revision.id)
+        self._workflow_tool_policies = self._load_tool_policy_overrides()
+        self._tool_policy_cache: Dict[UUID, ToolExecutionPolicy] = {}
+        self._agent_policies = self._load_agent_policies()
+        self._shared_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="tool-default")
+        self._sandbox_executors: Dict[str, ThreadPoolExecutor] = {
+            "high": ThreadPoolExecutor(max_workers=1, thread_name_prefix="tool-high"),
+            "critical": ThreadPoolExecutor(max_workers=1, thread_name_prefix="tool-critical"),
+        }
+        self._sync_risk_guards: Dict[str, threading.Semaphore] = {
+            "high": threading.Semaphore(1),
+            "critical": threading.Semaphore(1),
+        }
+        self._async_risk_guards: Dict[str, asyncio.Semaphore] = {
+            "high": asyncio.Semaphore(1),
+            "critical": asyncio.Semaphore(1),
+        }
 
     def _build_job_context(self) -> Dict[str, Any]:
         job_record = get_job_by_id(str(self.job_uuid))
@@ -410,8 +601,33 @@ class AudiobookWorkflow:
             if context_snapshot:
                 trace["context"] = context_snapshot
             try:
-                self._validate_tool_authorization(agent_descriptor, tool_descriptor)
-                result = await raw_function(*args, **kwargs)
+                decision = self._validate_tool_authorization(
+                    agent_descriptor,
+                    tool_descriptor,
+                    step_name=step_name,
+                )
+                policy = self._resolve_tool_policy(tool_descriptor)
+                self._audit_sink.log_cost_estimate(
+                    agent=agent_descriptor,
+                    tool=tool_descriptor,
+                    step=step_name,
+                    expected_cost_cents=policy.expected_cost_cents,
+                )
+                trace["authorization_reason"] = decision.reason
+                if decision.quota_limit is not None:
+                    trace["quota"] = {
+                        "limit": decision.quota_limit,
+                        "remaining": decision.quota_remaining,
+                    }
+                if policy.expected_cost_cents is not None:
+                    trace["expected_cost_cents"] = policy.expected_cost_cents
+                result = await self._execute_async_tool(
+                    tool_descriptor,
+                    raw_function,
+                    args,
+                    kwargs,
+                    policy,
+                )
                 trace["output"] = self._coerce_jsonable(result)
                 _finalize_trace(trace, "ok", time.monotonic() - start)
                 return result
@@ -438,8 +654,33 @@ class AudiobookWorkflow:
             if context_snapshot:
                 trace["context"] = context_snapshot
             try:
-                self._validate_tool_authorization(agent_descriptor, tool_descriptor)
-                result = raw_function(*args, **kwargs)
+                decision = self._validate_tool_authorization(
+                    agent_descriptor,
+                    tool_descriptor,
+                    step_name=step_name,
+                )
+                policy = self._resolve_tool_policy(tool_descriptor)
+                self._audit_sink.log_cost_estimate(
+                    agent=agent_descriptor,
+                    tool=tool_descriptor,
+                    step=step_name,
+                    expected_cost_cents=policy.expected_cost_cents,
+                )
+                trace["authorization_reason"] = decision.reason
+                if decision.quota_limit is not None:
+                    trace["quota"] = {
+                        "limit": decision.quota_limit,
+                        "remaining": decision.quota_remaining,
+                    }
+                if policy.expected_cost_cents is not None:
+                    trace["expected_cost_cents"] = policy.expected_cost_cents
+                result = self._execute_sync_tool(
+                    tool_descriptor,
+                    raw_function,
+                    args,
+                    kwargs,
+                    policy,
+                )
                 trace["output"] = self._coerce_jsonable(result)
                 _finalize_trace(trace, "ok", time.monotonic() - start)
                 return result
@@ -529,30 +770,72 @@ class AudiobookWorkflow:
         self,
         agent_descriptor: AgentDescriptor,
         tool_descriptor: ToolDescriptor,
-    ) -> None:
+        *,
+        step_name: Optional[str],
+    ) -> QuotaDecision:
         allowed = self._allowed_tokens(agent_descriptor)
+        candidates = self._build_tool_tokens(tool_descriptor)
         if not allowed:
+            self._audit_sink.log_authorization(
+                agent=agent_descriptor,
+                tool=tool_descriptor,
+                step=step_name,
+                status="deny",
+                reason="no_allowlist",
+                quota_limit=None,
+                quota_remaining=None,
+            )
             raise PermissionError(
                 f"Agent '{agent_descriptor.name}' is not allowed to call any tools"
             )
+        quota_decision = self._consume_quota(
+            agent_descriptor,
+            tool_descriptor,
+            list(candidates),
+            step_name,
+        )
         if "*" in allowed:
-            return
-        candidates = {
-            tool_descriptor.name,
-            tool_descriptor.name.lower(),
-            tool_descriptor.function_name,
-            tool_descriptor.function_name.lower(),
-            tool_descriptor.module_path,
-            tool_descriptor.module_path.lower(),
-            f"{tool_descriptor.module_path}.{tool_descriptor.function_name}",
-            f"{tool_descriptor.module_path}.{tool_descriptor.function_name}".lower(),
-            str(tool_descriptor.id),
-            str(tool_descriptor.id).lower(),
-        }
+            decision = quota_decision
+            if decision.reason in {"policy_absent", "quota_not_configured"}:
+                decision = replace(decision, reason="wildcard")
+            self._audit_sink.log_authorization(
+                agent=agent_descriptor,
+                tool=tool_descriptor,
+                step=step_name,
+                status="allow",
+                reason=decision.reason,
+                quota_limit=decision.quota_limit,
+                quota_remaining=decision.quota_remaining,
+            )
+            return decision
         if allowed.isdisjoint(candidates):
+            self._audit_sink.log_authorization(
+                agent=agent_descriptor,
+                tool=tool_descriptor,
+                step=step_name,
+                status="deny",
+                reason="not_allowlisted",
+                quota_limit=None,
+                quota_remaining=None,
+            )
             raise PermissionError(
                 f"Agent '{agent_descriptor.name}' is not allowed to call tool '{tool_descriptor.name}'"
             )
+        decision = quota_decision
+        if decision.reason == "policy_absent":
+            decision = replace(decision, reason="allowlist_only")
+        if decision.reason == "quota_not_configured":
+            decision = replace(decision, reason="allowlist_only")
+        self._audit_sink.log_authorization(
+            agent=agent_descriptor,
+            tool=tool_descriptor,
+            step=step_name,
+            status="allow",
+            reason=decision.reason,
+            quota_limit=decision.quota_limit,
+            quota_remaining=decision.quota_remaining,
+        )
+        return decision
 
     def _allowed_tokens(self, descriptor: AgentDescriptor) -> set[str]:
         cached = self._agent_allowed_cache.get(descriptor.id)
@@ -567,6 +850,188 @@ class AudiobookWorkflow:
             tokens.add(text.lower())
         self._agent_allowed_cache[descriptor.id] = tokens
         return tokens
+
+    def _load_agent_policies(self) -> Dict[UUID, AgentPolicy]:
+        policies: Dict[UUID, AgentPolicy] = {}
+        metadata = self.revision.metadata or {}
+        raw_policies = metadata.get("agent_policies") if isinstance(metadata, Mapping) else None
+        for step in self.revision.steps:
+            if step.agent is None:
+                continue
+            payload = None
+            if isinstance(raw_policies, Mapping):
+                for key in (str(step.agent.id), step.agent.name):
+                    if key in raw_policies:
+                        payload = raw_policies[key]
+                        break
+            policies[step.agent.id] = AgentPolicy.from_payload(payload)
+        return policies
+
+    def _load_tool_policy_overrides(self) -> Dict[str, Mapping[str, Any]]:
+        metadata = self.revision.metadata or {}
+        raw_policies = metadata.get("tool_policies") if isinstance(metadata, Mapping) else None
+        if not isinstance(raw_policies, Mapping):
+            return {}
+        normalized: Dict[str, Mapping[str, Any]] = {}
+        for key, value in raw_policies.items():
+            if isinstance(value, Mapping):
+                normalized[str(key)] = value
+        return normalized
+
+    def _build_tool_tokens(self, tool_descriptor: ToolDescriptor) -> set[str]:
+        tokens = {
+            tool_descriptor.name,
+            tool_descriptor.name.lower(),
+            tool_descriptor.function_name,
+            tool_descriptor.function_name.lower(),
+            tool_descriptor.module_path,
+            tool_descriptor.module_path.lower(),
+            f"{tool_descriptor.module_path}.{tool_descriptor.function_name}",
+            f"{tool_descriptor.module_path}.{tool_descriptor.function_name}".lower(),
+            str(tool_descriptor.id),
+            str(tool_descriptor.id).lower(),
+        }
+        return tokens
+
+    def _consume_quota(
+        self,
+        agent_descriptor: AgentDescriptor,
+        tool_descriptor: ToolDescriptor,
+        candidates: Sequence[str],
+        step_name: Optional[str],
+    ) -> QuotaDecision:
+        policy = self._agent_policies.get(agent_descriptor.id)
+        if policy is None:
+            return QuotaDecision(reason="policy_absent", quota_limit=None, quota_remaining=None)
+        resolution = policy.resolve_quota(candidates)
+        if resolution is None:
+            return QuotaDecision(reason="quota_not_configured", quota_limit=None, quota_remaining=None)
+        token, limit = resolution
+        with self._governance_lock:
+            counters = self._agent_quota_counters.setdefault(agent_descriptor.id, {})
+            remaining = counters.get(token)
+            if remaining is None:
+                remaining = limit
+            if remaining <= 0:
+                self._audit_sink.log_authorization(
+                    agent=agent_descriptor,
+                    tool=tool_descriptor,
+                    step=step_name,
+                    status="deny",
+                    reason="quota_exhausted",
+                    quota_limit=limit,
+                    quota_remaining=0,
+                )
+                raise PermissionError(
+                    f"Agent '{agent_descriptor.name}' exceeded quota for tool '{tool_descriptor.name}'"
+                )
+            counters[token] = remaining - 1
+            return QuotaDecision(
+                reason="quota_consumed",
+                quota_limit=limit,
+                quota_remaining=remaining - 1,
+            )
+
+    def _resolve_tool_policy(self, tool_descriptor: ToolDescriptor) -> ToolExecutionPolicy:
+        cached = self._tool_policy_cache.get(tool_descriptor.id)
+        if cached is not None:
+            return cached
+        policy_payload: Dict[str, Any] = {}
+        for schema in (tool_descriptor.input_schema, tool_descriptor.output_schema):
+            if isinstance(schema, Mapping):
+                schema_policy = schema.get("x-policy")
+                if isinstance(schema_policy, Mapping):
+                    policy_payload.update(schema_policy)
+                if "x-expected-cost-cents" in schema and "expected_cost_cents" not in policy_payload:
+                    policy_payload["expected_cost_cents"] = schema["x-expected-cost-cents"]
+        for key in self._tool_policy_lookup_keys(tool_descriptor):
+            override = self._workflow_tool_policies.get(key)
+            if isinstance(override, Mapping):
+                policy_payload.update(override)
+                break
+        policy = ToolExecutionPolicy.from_payload(
+            policy_payload,
+            default_timeout=self.DEFAULT_TOOL_TIMEOUT,
+        )
+        self._tool_policy_cache[tool_descriptor.id] = policy
+        return policy
+
+    def _tool_policy_lookup_keys(self, tool_descriptor: ToolDescriptor) -> Tuple[str, ...]:
+        full_name = f"{tool_descriptor.module_path}.{tool_descriptor.function_name}"
+        return (
+            str(tool_descriptor.id),
+            str(tool_descriptor.id).lower(),
+            full_name,
+            full_name.lower(),
+            tool_descriptor.name,
+            tool_descriptor.name.lower(),
+            tool_descriptor.function_name,
+            tool_descriptor.function_name.lower(),
+        )
+
+    def _select_executor(self, policy: ToolExecutionPolicy) -> ThreadPoolExecutor:
+        if policy.execution_strategy == "sandbox" or policy.risk_level in {"high", "critical"}:
+            return self._sandbox_executors.get(policy.risk_level) or self._sandbox_executors["high"]
+        return self._shared_executor
+
+    def _execute_sync_tool(
+        self,
+        tool_descriptor: ToolDescriptor,
+        raw_function: Callable[..., Any],
+        args: Sequence[Any],
+        kwargs: Dict[str, Any],
+        policy: ToolExecutionPolicy,
+    ) -> Any:
+        timeout = policy.timeout_seconds or self.DEFAULT_TOOL_TIMEOUT
+        executor = self._select_executor(policy)
+        guard = self._sync_risk_guards.get(policy.risk_level)
+        if guard is not None:
+            acquired = guard.acquire(timeout=timeout)
+            if not acquired:
+                raise TimeoutError(
+                    f"Tool '{tool_descriptor.name}' wait for guard exceeded {timeout} seconds"
+                )
+        try:
+            future = executor.submit(raw_function, *args, **kwargs)
+            try:
+                return future.result(timeout=timeout)
+            except FuturesTimeoutError as exc:
+                future.cancel()
+                raise TimeoutError(
+                    f"Tool '{tool_descriptor.name}' timed out after {timeout} seconds"
+                ) from exc
+        finally:
+            if guard is not None:
+                guard.release()
+
+    async def _execute_async_tool(
+        self,
+        tool_descriptor: ToolDescriptor,
+        raw_function: Callable[..., Any],
+        args: Sequence[Any],
+        kwargs: Dict[str, Any],
+        policy: ToolExecutionPolicy,
+    ) -> Any:
+        timeout = policy.timeout_seconds or self.DEFAULT_TOOL_TIMEOUT
+        semaphore = self._async_risk_guards.get(policy.risk_level)
+        coroutine = raw_function(*args, **kwargs)
+        if semaphore is None:
+            return await self._await_with_timeout(coroutine, timeout, tool_descriptor)
+        async with semaphore:
+            return await self._await_with_timeout(coroutine, timeout, tool_descriptor)
+
+    async def _await_with_timeout(
+        self,
+        coroutine: Any,
+        timeout: float,
+        tool_descriptor: ToolDescriptor,
+    ) -> Any:
+        try:
+            return await asyncio.wait_for(coroutine, timeout=timeout)
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(
+                f"Tool '{tool_descriptor.name}' timed out after {timeout} seconds"
+            ) from exc
 
     async def _run_agent(
         self,

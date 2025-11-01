@@ -8,11 +8,28 @@ Tests for:
 - Human-in-the-loop approval
 """
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+import threading
+import uuid
 from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from agent_framework import ChatMessage, Role, TextContent
+
+from backend.workflows.audiobook_workflow import AgentPolicy, AudiobookWorkflow
+from backend.workflows.dynamic_loader import AgentDescriptor, ToolDescriptor
+
+
+class DummyAuditSink:
+    def __init__(self) -> None:
+        self.authorizations = []
+        self.costs = []
+
+    def log_authorization(self, **payload) -> None:
+        self.authorizations.append(payload)
+
+    def log_cost_estimate(self, **payload) -> None:
+        self.costs.append(payload)
 
 
 @pytest.mark.workflows
@@ -31,6 +48,110 @@ class TestAudiobookWorkflow:
             return_value={"status": "completed", "job_id": "test-job"}
         )
         return workflow
+
+    def test_validate_tool_authorization_consumes_quota(self):
+        workflow = object.__new__(AudiobookWorkflow)
+        workflow._agent_allowed_cache = {}
+        workflow._agent_quota_counters = {}
+        workflow._governance_lock = threading.RLock()
+        workflow._audit_sink = DummyAuditSink()
+        workflow._workflow_tool_policies = {}
+        workflow._tool_policy_cache = {}
+        agent = AgentDescriptor(
+            id=uuid.uuid4(),
+            name="quota_agent",
+            module_path="module",
+            factory_function="factory",
+            description=None,
+            config_schema={},
+            allowed_tools=("allowed_tool",),
+        )
+        tool = ToolDescriptor(
+            id=uuid.uuid4(),
+            name="allowed_tool",
+            module_path="module",
+            function_name="call",
+            description=None,
+            input_schema={},
+            output_schema={},
+        )
+        workflow._agent_policies = {
+            agent.id: AgentPolicy(tool_quotas={tool.name.lower(): 1}, default_tool_quota=None)
+        }
+        decision = workflow._validate_tool_authorization(agent, tool, step_name="analysis")
+        assert decision.quota_limit == 1
+        assert decision.quota_remaining == 0
+        assert workflow._audit_sink.authorizations[-1]["status"] == "allow"
+        with pytest.raises(PermissionError):
+            workflow._validate_tool_authorization(agent, tool, step_name="analysis")
+        assert workflow._audit_sink.authorizations[-1]["status"] == "deny"
+        assert workflow._audit_sink.authorizations[-1]["reason"] == "quota_exhausted"
+
+    def test_validate_tool_authorization_denies_unlisted_tool(self):
+        workflow = object.__new__(AudiobookWorkflow)
+        workflow._agent_allowed_cache = {}
+        workflow._agent_quota_counters = {}
+        workflow._governance_lock = threading.RLock()
+        workflow._audit_sink = DummyAuditSink()
+        workflow._workflow_tool_policies = {}
+        workflow._tool_policy_cache = {}
+        agent = AgentDescriptor(
+            id=uuid.uuid4(),
+            name="deny_agent",
+            module_path="module",
+            factory_function="factory",
+            description=None,
+            config_schema={},
+            allowed_tools=("other_tool",),
+        )
+        tool = ToolDescriptor(
+            id=uuid.uuid4(),
+            name="forbidden_tool",
+            module_path="module",
+            function_name="call",
+            description=None,
+            input_schema={},
+            output_schema={},
+        )
+        workflow._agent_policies = {agent.id: AgentPolicy(tool_quotas={}, default_tool_quota=None)}
+        with pytest.raises(PermissionError):
+            workflow._validate_tool_authorization(agent, tool, step_name="analysis")
+        record = workflow._audit_sink.authorizations[-1]
+        assert record["status"] == "deny"
+        assert record["reason"] == "not_allowlisted"
+
+    def test_validate_tool_authorization_denies_without_allowlist(self):
+        workflow = object.__new__(AudiobookWorkflow)
+        workflow._agent_allowed_cache = {}
+        workflow._agent_quota_counters = {}
+        workflow._governance_lock = threading.RLock()
+        workflow._audit_sink = DummyAuditSink()
+        workflow._workflow_tool_policies = {}
+        workflow._tool_policy_cache = {}
+        agent = AgentDescriptor(
+            id=uuid.uuid4(),
+            name="empty_agent",
+            module_path="module",
+            factory_function="factory",
+            description=None,
+            config_schema={},
+            allowed_tools=tuple(),
+        )
+        tool = ToolDescriptor(
+            id=uuid.uuid4(),
+            name="any_tool",
+            module_path="module",
+            function_name="call",
+            description=None,
+            input_schema={},
+            output_schema={},
+        )
+        workflow._agent_policies = {}
+        with pytest.raises(PermissionError):
+            workflow._validate_tool_authorization(agent, tool, step_name="analysis")
+        record = workflow._audit_sink.authorizations[-1]
+        assert record["status"] == "deny"
+        assert record["reason"] == "no_allowlist"
 
     @pytest.mark.asyncio
     async def test_workflow_initialization(self):
