@@ -1,5 +1,50 @@
 # Migration Guide: chonkie Parser Integration & Cookie Auth
 
+## Release: v0.2.1
+**Date:** November 2, 2025
+
+This release hardens the workflow registry so runtime policy checks can depend on
+database state instead of in-memory assumptions.
+
+### 1. Tool Registry Versioning & Seeds
+
+**What changed:**
+- Added `schema_version` and `updated_at` columns to `tools_registry`
+- Enforced a unique constraint on each (`module_path`, `function_name`) pair
+- Seeded the registry with the eight core `_ai_*` tool bindings used by the
+  analyzer, script, audio, and post-process agents
+
+**Migration required:**
+- Run the new Alembic migration to add the metadata columns and populate the
+  seeds:
+  ```bash
+  alembic upgrade head
+  ```
+- Existing deployments should confirm there are no duplicate module/function
+  pairs before applying the migration; the upgrade will fail fast if duplicates
+  exist
+
+**Benefits:**
+- Provides deterministic version tracking for plugin schemas
+- Ensures runtime lookups can disambiguate tools that share names but live in
+  different modules
+- Preloads the registry with the default audiobook toolchain so new
+  environments are ready without running the seed script manually
+
+### 2. Agent Access Control Metadata
+
+**What changed:**
+- Added `access_policies` and `quota_limits` JSONB columns to
+  `agents_registry`
+
+**Migration required:** None beyond applying the Alembic upgrade.
+
+**Benefits:**
+- Stores allow-list and quota configuration alongside each agent for policy
+  enforcement during workflow execution
+
+---
+
 ## Release: v0.2.0
 **Date:** October 29, 2025
 

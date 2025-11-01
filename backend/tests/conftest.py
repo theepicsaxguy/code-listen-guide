@@ -136,7 +136,20 @@ sys.modules.setdefault("botocore.exceptions", botocore_exceptions)
 def test_db_engine():
     """Create a test database engine using SQLite in-memory."""
     from backend.db.session import Base
-    from backend.models import user, job, outline, payment, chapter, deliverable
+    from backend.models import (
+        agent_registry,
+        chapter,
+        deliverable,
+        job,
+        outline,
+        payment,
+        tool_registry,
+        user,
+        workflow_definition,
+        workflow_instance,
+        workflow_revision,
+        workflow_step,
+    )
 
     engine = create_engine(
         "sqlite://",
