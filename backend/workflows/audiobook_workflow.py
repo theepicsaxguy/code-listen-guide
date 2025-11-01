@@ -16,6 +16,17 @@ from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID
 
 import requests
+from agent_framework import (
+    AgentExecutor,
+    AgentRunEvent,
+    AgentRunUpdateEvent,
+    ChatMessage,
+    FunctionCallContent,
+    FunctionResultContent,
+    Role,
+    TextContent,
+    WorkflowBuilder,
+)
 from agent_framework import AIFunction, AgentExecutor, ChatMessage, Role, TextContent, WorkflowBuilder
 
 from backend.api.events import emit_job_event
@@ -25,7 +36,6 @@ from backend.tools.db_tools import (
     mark_job_status,
     persist_audio_parts,
     persist_outline,
-    save_chapter_script,
 )
 from backend.utils.checkpointing import PostgresCheckpointStorage
 from backend.workflows.dynamic_loader import (
@@ -221,6 +231,7 @@ class AudiobookWorkflow:
         self._state_lock = threading.RLock()
         self._step_lookup: Dict[str, UUID] = {step.name: step.id for step in self.revision.steps}
         self._agent_allowed_cache: Dict[UUID, set[str]] = {}
+        self._tool_descriptor_cache: Dict[UUID, List[ToolDescriptor]] = {}
         self._billing_summary: Dict[str, Dict[str, Any]] = {}
         self._billing_client = _BillingClient(settings.billing_service_url)
         self._audit_emitter = _AuditEmitter(settings.observability_ingest_url)
@@ -330,21 +341,36 @@ class AudiobookWorkflow:
         return {"text": response, "data": parsed}
 
     async def _run_outline(self, step: StepDescriptor, analysis_result: Dict[str, Any]) -> Dict[str, Any]:
-        agent = await self._create_agent(step.agent, step_name=step.name)
+        descriptor = step.agent
+        tool_descriptors = self._resolve_agent_tool_descriptors(descriptor) if descriptor else []
+        agent = await self._create_agent(
+            descriptor,
+            step_name=step.name,
+            tool_descriptors=tool_descriptors if descriptor else None,
+        )
         context = {
             **self.job_context,
-            "analysis": analysis_result.get("data") or self._safe_json_loads(analysis_result.get("text")),
+            "analysis": analysis_result.get("data")
+            or self._safe_json_loads(analysis_result.get("text")),
         }
-        analysis_json = json.dumps(context.get("analysis", {}), ensure_ascii=False)
         prompt = (
-            "Using the repository analysis below, draft a structured audiobook outline tailored to the {depth_tier} depth tier."
-            " Provide chapters with titles, objectives, summaries, and estimated durations.\n\n"
-            f"Analysis JSON:\n{analysis_json}"
+            "Using the repository analysis, prepare a structured audiobook outline tailored to the "
+            "{depth_tier} depth tier. Include chapter numbers, titles, objectives, summaries, "
+            "and estimated durations. Respond with JSON compatible with the outline schema."
         )
-        message = self._build_message(prompt, context=context)
-        response = await self._run_agent(agent, message, enable_checkpoint=step.checkpoint_enabled)
-        parsed = self._safe_json_loads(response)
-        return {"text": response, "data": parsed}
+        message = self._compose_agent_message(
+            base_prompt=prompt,
+            context=context,
+            tool_descriptors=tool_descriptors,
+        )
+        response_text, _ = await self._run_agent_with_iterations(
+            agent,
+            message,
+            enable_checkpoint=step.checkpoint_enabled,
+            step_name=step.name,
+        )
+        parsed = self._safe_json_loads(response_text)
+        return {"text": response_text, "data": parsed}
 
     async def _run_scripting(self, step: StepDescriptor, approved_outline: Dict[str, Any]) -> List[str]:
         chapters = approved_outline.get("chapters", [])
@@ -352,6 +378,8 @@ class AudiobookWorkflow:
         analysis_summary = analysis_state.get("data") or self._safe_json_loads(analysis_state.get("text"))
         scripts: List[str] = [""] * len(chapters)
         tasks = []
+        descriptor = step.agent
+        tool_descriptors = self._resolve_agent_tool_descriptors(descriptor) if descriptor else []
         for index, chapter in enumerate(chapters, start=1):
             tasks.append(
                 asyncio.create_task(
@@ -359,6 +387,7 @@ class AudiobookWorkflow:
                         step.agent,
                         chapter,
                         analysis_summary,
+                        tool_descriptors=tool_descriptors,
                         chapter_number=index,
                         result_index=index - 1,
                         step_name=step.name,
@@ -372,7 +401,6 @@ class AudiobookWorkflow:
             script_text, result_index = await future
             scripts[result_index] = script_text
             completed += 1
-            save_chapter_script(self.job_id, result_index + 1, script_text)
             emit_job_event(
                 self.job_id,
                 {"stage": "scripts", "completed": completed, "total": len(chapters)},
@@ -384,6 +412,7 @@ class AudiobookWorkflow:
         agent_descriptor: Optional[AgentDescriptor],
         chapter: Dict[str, Any],
         analysis_summary: Any,
+        tool_descriptors: Sequence[ToolDescriptor],
         *,
         chapter_number: int,
         result_index: int,
@@ -393,43 +422,71 @@ class AudiobookWorkflow:
             agent_descriptor,
             step_name=step_name,
             chapter_ctx=chapter,
+            tool_descriptors=tool_descriptors if agent_descriptor else None,
         )
         context = {
             "chapter": chapter,
             "analysis": analysis_summary,
             "depth_tier": self.depth_tier,
             "chapter_number": chapter_number,
+            "job_id": self.job_id,
         }
         chapter_title = chapter.get("title") or f"Chapter {chapter_number}"
         prompt = (
             f"Write an engaging narration script for chapter {chapter_number} titled '{chapter_title}'."
             " Use the approved outline details and repository analysis."
             " Include transitions, learning objectives, and explanations of why the code is designed this way."
+            " Persist the finished script by calling the save_chapter_script tool with the correct job id and chapter number."
         )
-        message = self._build_message(prompt, context=context)
-        response = await self._run_agent(agent, message, enable_checkpoint=False)
-        return response, result_index
+        message = self._compose_agent_message(
+            base_prompt=prompt,
+            context=context,
+            tool_descriptors=tool_descriptors,
+        )
+        response_text, _ = await self._run_agent_with_iterations(
+            agent,
+            message,
+            enable_checkpoint=False,
+            step_name=step_name,
+        )
+        return response_text, result_index
 
     async def _run_audio(self, step: StepDescriptor, scripts: List[str]) -> List[str]:
         if not scripts:
             return []
-        agent = await self._create_agent(step.agent, step_name=step.name)
+        descriptor = step.agent
+        tool_descriptors = self._resolve_agent_tool_descriptors(descriptor) if descriptor else []
+        agent = await self._create_agent(
+            descriptor,
+            step_name=step.name,
+            tool_descriptors=tool_descriptors if descriptor else None,
+        )
         batch_size = int(step.step_config.get("batch_size", 5)) if step.step_config else 5
         audio_urls: List[str] = []
         for index in range(0, len(scripts), batch_size):
             batch = scripts[index : index + batch_size]
-            prompt = "Generate high-quality narration audio for the provided scripts. Return an S3 URL for each part in order."
-            message_text = f"{prompt}\n\n" + "\n\n".join(batch)
-            message = ChatMessage(
-                role=Role.USER,
-                contents=[TextContent(text=message_text)],
+            context = {
+                "job_id": self.job_id,
+                "batch_start_index": index + 1,
+                "scripts": batch,
+                "total_scripts": len(scripts),
+            }
+            prompt = (
+                "Turn each script in the batch into narrated audio. Use the synthesize_speech tool for text-to-speech "
+                "and audio_upload_to_s3 (or equivalent) to publish the files. Provide the remote URLs in order."
             )
-            response = await self._run_agent(
+            message = self._compose_agent_message(
+                base_prompt=prompt,
+                context=context,
+                tool_descriptors=tool_descriptors,
+            )
+            response_text, _ = await self._run_agent_with_iterations(
                 agent,
                 message,
                 enable_checkpoint=step.checkpoint_enabled,
+                step_name=step.name,
             )
-            batch_urls = self._extract_audio_urls(response)
+            batch_urls = self._extract_audio_urls(response_text)
             audio_urls.extend(batch_urls)
             emit_job_event(
                 self.job_id,
@@ -443,30 +500,42 @@ class AudiobookWorkflow:
         audio_urls: List[str],
         outline: Dict[str, Any],
     ) -> Dict[str, Any]:
-        agent = await self._create_agent(step.agent, step_name=step.name)
+        descriptor = step.agent
+        tool_descriptors = self._resolve_agent_tool_descriptors(descriptor) if descriptor else []
+        agent = await self._create_agent(
+            descriptor,
+            step_name=step.name,
+            tool_descriptors=tool_descriptors if descriptor else None,
+        )
         context = {
             "audio_urls": audio_urls,
             "outline": outline,
             "job": self.job_context,
         }
         prompt = (
-            "Assemble the final audiobook deliverables using the provided chapter audio URLs."
-            " Return JSON with final bundle metadata, including download links and any additional resources."
+            "Assemble the final audiobook deliverables from the chapter audio files. Merge chapters as needed, "
+            "upload final assets, and return JSON describing every deliverable."
         )
-        message = self._build_message(prompt, context=context)
-        response = await self._run_agent(
+        message = self._compose_agent_message(
+            base_prompt=prompt,
+            context=context,
+            tool_descriptors=tool_descriptors,
+        )
+        response_text, _ = await self._run_agent_with_iterations(
             agent,
             message,
             enable_checkpoint=step.checkpoint_enabled,
+            step_name=step.name,
         )
-        parsed = self._safe_json_loads(response)
-        return {"text": response, "data": parsed}
+        parsed = self._safe_json_loads(response_text)
+        return {"text": response_text, "data": parsed}
 
     async def _create_agent(
         self,
         descriptor: Optional[AgentDescriptor],
         *,
         step_name: str,
+        tool_descriptors: Optional[Sequence[ToolDescriptor]] = None,
         **factory_kwargs: Any,
     ) -> Any:
         if descriptor is None:
@@ -478,6 +547,7 @@ class AudiobookWorkflow:
             descriptor,
             step_name=step_name,
             context=dict(call_kwargs),
+            tool_descriptors=tool_descriptors,
         )
         if runtime_tools is not None:
             call_kwargs["tools"] = runtime_tools
@@ -516,6 +586,10 @@ class AudiobookWorkflow:
         agent = await factory(settings, **call_kwargs)
         return agent
 
+    def _resolve_agent_tool_descriptors(self, descriptor: AgentDescriptor) -> List[ToolDescriptor]:
+        cached = self._tool_descriptor_cache.get(descriptor.id)
+        if cached is not None:
+            return cached
     def _build_agent_tools(
         self,
         descriptor: AgentDescriptor,
@@ -524,13 +598,33 @@ class AudiobookWorkflow:
         context: Mapping[str, Any],
     ) -> Optional[List[AIFunction]]:
         if not descriptor.allowed_tools:
-            return None
+            self._tool_descriptor_cache[descriptor.id] = []
+            return []
         try:
             plugins = self.tool_manager.resolve_agent_tools(descriptor.allowed_tools)
         except ValueError as exc:
             raise RuntimeError(
                 f"Agent '{descriptor.name}' references unknown tools"
             ) from exc
+        descriptors = list(plugins)
+        self._tool_descriptor_cache[descriptor.id] = descriptors
+        return descriptors
+
+    def _build_agent_tools(
+        self,
+        descriptor: AgentDescriptor,
+        *,
+        step_name: str,
+        context: Mapping[str, Any],
+        tool_descriptors: Optional[Sequence[ToolDescriptor]] = None,
+    ) -> Optional[List[Callable[..., Any]]]:
+        plugins: Sequence[ToolDescriptor]
+        if tool_descriptors is not None:
+            plugins = list(tool_descriptors)
+        else:
+            if not descriptor.allowed_tools:
+                return None
+            plugins = self._resolve_agent_tool_descriptors(descriptor)
         if not plugins:
             return []
         wrappers: List[AIFunction] = []
@@ -1653,6 +1747,132 @@ class AudiobookWorkflow:
     def _build_message(self, prompt: str, *, context: Dict[str, Any]) -> ChatMessage:
         formatted_prompt = prompt.format(**{k: v for k, v in context.items() if isinstance(v, (str, int, float))})
         return ChatMessage(role=Role.USER, contents=[TextContent(text=formatted_prompt)])
+
+    def _compose_agent_message(
+        self,
+        *,
+        base_prompt: str,
+        context: Mapping[str, Any],
+        tool_descriptors: Sequence[ToolDescriptor],
+    ) -> ChatMessage:
+        segments: List[str] = [base_prompt.strip()]
+        json_context = json.dumps(self._coerce_jsonable(context), ensure_ascii=False, indent=2)
+        segments.append("Context JSON:")
+        segments.append(json_context)
+        if tool_descriptors:
+            segments.append("Available tools:")
+            for descriptor in tool_descriptors:
+                descriptor_block = {
+                    "name": descriptor.name,
+                    "description": descriptor.description,
+                    "input_schema": descriptor.input_schema,
+                    "output_schema": descriptor.output_schema,
+                }
+                segments.append(
+                    json.dumps(
+                        self._coerce_jsonable(descriptor_block),
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                )
+            segments.append(
+                "Use the tools above when they help. Call them with precise arguments. "
+                "When all required actions are finished, provide a clear final answer."
+            )
+        message_text = "\n\n".join(segment for segment in segments if segment)
+        return ChatMessage(role=Role.USER, contents=[TextContent(text=message_text)])
+
+    async def _run_agent_with_iterations(
+        self,
+        agent: Any,
+        message: ChatMessage,
+        *,
+        enable_checkpoint: bool,
+        step_name: str,
+    ) -> tuple[str, List[Dict[str, Any]]]:
+        executor = AgentExecutor(agent)
+        builder = WorkflowBuilder().set_start_executor(executor)
+        if enable_checkpoint:
+            builder = builder.with_checkpointing(self.checkpoints)
+        workflow = builder.build()
+        final_text: Optional[str] = None
+        pending_calls: Dict[str, Dict[str, Any]] = {}
+        iterations: List[Dict[str, Any]] = []
+        async for event in workflow.run_stream(message):
+            if isinstance(event, AgentRunUpdateEvent):
+                update = event.data
+                if update is None:
+                    continue
+                self._ingest_agent_contents(update.contents, pending_calls, iterations)
+                if update.text:
+                    final_text = (final_text or "") + update.text
+            elif isinstance(event, AgentRunEvent):
+                response = event.data
+                if response is None:
+                    continue
+                for msg in response.messages:
+                    self._ingest_agent_contents(msg.contents, pending_calls, iterations)
+                    if msg.role == Role.ASSISTANT:
+                        text_payload = msg.text or ""
+                        if not text_payload and msg.contents:
+                            text_payload = "".join(
+                                content.text
+                                for content in msg.contents
+                                if isinstance(content, TextContent)
+                            )
+                        if text_payload:
+                            final_text = text_payload
+        for remaining in pending_calls.values():
+            iterations.append(remaining)
+        if iterations:
+            self._record_iteration_history(step_name, iterations)
+        return final_text or "", iterations
+
+    def _ingest_agent_contents(
+        self,
+        contents: Optional[Sequence[Any]],
+        pending_calls: Dict[str, Dict[str, Any]],
+        iterations: List[Dict[str, Any]],
+    ) -> None:
+        if not contents:
+            return
+        for content in contents:
+            if isinstance(content, FunctionCallContent):
+                entry = {
+                    "call_id": content.call_id,
+                    "tool": content.name,
+                    "arguments": self._coerce_jsonable(content.parse_arguments() or {}),
+                    "requested_at": datetime.utcnow().isoformat(),
+                }
+                if content.exception is not None:
+                    entry["request_exception"] = repr(content.exception)
+                pending_calls[content.call_id] = entry
+            elif isinstance(content, FunctionResultContent):
+                entry = pending_calls.pop(content.call_id, {"call_id": content.call_id})
+                entry.setdefault("tool", getattr(content, "name", entry.get("tool")))
+                entry["result"] = self._coerce_jsonable(content.result)
+                entry["completed_at"] = datetime.utcnow().isoformat()
+                if content.exception is not None:
+                    entry["result_exception"] = repr(content.exception)
+                iterations.append(entry)
+
+    def _record_iteration_history(self, step_name: str, iterations: Sequence[Dict[str, Any]]) -> None:
+        if not iterations:
+            return
+        serializable = [self._coerce_jsonable(entry) for entry in iterations]
+        with self._state_lock:
+            steps = self.state.setdefault("steps", {})
+            step_state = steps.setdefault(step_name, {})
+            history = step_state.setdefault("llm_iterations", [])
+            history.extend(serializable)
+            step_state["updated_at"] = datetime.utcnow().isoformat()
+            state_snapshot = json.loads(json.dumps(self.state))
+        step_id = self._step_lookup.get(step_name)
+        self.manager.update_instance(
+            job_id=self.job_uuid,
+            current_step_id=step_id,
+            state=state_snapshot,
+        )
 
     def _record_step_output(self, step: StepDescriptor, payload: Dict[str, Any]) -> None:
         with self._state_lock:
