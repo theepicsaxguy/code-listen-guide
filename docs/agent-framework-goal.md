@@ -30,12 +30,14 @@ We need a runtime that lets an LLM steer work while the database keeps it inside
 ### Plugin Registry
 - **Code registry contract:** Each plugin module registers a stable slug, execute handler, and JSON schemas for inputs and outputs. Registry load fails if schema signatures drift from the database definition.
 - **Surface to the LLM:** At session start the runtime passes the permitted plugin descriptors—name, summary, argument schema—to the LLM as function tools so it can plan within authorized capabilities only.
+- **Tool packaging:** Workflow orchestration now materializes each registry entry as an `AIFunction`, preserving the JSON schema plus cost, version, and authorization metadata so downstream agents receive the exact contract the registry declares.
 
 ### Runtime Decision Cycle
 1. Load the workflow step from the database, including the approved agent id and plugin allow-list.
 2. Assemble context: agent system prompt, conversation memory pointers, step payload, plus the permitted tool descriptors.
-3. Capture the LLM’s requested plugin call and run a two-layer validation (database policy + registry schema).
+3. Stream the LLM’s tool requests, logging each call/response pair in workflow state before executing anything.
 4. Execute the plugin through the registry, return results to the LLM, persist the trace entry, and advance or branch the workflow.
+5. Repeat the loop until the agent emits a final answer that requires no further tool calls, then surface that payload to downstream steps.
 
 ## Governance and Observability
 - **Trace logging:** Persist workflow id, agent id, plugin slug, request payload, response payload, timestamps, cost metrics, and (when available) the LLM’s rationale. Make traces queryable for audits and RCA.

@@ -49,6 +49,16 @@ def default_quota_limits() -> Dict[str, Any]:
     }
 
 
+def default_approval_requirements() -> Dict[str, Any]:
+    return {
+        "default": {
+            "mode": "auto",
+            "metadata": {},
+        },
+        "overrides": [],
+    }
+
+
 def default_memory_pointers() -> List[str]:
     return []
 
@@ -70,6 +80,47 @@ def _normalise_policy_rule(data: Mapping[str, Any]) -> Dict[str, Any]:
     subject = data.get("subject")
     if subject:
         payload["subject"] = str(subject)
+    return payload
+
+
+def _normalise_approval_requirement(data: Mapping[str, Any]) -> Dict[str, Any]:
+    mode_value = data.get("mode") or data.get("requirement")
+    if isinstance(mode_value, str):
+        mode = mode_value.strip().lower()
+    elif isinstance(mode_value, bool):
+        mode = "human" if mode_value else "auto"
+    else:
+        mode = "auto"
+
+    mode_aliases = {
+        "manual": "human",
+        "human": "human",
+        "guarded": "human",
+        "supervisor": "human",
+        "approval_required": "human",
+        "auto": "auto",
+        "automatic": "auto",
+        "default": "auto",
+    }
+    normalized_mode = mode_aliases.get(mode, "auto")
+
+    payload: Dict[str, Any] = {
+        "mode": normalized_mode,
+        "metadata": {},
+    }
+
+    metadata = data.get("metadata")
+    if isinstance(metadata, Mapping):
+        payload["metadata"] = dict(metadata)
+
+    subject = data.get("subject")
+    if subject:
+        payload["subject"] = str(subject)
+
+    reason = data.get("reason")
+    if reason:
+        payload["metadata"]["reason"] = str(reason)
+
     return payload
 
 
@@ -145,6 +196,29 @@ def normalise_access_policies(payload: Optional[Mapping[str, Any]]) -> Dict[str,
     return result
 
 
+def normalise_approval_requirements(payload: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
+    if not isinstance(payload, Mapping):
+        return default_approval_requirements()
+
+    if isinstance(payload.get("default"), Mapping):
+        default_source = payload.get("default", {})  # type: ignore[assignment]
+    else:
+        default_source = payload
+
+    overrides: List[Dict[str, Any]] = []
+    raw_overrides = payload.get("overrides")
+    if isinstance(raw_overrides, Sequence) and not isinstance(raw_overrides, (str, bytes)):
+        for item in raw_overrides:
+            if isinstance(item, Mapping):
+                overrides.append(_normalise_approval_requirement(item))
+
+    result = {
+        "default": _normalise_approval_requirement(default_source),
+        "overrides": overrides,
+    }
+    return result
+
+
 def normalise_quota_limits(payload: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
     if not isinstance(payload, Mapping):
         return default_quota_limits()
@@ -194,6 +268,7 @@ class AgentRegistry(Base):
     rollout_stage = Column(String(100))
     access_policies = Column(JSON, nullable=False, default=default_access_policies)
     quota_limits = Column(JSON, nullable=False, default=default_quota_limits)
+    approval_requirements = Column(JSON, nullable=False, default=default_approval_requirements)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -225,3 +300,11 @@ class AgentRegistry(Base):
     @staticmethod
     def normalize_memory_pointers(values: Optional[Sequence[Any]]) -> List[str]:
         return normalise_memory_pointers(values)
+
+    @staticmethod
+    def default_approval_requirements() -> Dict[str, Any]:
+        return default_approval_requirements()
+
+    @staticmethod
+    def normalize_approval_requirements(payload: Optional[Mapping[str, Any]]) -> Dict[str, Any]:
+        return normalise_approval_requirements(payload)

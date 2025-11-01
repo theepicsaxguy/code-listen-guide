@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 from agent_framework import ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
@@ -16,7 +16,7 @@ async def create_script_agent(
     chat_client: Any,
     chapter_data: Optional[Dict[str, Any]] = None,
     *,
-    tools: Optional[Sequence[Callable[..., Any]]] = None,
+    tools: Optional[Sequence[Any]] = None,
 ) -> ChatAgent:
     chapter_number = chapter_data.get("number") if chapter_data else None
     display_number = chapter_number if chapter_number is not None else "x"
@@ -36,7 +36,7 @@ async def script_agent(
     settings: Any,
     chapter_ctx: Dict[str, Any],
     *,
-    tools: Optional[Sequence[Callable[..., Any]]] = None,
+    tools: Optional[Sequence[Any]] = None,
 ) -> ChatAgent:
     client = OpenAIResponsesClient(**build_responses_client_options(settings))
     return await create_script_agent(client, chapter_ctx, tools=tools)
