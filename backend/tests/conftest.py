@@ -160,6 +160,7 @@ sys.modules.setdefault("botocore.exceptions", botocore_exceptions)
 @pytest.fixture(scope="session")
 def test_db_engine():
     """Create a test database engine using SQLite in-memory."""
+    from backend.db.session import Base
     from backend.models import (
         agent_registry,
         chapter,

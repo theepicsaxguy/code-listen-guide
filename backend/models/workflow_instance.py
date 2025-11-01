@@ -12,7 +12,7 @@ class WorkflowInstance(Base):
     __tablename__ = "workflow_instances"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id"), nullable=False)
+    job_id = Column(UUID(as_uuid=True), ForeignKey(Job.id), nullable=False)
     revision_id = Column(UUID(as_uuid=True), ForeignKey("workflow_revisions.id"), nullable=False)
     current_step_id = Column(UUID(as_uuid=True), ForeignKey("workflow_steps.id"))
     instance_state = Column(JSON)

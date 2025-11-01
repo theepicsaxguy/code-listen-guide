@@ -22,6 +22,8 @@ class AgentRegistry(Base):
     description = Column(Text)
     config_schema = Column(JSON)
     tools = Column(JSON)
+    access_policies = Column(JSON, nullable=False, default=dict)
+    quota_limits = Column(JSON, nullable=False, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
