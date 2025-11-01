@@ -47,6 +47,141 @@ class TestAudiobookWorkflow:
         assert workflow is not None
         assert workflow.job_id == "test-job"
 
+    def test_wrap_tool_builds_ai_function(self, monkeypatch):
+        """Resolve registry tool descriptors into Agent Framework function tools."""
+        from uuid import uuid4
+
+        from backend.workflows import audiobook_workflow as workflow_module
+        from backend.workflows.dynamic_loader import (
+            AgentDescriptor,
+            RevisionDescriptor,
+            StepDescriptor,
+            ToolDescriptor,
+        )
+
+        agent_descriptor = AgentDescriptor(
+            id=uuid4(),
+            name="script-agent",
+            module_path="backend.agents.script_agent",
+            factory_function="script_agent",
+            description=None,
+            config_schema={},
+            allowed_tools=("save_chapter_script",),
+            model_identifier="gpt-test",
+            provider="openai",
+            system_prompt=None,
+            memory_pointers=(),
+            rollout_enabled=True,
+            rollout_stage=None,
+            access_policies={"default": {"allow": [], "deny": [], "metadata": {}}, "overrides": []},
+            quota_limits={"default": {"limit": None, "window": None, "cooldown_seconds": None, "metadata": {}}, "overrides": []},
+        )
+        step_descriptor = StepDescriptor(
+            id=uuid4(),
+            order=1,
+            name="scripting",
+            execution_mode="sequential",
+            checkpoint_enabled=True,
+            input_mapping={},
+            output_mapping={},
+            retry_policy=None,
+            step_config={},
+            agent=agent_descriptor,
+        )
+        revision_descriptor = RevisionDescriptor(
+            id=uuid4(),
+            workflow_id=uuid4(),
+            workflow_name="audiobook_generation",
+            version=1,
+            is_published=True,
+            metadata={},
+            steps=[step_descriptor],
+        )
+        tool_descriptor = ToolDescriptor(
+            id=uuid4(),
+            name="save_chapter_script",
+            stable_slug="save-chapter-script",
+            semantic_version="1.2.3",
+            module_path="backend.agents.script_agent",
+            function_name="_ai_save_script",
+            description="Persist a chapter script",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "job_id": {"type": "string", "description": "Job identifier"},
+                    "chapter_number": {"type": "integer"},
+                    "script": {"type": "string"},
+                },
+                "required": ["job_id", "chapter_number", "script"],
+            },
+            output_schema={"type": "boolean"},
+            owning_team="workflow",
+            authorization_scope="internal",
+            approval_mode="guarded",
+            cost_profile={"unit": "call", "estimated_cost_usd": 0.05},
+        )
+
+        class DummyManager:
+            def __init__(self) -> None:
+                self.state: Dict[str, Any] = {"steps": {}}
+
+            def ensure_instance(self, **_: Any) -> Dict[str, Any]:
+                return dict(self.state)
+
+            def get_current_revision(self, _name: str) -> RevisionDescriptor:
+                return revision_descriptor
+
+        dummy_manager = DummyManager()
+
+        monkeypatch.setattr(workflow_module, "get_workflow_manager", lambda: dummy_manager)
+        monkeypatch.setattr(
+            workflow_module,
+            "get_tool_registry_manager",
+            lambda: SimpleNamespace(resolve_agent_tools=lambda _refs: [tool_descriptor]),
+        )
+        monkeypatch.setattr(
+            workflow_module,
+            "get_job_by_id",
+            lambda _job_id: SimpleNamespace(repo_name="repo", repo_owner="owner", git_ref="main"),
+        )
+        monkeypatch.setattr(
+            workflow_module,
+            "PostgresCheckpointStorage",
+            lambda workflow_id: SimpleNamespace(workflow_id=workflow_id),
+        )
+
+        workflow = workflow_module.AudiobookWorkflow(
+            job_id=str(uuid4()),
+            repo_url="https://example.com/repo.git",
+            depth_tier="standard",
+        )
+
+        tools = workflow._build_agent_tools(
+            agent_descriptor,
+            step_name="scripting",
+            context={"chapter": 1},
+        )
+
+        assert tools is not None
+        assert len(tools) == 1
+        tool = tools[0]
+
+        ai_function_mock = workflow_module.AIFunction
+        assert ai_function_mock.call_count == 1
+        _, ai_kwargs = ai_function_mock.call_args
+        assert ai_kwargs["name"] == "save_chapter_script"
+        assert ai_kwargs["description"] == "Persist a chapter script"
+        assert ai_kwargs["approval_mode"] == "always_require"
+        assert ai_kwargs["input_model"] == tool_descriptor.input_schema
+        assert ai_kwargs["additional_properties"]["tool_id"] == str(tool_descriptor.id)
+        assert ai_kwargs["additional_properties"]["stable_slug"] == "save-chapter-script"
+        assert callable(ai_kwargs["func"])
+
+        assert getattr(tool, "__tool_descriptor__").id == tool_descriptor.id
+        assert getattr(tool, "__agent_descriptor__").id == agent_descriptor.id
+        assert getattr(tool, "__raw_function__").__name__ == "_ai_save_script"
+
+
     @pytest.mark.asyncio
     async def test_execute_emits_outline_event_payload(self, monkeypatch):
         """Execute workflow and capture emitted outline payload."""

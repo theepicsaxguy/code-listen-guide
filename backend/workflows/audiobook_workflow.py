@@ -16,7 +16,7 @@ from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID
 
 import requests
-from agent_framework import AgentExecutor, ChatMessage, Role, TextContent, WorkflowBuilder
+from agent_framework import AIFunction, AgentExecutor, ChatMessage, Role, TextContent, WorkflowBuilder
 
 from backend.api.events import emit_job_event
 from backend.config import get_settings
@@ -119,6 +119,20 @@ _TOOL_CALL_DURATION = _create_histogram(
     description="Duration of tool executions in milliseconds",
     unit="ms",
 )
+
+_APPROVAL_MODE_ALIASES = {
+    "auto": "never_require",
+    "never": "never_require",
+    "never_require": "never_require",
+    "guarded": "always_require",
+    "manual": "always_require",
+    "always_require": "always_require",
+}
+
+
+def _map_tool_approval_mode(value: Optional[str]) -> str:
+    normalized = (value or "auto").strip().lower()
+    return _APPROVAL_MODE_ALIASES.get(normalized, "never_require")
 
 
 class _BillingClient:
@@ -493,7 +507,7 @@ class AudiobookWorkflow:
         *,
         step_name: str,
         context: Mapping[str, Any],
-    ) -> Optional[List[Callable[..., Any]]]:
+    ) -> Optional[List[AIFunction]]:
         if not descriptor.allowed_tools:
             return None
         try:
@@ -504,7 +518,7 @@ class AudiobookWorkflow:
             ) from exc
         if not plugins:
             return []
-        wrappers: List[Callable[..., Any]] = []
+        wrappers: List[AIFunction] = []
         for plugin in plugins:
             wrappers.append(
                 self._wrap_tool(
@@ -523,7 +537,7 @@ class AudiobookWorkflow:
         tool_descriptor: ToolDescriptor,
         step_name: str,
         context: Mapping[str, Any],
-    ) -> Callable[..., Any]:
+    ) -> AIFunction:
         try:
             module = import_module(tool_descriptor.module_path)
             raw_function = getattr(module, tool_descriptor.function_name)
@@ -710,7 +724,32 @@ class AudiobookWorkflow:
 
         setattr(wrapper, "__tool_descriptor__", tool_descriptor)
         setattr(wrapper, "__agent_descriptor__", agent_descriptor)
-        return wrapper
+
+        additional_properties: Dict[str, Any] = {
+            "tool_id": str(tool_descriptor.id),
+            "stable_slug": tool_descriptor.stable_slug,
+            "semantic_version": tool_descriptor.semantic_version,
+            "authorization_scope": tool_descriptor.authorization_scope,
+            "owning_team": tool_descriptor.owning_team,
+            "cost_profile": tool_descriptor.cost_profile,
+        }
+        if tool_descriptor.output_schema:
+            additional_properties["output_schema"] = tool_descriptor.output_schema
+
+        input_schema = tool_descriptor.input_schema or None
+        ai_tool = AIFunction(
+            name=tool_descriptor.name or raw_function.__name__,
+            description=tool_descriptor.description or raw_function.__doc__ or "",
+            func=wrapper,
+            input_model=input_schema,
+            approval_mode=_map_tool_approval_mode(tool_descriptor.approval_mode),
+            additional_properties=additional_properties,
+        )
+        setattr(ai_tool, "__tool_descriptor__", tool_descriptor)
+        setattr(ai_tool, "__agent_descriptor__", agent_descriptor)
+        setattr(ai_tool, "__wrapped__", wrapper)
+        setattr(ai_tool, "__raw_function__", raw_function)
+        return ai_tool
 
     def _finalize_tool_call(
         self,
