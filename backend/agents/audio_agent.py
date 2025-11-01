@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable, Optional, Sequence
 
 from agent_framework import ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
@@ -17,18 +17,27 @@ def _ai_upload(local_path: str, s3_key: str) -> str:
     return upload_to_s3(local_path, s3_key)
 
 
-async def create_audio_agent(chat_client: Any) -> ChatAgent:
+async def create_audio_agent(
+    chat_client: Any,
+    *,
+    tools: Optional[Sequence[Callable[..., Any]]] = None,
+) -> ChatAgent:
+    resolved_tools = list(tools) if tools is not None else [_ai_tts, _ai_upload]
     return chat_client.create_agent(
         name="AudioProducer",
         instructions=(
             "Turn scripts into MP3 files, upload them to storage, and return the remote URL. "
             "Use the provided tools for text-to-speech and uploads."
         ),
-        tools=[_ai_tts, _ai_upload],
+        tools=resolved_tools,
         response_format=AudioAgentResponse,
     )
 
 
-async def audio_agent(settings: Any) -> ChatAgent:
+async def audio_agent(
+    settings: Any,
+    *,
+    tools: Optional[Sequence[Callable[..., Any]]] = None,
+) -> ChatAgent:
     client = OpenAIResponsesClient(**build_responses_client_options(settings))
-    return await create_audio_agent(client)
+    return await create_audio_agent(client, tools=tools)

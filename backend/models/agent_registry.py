@@ -1,5 +1,7 @@
-from datetime import datetime
+"""SQLAlchemy model describing registered agents available to workflows."""
+
 import uuid
+from datetime import datetime
 
 from sqlalchemy import Column, DateTime, JSON, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID

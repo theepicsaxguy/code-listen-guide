@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Optional, Sequence
 
 from agent_framework import ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
@@ -13,21 +13,30 @@ def _ai_save_script(job_id: str, chapter_number: int, script: str) -> bool:
 
 
 async def create_script_agent(
-    chat_client: Any, chapter_data: Dict[str, Any] | None = None
+    chat_client: Any,
+    chapter_data: Optional[Dict[str, Any]] = None,
+    *,
+    tools: Optional[Sequence[Callable[..., Any]]] = None,
 ) -> ChatAgent:
     chapter_number = chapter_data.get("number") if chapter_data else None
     display_number = chapter_number if chapter_number is not None else "x"
+    resolved_tools = list(tools) if tools is not None else [_ai_save_script]
     return chat_client.create_agent(
         name=f"ScriptWriter_{display_number}",
         instructions=(
             "Write a narration script for the provided chapter context. "
             "Focus on clear teaching, code explanations, and narrative flow."
         ),
-        tools=[_ai_save_script],
+        tools=resolved_tools,
         response_format=ScriptAgentResponse,
     )
 
 
-async def script_agent(settings: Any, chapter_ctx: Dict[str, Any]) -> Any:
+async def script_agent(
+    settings: Any,
+    chapter_ctx: Dict[str, Any],
+    *,
+    tools: Optional[Sequence[Callable[..., Any]]] = None,
+) -> ChatAgent:
     client = OpenAIResponsesClient(**build_responses_client_options(settings))
-    return await create_script_agent(client, chapter_ctx)
+    return await create_script_agent(client, chapter_ctx, tools=tools)
