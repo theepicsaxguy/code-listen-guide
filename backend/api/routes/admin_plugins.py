@@ -119,7 +119,7 @@ def _serialize_plugin(plugin: ToolRegistry) -> PluginOut:
         owning_team=plugin.owning_team,
         authorization_scope=plugin.authorization_scope,
         approval_mode=plugin.approval_mode,
-        cost_profile=ToolRegistry.normalize_cost_profile(plugin.cost_profile),
+        cost_profile=plugin.export_cost_profile(),
         created_at=plugin.created_at.isoformat() if plugin.created_at else "",
         updated_at=plugin.updated_at.isoformat() if plugin.updated_at else "",
     )
@@ -139,7 +139,7 @@ def _serialize_registry_item(plugin: ToolRegistry) -> ToolRegistryItem:
         owning_team=plugin.owning_team,
         authorization_scope=plugin.authorization_scope,
         approval_mode=plugin.approval_mode,
-        cost_profile=ToolRegistry.normalize_cost_profile(plugin.cost_profile),
+        cost_profile=plugin.export_cost_profile(),
         created_at=plugin.created_at.isoformat() if plugin.created_at else "",
         updated_at=plugin.updated_at.isoformat() if plugin.updated_at else "",
     )

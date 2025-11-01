@@ -114,7 +114,7 @@ Registry rows also include operational metadata that keeps cache keys and govern
 - `owning_team`: who is on the hook when the tool misbehaves.
 - `authorization_scope`: the policy bucket the runtime checks before executing the call.
 - `approval_mode`: whether usage is auto-approved, manual, or guarded.
-- `cost_profile`: a JSON object describing unit economics (unit name plus rough cost estimates).
+- `cost_profile`: a JSON document for ancillary billing metadata; structured columns (`cost_per_call_cents`, `cost_per_1k_tokens_cents`, `cost_per_second_cents`, `cost_currency`, `cost_provider`) capture the pricing schedule that workflows use for metering.
 
 `backend/scripts/seed_workflow_registry.py` imports these schema constants directly, so the runtime registry, the database seed data, and the LLM-facing tool surface stay in sync. When you add a new tool, follow the same pattern: define the callable, export the schema dictionaries, then register it in the seed script.
 
