@@ -8,7 +8,7 @@ export interface AgentRegistry {
   module_path: string;
   factory_function: string;
   description: string;
-  config_schema: Record<string, any>;
+  config_schema: Record<string, unknown>;
   tools: string[];
   created_at: string;
   updated_at: string;
@@ -20,15 +20,15 @@ export interface ToolRegistry {
   module_path: string;
   function_name: string;
   description: string;
-  input_schema: Record<string, any>;
-  output_schema: Record<string, any>;
+  input_schema: Record<string, unknown>;
+  output_schema: Record<string, unknown>;
   created_at: string;
 }
 
 export interface WorkflowDefinition {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   current_revision_id: string | null;
   created_at: string;
   updated_at: string;
@@ -39,13 +39,10 @@ export interface WorkflowRevision {
   workflow_definition_id: string;
   version: number;
   is_published: boolean;
-  revision_metadata: {
-    author?: string;
-    notes?: string;
-    changelog?: string;
-  };
+  revision_metadata: Record<string, unknown> | null;
   created_at: string;
   published_at: string | null;
+  steps: WorkflowStep[];
 }
 
 export interface WorkflowStep {
@@ -54,15 +51,17 @@ export interface WorkflowStep {
   step_order: number;
   step_name: string;
   agent_id: string | null;
-  execution_mode: 'sequential' | 'concurrent' | 'conditional';
-  input_mapping: Record<string, any>;
-  output_mapping: Record<string, any>;
+  agent_name?: string | null;
+  execution_mode: "sequential" | "concurrent" | "conditional";
+  input_mapping?: Record<string, unknown> | null;
+  output_mapping?: Record<string, unknown> | null;
   checkpoint_enabled: boolean;
-  retry_policy: {
+  retry_policy?: {
     max_retries?: number;
     backoff?: string;
   } | null;
-  step_config: Record<string, any>;
+  step_config?: Record<string, unknown> | null;
+  allowed_tools?: string[] | null;
 }
 
 export interface WorkflowInstance {
@@ -70,16 +69,20 @@ export interface WorkflowInstance {
   job_id: string;
   revision_id: string;
   current_step_id: string | null;
-  instance_state: Record<string, any>;
+  instance_state: Record<string, unknown>;
   started_at: string | null;
   completed_at: string | null;
-  status: 'running' | 'paused' | 'completed' | 'failed';
+  status: "running" | "paused" | "completed" | "failed";
 }
 
 export interface WorkflowWithSteps {
-  definition: WorkflowDefinition;
-  revision: WorkflowRevision;
-  steps: WorkflowStep[];
+  id: string;
+  name: string;
+  description: string | null;
+  current_revision_id: string | null;
+  created_at: string;
+  updated_at: string;
+  current_revision: WorkflowRevision | null;
 }
 
 export interface CreateWorkflowRevisionRequest {
@@ -89,7 +92,7 @@ export interface CreateWorkflowRevisionRequest {
     notes: string;
     changelog?: string;
   };
-  steps: Omit<WorkflowStep, 'id' | 'revision_id'>[];
+  steps: Omit<WorkflowStep, "id" | "revision_id">[];
 }
 
 export interface PublishRevisionRequest {
@@ -100,4 +103,19 @@ export interface ValidationResult {
   is_valid: boolean;
   errors: string[];
   warnings: string[];
+}
+
+export interface UpdateWorkflowStepRequest {
+  step_name?: string;
+  agent_id?: string | null;
+  execution_mode?: "sequential" | "concurrent" | "conditional";
+  input_mapping?: Record<string, unknown> | null;
+  output_mapping?: Record<string, unknown> | null;
+  checkpoint_enabled?: boolean;
+  retry_policy?: {
+    max_retries?: number;
+    backoff?: string;
+  } | null;
+  step_config?: Record<string, unknown> | null;
+  allowed_tools?: string[] | null;
 }

@@ -428,7 +428,13 @@ export class ApiClient {
           '/admin/support/canned-replies'
         );
       }
-    
+
+      async getPolicyQuotaMetrics() {
+        return this.request<import('@/types/admin').PolicyQuotaMetrics>(
+          '/admin/policy/metrics'
+        );
+      }
+
       // Parse endpoints
       async parseRepository(params: {
         repo_url: string;
@@ -721,16 +727,25 @@ export class ApiClient {
 
       // Workflow Admin endpoints
       async getWorkflows() {
-        return this.request<{
-          workflows: import('@/lib/types/workflow').WorkflowWithSteps[];
-          total: number;
-        }>('/admin/workflows');
+        return this.request<
+          | import('@/lib/types/workflow').WorkflowWithSteps[]
+          | {
+              workflows: import('@/lib/types/workflow').WorkflowWithSteps[];
+              total?: number;
+            }
+        >('/admin/workflows');
       }
 
       async getWorkflow(workflowId: string) {
-        return this.request<import('@/lib/types/workflow').WorkflowWithSteps>(
-          `/admin/workflows/${workflowId}`
-        );
+        return this.request<
+          | import('@/lib/types/workflow').WorkflowWithSteps
+          | {
+              definition: import('@/lib/types/workflow').WorkflowDefinition;
+              current_revision?: import('@/lib/types/workflow').WorkflowRevision | null;
+              revision?: import('@/lib/types/workflow').WorkflowRevision | null;
+              steps?: import('@/lib/types/workflow').WorkflowStep[];
+            }
+        >(`/admin/workflows/${workflowId}`);
       }
 
       async createWorkflow(data: {
@@ -747,10 +762,13 @@ export class ApiClient {
       }
 
       async getWorkflowRevisions(workflowId: string) {
-        return this.request<{
-          revisions: import('@/lib/types/workflow').WorkflowRevision[];
-          total: number;
-        }>(`/admin/workflows/${workflowId}/revisions`);
+        return this.request<
+          | import('@/lib/types/workflow').WorkflowRevision[]
+          | {
+              revisions: import('@/lib/types/workflow').WorkflowRevision[];
+              total?: number;
+            }
+        >(`/admin/workflows/${workflowId}/revisions`);
       }
 
       async createWorkflowRevision(
@@ -784,6 +802,20 @@ export class ApiClient {
           `/admin/workflows/${workflowId}/revisions/${revisionId}/publish`,
           {
             method: 'POST',
+            body: JSON.stringify(data),
+          }
+        );
+      }
+
+      async updateWorkflowStep(
+        workflowId: string,
+        stepId: string,
+        data: import('@/lib/types/workflow').UpdateWorkflowStepRequest
+      ) {
+        return this.request<import('@/lib/types/workflow').WorkflowStep>(
+          `/admin/workflows/${workflowId}/steps/${stepId}`,
+          {
+            method: 'PATCH',
             body: JSON.stringify(data),
           }
         );

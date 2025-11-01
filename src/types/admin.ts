@@ -106,6 +106,35 @@ export interface ContentSummary {
   updated_at?: string;
 }
 
+export interface ToolCallTraceEvent {
+  id: string;
+  tool_name: string;
+  status: "pending" | "running" | "completed" | "failed";
+  input_payload?: Record<string, unknown> | null;
+  output_payload?: Record<string, unknown> | null;
+  started_at?: string;
+  completed_at?: string;
+  duration_ms?: number;
+  error?: string | null;
+}
+
+export interface WorkflowStepTrace {
+  step_id: string;
+  step_name: string;
+  status: "pending" | "running" | "completed" | "failed";
+  started_at?: string;
+  completed_at?: string;
+  duration_ms?: number;
+  allowed_tools?: string[] | null;
+  tool_calls: ToolCallTraceEvent[];
+}
+
+export interface WorkflowInstanceTrace {
+  workflow_id: string;
+  revision_id: string;
+  steps: WorkflowStepTrace[];
+}
+
 export interface JobTrace {
   id: string;
   job_id: string;
@@ -122,6 +151,7 @@ export interface JobTrace {
   completed_at?: string;
   error?: string;
   stages: JobStage[];
+  workflow_trace?: WorkflowInstanceTrace | null;
   tool_traces?: Record<string, Record<string, any>[]>;
 }
 
@@ -135,6 +165,43 @@ export interface JobStage {
   logs_url?: string;
 }
 
+export interface QuotaUsageMetric {
+  policy_id: string;
+  policy_name: string;
+  window: string;
+  limit: number;
+  used: number;
+  reset_at?: string;
+}
+
+export interface BlockedCallMetric {
+  id: string;
+  occurred_at: string;
+  agent_name: string;
+  tool_name?: string;
+  policy_name?: string;
+  reason: string;
+  payload_summary?: string;
+}
+
+export interface AgentAclMetric {
+  agent_id: string;
+  agent_name: string;
+  allowed_tools: string[];
+  blocked_tools: string[];
+  last_updated: string;
+  notes?: string;
+}
+
+export interface PolicyQuotaMetrics {
+  summary: {
+    total_policies: number;
+    total_blocked: number;
+    active_overrides: number;
+  };
+  quotas: QuotaUsageMetric[];
+  blocked_calls: BlockedCallMetric[];
+  agent_acls: AgentAclMetric[];
 export interface StageReplayResponse {
   success: boolean;
   job_id: string;

@@ -33,6 +33,7 @@ import WorkflowList from "./pages/admin/workflows/WorkflowList";
 import WorkflowDetails from "./pages/admin/workflows/WorkflowDetails";
 import AdminPlugins from "./pages/admin/Plugins";
 import AgentManagement from "./pages/admin/AgentManagement";
+import PolicyQuotaDashboard from "./pages/admin/PolicyQuota";
 
 const queryClient = new QueryClient();
 
@@ -43,7 +44,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-        <AuthProvider>
+          <AuthProvider>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/why-we-exist" element={<WhyWeExist />} />
@@ -63,19 +64,24 @@ const App = () => (
                 <Route path="agents" element={<AgentMonitoring />} />
                 <Route path="agents/manage" element={<AgentManagement />} />
                 <Route path="plugins" element={<AdminPlugins />} />
+                <Route path="policy" element={<PolicyQuotaDashboard />} />
                 <Route path="tracing" element={<JobTracing />} />
                 <Route path="chonkie-test" element={<ChonkieTest />} />
                 <Route path="agent-test" element={<AgentTest />} />
                 <Route path="parse" element={<AdminParse />} />
                 <Route path="workflows" element={<WorkflowList />} />
-                <Route path="workflows/:workflowId" element={<WorkflowDetails />} />
+                <Route
+                  path="workflows/:workflowId"
+                  element={<WorkflowDetails />}
+                />
                 <Route path="support" element={<Support />} />
                 <Route path="audit" element={<AdminAuditLogs />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
               <Route path="*" element={<NotFound />} />
-                            </Routes>
-                    </AuthProvider>        </BrowserRouter>
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>
