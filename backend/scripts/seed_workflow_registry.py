@@ -93,7 +93,29 @@ def seed_agents(db: Session):
                     "settings": {"type": "object", "description": "Application settings"}
                 }
             },
-            "tools": ["_ai_clone_repo", "_ai_list_files", "_ai_parse_repository"]
+            "tools": ["_ai_clone_repo", "_ai_list_files", "_ai_parse_repository"],
+            "model_identifier": "claude-3-opus",
+            "provider": "anthropic",
+            "system_prompt": "You are the analyzer agent. Review repository structure and return normalized metadata only.",
+            "memory_pointers": ["jobs/{job_id}/analysis", "repos/{repo_name}/snapshots"],
+            "rollout_enabled": True,
+            "rollout_stage": "pilot",
+            "access_policies": {
+                "default": {
+                    "allow": ["_ai_clone_repo", "_ai_list_files", "_ai_parse_repository"],
+                    "deny": [],
+                    "metadata": {"scope": "core-analysis"}
+                },
+                "overrides": []
+            },
+            "quota_limits": {
+                "default": {
+                    "limit": 50,
+                    "window": "daily",
+                    "metadata": {"unit": "calls"}
+                },
+                "overrides": []
+            }
         },
         {
             "name": "outline_agent",
@@ -106,7 +128,29 @@ def seed_agents(db: Session):
                     "settings": {"type": "object", "description": "Application settings"}
                 }
             },
-            "tools": []
+            "tools": [],
+            "model_identifier": "claude-3-sonnet",
+            "provider": "anthropic",
+            "system_prompt": "You draft narrative outlines that balance coverage and pacing.",
+            "memory_pointers": ["jobs/{job_id}/analysis", "jobs/{job_id}/outline"],
+            "rollout_enabled": True,
+            "rollout_stage": "beta",
+            "access_policies": {
+                "default": {
+                    "allow": [],
+                    "deny": ["_ai_upload"],
+                    "metadata": {"scope": "outline"}
+                },
+                "overrides": []
+            },
+            "quota_limits": {
+                "default": {
+                    "limit": 30,
+                    "window": "daily",
+                    "metadata": {"unit": "calls"}
+                },
+                "overrides": []
+            }
         },
         {
             "name": "script_agent",
@@ -120,7 +164,29 @@ def seed_agents(db: Session):
                     "chapter_ctx": {"type": "object", "description": "Chapter context with outline data"}
                 }
             },
-            "tools": ["_ai_save_script"]
+            "tools": ["_ai_save_script"],
+            "model_identifier": "gpt-4.1",
+            "provider": "openai",
+            "system_prompt": "Write engaging educational narration grounded in supplied outlines and analysis.",
+            "memory_pointers": ["jobs/{job_id}/outline", "jobs/{job_id}/script"],
+            "rollout_enabled": False,
+            "rollout_stage": "internal",
+            "access_policies": {
+                "default": {
+                    "allow": ["_ai_save_script"],
+                    "deny": [],
+                    "metadata": {"scope": "script"}
+                },
+                "overrides": []
+            },
+            "quota_limits": {
+                "default": {
+                    "limit": 20,
+                    "window": "daily",
+                    "metadata": {"unit": "calls"}
+                },
+                "overrides": []
+            }
         },
         {
             "name": "audio_agent",
@@ -133,7 +199,29 @@ def seed_agents(db: Session):
                     "settings": {"type": "object", "description": "Application settings"}
                 }
             },
-            "tools": ["_ai_tts", "_ai_upload"]
+            "tools": ["_ai_tts", "_ai_upload"],
+            "model_identifier": "gpt-4o-mini-tts",
+            "provider": "openai",
+            "system_prompt": "Convert polished scripts into high quality speech and keep uploads organized.",
+            "memory_pointers": ["jobs/{job_id}/script", "jobs/{job_id}/audio"],
+            "rollout_enabled": False,
+            "rollout_stage": "lab",
+            "access_policies": {
+                "default": {
+                    "allow": ["_ai_tts", "_ai_upload"],
+                    "deny": [],
+                    "metadata": {"scope": "audio"}
+                },
+                "overrides": []
+            },
+            "quota_limits": {
+                "default": {
+                    "limit": 200,
+                    "window": "daily",
+                    "metadata": {"unit": "jobs"}
+                },
+                "overrides": []
+            }
         },
         {
             "name": "postprocess_agent",
@@ -146,10 +234,32 @@ def seed_agents(db: Session):
                     "settings": {"type": "object", "description": "Application settings"}
                 }
             },
-            "tools": ["_ai_concat", "_ai_upload"]
+            "tools": ["_ai_concat", "_ai_upload"],
+            "model_identifier": "workflow-executor",
+            "provider": "internal",
+            "system_prompt": "Assemble the final deliverables, ensuring assets are verified and archived.",
+            "memory_pointers": ["jobs/{job_id}/audio", "jobs/{job_id}/deliverables"],
+            "rollout_enabled": True,
+            "rollout_stage": "ga",
+            "access_policies": {
+                "default": {
+                    "allow": ["_ai_concat", "_ai_upload"],
+                    "deny": [],
+                    "metadata": {"scope": "postprocess"}
+                },
+                "overrides": []
+            },
+            "quota_limits": {
+                "default": {
+                    "limit": 300,
+                    "window": "monthly",
+                    "metadata": {"unit": "jobs"}
+                },
+                "overrides": []
+            }
         }
     ]
-    
+
     for agent_data in agents:
         # Check if agent already exists
         existing = db.query(AgentRegistry).filter(AgentRegistry.name == agent_data["name"]).first()
@@ -164,6 +274,14 @@ def seed_agents(db: Session):
             description=agent_data["description"],
             config_schema=agent_data["config_schema"],
             tools=agent_data["tools"],
+            model_identifier=agent_data.get("model_identifier"),
+            provider=agent_data.get("provider"),
+            system_prompt=agent_data.get("system_prompt"),
+            memory_pointers=AgentRegistry.normalize_memory_pointers(agent_data.get("memory_pointers")),
+            rollout_enabled=bool(agent_data.get("rollout_enabled", False)),
+            rollout_stage=agent_data.get("rollout_stage"),
+            access_policies=AgentRegistry.normalize_access_policies(agent_data.get("access_policies")),
+            quota_limits=AgentRegistry.normalize_quota_limits(agent_data.get("quota_limits")),
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )

@@ -648,8 +648,11 @@ class TestAgentRegistryModel:
         test_db.commit()
         test_db.refresh(agent)
 
-        assert agent.access_policies == {}
-        assert agent.quota_limits == {}
+        assert agent.access_policies == AgentRegistry.default_access_policies()
+        assert agent.quota_limits == AgentRegistry.default_quota_limits()
+        assert agent.memory_pointers == AgentRegistry.default_memory_pointers()
+        assert agent.rollout_enabled is False
+        assert agent.system_prompt is None
 
     def test_agent_registry_policy_updates(self, test_db):
         """ACL and quota metadata persist round-trip."""
@@ -661,12 +664,38 @@ class TestAgentRegistryModel:
             name="policy_agent",
             module_path="example.module",
             factory_function="build",
-            access_policies={"allow": ["clone_repository"]},
-            quota_limits={"daily_calls": 10},
+            access_policies={
+                "default": {
+                    "allow": ["clone_repository"],
+                    "deny": ["delete_repository"],
+                    "metadata": {"scope": "tests"},
+                },
+                "overrides": [
+                    {"subject": "team:beta", "allow": ["clone_repository"]},
+                ],
+            },
+            quota_limits={
+                "default": {"limit": 10, "window": "daily"},
+                "overrides": [
+                    {"subject": "team:beta", "limit": 20, "window": "daily"},
+                ],
+            },
+            model_identifier="unit-test-model",
+            provider="test-provider",
+            system_prompt="Be helpful",
+            memory_pointers=["jobs/{job_id}", "teams/{team_id}"]
         )
         test_db.add(agent)
         test_db.commit()
         test_db.refresh(agent)
 
-        assert agent.access_policies == {"allow": ["clone_repository"]}
-        assert agent.quota_limits == {"daily_calls": 10}
+        assert agent.access_policies["default"]["allow"] == ["clone_repository"]
+        assert agent.access_policies["default"]["deny"] == ["delete_repository"]
+        assert agent.access_policies["overrides"][0]["subject"] == "team:beta"
+        assert agent.quota_limits["default"]["limit"] == 10
+        assert agent.quota_limits["default"]["window"] == "daily"
+        assert agent.quota_limits["overrides"][0]["limit"] == 20
+        assert agent.model_identifier == "unit-test-model"
+        assert agent.provider == "test-provider"
+        assert agent.system_prompt == "Be helpful"
+        assert agent.memory_pointers == ["jobs/{job_id}", "teams/{team_id}"]

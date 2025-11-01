@@ -597,6 +597,14 @@ class TestCheckpointing:
             description=None,
             config_schema={},
             allowed_tools=(),
+            model_identifier="test-model",
+            provider="test-provider",
+            system_prompt="Provide assistance",
+            memory_pointers=(),
+            rollout_enabled=True,
+            rollout_stage="beta",
+            access_policies={"default": {"allow": [], "deny": [], "metadata": {}}, "overrides": []},
+            quota_limits={"default": {"limit": None, "window": None, "cooldown_seconds": None, "metadata": {}}, "overrides": []},
         )
         step_descriptor = StepDescriptor(
             id=uuid4(),
