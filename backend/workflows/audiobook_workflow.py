@@ -455,6 +455,35 @@ class AudiobookWorkflow:
         )
         if runtime_tools is not None:
             call_kwargs["tools"] = runtime_tools
+        metadata_payload = {
+            "id": str(descriptor.id),
+            "name": descriptor.name,
+            "model_identifier": descriptor.model_identifier,
+            "provider": descriptor.provider,
+            "system_prompt": descriptor.system_prompt,
+            "memory_pointers": list(descriptor.memory_pointers),
+            "rollout_enabled": descriptor.rollout_enabled,
+            "rollout_stage": descriptor.rollout_stage,
+            "access_policies": descriptor.access_policies,
+            "quota_limits": descriptor.quota_limits,
+        }
+        call_kwargs.setdefault("agent_metadata", metadata_payload)
+        if descriptor.system_prompt and "system_prompt" not in call_kwargs:
+            call_kwargs["system_prompt"] = descriptor.system_prompt
+        if descriptor.memory_pointers and "memory_pointers" not in call_kwargs:
+            call_kwargs["memory_pointers"] = list(descriptor.memory_pointers)
+        if descriptor.model_identifier and "model_identifier" not in call_kwargs:
+            call_kwargs["model_identifier"] = descriptor.model_identifier
+        if descriptor.provider and "provider" not in call_kwargs:
+            call_kwargs["provider"] = descriptor.provider
+        if "quota_limits" not in call_kwargs:
+            call_kwargs["quota_limits"] = descriptor.quota_limits
+        if "access_policies" not in call_kwargs:
+            call_kwargs["access_policies"] = descriptor.access_policies
+        if "rollout_enabled" not in call_kwargs:
+            call_kwargs["rollout_enabled"] = descriptor.rollout_enabled
+        if descriptor.rollout_stage and "rollout_stage" not in call_kwargs:
+            call_kwargs["rollout_stage"] = descriptor.rollout_stage
         agent = await factory(settings, **call_kwargs)
         return agent
 
@@ -511,6 +540,19 @@ class AudiobookWorkflow:
         factory_context = self._coerce_jsonable(context)
         if factory_context:
             context_snapshot["factory"] = factory_context
+        agent_snapshot = {
+            "id": str(agent_descriptor.id),
+            "name": agent_descriptor.name,
+            "model_identifier": agent_descriptor.model_identifier,
+            "provider": agent_descriptor.provider,
+            "system_prompt": agent_descriptor.system_prompt,
+            "memory_pointers": list(agent_descriptor.memory_pointers),
+            "rollout_enabled": agent_descriptor.rollout_enabled,
+            "rollout_stage": agent_descriptor.rollout_stage,
+            "access_policies": agent_descriptor.access_policies,
+            "quota_limits": agent_descriptor.quota_limits,
+        }
+        context_snapshot["agent"] = agent_snapshot
 
         async def _async_wrapper(*args: Any, **kwargs: Any) -> Any:
             start = time.monotonic()

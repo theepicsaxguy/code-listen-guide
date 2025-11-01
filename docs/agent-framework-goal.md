@@ -18,6 +18,12 @@ We need a runtime that lets an LLM steer work while the database keeps it inside
 
 ### Database Control Plane
 - **Agent schema:** Each record stores model/provider selection, system prompt, memory anchors, rollout flags, metadata, and the allow-listed plugin ids plus quotas. Agents never hard-code plugin names.
+  - `model_identifier` and `provider` capture the upstream LLM pairing selected for the runtime factory.
+  - `system_prompt` holds the bootstrap instructions surfaced to the agent factory and runtime.
+  - `memory_pointers` records stable anchors (job-, repo-, or team-scoped) that the runtime forwards for downstream memory lookups.
+  - `rollout_enabled`/`rollout_stage` expose launch gating so workflows can filter preview agents.
+  - `access_policies` is a structured document with `default` and `overrides` sections; every rule lists allow/deny tool ids plus metadata for audit annotations.
+  - `quota_limits` mirrors the policy structure with normalized limits (`limit`, `window`, `cooldown_seconds`) and optional override entries per subject.
 - **Plugin schema:** Tables track plugin identity, version, owning team, authorization scopes, cost profile, and operational status. Workflows reference these ids to bind business logic to implementations.
 - **Workflow schema:** Workflows are stored as ordered steps or graph edges that point to agent ids, expected outputs, guard conditions, and escalation paths. The workflow id is the key for tracing every execution.
 

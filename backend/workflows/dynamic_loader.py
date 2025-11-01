@@ -12,6 +12,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session, selectinload
 
 from backend.db.session import SessionLocal
+from backend.models.agent_registry import AgentRegistry
 from backend.models.tool_registry import ToolRegistry
 from backend.models.workflow_definition import WorkflowDefinition
 from backend.models.workflow_instance import WorkflowInstance
@@ -30,6 +31,14 @@ class AgentDescriptor:
     description: Optional[str]
     config_schema: Dict[str, Any]
     allowed_tools: Tuple[str, ...]
+    model_identifier: Optional[str]
+    provider: Optional[str]
+    system_prompt: Optional[str]
+    memory_pointers: Tuple[str, ...]
+    rollout_enabled: bool
+    rollout_stage: Optional[str]
+    access_policies: Dict[str, Any]
+    quota_limits: Dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -237,6 +246,9 @@ class WorkflowManager:
             tool_refs = (text,) if text else ()
         else:
             tool_refs = ()
+        policies = AgentRegistry.normalize_access_policies(agent.access_policies)
+        quotas = AgentRegistry.normalize_quota_limits(agent.quota_limits)
+        memory = AgentRegistry.normalize_memory_pointers(agent.memory_pointers)
         return AgentDescriptor(
             id=agent.id,
             name=agent.name,
@@ -245,6 +257,14 @@ class WorkflowManager:
             description=agent.description,
             config_schema=agent.config_schema or {},
             allowed_tools=tool_refs,
+            model_identifier=agent.model_identifier,
+            provider=agent.provider,
+            system_prompt=agent.system_prompt,
+            memory_pointers=tuple(memory),
+            rollout_enabled=bool(agent.rollout_enabled),
+            rollout_stage=agent.rollout_stage,
+            access_policies=policies,
+            quota_limits=quotas,
         )
 
     def _build_step_descriptor(self, step: WorkflowStep) -> StepDescriptor:
