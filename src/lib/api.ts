@@ -1,5 +1,5 @@
 import { resolveApiBasePath } from './api-base-path';
-import type { Job, OutlineGenerateRequest } from './types';
+import type { AdminAgent, AdminPlugin, Job, OutlineGenerateRequest } from './types';
 
 const API_BASE_PATH = resolveApiBasePath();
 
@@ -478,23 +478,7 @@ export class ApiClient {
 
       // Agent CRUD endpoints
       async listAgents() {
-        return this.request<Array<{
-          id: string;
-          name: string;
-          module_path: string;
-          factory_function: string;
-          description?: string;
-          config_schema?: Record<string, any>;
-          tools?: Array<{
-            id: string;
-            name: string;
-            module_path: string;
-            function_name: string;
-            description?: string;
-          }>;
-          created_at: string;
-          updated_at: string;
-        }>>('/admin/agents/list');
+        return this.request<AdminAgent[]>('/admin/agents/list');
       }
 
       async createAgent(agent: {
@@ -502,57 +486,30 @@ export class ApiClient {
         module_path: string;
         factory_function: string;
         description?: string;
-        config_schema?: Record<string, any>;
+        config_schema?: Record<string, unknown>;
         tools?: string[];
       }) {
-        return this.request<{
-          id: string;
-          name: string;
-          module_path: string;
-          factory_function: string;
-          description?: string;
-          config_schema?: Record<string, any>;
-          tools?: Array<any>;
-          created_at: string;
-          updated_at: string;
-        }>('/admin/agents', {
+        return this.request<AdminAgent>('/admin/agents', {
           method: 'POST',
           body: JSON.stringify(agent),
         });
       }
 
       async getAgent(agentId: string) {
-        return this.request<{
-          id: string;
-          name: string;
-          module_path: string;
-          factory_function: string;
-          description?: string;
-          config_schema?: Record<string, any>;
-          tools?: Array<any>;
-          created_at: string;
-          updated_at: string;
-        }>(`/admin/agents/${agentId}`);
+        return this.request<AdminAgent>(`/admin/agents/${agentId}`);
       }
 
-      async updateAgent(agentId: string, updates: {
-        module_path?: string;
-        factory_function?: string;
-        description?: string;
-        config_schema?: Record<string, any>;
-        tools?: string[];
-      }) {
-        return this.request<{
-          id: string;
-          name: string;
-          module_path: string;
-          factory_function: string;
+      async updateAgent(
+        agentId: string,
+        updates: {
+          module_path?: string;
+          factory_function?: string;
           description?: string;
-          config_schema?: Record<string, any>;
-          tools?: Array<any>;
-          created_at: string;
-          updated_at: string;
-        }>(`/admin/agents/${agentId}`, {
+          config_schema?: Record<string, unknown>;
+          tools?: string[];
+        }
+      ) {
+        return this.request<AdminAgent>(`/admin/agents/${agentId}`, {
           method: 'PATCH',
           body: JSON.stringify(updates),
         });
@@ -566,16 +523,7 @@ export class ApiClient {
 
       // Plugin/Tool management endpoints
       async listPlugins() {
-        return this.request<Array<{
-          id: string;
-          name: string;
-          module_path: string;
-          function_name: string;
-          description?: string;
-          input_schema?: Record<string, any>;
-          output_schema?: Record<string, any>;
-          created_at: string;
-        }>>('/admin/plugins');
+        return this.request<AdminPlugin[]>('/admin/plugins');
       }
 
       async createPlugin(plugin: {
@@ -583,54 +531,42 @@ export class ApiClient {
         module_path: string;
         function_name: string;
         description?: string;
-        input_schema?: Record<string, any>;
-        output_schema?: Record<string, any>;
+        input_schema?: Record<string, unknown>;
+        output_schema?: Record<string, unknown>;
+        stable_slug?: string;
+        semantic_version?: string;
+        owning_team?: string;
+        authorization_scope?: string;
+        approval_mode?: string;
+        cost_profile?: Record<string, unknown>;
       }) {
-        return this.request<{
-          id: string;
-          name: string;
-          module_path: string;
-          function_name: string;
-          description?: string;
-          input_schema?: Record<string, any>;
-          output_schema?: Record<string, any>;
-          created_at: string;
-        }>('/admin/plugins', {
+        return this.request<AdminPlugin>('/admin/plugins', {
           method: 'POST',
           body: JSON.stringify(plugin),
         });
       }
 
       async getPlugin(pluginId: string) {
-        return this.request<{
-          id: string;
-          name: string;
-          module_path: string;
-          function_name: string;
-          description?: string;
-          input_schema?: Record<string, any>;
-          output_schema?: Record<string, any>;
-          created_at: string;
-        }>(`/admin/plugins/${pluginId}`);
+        return this.request<AdminPlugin>(`/admin/plugins/${pluginId}`);
       }
 
-      async updatePlugin(pluginId: string, updates: {
-        module_path?: string;
-        function_name?: string;
-        description?: string;
-        input_schema?: Record<string, any>;
-        output_schema?: Record<string, any>;
-      }) {
-        return this.request<{
-          id: string;
-          name: string;
-          module_path: string;
-          function_name: string;
+      async updatePlugin(
+        pluginId: string,
+        updates: {
+          module_path?: string;
+          function_name?: string;
           description?: string;
-          input_schema?: Record<string, any>;
-          output_schema?: Record<string, any>;
-          created_at: string;
-        }>(`/admin/plugins/${pluginId}`, {
+          input_schema?: Record<string, unknown>;
+          output_schema?: Record<string, unknown>;
+          stable_slug?: string;
+          semantic_version?: string;
+          owning_team?: string;
+          authorization_scope?: string;
+          approval_mode?: string;
+          cost_profile?: Record<string, unknown>;
+        }
+      ) {
+        return this.request<AdminPlugin>(`/admin/plugins/${pluginId}`, {
           method: 'PATCH',
           body: JSON.stringify(updates),
         });
