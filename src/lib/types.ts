@@ -137,3 +137,41 @@ export interface DepthTierInfo {
   features: string[];
   chapters: string;
 }
+
+export interface AgentTool {
+  id: string;
+  name: string;
+  module_path: string;
+  function_name: string;
+  description?: string | null;
+}
+
+export interface AdminAgent {
+  id: string;
+  name: string;
+  module_path: string;
+  factory_function: string;
+  description?: string | null;
+  config_schema?: Record<string, unknown> | null;
+  tools?: AgentTool[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminPlugin {
+  id: string;
+  name: string;
+  module_path: string;
+  function_name: string;
+  description?: string | null;
+  input_schema?: Record<string, unknown> | null;
+  output_schema?: Record<string, unknown> | null;
+  stable_slug?: string | null;
+  semantic_version?: string | null;
+  owning_team?: string | null;
+  authorization_scope?: string | null;
+  approval_mode?: string | null;
+  cost_profile?: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}

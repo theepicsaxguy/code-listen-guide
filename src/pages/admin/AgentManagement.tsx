@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
+import type { AdminAgent, AdminPlugin } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,34 +32,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Bot, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Bot, Package, ChevronUp, ChevronDown, X } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AgentManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingAgent, setEditingAgent] = useState<any>(null);
+  const [editingAgent, setEditingAgent] = useState<AdminAgent | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: agents, isLoading } = useQuery({
+  const { data: agents, isLoading } = useQuery<AdminAgent[]>({
     queryKey: ["admin-agents"],
     queryFn: () => apiClient.listAgents(),
   });
 
-  const { data: plugins } = useQuery({
+  const { data: plugins } = useQuery<AdminPlugin[]>({
     queryKey: ["admin-plugins"],
     queryFn: () => apiClient.listPlugins(),
   });
 
+  type AgentMutationPayload = {
+    name: string;
+    module_path: string;
+    factory_function: string;
+    description?: string;
+    config_schema?: Record<string, unknown>;
+    tools?: string[];
+  };
+
   const createMutation = useMutation({
-    mutationFn: (agent: {
-      name: string;
-      module_path: string;
-      factory_function: string;
-      description?: string;
-      config_schema?: Record<string, any>;
-      tools?: string[];
-    }) => apiClient.createAgent(agent),
+    mutationFn: (agent: AgentMutationPayload) => apiClient.createAgent(agent),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-agents"] });
       setIsCreateDialogOpen(false);
@@ -70,7 +73,7 @@ export default function AgentManagement() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: any }) =>
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Omit<AgentMutationPayload, "name">> }) =>
       apiClient.updateAgent(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-agents"] });
@@ -94,7 +97,7 @@ export default function AgentManagement() {
     },
   });
 
-  const handleEdit = (agent: any) => {
+  const handleEdit = (agent: AdminAgent) => {
     setEditingAgent(agent);
     setIsEditDialogOpen(true);
   };
@@ -133,7 +136,7 @@ export default function AgentManagement() {
             <AgentForm
               plugins={plugins || []}
               onSubmit={(data) => {
-                createMutation.mutate(data);
+                createMutation.mutate(data as AgentMutationPayload);
               }}
               isLoading={createMutation.isPending}
             />
@@ -169,7 +172,7 @@ export default function AgentManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {agents.map((agent: any) => (
+                  {agents?.map((agent) => (
                     <TableRow key={agent.id}>
                       <TableCell className="font-medium">{agent.name}</TableCell>
                       <TableCell className="font-mono text-xs">{agent.module_path}</TableCell>
@@ -177,8 +180,8 @@ export default function AgentManagement() {
                       <TableCell>
                         {agent.tools && agent.tools.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
-                            {agent.tools.map((tool: any, idx: number) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
+                            {agent.tools.map((tool) => (
+                              <Badge key={tool.id} variant="outline" className="text-xs">
                                 {tool.name}
                               </Badge>
                             ))}
@@ -245,18 +248,27 @@ export default function AgentManagement() {
   );
 }
 
+type AgentFormState = {
+  name: string;
+  module_path: string;
+  factory_function: string;
+  description: string;
+  config_schema: string;
+  selectedTools: string[];
+};
+
 function AgentForm({
   plugins,
   initialData,
   onSubmit,
   isLoading,
 }: {
-  plugins: any[];
-  initialData?: any;
-  onSubmit: (data: any) => void;
+  plugins: AdminPlugin[];
+  initialData?: AdminAgent;
+  onSubmit: (data: Partial<Omit<AgentMutationPayload, "name">> & { name?: string }) => void;
   isLoading: boolean;
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AgentFormState>({
     name: initialData?.name || "",
     module_path: initialData?.module_path || "",
     factory_function: initialData?.factory_function || "",
@@ -264,22 +276,39 @@ function AgentForm({
     config_schema: initialData?.config_schema
       ? JSON.stringify(initialData.config_schema, null, 2)
       : "",
-    selectedTools: initialData?.tools?.map((t: any) => t.id || t.name) || [],
+    selectedTools:
+      initialData?.tools
+        ?.map((t) => t.id)
+        .filter((id): id is string => Boolean(id)) || [],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const data: any = {
-        module_path: formData.module_path,
-        factory_function: formData.factory_function,
-        description: formData.description || undefined,
+      const modulePath = formData.module_path.trim();
+      const factoryFunction = formData.factory_function.trim();
+      const description = formData.description.trim();
+
+      if (!modulePath) {
+        toast.error("Module path is required");
+        return;
+      }
+
+      if (!factoryFunction) {
+        toast.error("Factory function is required");
+        return;
+      }
+
+      const data: Partial<Omit<AgentMutationPayload, "name">> & { name?: string } = {
+        module_path: modulePath,
+        factory_function: factoryFunction,
+        description: description ? description : undefined,
         tools: formData.selectedTools.length > 0 ? formData.selectedTools : undefined,
       };
 
       if (formData.config_schema) {
         try {
-          data.config_schema = JSON.parse(formData.config_schema);
+          data.config_schema = JSON.parse(formData.config_schema) as Record<string, unknown>;
         } catch {
           toast.error("Invalid JSON in config schema");
           return;
@@ -287,7 +316,12 @@ function AgentForm({
       }
 
       if (!initialData) {
-        data.name = formData.name;
+        const trimmedName = formData.name.trim();
+        if (!trimmedName) {
+          toast.error("Name is required");
+          return;
+        }
+        data.name = trimmedName;
       }
 
       onSubmit(data);
@@ -345,10 +379,10 @@ function AgentForm({
           value=""
           onValueChange={(value) => {
             if (value && !formData.selectedTools.includes(value)) {
-              setFormData({
-                ...formData,
-                selectedTools: [...formData.selectedTools, value],
-              });
+              setFormData((prev) => ({
+                ...prev,
+                selectedTools: [...prev.selectedTools, value],
+              }));
             }
           }}
         >
@@ -356,37 +390,79 @@ function AgentForm({
             <SelectValue placeholder="Select a plugin to add" />
           </SelectTrigger>
           <SelectContent>
-            {plugins.map((plugin) => (
-              <SelectItem key={plugin.id} value={plugin.id}>
-                {plugin.name}
-              </SelectItem>
-            ))}
+            {plugins
+              .filter((plugin) => Boolean(plugin.id))
+              .map((plugin) => (
+                <SelectItem key={plugin.id} value={plugin.id}>
+                  {plugin.name}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         {formData.selectedTools.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {formData.selectedTools.map((toolId) => {
+          <div className="flex flex-col gap-2 mt-2">
+            {formData.selectedTools.map((toolId, index) => {
               const plugin = plugins.find((p) => p.id === toolId);
               return (
-                <Badge
-                  key={toolId}
-                  variant="outline"
-                  className="flex items-center gap-1"
-                >
-                  {plugin?.name || toolId}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        selectedTools: formData.selectedTools.filter((id) => id !== toolId),
-                      });
-                    }}
-                    className="ml-1 hover:text-destructive"
-                  >
-                    ×
-                  </button>
-                </Badge>
+                <div key={toolId} className="flex items-center gap-2">
+                  <Badge variant="outline" className="flex-1 justify-start text-xs">
+                    {plugin?.name || toolId}
+                  </Badge>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={index === 0}
+                      onClick={() => {
+                        if (index === 0) {
+                          return;
+                        }
+                        setFormData((prev) => {
+                          const next = [...prev.selectedTools];
+                          [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                          return { ...prev, selectedTools: next };
+                        });
+                      }}
+                      aria-label="Move up"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={index === formData.selectedTools.length - 1}
+                      onClick={() => {
+                        if (index === formData.selectedTools.length - 1) {
+                          return;
+                        }
+                        setFormData((prev) => {
+                          const next = [...prev.selectedTools];
+                          [next[index + 1], next[index]] = [next[index], next[index + 1]];
+                          return { ...prev, selectedTools: next };
+                        });
+                      }}
+                      aria-label="Move down"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          selectedTools: prev.selectedTools.filter((id) => id !== toolId),
+                        }));
+                      }}
+                      aria-label="Remove"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               );
             })}
           </div>

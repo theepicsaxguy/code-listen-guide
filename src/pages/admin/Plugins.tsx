@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
+import type { AdminPlugin } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,23 +31,31 @@ import { toast } from "sonner";
 export default function AdminPlugins() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingPlugin, setEditingPlugin] = useState<any>(null);
+  const [editingPlugin, setEditingPlugin] = useState<AdminPlugin | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: plugins, isLoading } = useQuery({
+  const { data: plugins, isLoading } = useQuery<AdminPlugin[]>({
     queryKey: ["admin-plugins"],
     queryFn: () => apiClient.listPlugins(),
   });
 
+  type PluginMutationPayload = {
+    name: string;
+    module_path: string;
+    function_name: string;
+    description?: string;
+    input_schema?: Record<string, unknown>;
+    output_schema?: Record<string, unknown>;
+    stable_slug?: string;
+    semantic_version?: string;
+    owning_team?: string;
+    authorization_scope?: string;
+    approval_mode?: string;
+    cost_profile?: Record<string, unknown>;
+  };
+
   const createMutation = useMutation({
-    mutationFn: (plugin: {
-      name: string;
-      module_path: string;
-      function_name: string;
-      description?: string;
-      input_schema?: Record<string, any>;
-      output_schema?: Record<string, any>;
-    }) => apiClient.createPlugin(plugin),
+    mutationFn: (plugin: PluginMutationPayload) => apiClient.createPlugin(plugin),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-plugins"] });
       setIsCreateDialogOpen(false);
@@ -58,7 +67,7 @@ export default function AdminPlugins() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: any }) =>
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<PluginMutationPayload> }) =>
       apiClient.updatePlugin(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-plugins"] });
@@ -82,7 +91,7 @@ export default function AdminPlugins() {
     },
   });
 
-  const handleEdit = (plugin: any) => {
+  const handleEdit = (plugin: AdminPlugin) => {
     setEditingPlugin(plugin);
     setIsEditDialogOpen(true);
   };
@@ -120,7 +129,7 @@ export default function AdminPlugins() {
             </DialogHeader>
             <PluginForm
               onSubmit={(data) => {
-                createMutation.mutate(data);
+                createMutation.mutate(data as PluginMutationPayload);
               }}
               isLoading={createMutation.isPending}
             />
@@ -150,12 +159,15 @@ export default function AdminPlugins() {
                     <TableHead>Module</TableHead>
                     <TableHead>Function</TableHead>
                     <TableHead>Description</TableHead>
+                    <TableHead>Metadata</TableHead>
+                    <TableHead>Cost Profile</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead>Updated</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {plugins.map((plugin: any) => (
+                  {plugins?.map((plugin) => (
                     <TableRow key={plugin.id}>
                       <TableCell className="font-medium">{plugin.name}</TableCell>
                       <TableCell className="font-mono text-xs">{plugin.module_path}</TableCell>
@@ -164,7 +176,38 @@ export default function AdminPlugins() {
                         {plugin.description || "-"}
                       </TableCell>
                       <TableCell>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          {plugin.stable_slug ? (
+                            <Badge variant="secondary" className="uppercase tracking-wide">
+                              {plugin.stable_slug}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">No slug</span>
+                          )}
+                          {plugin.semantic_version && (
+                            <Badge variant="outline">v{plugin.semantic_version}</Badge>
+                          )}
+                        </div>
+                        <div className="mt-1 space-y-1 text-xs text-muted-foreground">
+                          <div>Team: {plugin.owning_team || "-"}</div>
+                          <div>Scope: {plugin.authorization_scope || "-"}</div>
+                          <div>Approval: {plugin.approval_mode || "-"}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {plugin.cost_profile ? (
+                          <pre className="max-h-32 overflow-y-auto rounded bg-muted p-2 text-xs">
+                            {JSON.stringify(plugin.cost_profile, null, 2)}
+                          </pre>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {new Date(plugin.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(plugin.updated_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -217,16 +260,33 @@ export default function AdminPlugins() {
   );
 }
 
+type PluginFormState = {
+  name: string;
+  module_path: string;
+  function_name: string;
+  description: string;
+  input_schema: string;
+  output_schema: string;
+  stable_slug: string;
+  semantic_version: string;
+  owning_team: string;
+  authorization_scope: string;
+  approval_mode: string;
+  cost_profile: string;
+};
+
+type PluginFormSubmit = Partial<PluginMutationPayload> & { name?: string };
+
 function PluginForm({
   initialData,
   onSubmit,
   isLoading,
 }: {
-  initialData?: any;
-  onSubmit: (data: any) => void;
+  initialData?: AdminPlugin;
+  onSubmit: (data: PluginFormSubmit) => void;
   isLoading: boolean;
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PluginFormState>({
     name: initialData?.name || "",
     module_path: initialData?.module_path || "",
     function_name: initialData?.function_name || "",
@@ -237,20 +297,42 @@ function PluginForm({
     output_schema: initialData?.output_schema
       ? JSON.stringify(initialData.output_schema, null, 2)
       : "",
+    stable_slug: initialData?.stable_slug || "",
+    semantic_version: initialData?.semantic_version || "",
+    owning_team: initialData?.owning_team || "",
+    authorization_scope: initialData?.authorization_scope || "",
+    approval_mode: initialData?.approval_mode || "",
+    cost_profile: initialData?.cost_profile
+      ? JSON.stringify(initialData.cost_profile, null, 2)
+      : "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const data: any = {
-        module_path: formData.module_path,
-        function_name: formData.function_name,
-        description: formData.description || undefined,
+      const modulePath = formData.module_path.trim();
+      const functionName = formData.function_name.trim();
+      const description = formData.description.trim();
+
+      if (!modulePath) {
+        toast.error("Module path is required");
+        return;
+      }
+
+      if (!functionName) {
+        toast.error("Function name is required");
+        return;
+      }
+
+      const data: PluginFormSubmit = {
+        module_path: modulePath,
+        function_name: functionName,
+        description: description ? description : undefined,
       };
 
       if (formData.input_schema) {
         try {
-          data.input_schema = JSON.parse(formData.input_schema);
+          data.input_schema = JSON.parse(formData.input_schema) as Record<string, unknown>;
         } catch {
           toast.error("Invalid JSON in input schema");
           return;
@@ -259,15 +341,49 @@ function PluginForm({
 
       if (formData.output_schema) {
         try {
-          data.output_schema = JSON.parse(formData.output_schema);
+          data.output_schema = JSON.parse(formData.output_schema) as Record<string, unknown>;
         } catch {
           toast.error("Invalid JSON in output schema");
           return;
         }
       }
 
+      if (formData.stable_slug.trim()) {
+        data.stable_slug = formData.stable_slug.trim();
+      }
+
+      if (formData.semantic_version.trim()) {
+        data.semantic_version = formData.semantic_version.trim();
+      }
+
+      if (formData.owning_team.trim()) {
+        data.owning_team = formData.owning_team.trim();
+      }
+
+      if (formData.authorization_scope.trim()) {
+        data.authorization_scope = formData.authorization_scope.trim();
+      }
+
+      if (formData.approval_mode.trim()) {
+        data.approval_mode = formData.approval_mode.trim();
+      }
+
+      if (formData.cost_profile) {
+        try {
+          data.cost_profile = JSON.parse(formData.cost_profile) as Record<string, unknown>;
+        } catch {
+          toast.error("Invalid JSON in cost profile");
+          return;
+        }
+      }
+
       if (!initialData) {
-        data.name = formData.name;
+        const trimmedName = formData.name.trim();
+        if (!trimmedName) {
+          toast.error("Name is required");
+          return;
+        }
+        data.name = trimmedName;
       }
 
       onSubmit(data);
@@ -317,6 +433,63 @@ function PluginForm({
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="What does this plugin do?"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="stable_slug">Stable Slug</Label>
+        <Input
+          id="stable_slug"
+          value={formData.stable_slug}
+          onChange={(e) => setFormData({ ...formData, stable_slug: e.target.value })}
+          placeholder="my-plugin"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="semantic_version">Semantic Version</Label>
+        <Input
+          id="semantic_version"
+          value={formData.semantic_version}
+          onChange={(e) => setFormData({ ...formData, semantic_version: e.target.value })}
+          placeholder="1.0.0"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="owning_team">Owning Team</Label>
+        <Input
+          id="owning_team"
+          value={formData.owning_team}
+          onChange={(e) => setFormData({ ...formData, owning_team: e.target.value })}
+          placeholder="core-platform"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="authorization_scope">Authorization Scope</Label>
+        <Input
+          id="authorization_scope"
+          value={formData.authorization_scope}
+          onChange={(e) => setFormData({ ...formData, authorization_scope: e.target.value })}
+          placeholder="internal"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="approval_mode">Approval Mode</Label>
+        <Input
+          id="approval_mode"
+          value={formData.approval_mode}
+          onChange={(e) => setFormData({ ...formData, approval_mode: e.target.value })}
+          placeholder="auto"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="cost_profile">Cost Profile (JSON)</Label>
+        <Textarea
+          id="cost_profile"
+          value={formData.cost_profile}
+          onChange={(e) => setFormData({ ...formData, cost_profile: e.target.value })}
+          placeholder='{"unit": "call", "estimated_cost_usd": 0.0}'
+          className="font-mono text-sm"
+          rows={4}
         />
       </div>
       <div className="space-y-2">

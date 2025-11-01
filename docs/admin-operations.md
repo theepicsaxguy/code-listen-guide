@@ -8,6 +8,20 @@
 - Provide a JSON object to adjust `step_config` overrides. Leaving the field empty resets the step to inherit the agent defaults.
 - Saving refreshes the workflow details panel so the updated policy and config are visible immediately.
 
+## Plugin registry metadata
+
+- Use **Admin → Plugins → Create Plugin** or **Edit** to keep the registry in sync with the backend contract.
+- Each plugin row now surfaces slug, semantic version, owning team, authorization scope, approval mode, and the stored cost profile. Empty values show as dashes so gaps are easy to spot.
+- When editing, populate the slug with the identifier published by the Python module and match the semantic version to the deployed build.
+- Enter the authorization scope and approval mode as plain strings (for example `internal` or `manual`) so policy checks can read them verbatim.
+- Paste the cost profile as valid JSON. The form validates the document before sending it to the API and rejects malformed payloads.
+
+## Agent tool ordering
+
+- Agents keep the tool order defined in the form. Dragging is not required—use the arrow buttons next to each tool to move it up or down.
+- Removing a tool updates the list immediately and the API receives the filtered order on save.
+- The module path and factory function inputs trim whitespace before submission; blank entries are blocked with inline errors so partial updates do not slip through.
+
 ## Streaming tool call trace
 
 - Navigate to **Admin → Job Tracing** and search for a job ID.
