@@ -24,6 +24,7 @@ class WorkflowRevision(Base):
     workflow_definition = relationship(
         "WorkflowDefinition",
         back_populates="revisions",
+        foreign_keys=[workflow_definition_id],
     )
     steps = relationship(
         "WorkflowStep",

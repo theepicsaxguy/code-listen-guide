@@ -235,6 +235,18 @@ To validate the configuration in staging:
 - `DELETE /api/v1/jobs/{job_id}` - Delete job
 - `POST /api/v1/jobs/{job_id}/start` - Start or resume workflow execution
 
+### Admin registry APIs
+- `GET /api/v1/admin/agents/registry` - Paginated agent registry with config metadata (admin only)
+- `GET /api/v1/admin/tools/registry` - Paginated tool registry with input/output schemas (admin only)
+
+Both endpoints accept optional `page`, `page_size`, and `search` query parameters. Results mirror the admin console contract by returning `{ total, page, page_size, agents|tools }` payloads.
+
+### Trace APIs
+- `GET /api/v1/traces/{job_id}` - Return stage progress, tool call traces, and job timing (owner or admin)
+- `POST /api/v1/traces/{job_id}/stages/{stage_name}/replay` - Record an admin-approved replay request for the specified stage
+
+Trace responses include a `stages` array describing the workflow order and a `tool_traces` map keyed by step name. Access is limited to the job owner or admins, ensuring trace data stays within the appropriate namespace.
+
 #### `POST /api/v1/jobs/estimate`
 
 Authenticated clients send a JSON payload describing the repository and desired depth tier:

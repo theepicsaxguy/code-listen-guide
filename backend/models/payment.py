@@ -12,7 +12,7 @@ from sqlalchemy.sql import func
 import uuid
 from datetime import datetime
 
-from backend.db.session import Base
+from backend.db.base import Base
 
 
 class Payment(Base):
