@@ -2,9 +2,12 @@
 
 import logging
 from importlib import import_module
+from importlib.util import find_spec
+from pathlib import Path
 from typing import Generator
 
-from sqlalchemy import create_engine, text, inspect
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import Inspector
 from sqlalchemy.orm import Session, sessionmaker
 
 from backend.config import get_settings
@@ -39,20 +42,58 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def run_migrations() -> None:
-    """Run database migrations that can't be handled by create_all()."""
-    inspector = inspect(engine)
+    """Apply Alembic upgrades and manual schema migrations."""
 
-    # Migration: Add is_admin column to users table
-    if 'users' in inspector.get_table_names():
-        columns = [col['name'] for col in inspector.get_columns('users')]
-        if 'is_admin' not in columns:
-            logger.info("Running migration: Adding is_admin column to users table")
-            with engine.connect() as conn:
-                conn.execute(text(
-                    "ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE"
-                ))
-                conn.commit()
-            logger.info("✓ Successfully added is_admin column")
+    _apply_alembic_upgrades()
+    inspector = inspect(engine)
+    _ensure_is_admin_column(inspector)
+
+
+def _apply_alembic_upgrades() -> None:
+    """Apply the latest Alembic revision when configuration is available."""
+
+    if find_spec("alembic") is None:
+        logger.info("Alembic not installed; skipping migration upgrade")
+        return
+
+    from alembic import command
+    from alembic.config import Config
+
+    project_root = Path(__file__).resolve().parents[1]
+    alembic_cfg_path = project_root / "alembic.ini"
+    if not alembic_cfg_path.exists():
+        logger.warning("Alembic configuration file not found at %s", alembic_cfg_path)
+        return
+
+    alembic_cfg = Config(str(alembic_cfg_path))
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
+    logger.info("Applying Alembic migrations to latest revision")
+    try:
+        command.upgrade(alembic_cfg, "head")
+    except Exception as exc:
+        logger.warning("Failed to apply Alembic migrations: %s", exc)
+        return
+
+    logger.info("✓ Successfully applied Alembic migrations")
+
+
+def _ensure_is_admin_column(inspector: Inspector) -> None:
+    """Add the users.is_admin column when the table predates migrations."""
+
+    if "users" not in inspector.get_table_names():
+        return
+
+    columns = [column["name"] for column in inspector.get_columns("users")]
+    if "is_admin" in columns:
+        return
+
+    logger.info("Running migration: Adding is_admin column to users table")
+    with engine.connect() as conn:
+        conn.execute(
+            text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE")
+        )
+        conn.commit()
+    logger.info("✓ Successfully added is_admin column")
 
 
 def init_db() -> None:
@@ -68,6 +109,4 @@ def init_db() -> None:
         )
 
     Base.metadata.create_all(bind=engine)
-
-    # Run migrations after creating tables
     run_migrations()
