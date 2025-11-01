@@ -19,7 +19,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 import uuid
 
-from backend.db.session import Base
+from backend.db.base import Base
 
 
 class Job(Base):

@@ -122,6 +122,7 @@ export interface JobTrace {
   completed_at?: string;
   error?: string;
   stages: JobStage[];
+  tool_traces?: Record<string, Record<string, any>[]>;
 }
 
 export interface JobStage {
@@ -132,6 +133,14 @@ export interface JobStage {
   duration_ms?: number;
   error?: string;
   logs_url?: string;
+}
+
+export interface StageReplayResponse {
+  success: boolean;
+  job_id: string;
+  stage: string;
+  requested_at: string;
+  message: string;
 }
 
 export interface SupportTicket {

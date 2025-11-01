@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from backend.db.base import Base
+from backend.models.job import Job
 
 class WorkflowInstance(Base):
     __tablename__ = "workflow_instances"
@@ -19,6 +20,6 @@ class WorkflowInstance(Base):
     completed_at = Column(DateTime)
     status = Column(String(50), nullable=False)
 
-    job = relationship("Job")
-    revision = relationship("WorkflowRevision")
+    job = relationship(Job, foreign_keys=[job_id])
+    revision = relationship("WorkflowRevision", foreign_keys=[revision_id])
     current_step = relationship("WorkflowStep")

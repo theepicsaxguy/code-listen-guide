@@ -42,8 +42,12 @@ from backend.api.dependencies import limiter
 from backend.api.routes import auth, jobs, outlines, payments, player, admin, parse, agents_admin
 from backend.api.routes.admin_workflows import router as admin_workflows_router
 from backend.api.routes.admin_routes.agent_test import router as agent_test_router
-from backend.api.routes.admin_plugins import router as admin_plugins_router
+from backend.api.routes.admin_plugins import (
+    router as admin_plugins_router,
+    tools_router as admin_tools_router,
+)
 from backend.api.routes.admin_agents_crud import router as admin_agents_crud_router
+from backend.api.routes.traces import router as traces_router
 from backend.api.ws import router as ws_router
 from backend.config import get_settings
 from backend.db.session import init_db
@@ -235,6 +239,8 @@ app.include_router(admin.router)
 app.include_router(agents_admin.router)
 app.include_router(admin_agents_crud_router)
 app.include_router(admin_plugins_router)
+app.include_router(admin_tools_router)
+app.include_router(traces_router)
 app.include_router(agent_test_router)
 app.include_router(parse.router)
 app.include_router(ws_router)

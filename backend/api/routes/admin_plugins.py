@@ -3,16 +3,18 @@
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from backend.api.dependencies import require_admin
 from backend.db.session import get_db
 from backend.models.tool_registry import ToolRegistry
-from pydantic import BaseModel
 
 
 router = APIRouter(prefix="/api/v1/admin/plugins", tags=["admin", "plugins"])
+tools_router = APIRouter(prefix="/api/v1/admin/tools", tags=["admin", "tools"])
 
 
 class PluginCreate(BaseModel):
@@ -42,8 +44,87 @@ class PluginOut(BaseModel):
     output_schema: Optional[dict] = None
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ToolRegistryItem(BaseModel):
+    id: str
+    name: str
+    module_path: str
+    function_name: str
+    description: str
+    input_schema: dict
+    output_schema: dict
+    created_at: str
+    updated_at: str
+
+
+class ToolRegistryListResponse(BaseModel):
+    tools: List[ToolRegistryItem]
+    total: int
+    page: int
+    page_size: int
+
+
+def _serialize_plugin(plugin: ToolRegistry) -> PluginOut:
+    return PluginOut(
+        id=str(plugin.id),
+        name=plugin.name,
+        module_path=plugin.module_path,
+        function_name=plugin.function_name,
+        description=plugin.description,
+        input_schema=plugin.input_schema or {},
+        output_schema=plugin.output_schema or {},
+        created_at=plugin.created_at.isoformat() if plugin.created_at else "",
+    )
+
+
+def _serialize_registry_item(plugin: ToolRegistry) -> ToolRegistryItem:
+    return ToolRegistryItem(
+        id=str(plugin.id),
+        name=plugin.name,
+        module_path=plugin.module_path,
+        function_name=plugin.function_name,
+        description=plugin.description or "",
+        input_schema=plugin.input_schema or {},
+        output_schema=plugin.output_schema or {},
+        created_at=plugin.created_at.isoformat() if plugin.created_at else "",
+        updated_at=plugin.updated_at.isoformat() if plugin.updated_at else "",
+    )
+
+
+@tools_router.get("/registry", response_model=ToolRegistryListResponse)
+async def get_tool_registry(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None, min_length=1),
+    db: Session = Depends(get_db),
+    _current_admin=Depends(require_admin),
+) -> ToolRegistryListResponse:
+    query = db.query(ToolRegistry)
+    if search:
+        pattern = f"%{search}%"
+        query = query.filter(
+            or_(
+                ToolRegistry.name.ilike(pattern),
+                ToolRegistry.description.ilike(pattern),
+            )
+        )
+    total = query.count()
+    offset = (page - 1) * page_size
+    tools = (
+        query.order_by(ToolRegistry.name.asc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+    items = [_serialize_registry_item(tool) for tool in tools]
+    return ToolRegistryListResponse(
+        tools=items,
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("", response_model=List[PluginOut])
@@ -53,19 +134,7 @@ async def list_plugins(
 ):
     """List all registered plugins/tools."""
     plugins = db.query(ToolRegistry).order_by(ToolRegistry.name.asc()).all()
-    return [
-        PluginOut(
-            id=str(p.id),
-            name=p.name,
-            module_path=p.module_path,
-            function_name=p.function_name,
-            description=p.description,
-            input_schema=p.input_schema,
-            output_schema=p.output_schema,
-            created_at=p.created_at.isoformat() if p.created_at else "",
-        )
-        for p in plugins
-    ]
+    return [_serialize_plugin(item) for item in plugins]
 
 
 @router.post("", response_model=PluginOut, status_code=status.HTTP_201_CREATED)
@@ -94,16 +163,7 @@ async def create_plugin(
     db.commit()
     db.refresh(plugin)
 
-    return PluginOut(
-        id=str(plugin.id),
-        name=plugin.name,
-        module_path=plugin.module_path,
-        function_name=plugin.function_name,
-        description=plugin.description,
-        input_schema=plugin.input_schema,
-        output_schema=plugin.output_schema,
-        created_at=plugin.created_at.isoformat() if plugin.created_at else "",
-    )
+    return _serialize_plugin(plugin)
 
 
 @router.get("/{plugin_id}", response_model=PluginOut)
@@ -117,16 +177,7 @@ async def get_plugin(
     if not plugin:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plugin not found")
 
-    return PluginOut(
-        id=str(plugin.id),
-        name=plugin.name,
-        module_path=plugin.module_path,
-        function_name=plugin.function_name,
-        description=plugin.description,
-        input_schema=plugin.input_schema,
-        output_schema=plugin.output_schema,
-        created_at=plugin.created_at.isoformat() if plugin.created_at else "",
-    )
+    return _serialize_plugin(plugin)
 
 
 @router.patch("/{plugin_id}", response_model=PluginOut)
@@ -155,16 +206,7 @@ async def update_plugin(
     db.commit()
     db.refresh(plugin)
 
-    return PluginOut(
-        id=str(plugin.id),
-        name=plugin.name,
-        module_path=plugin.module_path,
-        function_name=plugin.function_name,
-        description=plugin.description,
-        input_schema=plugin.input_schema,
-        output_schema=plugin.output_schema,
-        created_at=plugin.created_at.isoformat() if plugin.created_at else "",
-    )
+    return _serialize_plugin(plugin)
 
 
 @router.delete("/{plugin_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -182,3 +224,6 @@ async def delete_plugin(
     db.commit()
 
     return None
+
+
+__all__ = ["router", "tools_router"]

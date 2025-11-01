@@ -25,6 +25,7 @@ class WorkflowDefinition(Base):
         back_populates="workflow_definition",
         cascade="all, delete-orphan",
         order_by="WorkflowRevision.version",
+        foreign_keys="WorkflowRevision.workflow_definition_id",
     )
     current_revision = relationship(
         "WorkflowRevision",

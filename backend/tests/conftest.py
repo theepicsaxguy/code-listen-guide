@@ -15,7 +15,7 @@ import sqlite3
 import sys
 import uuid
 from pathlib import Path
-from types import ModuleType, SimpleNamespace
+from types import ModuleType
 from unittest.mock import AsyncMock, MagicMock, Mock
 from typing import Any, Dict, Generator
 
@@ -47,6 +47,7 @@ os.environ.setdefault("S3_BUCKET_NAME", "test-bucket")
 os.environ.setdefault("S3_REGION", "us-east-1")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 
+from backend.db.base import Base
 from backend.db.session import get_db
 from backend.utils.auth import (
     create_access_token,
@@ -159,11 +160,23 @@ sys.modules.setdefault("botocore.exceptions", botocore_exceptions)
 @pytest.fixture(scope="session")
 def test_db_engine():
     """Create a test database engine using SQLite in-memory."""
-    from backend.db.session import Base
-    from backend.models import user, job, outline, payment, chapter, deliverable
+    from backend.models import (
+        agent_registry,
+        chapter,
+        deliverable,
+        job,
+        outline,
+        payment,
+        tool_registry,
+        user,
+        workflow_definition,
+        workflow_instance,
+        workflow_revision,
+        workflow_step,
+    )
 
     engine = create_engine(
-        "sqlite://",
+        "sqlite:///./backend_test.db",
         connect_args={
             "check_same_thread": False,
             "detect_types": sqlite3.PARSE_DECLTYPES,
@@ -194,6 +207,9 @@ def test_db(test_db_engine) -> Generator[Session, None, None]:
     )
 
     session = TestingSessionLocal()
+    for table in reversed(Base.metadata.sorted_tables):
+        session.execute(table.delete())
+    session.commit()
 
     try:
         yield session

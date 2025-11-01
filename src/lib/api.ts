@@ -380,13 +380,17 @@ export class ApiClient {
       }
     
       async getJobTrace(jobId: string) {
-        return this.request<import('@/types/admin').JobTrace>(`/admin/jobs/${jobId}/trace`);
+        return this.request<import('@/types/admin').JobTrace>(`/traces/${jobId}`);
       }
-    
+
       async retryJobStage(jobId: string, stageName: string) {
-        return this.request<{ success: boolean }>(`/admin/jobs/${jobId}/retry/${stageName}`, {
-          method: 'POST',
-        });
+        const encodedStage = encodeURIComponent(stageName);
+        return this.request<import('@/types/admin').StageReplayResponse>(
+          `/traces/${jobId}/stages/${encodedStage}/replay`,
+          {
+            method: 'POST',
+          }
+        );
       }
     
       async getTickets(
