@@ -27,6 +27,7 @@ from agent_framework import (
     TextContent,
     WorkflowBuilder,
 )
+from agent_framework import AIFunction, AgentExecutor, ChatMessage, Role, TextContent, WorkflowBuilder
 
 from backend.api.events import emit_job_event
 from backend.config import get_settings
@@ -129,6 +130,20 @@ _TOOL_CALL_DURATION = _create_histogram(
     unit="ms",
 )
 
+_APPROVAL_MODE_ALIASES = {
+    "auto": "never_require",
+    "never": "never_require",
+    "never_require": "never_require",
+    "guarded": "always_require",
+    "manual": "always_require",
+    "always_require": "always_require",
+}
+
+
+def _map_tool_approval_mode(value: Optional[str]) -> str:
+    normalized = (value or "auto").strip().lower()
+    return _APPROVAL_MODE_ALIASES.get(normalized, "never_require")
+
 
 class _BillingClient:
     """Send billing usage records to the external billing service."""
@@ -173,6 +188,18 @@ class _AuditEmitter:
                     extra={"endpoint": self._endpoint, "job_id": payload.get("job_id")},
                     exc_info=True,
                 )
+
+
+class ToolAuthorizationError(PermissionError):
+    """Raised when agent policy or quota checks reject a tool call."""
+
+    def __init__(self, message: str, *, context: Optional[Dict[str, Any]] = None) -> None:
+        super().__init__(message)
+        self.context = context or {}
+
+
+class ToolApprovalRequiredError(ToolAuthorizationError):
+    """Raised when a manual approval gate blocks tool execution."""
 
 
 class AudiobookWorkflow:
@@ -535,6 +562,7 @@ class AudiobookWorkflow:
             "rollout_stage": descriptor.rollout_stage,
             "access_policies": descriptor.access_policies,
             "quota_limits": descriptor.quota_limits,
+            "approval_requirements": descriptor.approval_requirements,
         }
         call_kwargs.setdefault("agent_metadata", metadata_payload)
         if descriptor.system_prompt and "system_prompt" not in call_kwargs:
@@ -549,6 +577,8 @@ class AudiobookWorkflow:
             call_kwargs["quota_limits"] = descriptor.quota_limits
         if "access_policies" not in call_kwargs:
             call_kwargs["access_policies"] = descriptor.access_policies
+        if "approval_requirements" not in call_kwargs:
+            call_kwargs["approval_requirements"] = descriptor.approval_requirements
         if "rollout_enabled" not in call_kwargs:
             call_kwargs["rollout_enabled"] = descriptor.rollout_enabled
         if descriptor.rollout_stage and "rollout_stage" not in call_kwargs:
@@ -560,6 +590,13 @@ class AudiobookWorkflow:
         cached = self._tool_descriptor_cache.get(descriptor.id)
         if cached is not None:
             return cached
+    def _build_agent_tools(
+        self,
+        descriptor: AgentDescriptor,
+        *,
+        step_name: str,
+        context: Mapping[str, Any],
+    ) -> Optional[List[AIFunction]]:
         if not descriptor.allowed_tools:
             self._tool_descriptor_cache[descriptor.id] = []
             return []
@@ -590,7 +627,7 @@ class AudiobookWorkflow:
             plugins = self._resolve_agent_tool_descriptors(descriptor)
         if not plugins:
             return []
-        wrappers: List[Callable[..., Any]] = []
+        wrappers: List[AIFunction] = []
         for plugin in plugins:
             wrappers.append(
                 self._wrap_tool(
@@ -609,7 +646,7 @@ class AudiobookWorkflow:
         tool_descriptor: ToolDescriptor,
         step_name: str,
         context: Mapping[str, Any],
-    ) -> Callable[..., Any]:
+    ) -> AIFunction:
         try:
             module = import_module(tool_descriptor.module_path)
             raw_function = getattr(module, tool_descriptor.function_name)
@@ -637,6 +674,7 @@ class AudiobookWorkflow:
             "rollout_stage": agent_descriptor.rollout_stage,
             "access_policies": agent_descriptor.access_policies,
             "quota_limits": agent_descriptor.quota_limits,
+            "approval_requirements": agent_descriptor.approval_requirements,
         }
         context_snapshot["agent"] = agent_snapshot
 
@@ -654,11 +692,15 @@ class AudiobookWorkflow:
             if context_snapshot:
                 trace["context"] = context_snapshot
             authorization = {
-                "policy": "agent_tool_allow_list",
+                "policy": "agent_access_controls",
                 "evaluated_at": datetime.utcnow().isoformat(),
             }
             try:
-                self._validate_tool_authorization(agent_descriptor, tool_descriptor)
+                auth_context = self._validate_tool_authorization(
+                    agent_descriptor,
+                    tool_descriptor,
+                )
+                authorization.update(auth_context)
                 authorization["allowed"] = True
                 result = await raw_function(*args, **kwargs)
                 trace["output"] = self._coerce_jsonable(result)
@@ -674,6 +716,23 @@ class AudiobookWorkflow:
                     error=None,
                 )
                 return result
+            except ToolAuthorizationError as exc:
+                trace["error"] = repr(exc)
+                authorization.update(getattr(exc, "context", {}))
+                authorization["allowed"] = False
+                authorization["reason"] = str(exc)
+                duration = time.monotonic() - start
+                self._finalize_tool_call(
+                    trace,
+                    status="forbidden",
+                    duration=duration,
+                    agent_descriptor=agent_descriptor,
+                    tool_descriptor=tool_descriptor,
+                    step_name=step_name,
+                    authorization=authorization,
+                    error=exc,
+                )
+                raise
             except PermissionError as exc:
                 trace["error"] = repr(exc)
                 authorization["allowed"] = False
@@ -722,11 +781,15 @@ class AudiobookWorkflow:
             if context_snapshot:
                 trace["context"] = context_snapshot
             authorization = {
-                "policy": "agent_tool_allow_list",
+                "policy": "agent_access_controls",
                 "evaluated_at": datetime.utcnow().isoformat(),
             }
             try:
-                self._validate_tool_authorization(agent_descriptor, tool_descriptor)
+                auth_context = self._validate_tool_authorization(
+                    agent_descriptor,
+                    tool_descriptor,
+                )
+                authorization.update(auth_context)
                 authorization["allowed"] = True
                 result = raw_function(*args, **kwargs)
                 trace["output"] = self._coerce_jsonable(result)
@@ -742,6 +805,23 @@ class AudiobookWorkflow:
                     error=None,
                 )
                 return result
+            except ToolAuthorizationError as exc:
+                trace["error"] = repr(exc)
+                authorization.update(getattr(exc, "context", {}))
+                authorization["allowed"] = False
+                authorization["reason"] = str(exc)
+                duration = time.monotonic() - start
+                self._finalize_tool_call(
+                    trace,
+                    status="forbidden",
+                    duration=duration,
+                    agent_descriptor=agent_descriptor,
+                    tool_descriptor=tool_descriptor,
+                    step_name=step_name,
+                    authorization=authorization,
+                    error=exc,
+                )
+                raise
             except PermissionError as exc:
                 trace["error"] = repr(exc)
                 authorization["allowed"] = False
@@ -796,7 +876,32 @@ class AudiobookWorkflow:
 
         setattr(wrapper, "__tool_descriptor__", tool_descriptor)
         setattr(wrapper, "__agent_descriptor__", agent_descriptor)
-        return wrapper
+
+        additional_properties: Dict[str, Any] = {
+            "tool_id": str(tool_descriptor.id),
+            "stable_slug": tool_descriptor.stable_slug,
+            "semantic_version": tool_descriptor.semantic_version,
+            "authorization_scope": tool_descriptor.authorization_scope,
+            "owning_team": tool_descriptor.owning_team,
+            "cost_profile": tool_descriptor.cost_profile,
+        }
+        if tool_descriptor.output_schema:
+            additional_properties["output_schema"] = tool_descriptor.output_schema
+
+        input_schema = tool_descriptor.input_schema or None
+        ai_tool = AIFunction(
+            name=tool_descriptor.name or raw_function.__name__,
+            description=tool_descriptor.description or raw_function.__doc__ or "",
+            func=wrapper,
+            input_model=input_schema,
+            approval_mode=_map_tool_approval_mode(tool_descriptor.approval_mode),
+            additional_properties=additional_properties,
+        )
+        setattr(ai_tool, "__tool_descriptor__", tool_descriptor)
+        setattr(ai_tool, "__agent_descriptor__", agent_descriptor)
+        setattr(ai_tool, "__wrapped__", wrapper)
+        setattr(ai_tool, "__raw_function__", raw_function)
+        return ai_tool
 
     def _finalize_tool_call(
         self,
@@ -1150,30 +1255,52 @@ class AudiobookWorkflow:
         self,
         agent_descriptor: AgentDescriptor,
         tool_descriptor: ToolDescriptor,
-    ) -> None:
+    ) -> Dict[str, Any]:
+        tokens = self._tool_tokens(tool_descriptor)
         allowed = self._allowed_tokens(agent_descriptor)
-        if not allowed:
-            raise PermissionError(
-                f"Agent '{agent_descriptor.name}' is not allowed to call any tools"
+        if allowed and "*" not in allowed and allowed.isdisjoint(tokens):
+            context = {
+                "policy": {
+                    "source": "allowed_tools",
+                    "allowed_tokens": sorted(allowed),
+                    "tool_tokens": sorted(tokens),
+                }
+            }
+            raise ToolAuthorizationError(
+                f"Agent '{agent_descriptor.name}' is not allowed to call tool '{tool_descriptor.name}'",
+                context=context,
             )
-        if "*" in allowed:
-            return
-        candidates = {
-            tool_descriptor.name,
-            tool_descriptor.name.lower(),
-            tool_descriptor.function_name,
-            tool_descriptor.function_name.lower(),
-            tool_descriptor.module_path,
-            tool_descriptor.module_path.lower(),
-            f"{tool_descriptor.module_path}.{tool_descriptor.function_name}",
-            f"{tool_descriptor.module_path}.{tool_descriptor.function_name}".lower(),
-            str(tool_descriptor.id),
-            str(tool_descriptor.id).lower(),
+
+        policy_context = self._evaluate_access_policies(
+            agent_descriptor,
+            tool_descriptor,
+            tokens,
+        )
+        if not policy_context.get("allowed", True):
+            raise ToolAuthorizationError(
+                policy_context.get("message")
+                or f"Agent '{agent_descriptor.name}' is not allowed to call tool '{tool_descriptor.name}'",
+                context={"policy": policy_context},
+            )
+
+        quota_context = self._enforce_quota_limits(
+            agent_descriptor,
+            tool_descriptor,
+            tokens,
+        )
+        approval_context = self._evaluate_tool_approval(
+            agent_descriptor,
+            tool_descriptor,
+            tokens,
+        )
+        authorization: Dict[str, Any] = {
+            "policy": policy_context,
         }
-        if allowed.isdisjoint(candidates):
-            raise PermissionError(
-                f"Agent '{agent_descriptor.name}' is not allowed to call tool '{tool_descriptor.name}'"
-            )
+        if quota_context:
+            authorization["quota"] = quota_context
+        if approval_context:
+            authorization["approval"] = approval_context
+        return authorization
 
     def _allowed_tokens(self, descriptor: AgentDescriptor) -> set[str]:
         cached = self._agent_allowed_cache.get(descriptor.id)
@@ -1184,10 +1311,420 @@ class AudiobookWorkflow:
             text = str(reference).strip()
             if not text:
                 continue
-            tokens.add(text)
             tokens.add(text.lower())
+        if "*" in tokens:
+            tokens.add("*")
         self._agent_allowed_cache[descriptor.id] = tokens
         return tokens
+
+    def _tool_tokens(self, descriptor: ToolDescriptor) -> set[str]:
+        tokens: set[str] = set()
+
+        def add_token(value: Optional[str], prefix: Optional[str] = None) -> None:
+            if not value:
+                return
+            text = str(value).strip()
+            if not text:
+                return
+            tokens.add(text.lower())
+            if prefix:
+                tokens.add(f"{prefix}{text}".lower())
+
+        add_token(descriptor.name)
+        add_token(descriptor.function_name)
+        add_token(descriptor.module_path)
+        if descriptor.module_path and descriptor.function_name:
+            add_token(f"{descriptor.module_path}.{descriptor.function_name}")
+        add_token(descriptor.stable_slug)
+        add_token(descriptor.stable_slug, prefix="tool:")
+        add_token(descriptor.name, prefix="tool:")
+        if descriptor.stable_slug and descriptor.semantic_version:
+            add_token(f"{descriptor.stable_slug}@{descriptor.semantic_version}")
+        add_token(str(descriptor.id))
+        if descriptor.authorization_scope:
+            add_token(descriptor.authorization_scope)
+            add_token(descriptor.authorization_scope, prefix="scope:")
+        if descriptor.owning_team:
+            add_token(descriptor.owning_team)
+            add_token(descriptor.owning_team, prefix="team:")
+        if descriptor.approval_mode:
+            add_token(descriptor.approval_mode)
+            add_token(descriptor.approval_mode, prefix="approval:")
+        return tokens
+
+    def _evaluate_access_policies(
+        self,
+        agent_descriptor: AgentDescriptor,
+        tool_descriptor: ToolDescriptor,
+        tokens: set[str],
+    ) -> Dict[str, Any]:
+        policies = agent_descriptor.access_policies or {}
+        overrides = list(policies.get("overrides") or [])
+        applicable: List[tuple[str, Dict[str, Any]]] = []
+        for rule in overrides:
+            subject = str(rule.get("subject") or "").strip()
+            if subject and subject.lower() not in tokens:
+                continue
+            label = subject or "override"
+            applicable.append((label, rule))
+        default_rule = policies.get("default") or {}
+        applicable.append(("default", default_rule))
+
+        decision: Dict[str, Any] = {
+            "policy": "agent_access_policies",
+            "tokens": sorted(tokens),
+            "allowed": True,
+            "rule": "default",
+        }
+
+        allow_rules: List[tuple[set[str], str, Dict[str, Any]]] = []
+        for label, rule in applicable:
+            metadata = rule.get("metadata") if isinstance(rule.get("metadata"), Mapping) else {}
+            denies = {
+                str(item).strip().lower()
+                for item in rule.get("deny", [])
+                if isinstance(item, (str, bytes)) or item
+            }
+            denies.discard("")
+            if denies and not denies.isdisjoint(tokens):
+                decision.update(
+                    {
+                        "allowed": False,
+                        "rule": label,
+                        "matched_deny": sorted(denies.intersection(tokens)),
+                        "metadata": metadata,
+                        "message": metadata.get("reason")
+                        or f"Agent policy denies use of tool '{tool_descriptor.name}'",
+                    }
+                )
+                return decision
+
+            allows = {
+                str(item).strip().lower()
+                for item in rule.get("allow", [])
+                if isinstance(item, (str, bytes)) or item
+            }
+            allows.discard("")
+            if allows:
+                allow_rules.append((allows, label, rule))
+
+        if allow_rules:
+            for allows, label, rule in allow_rules:
+                metadata = rule.get("metadata") if isinstance(rule.get("metadata"), Mapping) else {}
+                if not allows.isdisjoint(tokens):
+                    decision.update(
+                        {
+                            "allowed": True,
+                            "rule": label,
+                            "matched_allow": sorted(allows.intersection(tokens)),
+                            "metadata": metadata,
+                        }
+                    )
+                    return decision
+            allows, label, rule = allow_rules[0]
+            metadata = rule.get("metadata") if isinstance(rule.get("metadata"), Mapping) else {}
+            decision.update(
+                {
+                    "allowed": False,
+                    "rule": label,
+                    "expected_allow": sorted(allows),
+                    "metadata": metadata,
+                    "message": metadata.get("reason")
+                    or f"Agent policy does not permit tool '{tool_descriptor.name}'",
+                }
+            )
+            return decision
+
+        metadata = default_rule.get("metadata") if isinstance(default_rule.get("metadata"), Mapping) else {}
+        decision["metadata"] = metadata
+        return decision
+
+    def _quota_window_id(self, window: Optional[str], now: datetime) -> str:
+        if not window:
+            return "lifetime"
+        normalized = window.strip().lower()
+        if normalized == "daily":
+            return f"daily:{now.date().isoformat()}"
+        if normalized == "hourly":
+            return now.strftime("hourly:%Y-%m-%dT%H")
+        if normalized == "weekly":
+            iso_year, iso_week, _ = now.isocalendar()
+            return f"weekly:{iso_year}-W{iso_week:02d}"
+        if normalized == "monthly":
+            return now.strftime("monthly:%Y-%m")
+        return f"{normalized}:{now.date().isoformat()}"
+
+    def _parse_iso_timestamp(self, value: Optional[str]) -> Optional[datetime]:
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return None
+
+    def _touch_quota_record(
+        self,
+        agent_descriptor: AgentDescriptor,
+        *,
+        subject: Optional[str],
+        window: Optional[str],
+        now: datetime,
+        increment: bool,
+    ) -> Dict[str, Any]:
+        key = (subject or "default").strip().lower() or "default"
+        state_snapshot: Optional[Dict[str, Any]] = None
+        with self._state_lock:
+            quota_state = self.state.setdefault("quota_usage", {})
+            agent_state = quota_state.setdefault(str(agent_descriptor.id), {})
+            record = dict(agent_state.get(key) or {})
+            window_id = self._quota_window_id(window, now)
+            changed = False
+            if record.get("window_id") != window_id:
+                record = {
+                    "window_id": window_id,
+                    "window": window or None,
+                    "count": 0,
+                    "last_call_at": None,
+                }
+                changed = True
+            count = int(record.get("count", 0) or 0)
+            if increment:
+                count += 1
+                record["count"] = count
+                record["last_call_at"] = now.isoformat()
+                changed = True
+            else:
+                record["count"] = count
+            if changed:
+                record["updated_at"] = now.isoformat()
+                agent_state[key] = record
+                state_snapshot = json.loads(json.dumps(self.state))
+        if state_snapshot is not None:
+            self.manager.update_instance(
+                job_id=self.job_uuid,
+                state=state_snapshot,
+            )
+        last_call = self._parse_iso_timestamp(record.get("last_call_at"))
+        return {
+            "subject": subject or "default",
+            "window": window or "lifetime",
+            "window_id": record.get("window_id"),
+            "count": int(record.get("count", 0) or 0),
+            "last_call_at": last_call,
+        }
+
+    def _enforce_quota_limits(
+        self,
+        agent_descriptor: AgentDescriptor,
+        tool_descriptor: ToolDescriptor,
+        tokens: set[str],
+    ) -> Dict[str, Any]:
+        quotas = agent_descriptor.quota_limits or {}
+        overrides = list(quotas.get("overrides") or [])
+        now = datetime.utcnow()
+        applicable: List[tuple[str, Dict[str, Any]]] = []
+        for rule in overrides:
+            subject = str(rule.get("subject") or "").strip()
+            if subject and subject.lower() not in tokens:
+                continue
+            label = subject or "override"
+            applicable.append((label, rule))
+        default_rule = quotas.get("default") or {}
+        applicable.append(("default", default_rule))
+
+        enforced: List[tuple[str, Optional[str], Dict[str, Any], Optional[int], Optional[int]]] = []
+        for label, rule in applicable:
+            limit = self._to_int(rule.get("limit"))
+            cooldown = self._to_int(rule.get("cooldown_seconds"))
+            if limit is None and cooldown is None:
+                continue
+            subject = rule.get("subject") or label
+            window_value = rule.get("window")
+            window = (
+                str(window_value).strip().lower()
+                if isinstance(window_value, str)
+                else None
+            )
+            metadata = rule.get("metadata") if isinstance(rule.get("metadata"), Mapping) else {}
+            record = self._touch_quota_record(
+                agent_descriptor,
+                subject=subject,
+                window=window,
+                now=now,
+                increment=False,
+            )
+            count = record.get("count", 0)
+            last_call = record.get("last_call_at")
+            if cooldown is not None and isinstance(last_call, datetime):
+                elapsed = (now - last_call).total_seconds()
+                if elapsed < cooldown:
+                    remaining = int(max(round(cooldown - elapsed), 0))
+                    context = {
+                        "subject": record["subject"],
+                        "window": record["window"],
+                        "count": count,
+                        "limit": limit,
+                        "cooldown_seconds": cooldown,
+                        "remaining_cooldown_seconds": remaining,
+                        "metadata": metadata,
+                    }
+                    message = metadata.get("reason") or (
+                        f"Tool '{tool_descriptor.name}' is cooling down for {remaining}s"
+                    )
+                    raise ToolAuthorizationError(message, context={"quota": context})
+            if limit is not None and count >= limit:
+                context = {
+                    "subject": record["subject"],
+                    "window": record["window"],
+                    "count": count,
+                    "limit": limit,
+                    "cooldown_seconds": cooldown,
+                    "metadata": metadata,
+                }
+                message = metadata.get("reason") or (
+                    f"Tool '{tool_descriptor.name}' exceeded its {record['window']} quota"
+                )
+                raise ToolAuthorizationError(message, context={"quota": context})
+            enforced.append((subject, window, metadata, limit, cooldown))
+
+        if not enforced:
+            return {}
+
+        applied: List[Dict[str, Any]] = []
+        for subject, window, metadata, limit, cooldown in enforced:
+            record = self._touch_quota_record(
+                agent_descriptor,
+                subject=subject,
+                window=window,
+                now=now,
+                increment=True,
+            )
+            applied.append(
+                {
+                    "subject": record["subject"],
+                    "window": record["window"],
+                    "count": record["count"],
+                    "limit": limit,
+                    "cooldown_seconds": cooldown,
+                    "metadata": metadata,
+                }
+            )
+        return {"applied": applied}
+
+    def _resolve_approval_requirement(
+        self,
+        agent_descriptor: AgentDescriptor,
+        tool_descriptor: ToolDescriptor,
+        tokens: set[str],
+    ) -> Dict[str, Any]:
+        approvals = agent_descriptor.approval_requirements or {}
+        overrides = list(approvals.get("overrides") or [])
+        for rule in overrides:
+            subject = str(rule.get("subject") or "").strip()
+            if subject and subject.lower() not in tokens:
+                continue
+            metadata = rule.get("metadata") if isinstance(rule.get("metadata"), Mapping) else {}
+            mode = str(rule.get("mode", "auto")).strip().lower() or "auto"
+            return {
+                "mode": mode,
+                "rule": subject or "override",
+                "metadata": metadata,
+            }
+        default_rule = approvals.get("default") or {}
+        metadata = default_rule.get("metadata") if isinstance(default_rule.get("metadata"), Mapping) else {}
+        mode = str(default_rule.get("mode", "auto")).strip().lower() or "auto"
+        return {
+            "mode": mode,
+            "rule": "default",
+            "metadata": metadata,
+        }
+
+    def _record_tool_approval_request(
+        self,
+        agent_descriptor: AgentDescriptor,
+        tool_descriptor: ToolDescriptor,
+        requirement: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        now = datetime.utcnow().isoformat()
+        request_id = f"{agent_descriptor.id}:{tool_descriptor.id}"
+        reason = None
+        metadata = requirement.get("metadata")
+        if isinstance(metadata, Mapping):
+            reason = metadata.get("reason")
+        payload = {
+            "id": request_id,
+            "agent_id": str(agent_descriptor.id),
+            "agent_name": agent_descriptor.name,
+            "tool_id": str(tool_descriptor.id),
+            "tool_name": tool_descriptor.name,
+            "requested_at": now,
+            "status": "pending",
+            "requirement": requirement,
+        }
+        if reason:
+            payload["reason"] = reason
+
+        state_snapshot: Optional[Dict[str, Any]] = None
+        with self._state_lock:
+            approvals = self.state.setdefault("pending_tool_approvals", {})
+            existing = approvals.get(request_id)
+            if existing and existing.get("status") == "pending":
+                payload = existing
+            else:
+                approvals[request_id] = payload
+                state_snapshot = json.loads(json.dumps(self.state))
+        if state_snapshot is not None:
+            self.manager.update_instance(
+                job_id=self.job_uuid,
+                state=state_snapshot,
+            )
+            emit_job_event(
+                self.job_id,
+                {
+                    "stage": "tool_approval_wait",
+                    "agent_id": str(agent_descriptor.id),
+                    "agent_name": agent_descriptor.name,
+                    "tool_id": str(tool_descriptor.id),
+                    "tool_name": tool_descriptor.name,
+                    "reason": payload.get("reason"),
+                },
+            )
+        return payload
+
+    def _evaluate_tool_approval(
+        self,
+        agent_descriptor: AgentDescriptor,
+        tool_descriptor: ToolDescriptor,
+        tokens: set[str],
+    ) -> Dict[str, Any]:
+        requirement = self._resolve_approval_requirement(
+            agent_descriptor,
+            tool_descriptor,
+            tokens,
+        )
+        mode_value = requirement.get("mode", "auto")
+        mode = str(mode_value).strip().lower()
+        tool_mode = str(tool_descriptor.approval_mode or "auto").strip().lower()
+        requires_manual = mode in {"human", "manual", "guarded"} or tool_mode in {"manual", "guarded"}
+        context = {
+            "mode": mode,
+            "rule": requirement.get("rule"),
+            "metadata": requirement.get("metadata", {}),
+            "tool_mode": tool_mode,
+        }
+        if not requires_manual:
+            return context
+        payload = self._record_tool_approval_request(
+            agent_descriptor,
+            tool_descriptor,
+            requirement,
+        )
+        context["request"] = payload
+        message = context["metadata"].get("reason") if isinstance(context["metadata"], Mapping) else None
+        raise ToolApprovalRequiredError(
+            message or f"Tool '{tool_descriptor.name}' requires human approval",
+            context={"approval": context},
+        )
 
     async def _run_agent(
         self,
