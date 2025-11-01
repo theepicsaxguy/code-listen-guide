@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Generator
 
 from sqlalchemy import create_engine, inspect, text
-from sqlalchemy.engine import Inspector
+from sqlalchemy.engine import Connection, Inspector
 from sqlalchemy.orm import Session, sessionmaker
 
 from backend.config import get_settings
@@ -45,8 +45,9 @@ def run_migrations() -> None:
     """Apply Alembic upgrades and manual schema migrations."""
 
     _apply_alembic_upgrades()
-    inspector = inspect(engine)
-    _ensure_is_admin_column(inspector)
+    with engine.begin() as connection:
+        inspector = inspect(connection)
+        _ensure_is_admin_column(connection, inspector)
 
 
 def _apply_alembic_upgrades() -> None:
@@ -77,7 +78,7 @@ def _apply_alembic_upgrades() -> None:
     logger.info("✓ Successfully applied Alembic migrations")
 
 
-def _ensure_is_admin_column(inspector: Inspector) -> None:
+def _ensure_is_admin_column(connection: Connection, inspector: Inspector) -> None:
     """Add the users.is_admin column when the table predates migrations."""
 
     if "users" not in inspector.get_table_names():
@@ -88,11 +89,9 @@ def _ensure_is_admin_column(inspector: Inspector) -> None:
         return
 
     logger.info("Running migration: Adding is_admin column to users table")
-    with engine.connect() as conn:
-        conn.execute(
-            text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE")
-        )
-        conn.commit()
+    connection.execute(
+        text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE")
+    )
     logger.info("✓ Successfully added is_admin column")
 
 
