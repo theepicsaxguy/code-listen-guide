@@ -16,7 +16,15 @@ from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID
 
 import requests
-from agent_framework import AgentExecutor, ChatMessage, Role, TextContent, WorkflowBuilder
+from agent_framework import (
+    AgentExecutor,
+    AgentRunEvent,
+    AgentRunUpdateEvent,
+    ChatMessage,
+    Role,
+    TextContent,
+    WorkflowBuilder,
+)
 
 from backend.api.events import emit_job_event
 from backend.config import get_settings
@@ -294,12 +302,19 @@ class AudiobookWorkflow:
 
     async def _run_analysis(self, step: StepDescriptor) -> Dict[str, Any]:
         agent = await self._create_agent(step.agent, step_name=step.name)
-        message = self._build_message(
+        prompt = (
             "Analyze the repository at {repo_url} (git ref: {git_ref}) and respond with JSON containing summary, key components, languages,"
-            " complexity, and suggested focus areas.",
-            context=self.job_context,
+            " complexity, and suggested focus areas."
         )
-        response = await self._run_agent(agent, message, enable_checkpoint=step.checkpoint_enabled)
+        message = self._build_message(prompt, context=self.job_context)
+        response = await self._run_agent(
+            agent,
+            message,
+            enable_checkpoint=step.checkpoint_enabled,
+            step_name=step.name,
+            agent_descriptor=step.agent,
+            prompt_template=prompt,
+        )
         parsed = self._safe_json_loads(response)
         return {"text": response, "data": parsed}
 
@@ -316,7 +331,14 @@ class AudiobookWorkflow:
             f"Analysis JSON:\n{analysis_json}"
         )
         message = self._build_message(prompt, context=context)
-        response = await self._run_agent(agent, message, enable_checkpoint=step.checkpoint_enabled)
+        response = await self._run_agent(
+            agent,
+            message,
+            enable_checkpoint=step.checkpoint_enabled,
+            step_name=step.name,
+            agent_descriptor=step.agent,
+            prompt_template=prompt,
+        )
         parsed = self._safe_json_loads(response)
         return {"text": response, "data": parsed}
 
@@ -363,6 +385,8 @@ class AudiobookWorkflow:
         result_index: int,
         step_name: str,
     ) -> tuple[str, int]:
+        if agent_descriptor is None:
+            raise ValueError("Scripting step is missing an agent descriptor")
         agent = await self._create_agent(
             agent_descriptor,
             step_name=step_name,
@@ -381,7 +405,14 @@ class AudiobookWorkflow:
             " Include transitions, learning objectives, and explanations of why the code is designed this way."
         )
         message = self._build_message(prompt, context=context)
-        response = await self._run_agent(agent, message, enable_checkpoint=False)
+        response = await self._run_agent(
+            agent,
+            message,
+            enable_checkpoint=False,
+            step_name=step_name,
+            agent_descriptor=agent_descriptor,
+            prompt_template=prompt,
+        )
         return response, result_index
 
     async def _run_audio(self, step: StepDescriptor, scripts: List[str]) -> List[str]:
@@ -402,6 +433,9 @@ class AudiobookWorkflow:
                 agent,
                 message,
                 enable_checkpoint=step.checkpoint_enabled,
+                step_name=step.name,
+                agent_descriptor=step.agent,
+                prompt_template=prompt,
             )
             batch_urls = self._extract_audio_urls(response)
             audio_urls.extend(batch_urls)
@@ -432,6 +466,9 @@ class AudiobookWorkflow:
             agent,
             message,
             enable_checkpoint=step.checkpoint_enabled,
+            step_name=step.name,
+            agent_descriptor=step.agent,
+            prompt_template=prompt,
         )
         parsed = self._safe_json_loads(response)
         return {"text": response, "data": parsed}
@@ -726,6 +763,18 @@ class AudiobookWorkflow:
     ) -> None:
         trace["status"] = status
         trace["duration_ms"] = round(duration * 1000, 3)
+        if "type" not in trace:
+            trace["type"] = "tool_call"
+        trace.setdefault("tool_name", tool_descriptor.name)
+        trace.setdefault("step", step_name)
+        started_at = trace.get("called_at")
+        if started_at:
+            trace.setdefault("started_at", started_at)
+        trace["completed_at"] = datetime.utcnow().isoformat()
+        if "input" in trace:
+            trace.setdefault("input_payload", trace.get("input"))
+        if "output" in trace:
+            trace.setdefault("output_payload", trace.get("output"))
         if authorization:
             trace["authorization"] = authorization
         metric_attributes = {
@@ -1006,12 +1055,25 @@ class AudiobookWorkflow:
         return None
 
     def _append_tool_trace(self, step_name: str, trace: Dict[str, Any]) -> None:
+        sanitized_trace = self._coerce_jsonable(trace)
+        if "type" not in sanitized_trace:
+            sanitized_trace["type"] = "tool_call"
+        event_timestamp = (
+            sanitized_trace.get("occurred_at")
+            or sanitized_trace.get("called_at")
+            or sanitized_trace.get("completed_at")
+        )
+        if event_timestamp and not isinstance(event_timestamp, str):
+            try:
+                event_timestamp = self._iso_timestamp(event_timestamp)
+            except Exception:
+                event_timestamp = None
         with self._state_lock:
             steps = self.state.setdefault("steps", {})
             step_state = steps.setdefault(step_name, {})
             tool_calls = step_state.setdefault("tool_calls", [])
-            tool_calls.append(trace)
-            step_state["updated_at"] = datetime.utcnow().isoformat()
+            tool_calls.append(sanitized_trace)
+            step_state["updated_at"] = event_timestamp or datetime.utcnow().isoformat()
             if self._billing_summary:
                 billing_state = self.state.setdefault("billing_summary", {})
                 billing_state["tools"] = json.loads(json.dumps(self._billing_summary))
@@ -1103,20 +1165,160 @@ class AudiobookWorkflow:
         self._agent_allowed_cache[descriptor.id] = tokens
         return tokens
 
+    def _iso_timestamp(self, value: Any = None) -> str:
+        if isinstance(value, str):
+            return value
+        if hasattr(value, "isoformat"):
+            return value.isoformat()  # type: ignore[no-any-return]
+        return datetime.utcnow().isoformat()
+
+    def _agent_trace_event(
+        self,
+        *,
+        agent_descriptor: AgentDescriptor,
+        step_name: str,
+        event_type: str,
+        occurred_at: Any = None,
+    ) -> Dict[str, Any]:
+        return {
+            "type": event_type,
+            "agent_id": str(agent_descriptor.id),
+            "agent_name": agent_descriptor.name,
+            "step": step_name,
+            "occurred_at": self._iso_timestamp(occurred_at),
+        }
+
+    def _record_agent_prompt_event(
+        self,
+        *,
+        step_name: str,
+        agent_descriptor: AgentDescriptor,
+        message: ChatMessage,
+        prompt_template: Optional[str],
+    ) -> None:
+        event = self._agent_trace_event(
+            agent_descriptor=agent_descriptor,
+            step_name=step_name,
+            event_type="agent_prompt",
+        )
+        prompt_text = message.text.strip()
+        if prompt_text:
+            event["prompt_text"] = prompt_text
+        serialized_message = self._coerce_jsonable(message.to_dict())
+        if serialized_message:
+            event["message"] = serialized_message
+        if prompt_template:
+            event["prompt_template"] = prompt_template
+        system_prompt = agent_descriptor.system_prompt
+        if system_prompt:
+            event["system_prompt"] = system_prompt
+        self._append_tool_trace(step_name, event)
+
+    def _record_agent_update_event(
+        self,
+        *,
+        step_name: str,
+        agent_descriptor: AgentDescriptor,
+        update: AgentRunUpdateEvent,
+    ) -> Optional[str]:
+        payload = update.data
+        if payload is None:
+            return None
+        event = self._agent_trace_event(
+            agent_descriptor=agent_descriptor,
+            step_name=step_name,
+            event_type="agent_update",
+            occurred_at=getattr(payload, "created_at", None),
+        )
+        text = payload.text.strip() if payload.text else ""
+        if text:
+            event["text"] = text
+        role = getattr(payload.role, "value", None) or getattr(payload, "role", None)
+        if isinstance(role, Mapping):
+            role = role.get("value")
+        if isinstance(role, str) and role:
+            event["role"] = role
+        serialized = self._coerce_jsonable(payload.to_dict())
+        if serialized:
+            event["message"] = serialized
+        self._append_tool_trace(step_name, event)
+        return text or None
+
+    def _record_agent_final_event(
+        self,
+        *,
+        step_name: str,
+        agent_descriptor: AgentDescriptor,
+        run_event: AgentRunEvent,
+    ) -> Optional[str]:
+        response = run_event.data
+        if response is None:
+            return None
+        event = self._agent_trace_event(
+            agent_descriptor=agent_descriptor,
+            step_name=step_name,
+            event_type="agent_final",
+            occurred_at=getattr(response, "created_at", None),
+        )
+        text = response.text.strip() if response.text else ""
+        if text:
+            event["text"] = text
+        if response.response_id:
+            event["response_id"] = response.response_id
+        if response.value is not None:
+            event["value"] = self._coerce_jsonable(response.value)
+        messages = [self._coerce_jsonable(message.to_dict()) for message in response.messages]
+        if messages:
+            event["messages"] = messages
+        usage = getattr(response, "usage_details", None)
+        if usage is not None:
+            if hasattr(usage, "to_dict"):
+                usage = usage.to_dict()  # type: ignore[assignment]
+            event["usage"] = self._coerce_jsonable(usage)
+        additional = getattr(response, "additional_properties", None)
+        if additional:
+            event["metadata"] = self._coerce_jsonable(additional)
+        self._append_tool_trace(step_name, event)
+        return text or None
+
     async def _run_agent(
         self,
         agent: Any,
         message: ChatMessage,
         *,
         enable_checkpoint: bool,
+        step_name: str,
+        agent_descriptor: AgentDescriptor,
+        prompt_template: Optional[str],
     ) -> str:
         executor = AgentExecutor(agent)
         builder = WorkflowBuilder().set_start_executor(executor)
         if enable_checkpoint:
             builder = builder.with_checkpointing(self.checkpoints)
         workflow = builder.build()
+        self._record_agent_prompt_event(
+            step_name=step_name,
+            agent_descriptor=agent_descriptor,
+            message=message,
+            prompt_template=prompt_template,
+        )
         final_text: Optional[str] = None
         async for event in workflow.run_stream(message):
+            if isinstance(event, AgentRunUpdateEvent):
+                interim = self._record_agent_update_event(
+                    step_name=step_name,
+                    agent_descriptor=agent_descriptor,
+                    update=event,
+                )
+                final_text = interim or final_text
+                continue
+            if isinstance(event, AgentRunEvent):
+                result_text = self._record_agent_final_event(
+                    step_name=step_name,
+                    agent_descriptor=agent_descriptor,
+                    run_event=event,
+                )
+                final_text = result_text or final_text
             if hasattr(event, "message") and isinstance(event.message, ChatMessage):
                 final_text = event.message.text or final_text
         return final_text or ""

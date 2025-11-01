@@ -12,7 +12,9 @@
 
 - Navigate to **Admin → Job Tracing** and search for a job ID.
 - When a workflow trace is available, a new **Workflow Tool Trace** card renders a card for each step with status, run duration, and the allowed tool set.
+- Every step now captures the user prompt, system instructions, and the model’s live reasoning stream before it reaches for a tool, so you can see what the agent was thinking.
 - Expand a tool call to inspect input and output payloads, completion timestamps, and any surfaced errors. Running jobs refresh automatically every four seconds until completion.
+- Assistant updates and final responses appear as their own entries, making it clear why a specific tool call or output happened.
 - Stage progress and retry tooling remains unchanged, so operations staff can correlate stage errors with individual tool misfires.
 
 ## Policy & quota dashboard

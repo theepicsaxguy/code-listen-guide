@@ -60,8 +60,12 @@ def _extract_tool_traces(steps_state: Dict[str, Any]) -> Dict[str, List[Dict[str
     return traces
 
 
+def _tool_call_events(tool_calls: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return [call for call in tool_calls if call.get("type") in {None, "tool_call"}]
+
+
 def _last_error(tool_calls: Iterable[Dict[str, Any]], fallback: Optional[str]) -> Optional[str]:
-    for call in reversed(list(tool_calls)):
+    for call in reversed(_tool_call_events(tool_calls)):
         error_value = call.get("error")
         if error_value:
             return str(error_value)
@@ -70,7 +74,7 @@ def _last_error(tool_calls: Iterable[Dict[str, Any]], fallback: Optional[str]) -
 
 def _aggregate_duration(tool_calls: Iterable[Dict[str, Any]]) -> Optional[float]:
     durations: List[float] = []
-    for call in tool_calls:
+    for call in _tool_call_events(tool_calls):
         value = call.get("duration_ms")
         if isinstance(value, (int, float)):
             durations.append(float(value))
@@ -93,10 +97,15 @@ def _derive_stage_status(
         current_index = ordered_names.index(normalized_stage)
     step_index = ordered_names.index(step_name) if step_name in ordered_names else None
     has_state = step_name in steps_state
+    filtered_calls = _tool_call_events(tool_calls)
     if job.status == "failed":
-        if tool_calls:
+        if filtered_calls:
             status_flag = next(
-                (call.get("status") for call in reversed(tool_calls) if isinstance(call.get("status"), str)),
+                (
+                    call.get("status")
+                    for call in reversed(filtered_calls)
+                    if isinstance(call.get("status"), str)
+                ),
                 None,
             )
             if status_flag in {"error", "forbidden"}:
@@ -116,7 +125,11 @@ def _derive_stage_status(
         if has_state:
             return "completed"
         return "pending"
-    if current_index is not None and step_index is not None and step_index < current_index:
+    if (
+        current_index is not None
+        and step_index is not None
+        and step_index < current_index
+    ):
         return "completed"
     return "pending"
 
@@ -151,15 +164,28 @@ async def get_job_trace(
         step_payload = steps_state.get(name, {}) if isinstance(steps_state, dict) else {}
         tool_calls = tool_traces.get(name, [])
         started_at = None
-        if tool_calls:
-            first_call = tool_calls[0]
-            started_at = first_call.get("called_at") if isinstance(first_call.get("called_at"), str) else None
+        for event in tool_calls:
+            if not isinstance(event, dict):
+                continue
+            timestamp = (
+                event.get("occurred_at")
+                or event.get("called_at")
+                or event.get("started_at")
+            )
+            if isinstance(timestamp, str):
+                started_at = timestamp
+                break
         completed_at = None
         if isinstance(step_payload, dict):
             timestamp = step_payload.get("updated_at")
             if isinstance(timestamp, str):
                 completed_at = timestamp
-        error_detail = _last_error(tool_calls, job.error_message if _normalize_stage_name(job.current_stage) == name and job.status == "failed" else None)
+        error_detail = _last_error(
+            tool_calls,
+            job.error_message
+            if _normalize_stage_name(job.current_stage) == name and job.status == "failed"
+            else None,
+        )
         stage_status = _derive_stage_status(
             step_name=name,
             job=job,

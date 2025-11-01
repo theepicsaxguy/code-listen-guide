@@ -107,16 +107,63 @@ export interface ContentSummary {
 }
 
 export interface ToolCallTraceEvent {
-  id: string;
-  tool_name: string;
-  status: "pending" | "running" | "completed" | "failed";
-  input_payload?: Record<string, unknown> | null;
-  output_payload?: Record<string, unknown> | null;
+  type?: "tool_call";
+  id?: string;
+  tool?: string;
+  tool_name?: string;
+  plugin_id?: string;
+  agent_id?: string;
+  agent_name?: string;
+  status?: string;
+  input?: unknown;
+  output?: unknown;
+  input_payload?: unknown;
+  output_payload?: unknown;
+  called_at?: string;
   started_at?: string;
   completed_at?: string;
   duration_ms?: number;
   error?: string | null;
+  authorization?: Record<string, unknown> | null;
+  metrics?: Record<string, unknown> | null;
+  cost?: Record<string, unknown> | null;
+  [key: string]: unknown;
 }
+
+export interface AgentPromptTraceEvent {
+  type: "agent_prompt";
+  agent_id?: string;
+  agent_name?: string;
+  prompt_text?: string;
+  prompt_template?: string;
+  system_prompt?: string;
+  message?: Record<string, unknown> | null;
+  occurred_at?: string;
+  step?: string;
+  [key: string]: unknown;
+}
+
+export interface AgentMessageTraceEvent {
+  type: "agent_update" | "agent_final";
+  agent_id?: string;
+  agent_name?: string;
+  role?: string;
+  text?: string;
+  response_id?: string;
+  value?: unknown;
+  messages?: Record<string, unknown>[];
+  message?: Record<string, unknown> | null;
+  usage?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown> | null;
+  occurred_at?: string;
+  step?: string;
+  [key: string]: unknown;
+}
+
+export type WorkflowTraceEvent =
+  | ToolCallTraceEvent
+  | AgentPromptTraceEvent
+  | AgentMessageTraceEvent;
 
 export interface WorkflowStepTrace {
   step_id: string;
@@ -126,7 +173,7 @@ export interface WorkflowStepTrace {
   completed_at?: string;
   duration_ms?: number;
   allowed_tools?: string[] | null;
-  tool_calls: ToolCallTraceEvent[];
+  tool_calls: WorkflowTraceEvent[];
 }
 
 export interface WorkflowInstanceTrace {
@@ -152,7 +199,7 @@ export interface JobTrace {
   error?: string;
   stages: JobStage[];
   workflow_trace?: WorkflowInstanceTrace | null;
-  tool_traces?: Record<string, Record<string, any>[]>;
+  tool_traces?: Record<string, WorkflowTraceEvent[]>;
 }
 
 export interface JobStage {
