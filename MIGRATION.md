@@ -1,5 +1,24 @@
 # Migration Guide: chonkie Parser Integration & Cookie Auth
 
+## Release: v0.2.2
+**Date:** November 6, 2025
+
+This release makes sure the application upgrades the database schema before serving requests.
+
+### 1. Automatic Alembic Upgrades on Startup
+
+**What changed:**
+- `backend/db/session.py` now loads `alembic.ini`, overrides the database URL with runtime settings, and calls `alembic upgrade head` during startup.
+- The legacy `is_admin` column safeguard runs after the Alembic upgrade to support databases created before migrations existed.
+
+**Migration required:**
+- No manual action required for fresh deployments; upgrades happen automatically when the app imports the database session module.
+- Existing deployments should confirm that `backend/alembic.ini` is present wherever the app runs so the automatic upgrade can succeed.
+
+**Benefits:**
+- Keeps the runtime schema in sync with SQLAlchemy models without a separate deployment step.
+- Prevents missing column errors when new migrations introduce fields such as `tools_registry.stable_slug`.
+
 ## Release: v0.2.1
 **Date:** November 2, 2025
 
