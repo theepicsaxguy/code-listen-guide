@@ -15,7 +15,7 @@ import sqlite3
 import sys
 import uuid
 from pathlib import Path
-from types import ModuleType, SimpleNamespace
+from types import ModuleType
 from unittest.mock import AsyncMock, MagicMock, Mock
 from typing import Any, Dict, Generator
 
@@ -47,6 +47,7 @@ os.environ.setdefault("S3_BUCKET_NAME", "test-bucket")
 os.environ.setdefault("S3_REGION", "us-east-1")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 
+from backend.db.base import Base
 from backend.db.session import get_db
 from backend.utils.auth import (
     create_access_token,
@@ -64,9 +65,33 @@ sqlite3.register_converter(
 # Mock OpenTelemetry before any imports
 trace_module = ModuleType("opentelemetry.trace")
 trace_module.get_tracer = lambda name: MagicMock()
+metrics_module = ModuleType("opentelemetry.metrics")
+
+
+class _StubCounter:
+    def add(self, *_args, **_kwargs):
+        return None
+
+
+class _StubHistogram:
+    def record(self, *_args, **_kwargs):
+        return None
+
+
+class _StubMeter:
+    def create_counter(self, *_args, **_kwargs):
+        return _StubCounter()
+
+    def create_histogram(self, *_args, **_kwargs):
+        return _StubHistogram()
+
+
+metrics_module.get_meter = lambda name: _StubMeter()
 opentelemetry_module = ModuleType("opentelemetry")
 opentelemetry_module.trace = trace_module
+opentelemetry_module.metrics = metrics_module
 sys.modules.setdefault("opentelemetry.trace", trace_module)
+sys.modules.setdefault("opentelemetry.metrics", metrics_module)
 sys.modules.setdefault("opentelemetry", opentelemetry_module)
 
 # Mock agent framework dependencies used by services
@@ -152,7 +177,7 @@ def test_db_engine():
     )
 
     engine = create_engine(
-        "sqlite://",
+        "sqlite:///./backend_test.db",
         connect_args={
             "check_same_thread": False,
             "detect_types": sqlite3.PARSE_DECLTYPES,
@@ -183,6 +208,9 @@ def test_db(test_db_engine) -> Generator[Session, None, None]:
     )
 
     session = TestingSessionLocal()
+    for table in reversed(Base.metadata.sorted_tables):
+        session.execute(table.delete())
+    session.commit()
 
     try:
         yield session

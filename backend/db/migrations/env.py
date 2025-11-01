@@ -12,7 +12,7 @@ if str(BASE_DIR) not in sys.path:
     sys.path.append(str(BASE_DIR))
 
 from backend.config import get_settings  # noqa: E402
-from backend.db.session import Base  # noqa: E402
+from backend.db.base import Base  # noqa: E402
 from backend.models import (  # noqa: E402
     chapter,
     deliverable,

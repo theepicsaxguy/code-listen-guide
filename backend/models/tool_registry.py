@@ -29,6 +29,11 @@ class ToolRegistry(Base):
     input_schema = Column(JSON)
     output_schema = Column(JSON)
     schema_version = Column(Integer, nullable=False, default=1)
+    signature_hash = Column(String(128))
+    input_schema_hash = Column(String(128))
+    output_schema_hash = Column(String(128))
+    last_validated_at = Column(DateTime)
+    last_validation_error = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

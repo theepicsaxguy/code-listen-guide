@@ -70,10 +70,23 @@ backend/
 ├── tools/                 # Helper functions exposed as agent tools
 │   ├── __init__.py
 │   ├── audio_tools.py
+│   ├── banned_word_checker.py
 │   ├── code_parser_tools.py
+│   ├── datetime_tools.py
 │   ├── db_tools.py
 │   ├── git_tools.py
-│   └── storage_tools.py
+│   ├── knowledge_base.py
+│   ├── logger_tools.py
+│   ├── markdown_formatter.py
+│   ├── math_tools.py
+│   ├── moderation_tools.py
+│   ├── regex_extractor.py
+│   ├── sentiment_tools.py
+│   ├── storage_tools.py
+│   ├── summarizer.py
+│   ├── timer_tools.py
+│   ├── unit_converter.py
+│   └── weather_tools.py
 ├── utils/
 │   ├── auth.py
 │   ├── checkpointing.py
@@ -85,6 +98,16 @@ backend/
 ├── requirements.txt
 └── .env.example
 ```
+
+### Tool registry helpers
+
+The modules under `backend/tools` now pair each callable with JSON Schema metadata. Every tool exposes:
+
+- A synchronous implementation whose name matches the registry entry (for example, `_ai_get_datetime`, `_ai_tts`).
+- An async wrapper that dispatches to the sync logic with `asyncio.to_thread` when concurrency helps.
+- `*_INPUT_SCHEMA` and `*_OUTPUT_SCHEMA` constants that the seeding script uses when it writes to the database.
+
+`backend/scripts/seed_workflow_registry.py` imports these schema constants directly, so the runtime registry, the database seed data, and the LLM-facing tool surface stay in sync. When you add a new tool, follow the same pattern: define the callable, export the schema dictionaries, then register it in the seed script.
 
 ## Setup Instructions
 
@@ -171,6 +194,19 @@ Pass a UUID or an email address to identify the user. Add the `--remove` flag to
 python -m backend.tools.db_tools set-admin user@example.com --remove
 ```
 
+### Tool registry maintenance
+
+The API validates every tool registration during startup and continues to check for drift on a schedule. Adjust the cadence with `TOOL_REGISTRY_CHECK_INTERVAL_SECONDS` in your `.env`; the default value of `900` seconds performs a sweep every fifteen minutes.
+
+Use the helper below whenever you add or modify a callable that should be available to agents. The script imports the function, derives JSON Schemas from its type hints, and updates the database entry along with signature and schema hashes.
+
+```bash
+python backend/scripts/register_tool.py backend.tools.git_tools:_ai_clone_repo --name clone_repository \
+  --description "Clone a Git repository for analysis"
+```
+
+Run the command again after changing a function signature so the stored schemas and hashes stay in sync with the code.
+
 ### Running the Application
 
 **Development mode:**
@@ -234,6 +270,18 @@ To validate the configuration in staging:
 - `GET /api/v1/jobs/{job_id}` - Get job details
 - `DELETE /api/v1/jobs/{job_id}` - Delete job
 - `POST /api/v1/jobs/{job_id}/start` - Start or resume workflow execution
+
+### Admin registry APIs
+- `GET /api/v1/admin/agents/registry` - Paginated agent registry with config metadata (admin only)
+- `GET /api/v1/admin/tools/registry` - Paginated tool registry with input/output schemas (admin only)
+
+Both endpoints accept optional `page`, `page_size`, and `search` query parameters. Results mirror the admin console contract by returning `{ total, page, page_size, agents|tools }` payloads.
+
+### Trace APIs
+- `GET /api/v1/traces/{job_id}` - Return stage progress, tool call traces, and job timing (owner or admin)
+- `POST /api/v1/traces/{job_id}/stages/{stage_name}/replay` - Record an admin-approved replay request for the specified stage
+
+Trace responses include a `stages` array describing the workflow order and a `tool_traces` map keyed by step name. Access is limited to the job owner or admins, ensuring trace data stays within the appropriate namespace.
 
 #### `POST /api/v1/jobs/estimate`
 

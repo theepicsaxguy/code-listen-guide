@@ -2,7 +2,7 @@
 # Add back commented packages when implementing those features
 
 # Web Framework (REQUIRED)
-fastapi==0.120.3
+fastapi==0.120.4
 uvicorn[standard]==0.38.0
 
 # Database (REQUIRED)
@@ -21,6 +21,7 @@ pydantic-settings==2.11.0
 # Utilities (REQUIRED)
 requests==2.32.5
 slowapi==0.1.9
+jsonschema==4.25.1
 
 # ============================================
 # Optional packages - uncomment when needed
@@ -42,10 +43,10 @@ opentelemetry-instrumentation-fastapi==0.59b0
 # opentelemetry-util-http==0.59b0
 
 # Payment Processing
-stripe==13.1.0
+stripe==13.1.1
 
 # Cloud Storage
-boto3==1.40.63
+boto3==1.40.64
 
 # Repository Analysis
 # tree-sitter==0.25.2
