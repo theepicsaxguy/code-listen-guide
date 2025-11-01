@@ -123,12 +123,14 @@ def seed_agents(db: Session):
 def seed_tools(db: Session):
     """Seed tools_registry with existing tools."""
     
+    default_version = "1.0.0"
     tools = [
         {
             "name": "clone_repository",
             "module_path": "backend.tools.git_tools",
             "function_name": "_ai_clone_repo",
             "description": "Clone a GitHub repository to a temporary directory",
+            "description_version": default_version,
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -151,6 +153,7 @@ def seed_tools(db: Session):
             "module_path": "backend.tools.git_tools",
             "function_name": "_ai_list_files",
             "description": "List files in a cloned repository directory",
+            "description_version": default_version,
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -170,6 +173,7 @@ def seed_tools(db: Session):
             "module_path": "backend.tools.code_parser_tools",
             "function_name": "_ai_parse_repository",
             "description": "Parse repository structure using chonkie pipeline",
+            "description_version": default_version,
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -189,6 +193,7 @@ def seed_tools(db: Session):
             "module_path": "backend.tools.script_tools",
             "function_name": "_ai_save_script",
             "description": "Save generated script to database for a chapter",
+            "description_version": default_version,
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -209,6 +214,7 @@ def seed_tools(db: Session):
             "module_path": "backend.tools.audio_tools",
             "function_name": "_ai_tts",
             "description": "Convert text to speech using OpenAI TTS API",
+            "description_version": default_version,
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -229,6 +235,7 @@ def seed_tools(db: Session):
             "module_path": "backend.tools.audio_tools",
             "function_name": "_ai_upload",
             "description": "Upload audio file to AWS S3",
+            "description_version": default_version,
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -249,6 +256,7 @@ def seed_tools(db: Session):
             "module_path": "backend.tools.audio_tools",
             "function_name": "_ai_concat",
             "description": "Concatenate multiple audio files with chapter markers",
+            "description_version": default_version,
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -272,11 +280,13 @@ def seed_tools(db: Session):
             print(f"✓ Tool '{tool_data['name']}' already exists, skipping")
             continue
         
+        tool_version = tool_data.get("description_version", default_version)
         tool = ToolRegistry(
             name=tool_data["name"],
             module_path=tool_data["module_path"],
             function_name=tool_data["function_name"],
             description=tool_data["description"],
+            description_version=tool_version,
             input_schema=tool_data["input_schema"],
             output_schema=tool_data["output_schema"],
             created_at=datetime.utcnow()

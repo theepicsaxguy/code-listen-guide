@@ -15,7 +15,7 @@ from importlib import import_module
 from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID
 
-from agent_framework import AgentExecutor, ChatMessage, Role, TextContent, WorkflowBuilder
+from agent_framework import AIFunction, AgentExecutor, ChatMessage, Role, TextContent, WorkflowBuilder
 
 from backend.api.events import emit_job_event
 from backend.config import get_settings
@@ -36,6 +36,7 @@ from backend.workflows.dynamic_loader import (
     get_tool_registry_manager,
     get_workflow_manager,
 )
+from backend.workflows.schema_mapper import build_registry_tool
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -336,7 +337,7 @@ class AudiobookWorkflow:
         *,
         step_name: str,
         context: Mapping[str, Any],
-    ) -> Optional[List[Callable[..., Any]]]:
+    ) -> Optional[List[AIFunction]]:
         if not descriptor.allowed_tools:
             return None
         try:
@@ -347,7 +348,7 @@ class AudiobookWorkflow:
             ) from exc
         if not plugins:
             return []
-        wrappers: List[Callable[..., Any]] = []
+        wrappers: List[AIFunction] = []
         for plugin in plugins:
             wrappers.append(
                 self._wrap_tool(
@@ -366,7 +367,7 @@ class AudiobookWorkflow:
         tool_descriptor: ToolDescriptor,
         step_name: str,
         context: Mapping[str, Any],
-    ) -> Callable[..., Any]:
+    ) -> AIFunction:
         try:
             module = import_module(tool_descriptor.module_path)
             raw_function = getattr(module, tool_descriptor.function_name)
@@ -470,9 +471,10 @@ class AudiobookWorkflow:
             sync_wrapper.__annotations__ = dict(getattr(raw_function, "__annotations__", {}))
             wrapper = sync_wrapper
 
-        setattr(wrapper, "__tool_descriptor__", tool_descriptor)
-        setattr(wrapper, "__agent_descriptor__", agent_descriptor)
-        return wrapper
+        registry_tool = build_registry_tool(tool_descriptor, wrapper)
+        setattr(registry_tool, "__tool_descriptor__", tool_descriptor)
+        setattr(registry_tool, "__agent_descriptor__", agent_descriptor)
+        return registry_tool
 
     def _append_tool_trace(self, step_name: str, trace: Dict[str, Any]) -> None:
         with self._state_lock:

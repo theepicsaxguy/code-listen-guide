@@ -43,6 +43,7 @@ class ToolDescriptor:
     description: Optional[str]
     input_schema: Dict[str, Any]
     output_schema: Dict[str, Any]
+    description_version: str
 
 
 class ToolRegistryManager:
@@ -107,6 +108,7 @@ class ToolRegistryManager:
             description=tool.description,
             input_schema=tool.input_schema or {},
             output_schema=tool.output_schema or {},
+            description_version=tool.description_version,
         )
 
     def _load_from_db(self, reference: Any) -> Optional[ToolDescriptor]:

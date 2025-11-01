@@ -22,6 +22,7 @@ class PluginCreate(BaseModel):
     description: Optional[str] = None
     input_schema: Optional[dict] = None
     output_schema: Optional[dict] = None
+    description_version: str = "1.0.0"
 
 
 class PluginUpdate(BaseModel):
@@ -30,6 +31,7 @@ class PluginUpdate(BaseModel):
     description: Optional[str] = None
     input_schema: Optional[dict] = None
     output_schema: Optional[dict] = None
+    description_version: Optional[str] = None
 
 
 class PluginOut(BaseModel):
@@ -41,6 +43,7 @@ class PluginOut(BaseModel):
     input_schema: Optional[dict] = None
     output_schema: Optional[dict] = None
     created_at: str
+    description_version: str
 
     class Config:
         from_attributes = True
@@ -63,6 +66,7 @@ async def list_plugins(
             input_schema=p.input_schema,
             output_schema=p.output_schema,
             created_at=p.created_at.isoformat() if p.created_at else "",
+            description_version=p.description_version,
         )
         for p in plugins
     ]
@@ -87,6 +91,7 @@ async def create_plugin(
         module_path=payload.module_path,
         function_name=payload.function_name,
         description=payload.description,
+        description_version=payload.description_version,
         input_schema=payload.input_schema,
         output_schema=payload.output_schema,
     )
@@ -103,6 +108,7 @@ async def create_plugin(
         input_schema=plugin.input_schema,
         output_schema=plugin.output_schema,
         created_at=plugin.created_at.isoformat() if plugin.created_at else "",
+        description_version=plugin.description_version,
     )
 
 
@@ -126,6 +132,7 @@ async def get_plugin(
         input_schema=plugin.input_schema,
         output_schema=plugin.output_schema,
         created_at=plugin.created_at.isoformat() if plugin.created_at else "",
+        description_version=plugin.description_version,
     )
 
 
@@ -151,6 +158,8 @@ async def update_plugin(
         plugin.input_schema = payload.input_schema
     if payload.output_schema is not None:
         plugin.output_schema = payload.output_schema
+    if payload.description_version is not None:
+        plugin.description_version = payload.description_version
 
     db.commit()
     db.refresh(plugin)
@@ -164,6 +173,7 @@ async def update_plugin(
         input_schema=plugin.input_schema,
         output_schema=plugin.output_schema,
         created_at=plugin.created_at.isoformat() if plugin.created_at else "",
+        description_version=plugin.description_version,
     )
 
 

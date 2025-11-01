@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, JSON, String, Text, UniqueConstraint
+from sqlalchemy import Column, DateTime, JSON, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID
 
 from backend.db.base import Base
@@ -19,6 +19,12 @@ class ToolRegistry(Base):
     module_path = Column(String(500), nullable=False)
     function_name = Column(String(255), nullable=False)
     description = Column(Text)
+    description_version = Column(
+        String(64),
+        nullable=False,
+        default="1.0.0",
+        server_default=text("'1.0.0'"),
+    )
     input_schema = Column(JSON)
     output_schema = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

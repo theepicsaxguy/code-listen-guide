@@ -23,6 +23,7 @@ export interface ToolRegistry {
   input_schema: Record<string, any>;
   output_schema: Record<string, any>;
   created_at: string;
+  description_version: string;
 }
 
 export interface WorkflowDefinition {

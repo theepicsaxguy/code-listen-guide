@@ -24,6 +24,8 @@ We need a runtime that lets an LLM steer work while the database keeps it inside
 ### Plugin Registry
 - **Code registry contract:** Each plugin module registers a stable slug, execute handler, and JSON schemas for inputs and outputs. Registry load fails if schema signatures drift from the database definition.
 - **Surface to the LLM:** At session start the runtime passes the permitted plugin descriptors—name, summary, argument schema—to the LLM as function tools so it can plan within authorized capabilities only.
+- **Function schema contracts:** `backend/workflows/schema_mapper.py` converts stored JSON Schema into the Microsoft Agent Framework function schema format, adds return schemas, and stamps each tool with its `description_version`. The wrapper publishes this contract to `ChatAgent`, so the LLM receives the exact parameters, return signature, and registry metadata that shipped with the workflow revision.
+- **Version alignment:** `ToolRegistry.description_version` is now part of API responses and workflow tooling. Prompts can reference the version string that was surfaced to the model, making it easy to coordinate schema updates with agent prompt changes.
 
 ### Runtime Decision Cycle
 1. Load the workflow step from the database, including the approved agent id and plugin allow-list.
