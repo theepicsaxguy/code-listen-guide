@@ -35,6 +35,9 @@ We need a runtime that lets an LLM steer work while the database keeps it inside
 - **Trace logging:** Persist workflow id, agent id, plugin slug, request payload, response payload, timestamps, cost metrics, and (when available) the LLM’s rationale. Make traces queryable for audits and RCA.
 - **Policy enforcement:** Deny unauthorized or out-of-quota calls with structured errors that flow back to the LLM session. Record policy violations for analytics.
 - **Integration hooks:** Stream trace events to observability, billing, and security systems without bypassing runtime validation.
+- **Tool metrics:** Every tool invocation now emits OpenTelemetry counters and histograms for call counts, duration, and failure types, so operators can spot regressions quickly.
+- **Billing handoff:** The workflow estimates per-call spend from registry metadata, sends each record to the billing service, and keeps a running summary in workflow state for later reconciliation.
+- **Audit forwarding:** Authorization decisions, execution metrics, and cost payloads are bundled into the audit stream and delivered to the observability pipeline alongside the job timeline.
 
 ## Operating Assumptions
 - Agent Framework’s Python runtime handles tool execution and workflow orchestration.

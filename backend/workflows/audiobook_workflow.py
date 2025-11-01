@@ -15,6 +15,7 @@ from importlib import import_module
 from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID
 
+import requests
 from agent_framework import AgentExecutor, ChatMessage, Role, TextContent, WorkflowBuilder
 
 from backend.api.events import emit_job_event
@@ -39,6 +40,130 @@ from backend.workflows.dynamic_loader import (
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
+
+
+try:  # pragma: no cover - import guard
+    from opentelemetry import metrics  # type: ignore
+except Exception:  # pragma: no cover - environment without OpenTelemetry
+    metrics = None  # type: ignore[assignment]
+
+
+def _build_meter() -> Any:
+    if metrics is None:  # pragma: no cover - OpenTelemetry not installed
+        return None
+    try:
+        return metrics.get_meter(__name__)
+    except Exception:  # pragma: no cover - meter provider misconfiguration
+        logger.debug("OpenTelemetry meter unavailable", exc_info=True)
+        return None
+
+
+def _create_counter(meter: Any, name: str, *, description: str, unit: str) -> Any:
+    if meter is None:
+        return None
+    try:
+        return meter.create_counter(name, description=description, unit=unit)
+    except Exception:  # pragma: no cover - instrumentation failure
+        logger.debug("Failed to create counter %s", name, exc_info=True)
+        return None
+
+
+def _create_histogram(meter: Any, name: str, *, description: str, unit: str) -> Any:
+    if meter is None:
+        return None
+    try:
+        return meter.create_histogram(name, description=description, unit=unit)
+    except Exception:  # pragma: no cover - instrumentation failure
+        logger.debug("Failed to create histogram %s", name, exc_info=True)
+        return None
+
+
+def _safe_counter_add(counter: Any, value: int, *, attributes: Dict[str, Any]) -> bool:
+    if counter is None:
+        return False
+    try:
+        counter.add(value, attributes=attributes)
+        return True
+    except Exception:  # pragma: no cover - instrumentation failure
+        logger.debug("Failed to emit counter metric", exc_info=True, extra={"metric": counter})
+        return False
+
+
+def _safe_histogram_record(histogram: Any, value: float, *, attributes: Dict[str, Any]) -> bool:
+    if histogram is None:
+        return False
+    try:
+        histogram.record(value, attributes=attributes)
+        return True
+    except Exception:  # pragma: no cover - instrumentation failure
+        logger.debug("Failed to emit histogram metric", exc_info=True, extra={"metric": histogram})
+        return False
+
+
+_METER = _build_meter()
+_TOOL_CALL_COUNTER = _create_counter(
+    _METER,
+    "workflow_tool_calls",
+    description="Total tool calls executed by the audiobook workflow",
+    unit="1",
+)
+_TOOL_CALL_FAILURE_COUNTER = _create_counter(
+    _METER,
+    "workflow_tool_call_failures",
+    description="Tool calls that failed or were rejected",
+    unit="1",
+)
+_TOOL_CALL_DURATION = _create_histogram(
+    _METER,
+    "workflow_tool_call_duration_ms",
+    description="Duration of tool executions in milliseconds",
+    unit="ms",
+)
+
+
+class _BillingClient:
+    """Send billing usage records to the external billing service."""
+
+    def __init__(self, endpoint: Optional[str]) -> None:
+        self._endpoint = endpoint.rstrip("/") if endpoint else None
+        self._lock = threading.RLock()
+
+    def send(self, payload: Dict[str, Any]) -> None:
+        if not self._endpoint:
+            return
+        with self._lock:
+            try:
+                response = requests.post(self._endpoint, json=payload, timeout=2)
+                response.raise_for_status()
+            except Exception:  # pragma: no cover - network failure
+                logger.warning(
+                    "Failed to deliver billing usage record",
+                    extra={"endpoint": self._endpoint, "job_id": payload.get("job_id")},
+                    exc_info=True,
+                )
+
+
+class _AuditEmitter:
+    """Forward structured audit events to the observability pipeline."""
+
+    def __init__(self, endpoint: Optional[str]) -> None:
+        self._endpoint = endpoint.rstrip("/") if endpoint else None
+        self._lock = threading.RLock()
+
+    def emit(self, payload: Dict[str, Any]) -> None:
+        logger.info("Workflow audit event", extra={"audit": payload})
+        if not self._endpoint:
+            return
+        with self._lock:
+            try:
+                response = requests.post(self._endpoint, json=payload, timeout=2)
+                response.raise_for_status()
+            except Exception:  # pragma: no cover - network failure
+                logger.warning(
+                    "Failed to forward audit event",
+                    extra={"endpoint": self._endpoint, "job_id": payload.get("job_id")},
+                    exc_info=True,
+                )
 
 
 class AudiobookWorkflow:
@@ -70,6 +195,9 @@ class AudiobookWorkflow:
         self._state_lock = threading.RLock()
         self._step_lookup: Dict[str, UUID] = {step.name: step.id for step in self.revision.steps}
         self._agent_allowed_cache: Dict[UUID, set[str]] = {}
+        self._billing_summary: Dict[str, Dict[str, Any]] = {}
+        self._billing_client = _BillingClient(settings.billing_service_url)
+        self._audit_emitter = _AuditEmitter(settings.observability_ingest_url)
 
     def _build_job_context(self) -> Dict[str, Any]:
         job_record = get_job_by_id(str(self.job_uuid))
@@ -384,18 +512,6 @@ class AudiobookWorkflow:
         if factory_context:
             context_snapshot["factory"] = factory_context
 
-        def _finalize_trace(trace: Dict[str, Any], status: str, duration: float) -> None:
-            trace["status"] = status
-            trace["duration_ms"] = round(duration * 1000, 3)
-            self._append_tool_trace(step_name, trace)
-            logger.info(
-                "Tool %s executed for agent %s (step=%s) status=%s",
-                tool_descriptor.name,
-                agent_descriptor.name,
-                step_name,
-                status,
-            )
-
         async def _async_wrapper(*args: Any, **kwargs: Any) -> Any:
             start = time.monotonic()
             trace = {
@@ -409,19 +525,59 @@ class AudiobookWorkflow:
             }
             if context_snapshot:
                 trace["context"] = context_snapshot
+            authorization = {
+                "policy": "agent_tool_allow_list",
+                "evaluated_at": datetime.utcnow().isoformat(),
+            }
             try:
                 self._validate_tool_authorization(agent_descriptor, tool_descriptor)
+                authorization["allowed"] = True
                 result = await raw_function(*args, **kwargs)
                 trace["output"] = self._coerce_jsonable(result)
-                _finalize_trace(trace, "ok", time.monotonic() - start)
+                duration = time.monotonic() - start
+                self._finalize_tool_call(
+                    trace,
+                    status="ok",
+                    duration=duration,
+                    agent_descriptor=agent_descriptor,
+                    tool_descriptor=tool_descriptor,
+                    step_name=step_name,
+                    authorization=authorization,
+                    error=None,
+                )
                 return result
             except PermissionError as exc:
                 trace["error"] = repr(exc)
-                _finalize_trace(trace, "forbidden", time.monotonic() - start)
+                authorization["allowed"] = False
+                authorization["reason"] = str(exc)
+                duration = time.monotonic() - start
+                self._finalize_tool_call(
+                    trace,
+                    status="forbidden",
+                    duration=duration,
+                    agent_descriptor=agent_descriptor,
+                    tool_descriptor=tool_descriptor,
+                    step_name=step_name,
+                    authorization=authorization,
+                    error=exc,
+                )
                 raise
             except Exception as exc:
                 trace["error"] = repr(exc)
-                _finalize_trace(trace, "error", time.monotonic() - start)
+                if "allowed" not in authorization:
+                    authorization["allowed"] = True
+                authorization["reason"] = type(exc).__name__
+                duration = time.monotonic() - start
+                self._finalize_tool_call(
+                    trace,
+                    status="error",
+                    duration=duration,
+                    agent_descriptor=agent_descriptor,
+                    tool_descriptor=tool_descriptor,
+                    step_name=step_name,
+                    authorization=authorization,
+                    error=exc,
+                )
                 raise
 
         def _sync_wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -437,19 +593,59 @@ class AudiobookWorkflow:
             }
             if context_snapshot:
                 trace["context"] = context_snapshot
+            authorization = {
+                "policy": "agent_tool_allow_list",
+                "evaluated_at": datetime.utcnow().isoformat(),
+            }
             try:
                 self._validate_tool_authorization(agent_descriptor, tool_descriptor)
+                authorization["allowed"] = True
                 result = raw_function(*args, **kwargs)
                 trace["output"] = self._coerce_jsonable(result)
-                _finalize_trace(trace, "ok", time.monotonic() - start)
+                duration = time.monotonic() - start
+                self._finalize_tool_call(
+                    trace,
+                    status="ok",
+                    duration=duration,
+                    agent_descriptor=agent_descriptor,
+                    tool_descriptor=tool_descriptor,
+                    step_name=step_name,
+                    authorization=authorization,
+                    error=None,
+                )
                 return result
             except PermissionError as exc:
                 trace["error"] = repr(exc)
-                _finalize_trace(trace, "forbidden", time.monotonic() - start)
+                authorization["allowed"] = False
+                authorization["reason"] = str(exc)
+                duration = time.monotonic() - start
+                self._finalize_tool_call(
+                    trace,
+                    status="forbidden",
+                    duration=duration,
+                    agent_descriptor=agent_descriptor,
+                    tool_descriptor=tool_descriptor,
+                    step_name=step_name,
+                    authorization=authorization,
+                    error=exc,
+                )
                 raise
             except Exception as exc:
                 trace["error"] = repr(exc)
-                _finalize_trace(trace, "error", time.monotonic() - start)
+                if "allowed" not in authorization:
+                    authorization["allowed"] = True
+                authorization["reason"] = type(exc).__name__
+                duration = time.monotonic() - start
+                self._finalize_tool_call(
+                    trace,
+                    status="error",
+                    duration=duration,
+                    agent_descriptor=agent_descriptor,
+                    tool_descriptor=tool_descriptor,
+                    step_name=step_name,
+                    authorization=authorization,
+                    error=exc,
+                )
                 raise
 
         wrapper: Callable[..., Any]
@@ -474,6 +670,299 @@ class AudiobookWorkflow:
         setattr(wrapper, "__agent_descriptor__", agent_descriptor)
         return wrapper
 
+    def _finalize_tool_call(
+        self,
+        trace: Dict[str, Any],
+        *,
+        status: str,
+        duration: float,
+        agent_descriptor: AgentDescriptor,
+        tool_descriptor: ToolDescriptor,
+        step_name: str,
+        authorization: Dict[str, Any],
+        error: Optional[BaseException],
+    ) -> None:
+        trace["status"] = status
+        trace["duration_ms"] = round(duration * 1000, 3)
+        if authorization:
+            trace["authorization"] = authorization
+        metric_attributes = {
+            "job_id": self.job_id,
+            "tool_id": str(tool_descriptor.id),
+            "tool_name": tool_descriptor.name,
+            "agent_id": str(agent_descriptor.id),
+            "agent_name": agent_descriptor.name,
+            "step": step_name,
+            "status": status,
+        }
+        error_type = type(error).__name__ if error else None
+        metrics_info = self._emit_tool_metrics(duration, metric_attributes, error_type)
+        if metrics_info:
+            trace["metrics"] = metrics_info
+        cost_record = self._record_tool_cost(
+            trace=trace,
+            tool_descriptor=tool_descriptor,
+            agent_descriptor=agent_descriptor,
+            step_name=step_name,
+            status=status,
+            duration=duration,
+        )
+        if cost_record:
+            trace["cost"] = cost_record
+        self._append_tool_trace(step_name, trace)
+        self._forward_audit_event(trace, metrics_info, cost_record)
+        logger.info(
+            "Tool %s executed for agent %s (step=%s) status=%s",
+            tool_descriptor.name,
+            agent_descriptor.name,
+            step_name,
+            status,
+        )
+
+    def _emit_tool_metrics(
+        self,
+        duration: float,
+        attributes: Dict[str, Any],
+        error_type: Optional[str],
+    ) -> Optional[Dict[str, Any]]:
+        duration_ms = round(duration * 1000, 3)
+        recorded = _safe_counter_add(_TOOL_CALL_COUNTER, 1, attributes=attributes)
+        recorded = _safe_histogram_record(
+            _TOOL_CALL_DURATION,
+            duration_ms,
+            attributes=attributes,
+        ) or recorded
+        metrics_info: Dict[str, Any] = {
+            "status": attributes.get("status"),
+            "duration_ms": duration_ms,
+        }
+        if attributes.get("status") != "ok":
+            failure_attributes = dict(attributes)
+            if error_type:
+                failure_attributes["error_type"] = error_type
+                metrics_info["error_type"] = error_type
+            recorded = _safe_counter_add(
+                _TOOL_CALL_FAILURE_COUNTER,
+                1,
+                attributes=failure_attributes,
+            ) or recorded
+        return metrics_info if recorded else None
+
+    def _record_tool_cost(
+        self,
+        *,
+        trace: Dict[str, Any],
+        tool_descriptor: ToolDescriptor,
+        agent_descriptor: AgentDescriptor,
+        step_name: str,
+        status: str,
+        duration: float,
+    ) -> Optional[Dict[str, Any]]:
+        cost_profile = self._extract_cost_profile(tool_descriptor)
+        tokens_used = self._extract_token_usage(trace)
+        if not cost_profile and tokens_used is None:
+            return None
+        estimated_cost = self._estimate_cost(cost_profile, duration, tokens_used)
+        if estimated_cost is None:
+            estimated_cost = 0
+        record: Dict[str, Any] = {
+            "job_id": self.job_id,
+            "tool_id": str(tool_descriptor.id),
+            "tool_name": tool_descriptor.name,
+            "agent_id": str(agent_descriptor.id),
+            "agent_name": agent_descriptor.name,
+            "step": step_name,
+            "status": status,
+            "recorded_at": datetime.utcnow().isoformat(),
+            "estimated_cost_cents": int(estimated_cost),
+        }
+        if tokens_used is not None:
+            record["tokens_used"] = int(tokens_used)
+        provider = cost_profile.get("provider")
+        if provider:
+            record["provider"] = provider
+        if cost_profile:
+            record["cost_profile"] = self._coerce_jsonable(cost_profile)
+        self._update_billing_summary(record)
+        self._billing_client.send(record)
+        return record
+
+    def _forward_audit_event(
+        self,
+        trace: Dict[str, Any],
+        metrics_info: Optional[Dict[str, Any]],
+        cost_record: Optional[Dict[str, Any]],
+    ) -> None:
+        payload = {
+            "job_id": self.job_id,
+            "tool_id": trace.get("plugin_id"),
+            "tool_name": trace.get("tool"),
+            "agent_id": trace.get("agent_id"),
+            "agent_name": trace.get("agent_name"),
+            "step": trace.get("step"),
+            "status": trace.get("status"),
+            "authorization": trace.get("authorization"),
+            "metrics": metrics_info,
+            "cost": cost_record,
+            "called_at": trace.get("called_at"),
+        }
+        self._audit_emitter.emit(payload)
+
+    def _update_billing_summary(self, record: Dict[str, Any]) -> None:
+        tool_id = record["tool_id"]
+        with self._state_lock:
+            summary = self._billing_summary.setdefault(
+                tool_id,
+                {
+                    "tool_name": record.get("tool_name"),
+                    "calls": 0,
+                    "successful_calls": 0,
+                    "failed_calls": 0,
+                    "estimated_cost_cents": 0,
+                    "tokens_used": 0,
+                },
+            )
+            summary["tool_name"] = record.get("tool_name") or summary.get("tool_name")
+            summary["calls"] += 1
+            if record.get("status") == "ok":
+                summary["successful_calls"] += 1
+            else:
+                summary["failed_calls"] += 1
+            summary["estimated_cost_cents"] += int(record.get("estimated_cost_cents", 0) or 0)
+            if "tokens_used" in record:
+                summary["tokens_used"] += int(record.get("tokens_used") or 0)
+            if record.get("provider"):
+                summary["provider"] = record["provider"]
+
+    def _extract_cost_profile(self, descriptor: ToolDescriptor) -> Dict[str, Any]:
+        profile: Dict[str, Any] = {}
+        schemas = [descriptor.input_schema or {}, descriptor.output_schema or {}]
+        for schema in schemas:
+            if not isinstance(schema, Mapping):
+                continue
+            for candidate_key in ("metadata", "x-metadata", "x_metadata", "$metadata"):
+                candidate = schema.get(candidate_key)
+                if isinstance(candidate, Mapping):
+                    self._merge_cost_metadata(profile, candidate)
+            self._merge_cost_metadata(profile, schema)
+        return {key: value for key, value in profile.items() if value is not None}
+
+    def _merge_cost_metadata(self, target: Dict[str, Any], source: Mapping[str, Any]) -> None:
+        numeric_keys = {
+            "cost_per_call_cents": "cost_per_call_cents",
+            "costPerCallCents": "cost_per_call_cents",
+            "x-cost-per-call-cents": "cost_per_call_cents",
+            "cost_per_1k_tokens_cents": "cost_per_1k_tokens_cents",
+            "costPer1kTokensCents": "cost_per_1k_tokens_cents",
+            "x-cost-per-1k-tokens-cents": "cost_per_1k_tokens_cents",
+            "cost_per_second_cents": "cost_per_second_cents",
+            "costPerSecondCents": "cost_per_second_cents",
+            "estimated_tokens": "estimated_tokens",
+            "estimatedTokens": "estimated_tokens",
+        }
+        passthrough_keys = {
+            "provider": "provider",
+            "currency": "currency",
+            "billing_category": "billing_category",
+            "usage_parameter": "usage_parameter",
+        }
+        for key, normalized in numeric_keys.items():
+            if normalized in target:
+                continue
+            value = source.get(key)
+            if value is not None:
+                target[normalized] = value
+        for key, normalized in passthrough_keys.items():
+            if normalized in target:
+                continue
+            value = source.get(key)
+            if value is not None:
+                target[normalized] = value
+        billing_block = source.get("billing")
+        if isinstance(billing_block, Mapping):
+            for key, value in billing_block.items():
+                if value is None or key in target:
+                    continue
+                target[key] = value
+
+    def _estimate_cost(
+        self,
+        profile: Mapping[str, Any],
+        duration: float,
+        tokens_used: Optional[int],
+    ) -> Optional[int]:
+        cost_per_call = self._to_number(profile.get("cost_per_call_cents"))
+        if cost_per_call is not None:
+            return int(round(cost_per_call))
+        rate_per_tokens = self._to_number(profile.get("cost_per_1k_tokens_cents"))
+        if rate_per_tokens is not None:
+            token_count = tokens_used
+            if token_count is None:
+                token_count = self._to_int(profile.get("estimated_tokens"))
+            if token_count is not None:
+                return int(round((rate_per_tokens * token_count) / 1000))
+        per_second = self._to_number(profile.get("cost_per_second_cents"))
+        if per_second is not None:
+            return int(round(per_second * duration))
+        return None
+
+    def _to_number(self, value: Any) -> Optional[float]:
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return None
+        return None
+
+    def _to_int(self, value: Any) -> Optional[int]:
+        if value is None:
+            return None
+        if isinstance(value, int):
+            return value
+        if isinstance(value, float):
+            return int(round(value))
+        if isinstance(value, str):
+            try:
+                return int(round(float(value)))
+            except ValueError:
+                return None
+        return None
+
+    def _extract_token_usage(self, trace: Mapping[str, Any]) -> Optional[int]:
+        output = trace.get("output")
+        return self._search_numeric(output, ("total_tokens", "tokens_used", "token_count", "tokens"))
+
+    def _search_numeric(
+        self,
+        data: Any,
+        keys: Sequence[str],
+        depth: int = 0,
+    ) -> Optional[int]:
+        if depth > 5:
+            return None
+        if isinstance(data, Mapping):
+            for key in keys:
+                value = data.get(key)
+                if isinstance(value, (int, float)):
+                    return int(round(float(value)))
+                if isinstance(value, str):
+                    try:
+                        return int(round(float(value)))
+                    except ValueError:
+                        continue
+            for value in data.values():
+                result = self._search_numeric(value, keys, depth + 1)
+                if result is not None:
+                    return result
+        elif isinstance(data, Sequence) and not isinstance(data, (str, bytes, bytearray)):
+            for item in data:
+                result = self._search_numeric(item, keys, depth + 1)
+                if result is not None:
+                    return result
+        return None
+
     def _append_tool_trace(self, step_name: str, trace: Dict[str, Any]) -> None:
         with self._state_lock:
             steps = self.state.setdefault("steps", {})
@@ -481,6 +970,10 @@ class AudiobookWorkflow:
             tool_calls = step_state.setdefault("tool_calls", [])
             tool_calls.append(trace)
             step_state["updated_at"] = datetime.utcnow().isoformat()
+            if self._billing_summary:
+                billing_state = self.state.setdefault("billing_summary", {})
+                billing_state["tools"] = json.loads(json.dumps(self._billing_summary))
+                billing_state["updated_at"] = datetime.utcnow().isoformat()
             state_snapshot = json.loads(json.dumps(self.state))
         step_id = self._step_lookup.get(step_name)
         self.manager.update_instance(
