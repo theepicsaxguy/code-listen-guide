@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,14 @@ import {
   ExternalLink,
   AlertCircle,
 } from "lucide-react";
-import { JobStage } from "@/types/admin";
+import {
+  AgentMessageTraceEvent,
+  AgentPromptTraceEvent,
+  JobStage,
+  ToolCallTraceEvent,
+  WorkflowStepTrace,
+  WorkflowTraceEvent,
+} from "@/types/admin";
 import {
   Accordion,
   AccordionContent,
@@ -146,17 +153,91 @@ export default function JobTracing() {
     return String(payload);
   };
 
-  const getToolStatusColor = (status: string) => {
+  const getToolStatusColor = (status?: string) => {
+    const normalized = status ? status.toLowerCase() : "";
     const colors: Record<string, string> = {
+      ok: "bg-success/10 text-success border-success/20",
       completed: "bg-success/10 text-success border-success/20",
-      failed: "bg-danger/10 text-danger border-danger/20",
+      success: "bg-success/10 text-success border-success/20",
       running: "bg-primary/10 text-primary border-primary/20",
       pending: "bg-muted/40 text-muted-foreground border-border",
+      error: "bg-danger/10 text-danger border-danger/20",
+      failed: "bg-danger/10 text-danger border-danger/20",
+      forbidden: "bg-danger/10 text-danger border-danger/20",
     };
-    return colors[status] || colors.pending;
+    return colors[normalized] || colors.pending;
   };
 
-  const workflowSteps = jobTrace?.workflow_trace?.steps ?? [];
+  const getAgentEventColor = (type: string) => {
+    const colors: Record<string, string> = {
+      agent_prompt: "bg-secondary/10 text-secondary border-secondary/20",
+      agent_update: "bg-muted/40 text-muted-foreground border-border",
+      agent_final: "bg-success/10 text-success border-success/20",
+    };
+    return colors[type] || colors.agent_update;
+  };
+
+  const isToolCallEvent = (
+    event: WorkflowTraceEvent,
+  ): event is ToolCallTraceEvent => !event.type || event.type === "tool_call";
+
+  const isAgentPromptEvent = (
+    event: WorkflowTraceEvent,
+  ): event is AgentPromptTraceEvent => event.type === "agent_prompt";
+
+  const isAgentMessageEvent = (
+    event: WorkflowTraceEvent,
+  ): event is AgentMessageTraceEvent =>
+    event.type === "agent_update" || event.type === "agent_final";
+
+  const summarizeText = (value?: string) => {
+    if (!value) {
+      return "—";
+    }
+    const trimmed = value.trim();
+    if (trimmed.length <= 80) {
+      return trimmed;
+    }
+    return `${trimmed.slice(0, 80)}…`;
+  };
+
+  const workflowSteps = useMemo(() => {
+    if (!jobTrace) {
+      return [] as WorkflowStepTrace[];
+    }
+    const traces = jobTrace.tool_traces ?? {};
+    const stages = jobTrace.stages ?? [];
+    const seen = new Set<string>();
+    const steps: WorkflowStepTrace[] = stages.map((stage) => {
+      seen.add(stage.name);
+      return {
+        step_id: stage.name,
+        step_name: stage.name,
+        status: stage.status,
+        started_at: stage.started_at,
+        completed_at: stage.completed_at,
+        duration_ms: stage.duration_ms,
+        allowed_tools: null,
+        tool_calls: traces[stage.name] ?? [],
+      };
+    });
+    for (const [name, events] of Object.entries(traces)) {
+      if (seen.has(name)) {
+        continue;
+      }
+      steps.push({
+        step_id: name,
+        step_name: name,
+        status: "pending",
+        started_at: undefined,
+        completed_at: undefined,
+        duration_ms: undefined,
+        allowed_tools: null,
+        tool_calls: events,
+      });
+    }
+    return steps;
+  }, [jobTrace]) as WorkflowStepTrace[];
 
   return (
     <div className="p-8 space-y-6">
@@ -423,67 +504,272 @@ export default function JobTracing() {
                           </p>
                         ) : (
                           <Accordion type="multiple" className="space-y-2">
-                            {step.tool_calls.map((call, index) => {
-                              const callKey =
-                                call.id || `${step.step_id}-${index}`;
-                              const badgeClass = getToolStatusColor(
-                                call.status,
-                              );
-                              return (
-                                <AccordionItem
-                                  key={callKey}
-                                  value={callKey}
-                                  className="overflow-hidden rounded-md border border-border"
-                                >
-                                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                                    <div className="flex w-full items-start justify-between gap-4 text-left">
-                                      <div>
-                                        <p className="text-sm font-medium text-foreground">
-                                          {call.tool_name}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                          Duration{" "}
-                                          {formatDuration(call.duration_ms)} •
-                                          Started{" "}
-                                          {formatTimestamp(call.started_at)}
-                                        </p>
+                            {step.tool_calls.map((event, index) => {
+                              const eventType = event.type ?? "tool_call";
+                              const fallbackKey = `${step.step_id}-${eventType}-${index}`;
+                              const eventKey =
+                                isToolCallEvent(event) &&
+                                typeof event.id === "string" &&
+                                event.id
+                                  ? event.id
+                                  : fallbackKey;
+
+                              if (isToolCallEvent(event)) {
+                                const toolEvent = event;
+                                const badgeClass = getToolStatusColor(
+                                  typeof toolEvent.status === "string"
+                                    ? toolEvent.status
+                                    : undefined,
+                                );
+                                const toolName =
+                                  toolEvent.tool_name ||
+                                  toolEvent.tool ||
+                                  "Tool call";
+                                const startedAt =
+                                  toolEvent.started_at || toolEvent.called_at;
+                                return (
+                                  <AccordionItem
+                                    key={eventKey}
+                                    value={eventKey}
+                                    className="overflow-hidden rounded-md border border-border"
+                                  >
+                                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                      <div className="flex w-full items-start justify-between gap-4 text-left">
+                                        <div>
+                                          <p className="text-sm font-medium text-foreground">
+                                            {toolName}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            Duration{" "}
+                                            {formatDuration(toolEvent.duration_ms)} •
+                                            Started{" "}
+                                            {formatTimestamp(startedAt)}
+                                          </p>
+                                        </div>
+                                        <Badge className={badgeClass}>
+                                          {toolEvent.status ?? "pending"}
+                                        </Badge>
                                       </div>
-                                      <Badge className={badgeClass}>
-                                        {call.status}
-                                      </Badge>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent className="bg-muted/30 px-4 py-4">
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                      <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                          Input
-                                        </p>
-                                        <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
-                                          {formatPayload(call.input_payload)}
-                                        </pre>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="bg-muted/30 px-4 py-4">
+                                      <div className="grid gap-4 md:grid-cols-2">
+                                        <div>
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Input
+                                          </p>
+                                          <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                            {formatPayload(
+                                              toolEvent.input_payload ??
+                                                toolEvent.input,
+                                            )}
+                                          </pre>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Output
+                                          </p>
+                                          <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                            {formatPayload(
+                                              toolEvent.output_payload ??
+                                                toolEvent.output,
+                                            )}
+                                          </pre>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                          Output
+                                      {toolEvent.error && (
+                                        <p className="mt-3 text-sm text-danger">
+                                          {toolEvent.error}
                                         </p>
-                                        <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
-                                          {formatPayload(call.output_payload)}
-                                        </pre>
-                                      </div>
-                                    </div>
-                                    {call.error && (
-                                      <p className="mt-3 text-sm text-danger">
-                                        {call.error}
+                                      )}
+                                      <p className="mt-2 text-xs text-muted-foreground">
+                                        Completed{" "}
+                                        {formatTimestamp(toolEvent.completed_at)}
                                       </p>
-                                    )}
-                                    <p className="mt-2 text-xs text-muted-foreground">
-                                      Completed{" "}
-                                      {formatTimestamp(call.completed_at)}
-                                    </p>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              );
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                );
+                              }
+
+                              if (isAgentPromptEvent(event)) {
+                                const promptEvent = event;
+                                const badgeClass = getAgentEventColor(
+                                  promptEvent.type,
+                                );
+                                return (
+                                  <AccordionItem
+                                    key={eventKey}
+                                    value={eventKey}
+                                    className="overflow-hidden rounded-md border border-border"
+                                  >
+                                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                      <div className="flex w-full items-start justify-between gap-4 text-left">
+                                        <div>
+                                          <p className="text-sm font-medium text-foreground">
+                                            Prompt to {promptEvent.agent_name ?? "agent"}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {summarizeText(promptEvent.prompt_text)}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            Sent {formatTimestamp(promptEvent.occurred_at)}
+                                          </p>
+                                        </div>
+                                        <Badge className={badgeClass}>Prompt</Badge>
+                                      </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="bg-muted/30 px-4 py-4 space-y-4">
+                                      <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                          Prompt
+                                        </p>
+                                        <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                          {formatPayload(promptEvent.prompt_text ?? "—")}
+                                        </pre>
+                                      </div>
+                                      {promptEvent.system_prompt && (
+                                        <div>
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            System instructions
+                                          </p>
+                                          <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                            {formatPayload(promptEvent.system_prompt)}
+                                          </pre>
+                                        </div>
+                                      )}
+                                      {promptEvent.prompt_template &&
+                                        promptEvent.prompt_template !== promptEvent.prompt_text && (
+                                          <div>
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                              Template
+                                            </p>
+                                            <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                              {formatPayload(promptEvent.prompt_template)}
+                                            </pre>
+                                          </div>
+                                        )}
+                                      {promptEvent.message && (
+                                        <div>
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Serialized message
+                                          </p>
+                                          <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                            {formatPayload(promptEvent.message)}
+                                          </pre>
+                                        </div>
+                                      )}
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                );
+                              }
+
+                              if (isAgentMessageEvent(event)) {
+                                const messageEvent = event;
+                                const badgeClass = getAgentEventColor(
+                                  messageEvent.type,
+                                );
+                                const label =
+                                  messageEvent.type === "agent_final"
+                                    ? "Model response"
+                                    : "Model update";
+                                return (
+                                  <AccordionItem
+                                    key={eventKey}
+                                    value={eventKey}
+                                    className="overflow-hidden rounded-md border border-border"
+                                  >
+                                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                      <div className="flex w-full items-start justify-between gap-4 text-left">
+                                        <div>
+                                          <p className="text-sm font-medium text-foreground">
+                                            {label}
+                                            {messageEvent.agent_name
+                                              ? ` from ${messageEvent.agent_name}`
+                                              : ""}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {summarizeText(messageEvent.text)}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {formatTimestamp(messageEvent.occurred_at)}
+                                            {messageEvent.role ? ` • ${messageEvent.role}` : ""}
+                                          </p>
+                                        </div>
+                                        <Badge className={badgeClass}>{label}</Badge>
+                                      </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="bg-muted/30 px-4 py-4 space-y-4">
+                                      {messageEvent.text && (
+                                        <div>
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Text
+                                          </p>
+                                          <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                            {formatPayload(messageEvent.text)}
+                                          </pre>
+                                        </div>
+                                      )}
+                                      {messageEvent.value !== undefined &&
+                                        messageEvent.value !== null && (
+                                          <div>
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                              Structured value
+                                            </p>
+                                            <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                              {formatPayload(messageEvent.value)}
+                                            </pre>
+                                          </div>
+                                        )}
+                                      {messageEvent.messages &&
+                                        messageEvent.messages.length > 0 && (
+                                          <div>
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                              Messages
+                                            </p>
+                                            <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                              {formatPayload(messageEvent.messages)}
+                                            </pre>
+                                          </div>
+                                        )}
+                                      {messageEvent.message && (
+                                        <div>
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Raw event payload
+                                          </p>
+                                          <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                            {formatPayload(messageEvent.message)}
+                                          </pre>
+                                        </div>
+                                      )}
+                                      {messageEvent.usage && (
+                                        <div>
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Usage
+                                          </p>
+                                          <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                            {formatPayload(messageEvent.usage)}
+                                          </pre>
+                                        </div>
+                                      )}
+                                      {messageEvent.metadata && (
+                                        <div>
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Metadata
+                                          </p>
+                                          <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/80 p-3 text-xs text-muted-foreground">
+                                            {formatPayload(messageEvent.metadata)}
+                                          </pre>
+                                        </div>
+                                      )}
+                                      {messageEvent.response_id && (
+                                        <p className="text-xs text-muted-foreground">
+                                          Response ID {messageEvent.response_id}
+                                        </p>
+                                      )}
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                );
+                              }
+                              return null;
                             })}
                           </Accordion>
                         )}
