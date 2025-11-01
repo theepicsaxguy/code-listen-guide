@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Menu, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -31,8 +31,10 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedAudiobookId, setSelectedAudiobookId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  // Mobile: collapsed by default, desktop: expanded
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
+  // Mobile overlay state (mobile only)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Desktop collapse state (desktop only)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const { data: user } = useUser();
 
@@ -57,13 +59,11 @@ const Dashboard: React.FC = () => {
     }
   }, [authUser, isAuthLoading, navigate]);
 
-  // Handle mobile sidebar collapse on resize
+  // Handle mobile menu auto-close on resize to desktop
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarCollapsed(true);
-      } else {
-        setIsSidebarCollapsed(false);
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
       }
     };
 
@@ -156,20 +156,45 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground relative anchor-gradient">
+    <div className="flex h-screen bg-background text-foreground relative anchor-gradient overflow-hidden">
       {/* Reduced gradient opacity - Vercel style (3-5% max) */}
       <div className="fixed inset-0 bg-gradient-to-br from-cyan-400/[0.03] via-transparent to-transparent pointer-events-none" />
       
+      {/* Mobile menu overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg bg-sidebar-surface border border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors"
+        aria-label="Toggle menu"
+      >
+        {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          // Close mobile menu on navigation (use media query check)
+          const isMobile = window.matchMedia('(max-width: 767px)').matches;
+          if (isMobile) {
+            setIsMobileMenuOpen(false);
+          }
+        }}
         user={user ?? null}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        isMobileMenuOpen={isMobileMenuOpen}
       />
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative min-w-0">
         <div className="surface-depth mx-auto">
-          <div className="mx-auto flex max-w-7xl flex-col gap-12 px-6 py-24">
+          <div className="mx-auto flex max-w-7xl flex-col gap-8 md:gap-12 px-4 md:px-6 py-12 md:py-24">
             <div className="space-y-8">
               <Breadcrumb>
                 <BreadcrumbList>
@@ -187,9 +212,9 @@ const Dashboard: React.FC = () => {
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
-              <div className="flex flex-col gap-6">
-                <h1 className="text-5xl md:text-6xl 2xl:text-[4.5rem] font-bold leading-[1.1]">{title}</h1>
-                <p className="text-lg leading-relaxed text-foreground-muted font-normal max-w-3xl">{description}</p>
+              <div className="flex flex-col gap-4 md:gap-6">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl 2xl:text-[4.5rem] font-bold leading-[1.1]">{title}</h1>
+                <p className="text-base md:text-lg leading-relaxed text-foreground-muted font-normal max-w-3xl">{description}</p>
               </div>
             </div>
             <div className={cn('flex flex-col gap-4', (activeTab === 'home' || activeTab === 'audiobooks') && 'md:flex-row md:items-center md:justify-between')}>
@@ -209,7 +234,7 @@ const Dashboard: React.FC = () => {
               )}
               {activeTab !== 'audiobook-detail' && (
                 <div className="flex justify-end">
-                  <Button onClick={handleCreateNewAudiobook} className="min-w-[160px]">
+                  <Button onClick={handleCreateNewAudiobook} className="w-full sm:w-auto min-w-[160px]">
                     <Plus className="h-4 w-4" />
                     <span className="ml-2">New Audiobook</span>
                   </Button>
@@ -218,7 +243,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <main className="mx-auto max-w-7xl space-y-12 px-6 py-12 relative">
+        <main className="mx-auto max-w-7xl space-y-8 md:space-y-12 px-4 md:px-6 py-8 md:py-12 relative">
           {activeTab === 'home' && <OverviewPage onNavigateToAudiobook={handleNavigateToAudiobook} />}
           {activeTab === 'audiobooks' && (
             <AudiobooksPage onNavigateToAudiobook={handleNavigateToAudiobook} searchQuery={searchQuery} />
