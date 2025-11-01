@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated, Any, Dict, List
+from typing import Annotated, Any, Callable, Dict, List, Optional, Sequence
 
 from agent_framework import ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
@@ -34,8 +34,12 @@ def _ai_parse_repository(
     return run_async_from_sync(chonkie.process_pipeline, Path(path))
 
 
-async def create_analyzer_agent(chat_client: Any) -> ChatAgent:
-    tools = [
+async def create_analyzer_agent(
+    chat_client: Any,
+    *,
+    tools: Optional[Sequence[Callable[..., Any]]] = None,
+) -> ChatAgent:
+    resolved_tools = list(tools) if tools is not None else [
         _ai_clone_repo,
         _ai_list_files,
         _ai_parse_repository,
@@ -46,10 +50,14 @@ async def create_analyzer_agent(chat_client: Any) -> ChatAgent:
             "Clone the supplied repository, build a structural summary using chonkie pipeline, and respond with JSON. "
             "Use the available tools for git operations and advanced code parsing with chonkie."
         ),
-        tools=tools,
+        tools=resolved_tools,
     )
 
 
-async def analyzer_agent(settings: Any) -> ChatAgent:
+async def analyzer_agent(
+    settings: Any,
+    *,
+    tools: Optional[Sequence[Callable[..., Any]]] = None,
+) -> ChatAgent:
     client = OpenAIResponsesClient(**build_responses_client_options(settings))
-    return await create_analyzer_agent(client)
+    return await create_analyzer_agent(client, tools=tools)

@@ -6,12 +6,13 @@ import contextlib
 import threading
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 from sqlalchemy.orm import Session, selectinload
 
 from backend.db.session import SessionLocal
+from backend.models.tool_registry import ToolRegistry
 from backend.models.workflow_definition import WorkflowDefinition
 from backend.models.workflow_instance import WorkflowInstance
 from backend.models.workflow_revision import WorkflowRevision
@@ -26,6 +27,156 @@ class AgentDescriptor:
     name: str
     module_path: str
     factory_function: str
+    description: Optional[str]
+    config_schema: Dict[str, Any]
+    allowed_tools: Tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ToolDescriptor:
+    """Description of a plugin/tool exposed to the orchestration runtime."""
+
+    id: UUID
+    name: str
+    module_path: str
+    function_name: str
+    description: Optional[str]
+    input_schema: Dict[str, Any]
+    output_schema: Dict[str, Any]
+
+
+class ToolRegistryManager:
+    """Load and cache plugin metadata for runtime execution."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._by_id: Dict[UUID, ToolDescriptor] = {}
+        self._by_name: Dict[str, ToolDescriptor] = {}
+
+    @contextlib.contextmanager
+    def _session_scope(self) -> Iterator[Session]:
+        session: Session = SessionLocal()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    def _lookup_cached(self, reference: Any) -> Optional[ToolDescriptor]:
+        if isinstance(reference, UUID):
+            return self._by_id.get(reference)
+        candidate: Optional[ToolDescriptor] = None
+        if reference is None:
+            return None
+        text = str(reference)
+        try:
+            ref_uuid = UUID(text)
+        except (TypeError, ValueError):
+            pass
+        else:
+            candidate = self._by_id.get(ref_uuid)
+            if candidate is not None:
+                return candidate
+        lowered = text.lower()
+        candidate = self._by_name.get(text) or self._by_name.get(lowered)
+        if candidate is not None:
+            return candidate
+        return None
+
+    def _store_descriptor(self, descriptor: ToolDescriptor) -> None:
+        self._by_id[descriptor.id] = descriptor
+        name_candidates: set[str] = set()
+        for candidate in (
+            descriptor.name,
+            descriptor.function_name,
+            descriptor.module_path,
+            f"{descriptor.module_path}.{descriptor.function_name}",
+        ):
+            if not candidate:
+                continue
+            name_candidates.add(candidate)
+            name_candidates.add(candidate.lower())
+        for key in name_candidates:
+            self._by_name[key] = descriptor
+
+    def _build_descriptor(self, tool: ToolRegistry) -> ToolDescriptor:
+        return ToolDescriptor(
+            id=tool.id,
+            name=tool.name,
+            module_path=tool.module_path,
+            function_name=tool.function_name,
+            description=tool.description,
+            input_schema=tool.input_schema or {},
+            output_schema=tool.output_schema or {},
+        )
+
+    def _load_from_db(self, reference: Any) -> Optional[ToolDescriptor]:
+        with self._session_scope() as session:
+            candidate: Optional[ToolRegistry] = None
+            if isinstance(reference, UUID):
+                candidate = session.query(ToolRegistry).filter(ToolRegistry.id == reference).one_or_none()
+            else:
+                text = str(reference)
+                try:
+                    ref_uuid = UUID(text)
+                except (TypeError, ValueError):
+                    ref_uuid = None
+                if ref_uuid is not None:
+                    candidate = session.query(ToolRegistry).filter(ToolRegistry.id == ref_uuid).one_or_none()
+                if candidate is None:
+                    candidate = (
+                        session.query(ToolRegistry)
+                        .filter(ToolRegistry.name == text)
+                        .one_or_none()
+                    )
+                if candidate is None:
+                    candidate = (
+                        session.query(ToolRegistry)
+                        .filter(ToolRegistry.function_name == text)
+                        .one_or_none()
+                    )
+                if candidate is None and "." in text:
+                    module_name, function_name = text.rsplit(".", 1)
+                    candidate = (
+                        session.query(ToolRegistry)
+                        .filter(
+                            ToolRegistry.module_path == module_name,
+                            ToolRegistry.function_name == function_name,
+                        )
+                        .one_or_none()
+                    )
+            if candidate is None:
+                return None
+            return self._build_descriptor(candidate)
+
+    def get(self, reference: Any) -> ToolDescriptor:
+        with self._lock:
+            cached = self._lookup_cached(reference)
+            if cached is not None:
+                return cached
+        descriptor = self._load_from_db(reference)
+        if descriptor is None:
+            raise LookupError(f"Tool '{reference}' is not registered")
+        with self._lock:
+            self._store_descriptor(descriptor)
+        return descriptor
+
+    def resolve_agent_tools(self, references: Sequence[Any]) -> List[ToolDescriptor]:
+        descriptors: List[ToolDescriptor] = []
+        missing: List[str] = []
+        for reference in references:
+            try:
+                descriptors.append(self.get(reference))
+            except LookupError:
+                missing.append(str(reference))
+        if missing:
+            joined = ", ".join(missing)
+            raise ValueError(f"Agent references unknown tools: {joined}")
+        return descriptors
+
+    def reload(self) -> None:
+        with self._lock:
+            self._by_id.clear()
+            self._by_name.clear()
 
 
 @dataclass(frozen=True)
@@ -76,11 +227,24 @@ class WorkflowManager:
         agent = step.agent
         if agent is None:
             return None
+        raw_tools = agent.tools
+        tool_refs: Tuple[str, ...]
+        if isinstance(raw_tools, (list, tuple, set)):
+            collected = [str(item).strip() for item in raw_tools if str(item).strip()]
+            tool_refs = tuple(collected)
+        elif raw_tools:
+            text = str(raw_tools).strip()
+            tool_refs = (text,) if text else ()
+        else:
+            tool_refs = ()
         return AgentDescriptor(
             id=agent.id,
             name=agent.name,
             module_path=agent.module_path,
             factory_function=agent.factory_function,
+            description=agent.description,
+            config_schema=agent.config_schema or {},
+            allowed_tools=tool_refs,
         )
 
     def _build_step_descriptor(self, step: WorkflowStep) -> StepDescriptor:
@@ -268,9 +432,16 @@ class WorkflowManager:
 
 
 _MANAGER = WorkflowManager()
+_TOOL_MANAGER = ToolRegistryManager()
 
 
 def get_workflow_manager() -> WorkflowManager:
     """Return the shared workflow manager singleton."""
 
     return _MANAGER
+
+
+def get_tool_registry_manager() -> ToolRegistryManager:
+    """Return the shared tool registry manager singleton."""
+
+    return _TOOL_MANAGER

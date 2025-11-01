@@ -1,9 +1,12 @@
-from sqlalchemy import Column, String, Text, DateTime, JSON, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from backend.db.base import Base
+"""SQLAlchemy model for registered tools/plugins available to agents."""
+
 import uuid
 from datetime import datetime
+
+from sqlalchemy import Column, DateTime, JSON, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID
+
+from backend.db.base import Base
 
 class ToolRegistry(Base):
     __tablename__ = "tools_registry"
@@ -19,3 +22,4 @@ class ToolRegistry(Base):
     input_schema = Column(JSON)
     output_schema = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
