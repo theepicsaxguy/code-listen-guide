@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     sentry_dsn: Optional[str] = Field(default=None)
     otel_exporter_otlp_endpoint: Optional[str] = Field(default=None)
     service_name: str = Field(default="cba-backend")
+    billing_service_url: Optional[str] = Field(default=None)
+    observability_ingest_url: Optional[str] = Field(default=None)
 
     rate_limit_per_minute: int = Field(default=60)
     rate_limit_storage_uri: str = Field(default="memory://")

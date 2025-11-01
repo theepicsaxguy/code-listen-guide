@@ -64,9 +64,33 @@ sqlite3.register_converter(
 # Mock OpenTelemetry before any imports
 trace_module = ModuleType("opentelemetry.trace")
 trace_module.get_tracer = lambda name: MagicMock()
+metrics_module = ModuleType("opentelemetry.metrics")
+
+
+class _StubCounter:
+    def add(self, *_args, **_kwargs):
+        return None
+
+
+class _StubHistogram:
+    def record(self, *_args, **_kwargs):
+        return None
+
+
+class _StubMeter:
+    def create_counter(self, *_args, **_kwargs):
+        return _StubCounter()
+
+    def create_histogram(self, *_args, **_kwargs):
+        return _StubHistogram()
+
+
+metrics_module.get_meter = lambda name: _StubMeter()
 opentelemetry_module = ModuleType("opentelemetry")
 opentelemetry_module.trace = trace_module
+opentelemetry_module.metrics = metrics_module
 sys.modules.setdefault("opentelemetry.trace", trace_module)
+sys.modules.setdefault("opentelemetry.metrics", metrics_module)
 sys.modules.setdefault("opentelemetry", opentelemetry_module)
 
 # Mock agent framework dependencies used by services

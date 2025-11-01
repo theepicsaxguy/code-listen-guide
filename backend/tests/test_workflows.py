@@ -11,6 +11,7 @@ Tests for:
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from types import SimpleNamespace
+from typing import Any, Dict, List, Optional
 
 from agent_framework import ChatMessage, Role, TextContent
 
@@ -572,6 +573,164 @@ class TestCheckpointing:
 
         restored_thread = await AgentThread.deserialize(thread_state)
         assert restored_thread.service_thread_id == "thread-123"
+
+
+    def test_tool_call_records_metrics_billing_and_audit(self, monkeypatch):
+        """Ensure tool instrumentation emits billing and audit payloads."""
+        from datetime import datetime
+        from types import SimpleNamespace
+        from uuid import UUID, uuid4
+
+        from backend.workflows import audiobook_workflow as workflow_module
+        from backend.workflows.dynamic_loader import (
+            AgentDescriptor,
+            RevisionDescriptor,
+            StepDescriptor,
+            ToolDescriptor,
+        )
+
+        agent_descriptor = AgentDescriptor(
+            id=uuid4(),
+            name="outline-agent",
+            module_path="pkg.agents",
+            factory_function="build",
+            description=None,
+            config_schema={},
+            allowed_tools=(),
+        )
+        step_descriptor = StepDescriptor(
+            id=uuid4(),
+            order=1,
+            name="analysis",
+            execution_mode="sequential",
+            checkpoint_enabled=True,
+            input_mapping={},
+            output_mapping={},
+            retry_policy=None,
+            step_config={},
+            agent=agent_descriptor,
+        )
+        revision_descriptor = RevisionDescriptor(
+            id=uuid4(),
+            workflow_id=uuid4(),
+            workflow_name="audiobook_generation",
+            version=1,
+            is_published=True,
+            metadata={},
+            steps=[step_descriptor],
+        )
+
+        class DummyManager:
+            def __init__(self) -> None:
+                self.instance_state: Dict[str, Any] = {"steps": {}}
+                self.updated: List[Any] = []
+
+            def ensure_instance(
+                self,
+                *,
+                job_id: UUID,
+                revision: Any,
+                job_context: Any,
+            ) -> Dict[str, Any]:
+                return dict(self.instance_state)
+
+            def update_instance(
+                self,
+                *,
+                job_id: UUID,
+                current_step_id: Optional[UUID] = None,
+                state: Optional[Dict[str, Any]] = None,
+                **_: Any,
+            ) -> None:
+                if state is not None:
+                    self.instance_state = state
+                self.updated.append((job_id, current_step_id))
+
+        dummy_manager = DummyManager()
+
+        monkeypatch.setattr(
+            workflow_module.AudiobookWorkflow,
+            "_load_revision",
+            lambda self, revision_id: revision_descriptor,
+        )
+        monkeypatch.setattr(
+            workflow_module,
+            "get_tool_registry_manager",
+            lambda: SimpleNamespace(resolve_agent_tools=lambda _refs: []),
+        )
+        monkeypatch.setattr(
+            workflow_module,
+            "get_job_by_id",
+            lambda _job_id: SimpleNamespace(repo_name="repo", repo_owner="owner", git_ref="main"),
+        )
+        monkeypatch.setattr(
+            workflow_module,
+            "PostgresCheckpointStorage",
+            lambda workflow_id: SimpleNamespace(workflow_id=workflow_id),
+        )
+
+        workflow = workflow_module.AudiobookWorkflow(
+            job_id=str(uuid4()),
+            repo_url="https://example.com/repo.git",
+            depth_tier="standard",
+            workflow_manager=dummy_manager,
+        )
+
+        billing_events: List[Dict[str, Any]] = []
+        audit_events: List[Dict[str, Any]] = []
+
+        workflow._billing_client = SimpleNamespace(send=lambda payload: billing_events.append(payload))
+        workflow._audit_emitter = SimpleNamespace(emit=lambda payload: audit_events.append(payload))
+
+        tool_descriptor = ToolDescriptor(
+            id=uuid4(),
+            name="doc_search",
+            module_path="pkg.tools",
+            function_name="run",
+            description=None,
+            input_schema={
+                "metadata": {
+                    "billing": {
+                        "cost_per_1k_tokens_cents": 20,
+                        "provider": "llm-provider",
+                    }
+                }
+            },
+            output_schema={},
+        )
+
+        trace: Dict[str, Any] = {
+            "tool": tool_descriptor.name,
+            "plugin_id": str(tool_descriptor.id),
+            "agent_id": str(agent_descriptor.id),
+            "agent_name": agent_descriptor.name,
+            "step": step_descriptor.name,
+            "called_at": datetime.utcnow().isoformat(),
+            "input": {"topic": "intro"},
+            "output": {"usage": {"total_tokens": 500}},
+        }
+
+        workflow._finalize_tool_call(
+            trace,
+            status="ok",
+            duration=0.4,
+            agent_descriptor=agent_descriptor,
+            tool_descriptor=tool_descriptor,
+            step_name=step_descriptor.name,
+            authorization={"policy": "agent_tool_allow_list", "allowed": True},
+            error=None,
+        )
+
+        assert billing_events, "billing payload should be sent"
+        billing_payload = billing_events[0]
+        assert billing_payload["estimated_cost_cents"] == 10
+        tool_id = str(tool_descriptor.id)
+        assert workflow._billing_summary[tool_id]["estimated_cost_cents"] == 10
+        assert workflow._billing_summary[tool_id]["successful_calls"] == 1
+        assert audit_events, "audit payload should be emitted"
+        assert audit_events[0]["cost"]["estimated_cost_cents"] == 10
+        assert tool_id in dummy_manager.instance_state["billing_summary"]["tools"]
+        assert dummy_manager.updated, "workflow manager should persist state"
 
 
 @pytest.mark.workflows
