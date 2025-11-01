@@ -47,11 +47,17 @@ class ToolDescriptor:
 
     id: UUID
     name: str
+    stable_slug: str
+    semantic_version: str
     module_path: str
     function_name: str
     description: Optional[str]
     input_schema: Dict[str, Any]
     output_schema: Dict[str, Any]
+    owning_team: str
+    authorization_scope: str
+    approval_mode: str
+    cost_profile: Dict[str, Any]
 
 
 class ToolRegistryManager:
@@ -61,6 +67,8 @@ class ToolRegistryManager:
         self._lock = threading.RLock()
         self._by_id: Dict[UUID, ToolDescriptor] = {}
         self._by_name: Dict[str, ToolDescriptor] = {}
+        self._by_slug: Dict[str, ToolDescriptor] = {}
+        self._by_slug_version: Dict[Tuple[str, str], ToolDescriptor] = {}
 
     @contextlib.contextmanager
     def _session_scope(self) -> Iterator[Session]:
@@ -69,6 +77,25 @@ class ToolRegistryManager:
             yield session
         finally:
             session.close()
+
+    @staticmethod
+    def _version_key(value: str) -> Tuple[int, ...]:
+        parts: List[int] = []
+        for segment in value.split('.'):
+            numeric = ''.join(character for character in segment if character.isdigit())
+            parts.append(int(numeric) if numeric else 0)
+        return tuple(parts)
+
+    @staticmethod
+    def _parse_slug_reference(reference: str) -> Optional[Tuple[str, str]]:
+        if '@' not in reference:
+            return None
+        slug, version = reference.split('@', 1)
+        slug_value = slug.strip().lower()
+        version_value = version.strip()
+        if not slug_value or not version_value:
+            return None
+        return slug_value, version_value
 
     def _lookup_cached(self, reference: Any) -> Optional[ToolDescriptor]:
         if isinstance(reference, UUID):
@@ -89,6 +116,14 @@ class ToolRegistryManager:
         candidate = self._by_name.get(text) or self._by_name.get(lowered)
         if candidate is not None:
             return candidate
+        slug_candidate = self._by_slug.get(lowered)
+        if slug_candidate is not None:
+            return slug_candidate
+        slug_reference = self._parse_slug_reference(text)
+        if slug_reference is not None:
+            cached = self._by_slug_version.get(slug_reference)
+            if cached is not None:
+                return cached
         return None
 
     def _store_descriptor(self, descriptor: ToolDescriptor) -> None:
@@ -106,16 +141,27 @@ class ToolRegistryManager:
             name_candidates.add(candidate.lower())
         for key in name_candidates:
             self._by_name[key] = descriptor
+        slug_key = descriptor.stable_slug.lower()
+        existing = self._by_slug.get(slug_key)
+        if existing is None or self._version_key(descriptor.semantic_version) >= self._version_key(existing.semantic_version):
+            self._by_slug[slug_key] = descriptor
+        self._by_slug_version[(slug_key, descriptor.semantic_version)] = descriptor
 
     def _build_descriptor(self, tool: ToolRegistry) -> ToolDescriptor:
         return ToolDescriptor(
             id=tool.id,
             name=tool.name,
+            stable_slug=tool.stable_slug,
+            semantic_version=tool.semantic_version,
             module_path=tool.module_path,
             function_name=tool.function_name,
             description=tool.description,
             input_schema=tool.input_schema or {},
             output_schema=tool.output_schema or {},
+            owning_team=tool.owning_team,
+            authorization_scope=tool.authorization_scope,
+            approval_mode=tool.approval_mode,
+            cost_profile=ToolRegistry.normalize_cost_profile(tool.cost_profile),
         )
 
     def _load_from_db(self, reference: Any) -> Optional[ToolDescriptor]:
@@ -153,6 +199,31 @@ class ToolRegistryManager:
                         )
                         .one_or_none()
                     )
+                if candidate is None:
+                    slug_reference = self._parse_slug_reference(text)
+                    if slug_reference is not None:
+                        slug_value, version_value = slug_reference
+                        candidate = (
+                            session.query(ToolRegistry)
+                            .filter(
+                                ToolRegistry.stable_slug == slug_value,
+                                ToolRegistry.semantic_version == version_value,
+                            )
+                            .one_or_none()
+                        )
+                if candidate is None:
+                    slug_text = text.strip().lower()
+                    if slug_text:
+                        matches: List[ToolRegistry] = (
+                            session.query(ToolRegistry)
+                            .filter(ToolRegistry.stable_slug == slug_text)
+                            .all()
+                        )
+                        if matches:
+                            candidate = max(
+                                matches,
+                                key=lambda item: self._version_key(item.semantic_version),
+                            )
             if candidate is None:
                 return None
             return self._build_descriptor(candidate)
@@ -186,6 +257,8 @@ class ToolRegistryManager:
         with self._lock:
             self._by_id.clear()
             self._by_name.clear()
+            self._by_slug.clear()
+            self._by_slug_version.clear()
 
 
 @dataclass(frozen=True)

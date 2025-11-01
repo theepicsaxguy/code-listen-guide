@@ -574,11 +574,17 @@ class TestAdminRegistryRoutes:
         headers, _ = _make_admin_headers(create_user)
         tool = ToolRegistry(
             name="test-tool",
+            stable_slug="test-tool",
+            semantic_version="1.0.0",
             module_path="backend.tools.example",
             function_name="run",
             description="Example",
             input_schema={"type": "object"},
             output_schema={"type": "object"},
+            owning_team="core-platform",
+            authorization_scope="internal",
+            approval_mode="auto",
+            cost_profile={"unit": "call", "estimated_cost_usd": 0.0},
         )
         test_db.add(tool)
         test_db.flush()
@@ -616,11 +622,17 @@ class TestAdminRegistryRoutes:
         headers, _ = _make_admin_headers(create_user)
         tool = ToolRegistry(
             name="alpha-tool",
+            stable_slug="alpha-tool",
+            semantic_version="1.0.0",
             module_path="backend.tools.alpha",
             function_name="execute",
             description="Alpha",
             input_schema={"type": "object"},
             output_schema={"type": "object"},
+            owning_team="core-platform",
+            authorization_scope="internal",
+            approval_mode="auto",
+            cost_profile={"unit": "call", "estimated_cost_usd": 0.0},
         )
         test_db.add(tool)
         test_db.commit()
@@ -631,6 +643,9 @@ class TestAdminRegistryRoutes:
         assert payload["total"] == 1
         assert payload["tools"][0]["name"] == "alpha-tool"
         assert payload["tools"][0]["description"] == "Alpha"
+        assert payload["tools"][0]["stable_slug"] == "alpha-tool"
+        assert payload["tools"][0]["semantic_version"] == "1.0.0"
+        assert payload["tools"][0]["cost_profile"]["unit"] == "call"
 
     def test_tool_registry_requires_admin(self, test_client, auth_header):
         headers, _ = auth_header()

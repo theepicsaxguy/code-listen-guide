@@ -556,12 +556,13 @@ class TestToolRegistryModel:
 
     def test_tool_registry_defaults(self, test_db):
         """New tool entries gain default versioning metadata."""
-        from backend.models.tool_registry import ToolRegistry
+        from backend.models.tool_registry import ToolRegistry, slugify_tool_name
 
         ToolRegistry.__table__.create(bind=test_db.get_bind(), checkfirst=True)
 
         tool = ToolRegistry(
             name="sample_tool",
+            stable_slug=slugify_tool_name("sample_tool"),
             module_path="example.module",
             function_name="do_work",
         )
@@ -571,6 +572,12 @@ class TestToolRegistryModel:
 
         assert tool.schema_version == 1
         assert tool.updated_at is not None
+        assert tool.stable_slug == slugify_tool_name("sample_tool")
+        assert tool.semantic_version == "1.0.0"
+        assert tool.owning_team == "core-platform"
+        assert tool.authorization_scope == "internal"
+        assert tool.approval_mode == "auto"
+        assert tool.cost_profile == {}
 
     def test_tool_registry_unique_module_function(self, test_db):
         """Duplicate module/function pairs are rejected."""
@@ -581,6 +588,7 @@ class TestToolRegistryModel:
 
         first = ToolRegistry(
             name="first_tool",
+            stable_slug="first-tool",
             module_path="example.module",
             function_name="shared",
         )
@@ -589,6 +597,7 @@ class TestToolRegistryModel:
 
         duplicate = ToolRegistry(
             name="second_tool",
+            stable_slug="second-tool",
             module_path="example.module",
             function_name="shared",
         )
@@ -613,12 +622,18 @@ class TestToolRegistryModel:
         for definition in CORE_TOOL_REGISTRY_SEED_DATA:
             record = ToolRegistry(
                 name=definition["name"],
+                stable_slug=definition["stable_slug"],
+                semantic_version=definition.get("semantic_version", "1.0.0"),
                 module_path=definition["module_path"],
                 function_name=definition["function_name"],
                 description=definition.get("description"),
                 input_schema=definition.get("input_schema"),
                 output_schema=definition.get("output_schema"),
                 schema_version=definition.get("schema_version", 1),
+                owning_team=definition.get("owning_team", "core-platform"),
+                authorization_scope=definition.get("authorization_scope", "internal"),
+                approval_mode=definition.get("approval_mode", "auto"),
+                cost_profile=definition.get("cost_profile", {}),
             )
             test_db.add(record)
 

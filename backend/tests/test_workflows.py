@@ -693,6 +693,8 @@ class TestCheckpointing:
         tool_descriptor = ToolDescriptor(
             id=uuid4(),
             name="doc_search",
+            stable_slug="doc-search",
+            semantic_version="1.0.0",
             module_path="pkg.tools",
             function_name="run",
             description=None,
@@ -705,6 +707,10 @@ class TestCheckpointing:
                 }
             },
             output_schema={},
+            owning_team="core-platform",
+            authorization_scope="internal",
+            approval_mode="auto",
+            cost_profile={"unit": "call", "estimated_cost_usd": 0.02},
         )
 
         trace: Dict[str, Any] = {
