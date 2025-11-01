@@ -39,6 +39,7 @@ class AgentDescriptor:
     rollout_stage: Optional[str]
     access_policies: Dict[str, Any]
     quota_limits: Dict[str, Any]
+    approval_requirements: Dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -322,6 +323,7 @@ class WorkflowManager:
         policies = AgentRegistry.normalize_access_policies(agent.access_policies)
         quotas = AgentRegistry.normalize_quota_limits(agent.quota_limits)
         memory = AgentRegistry.normalize_memory_pointers(agent.memory_pointers)
+        approvals = AgentRegistry.normalize_approval_requirements(agent.approval_requirements)
         return AgentDescriptor(
             id=agent.id,
             name=agent.name,
@@ -338,6 +340,7 @@ class WorkflowManager:
             rollout_stage=agent.rollout_stage,
             access_policies=policies,
             quota_limits=quotas,
+            approval_requirements=approvals,
         )
 
     def _build_step_descriptor(self, step: WorkflowStep) -> StepDescriptor:
