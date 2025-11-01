@@ -8,11 +8,281 @@ Tests for:
 - Human-in-the-loop approval
 """
 
-import pytest
+import asyncio
+import inspect
+import json
+import sys
+import threading
+from types import ModuleType, SimpleNamespace
+from uuid import uuid4
 from unittest.mock import MagicMock, AsyncMock, patch
-from types import SimpleNamespace
+
+import pytest
 
 from agent_framework import ChatMessage, Role, TextContent
+from backend.workflows.dynamic_loader import AgentDescriptor, ToolDescriptor
+
+
+@pytest.fixture
+def workflow_stub():
+    from backend.workflows.audiobook_workflow import AudiobookWorkflow
+
+    workflow = object.__new__(AudiobookWorkflow)
+    workflow.job_id = "job-test"
+    workflow.job_uuid = uuid4()
+    workflow.job_context = {"repo_url": "https://example.com/repo.git"}
+    workflow.state = {"steps": {}}
+    workflow._state_lock = threading.RLock()
+    workflow._step_lookup = {"tool-step": uuid4()}
+    workflow.manager = MagicMock()
+    workflow.manager.update_instance = MagicMock()
+    workflow._agent_allowed_cache = {}
+    workflow._validate_tool_authorization = MagicMock()
+    return workflow
+
+
+@pytest.fixture
+def sample_tool_module():
+    module_name = "tests.sample_tools"
+    module = ModuleType(module_name)
+
+    def add_numbers(a: int, b: int = 1) -> int:
+        return a + b
+
+    async def add_numbers_async(x: int, y: int = 2) -> dict[str, int]:
+        await asyncio.sleep(0)
+        return {"sum": x + y}
+
+    async def raise_timeout(*args, **kwargs):
+        raise asyncio.TimeoutError("budget exceeded")
+
+    async def trigger_cancel(*args, **kwargs):
+        raise asyncio.CancelledError()
+
+    module.add_numbers = add_numbers
+    module.add_numbers_async = add_numbers_async
+    module.raise_timeout = raise_timeout
+    module.trigger_cancel = trigger_cancel
+    sys.modules[module_name] = module
+    try:
+        yield module
+    finally:
+        sys.modules.pop(module_name, None)
+
+
+@pytest.mark.workflows
+@pytest.mark.unit
+class TestToolWrappingInternals:
+    def test_serialize_arguments_coerces_defaults(self, workflow_stub):
+        def sample_tool(value: int, extra: int = 2, *, payload: dict | None = None) -> None:
+            return None
+
+        signature = inspect.signature(sample_tool)
+        payload = {"payload": {"ids": {1, 2}}}
+
+        result = workflow_stub._serialize_arguments(signature, (5,), payload)
+
+        assert result["value"] == 5
+        assert result["extra"] == 2
+        assert sorted(result["payload"]["ids"]) == [1, 2]
+
+    def test_serialize_arguments_handles_binding_error(self, workflow_stub):
+        def single_param(value: int) -> int:
+            return value
+
+        signature = inspect.signature(single_param)
+
+        result = workflow_stub._serialize_arguments(signature, (1, 2), {"unexpected": 3})
+
+        assert result["args"] == [1, 2]
+        assert result["kwargs"] == {"unexpected": 3}
+
+    def test_coerce_jsonable_handles_complex_objects(self, workflow_stub):
+        class ModelStub:
+            def model_dump(self, mode: str | None = None, exclude_none: bool | None = None) -> dict[str, str]:
+                if mode is None:
+                    raise ValueError("mode required")
+                return {"mode": mode, "exclude_none": str(exclude_none)}
+
+        class AttrStub:
+            def __init__(self) -> None:
+                self.alpha = "x"
+
+        value = {
+            "model": ModelStub(),
+            "attrs": AttrStub(),
+            "numbers": {3, 1},
+            "mapping": {5: "five"},
+        }
+
+        result = workflow_stub._coerce_jsonable(value)
+
+        assert result["model"] == {"mode": "json", "exclude_none": "True"}
+        assert result["attrs"] == {"alpha": "x"}
+        assert sorted(result["numbers"]) == [1, 3]
+        assert result["mapping"] == {"5": "five"}
+
+    def test_wrap_tool_sync_preserves_signature(self, workflow_stub, sample_tool_module):
+        agent_descriptor = AgentDescriptor(
+            id=uuid4(),
+            name="agent",
+            module_path="agents.module",
+            factory_function="build",
+            description=None,
+            config_schema={},
+            allowed_tools=(),
+        )
+        tool_descriptor = ToolDescriptor(
+            id=uuid4(),
+            name="adder",
+            module_path=sample_tool_module.__name__,
+            function_name="add_numbers",
+            description="adds",
+            input_schema={},
+            output_schema={},
+        )
+
+        wrapper = workflow_stub._wrap_tool(
+            agent_descriptor=agent_descriptor,
+            tool_descriptor=tool_descriptor,
+            step_name="tool-step",
+            context={"chapter": 7},
+        )
+
+        result = wrapper(3)
+
+        assert result == 4
+        assert inspect.signature(wrapper) == inspect.signature(sample_tool_module.add_numbers)
+        assert wrapper.__annotations__ == sample_tool_module.add_numbers.__annotations__
+        workflow_stub._validate_tool_authorization.assert_called_once_with(agent_descriptor, tool_descriptor)
+        workflow_stub.manager.update_instance.assert_called_once()
+        state = workflow_stub.state["steps"]["tool-step"]
+        trace = state["tool_calls"][0]
+        assert trace["status"] == "ok"
+        assert trace["output"] == 4
+        assert trace["input"] == {"a": 3, "b": 1}
+        assert trace["context"]["job"]["repo_url"] == "https://example.com/repo.git"
+        assert trace["context"]["factory"] == {"chapter": 7}
+
+    @pytest.mark.asyncio
+    async def test_wrap_tool_async_preserves_signature(self, workflow_stub, sample_tool_module):
+        agent_descriptor = AgentDescriptor(
+            id=uuid4(),
+            name="agent",
+            module_path="agents.module",
+            factory_function="build",
+            description=None,
+            config_schema={},
+            allowed_tools=(),
+        )
+        tool_descriptor = ToolDescriptor(
+            id=uuid4(),
+            name="async-adder",
+            module_path=sample_tool_module.__name__,
+            function_name="add_numbers_async",
+            description="adds async",
+            input_schema={},
+            output_schema={},
+        )
+
+        wrapper = workflow_stub._wrap_tool(
+            agent_descriptor=agent_descriptor,
+            tool_descriptor=tool_descriptor,
+            step_name="tool-step",
+            context={"chapter": 2},
+        )
+
+        result = await wrapper(5)
+
+        assert result == {"sum": 7}
+        assert inspect.signature(wrapper) == inspect.signature(sample_tool_module.add_numbers_async)
+        assert wrapper.__annotations__ == sample_tool_module.add_numbers_async.__annotations__
+        workflow_stub._validate_tool_authorization.assert_called_once_with(agent_descriptor, tool_descriptor)
+        workflow_stub.manager.update_instance.assert_called_once()
+        state = workflow_stub.state["steps"]["tool-step"]
+        trace = state["tool_calls"][0]
+        assert trace["status"] == "ok"
+        assert trace["output"] == {"sum": 7}
+        assert trace["input"] == {"x": 5, "y": 2}
+
+    @pytest.mark.asyncio
+    async def test_async_wrapper_skips_trace_on_timeout(self, workflow_stub, sample_tool_module):
+        agent_descriptor = AgentDescriptor(
+            id=uuid4(),
+            name="agent",
+            module_path="agents.module",
+            factory_function="build",
+            description=None,
+            config_schema={},
+            allowed_tools=(),
+        )
+        tool_descriptor = ToolDescriptor(
+            id=uuid4(),
+            name="timeout-tool",
+            module_path=sample_tool_module.__name__,
+            function_name="raise_timeout",
+            description="times out",
+            input_schema={},
+            output_schema={},
+        )
+
+        wrapper = workflow_stub._wrap_tool(
+            agent_descriptor=agent_descriptor,
+            tool_descriptor=tool_descriptor,
+            step_name="tool-step",
+            context={},
+        )
+
+        with pytest.raises(asyncio.TimeoutError):
+            await wrapper()
+
+        workflow_stub._validate_tool_authorization.assert_called_once_with(agent_descriptor, tool_descriptor)
+        workflow_stub.manager.update_instance.assert_not_called()
+        assert workflow_stub.state == {"steps": {}}
+
+    @pytest.mark.asyncio
+    async def test_async_wrapper_skips_trace_on_cancellation(self, workflow_stub, sample_tool_module):
+        agent_descriptor = AgentDescriptor(
+            id=uuid4(),
+            name="agent",
+            module_path="agents.module",
+            factory_function="build",
+            description=None,
+            config_schema={},
+            allowed_tools=(),
+        )
+        tool_descriptor = ToolDescriptor(
+            id=uuid4(),
+            name="cancel-tool",
+            module_path=sample_tool_module.__name__,
+            function_name="trigger_cancel",
+            description="cancels",
+            input_schema={},
+            output_schema={},
+        )
+
+        wrapper = workflow_stub._wrap_tool(
+            agent_descriptor=agent_descriptor,
+            tool_descriptor=tool_descriptor,
+            step_name="tool-step",
+            context={},
+        )
+
+        with pytest.raises(asyncio.CancelledError):
+            await wrapper()
+
+        workflow_stub._validate_tool_authorization.assert_called_once_with(agent_descriptor, tool_descriptor)
+        workflow_stub.manager.update_instance.assert_not_called()
+        assert workflow_stub.state == {"steps": {}}
+
+    def test_append_tool_trace_rollback_on_failure(self, workflow_stub):
+        workflow_stub.manager.update_instance.side_effect = RuntimeError("db unavailable")
+        initial_state = json.loads(json.dumps(workflow_stub.state))
+
+        with pytest.raises(RuntimeError):
+            workflow_stub._append_tool_trace("tool-step", {"tool": "x"})
+
+        assert workflow_stub.state == initial_state
 
 
 @pytest.mark.workflows

@@ -415,6 +415,23 @@ class AudiobookWorkflow:
                 trace["output"] = self._coerce_jsonable(result)
                 _finalize_trace(trace, "ok", time.monotonic() - start)
                 return result
+            except asyncio.CancelledError:
+                logger.info(
+                    "Tool %s cancelled for agent %s (step=%s)",
+                    tool_descriptor.name,
+                    agent_descriptor.name,
+                    step_name,
+                )
+                raise
+            except (asyncio.TimeoutError, TimeoutError) as exc:
+                logger.warning(
+                    "Tool %s timed out for agent %s (step=%s): %s",
+                    tool_descriptor.name,
+                    agent_descriptor.name,
+                    step_name,
+                    exc,
+                )
+                raise
             except PermissionError as exc:
                 trace["error"] = repr(exc)
                 _finalize_trace(trace, "forbidden", time.monotonic() - start)
@@ -443,6 +460,15 @@ class AudiobookWorkflow:
                 trace["output"] = self._coerce_jsonable(result)
                 _finalize_trace(trace, "ok", time.monotonic() - start)
                 return result
+            except TimeoutError as exc:
+                logger.warning(
+                    "Tool %s timed out for agent %s (step=%s): %s",
+                    tool_descriptor.name,
+                    agent_descriptor.name,
+                    step_name,
+                    exc,
+                )
+                raise
             except PermissionError as exc:
                 trace["error"] = repr(exc)
                 _finalize_trace(trace, "forbidden", time.monotonic() - start)
@@ -475,19 +501,25 @@ class AudiobookWorkflow:
         return wrapper
 
     def _append_tool_trace(self, step_name: str, trace: Dict[str, Any]) -> None:
+        step_id = self._step_lookup.get(step_name)
         with self._state_lock:
-            steps = self.state.setdefault("steps", {})
+            updated_state = json.loads(json.dumps(self.state))
+            steps = updated_state.setdefault("steps", {})
             step_state = steps.setdefault(step_name, {})
             tool_calls = step_state.setdefault("tool_calls", [])
-            tool_calls.append(trace)
+            serialized_trace = json.loads(json.dumps(trace))
+            tool_calls.append(serialized_trace)
             step_state["updated_at"] = datetime.utcnow().isoformat()
-            state_snapshot = json.loads(json.dumps(self.state))
-        step_id = self._step_lookup.get(step_name)
-        self.manager.update_instance(
-            job_id=self.job_uuid,
-            current_step_id=step_id,
-            state=state_snapshot,
-        )
+            try:
+                self.manager.update_instance(
+                    job_id=self.job_uuid,
+                    current_step_id=step_id,
+                    state=updated_state,
+                )
+            except Exception:
+                raise
+            else:
+                self.state = updated_state
 
     def _serialize_arguments(
         self,

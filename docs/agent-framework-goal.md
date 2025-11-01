@@ -32,7 +32,7 @@ We need a runtime that lets an LLM steer work while the database keeps it inside
 4. Execute the plugin through the registry, return results to the LLM, persist the trace entry, and advance or branch the workflow.
 
 ## Governance and Observability
-- **Trace logging:** Persist workflow id, agent id, plugin slug, request payload, response payload, timestamps, cost metrics, and (when available) the LLM’s rationale. Make traces queryable for audits and RCA.
+- **Trace logging:** Persist workflow id, agent id, plugin slug, request payload, response payload, timestamps, cost metrics, and (when available) the LLM’s rationale. The runtime writes through the workflow manager before mutating its cache so the database stays authoritative. When governance cancels or times out a plugin call, we skip persisting that trace entry to avoid half-finished records.
 - **Policy enforcement:** Deny unauthorized or out-of-quota calls with structured errors that flow back to the LLM session. Record policy violations for analytics.
 - **Integration hooks:** Stream trace events to observability, billing, and security systems without bypassing runtime validation.
 
