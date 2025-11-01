@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, status
@@ -45,7 +47,13 @@ from backend.api.routes.admin_agents_crud import router as admin_agents_crud_rou
 from backend.api.ws import router as ws_router
 from backend.config import get_settings
 from backend.db.session import init_db
+from backend.tasks.tool_integrity import tool_registry_integrity_loop
 from backend.utils.checkpointing import PostgresCheckpointStorage
+from backend.workflows.dynamic_loader import get_tool_registry_manager
+from backend.workflows.tool_registry_validator import (
+    ToolValidationError,
+    validate_registered_tools,
+)
 
 settings = get_settings()
 frontend_dist_path = (Path(__file__).resolve().parent / "frontend_dist").resolve()
@@ -61,7 +69,6 @@ def get_frontend_file(relative_path: str) -> Path:
     return candidate
 
 # Configure logging
-from backend.config import get_settings
 _settings = get_settings()
 log_level = getattr(logging, _settings.log_level.upper(), logging.INFO)
 logging.basicConfig(level=log_level)
@@ -72,8 +79,30 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Starting up...")
     init_db()
-    yield
-    logger.info("Shutting down...")
+    get_tool_registry_manager().reload()
+    try:
+        results = validate_registered_tools(raise_on_error=True)
+        logger.info("Validated %s registered tool(s)", len(results))
+    except ToolValidationError as exc:
+        logger.error("Tool registry validation failed: %s", exc)
+        raise
+    stop_event = asyncio.Event()
+    task = asyncio.create_task(
+        tool_registry_integrity_loop(
+            settings.tool_registry_check_interval_seconds,
+            stop_event,
+        )
+    )
+    app.state.tool_registry_stop_event = stop_event
+    app.state.tool_registry_task = task
+    try:
+        yield
+    finally:
+        logger.info("Shutting down...")
+        stop_event.set()
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

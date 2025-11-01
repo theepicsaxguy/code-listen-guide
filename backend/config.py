@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     max_concurrent_jobs_per_user: int = Field(default=3)
     redis_url: str = Field(..., min_length=1)
     log_level: str = Field(default="INFO")
+    tool_registry_check_interval_seconds: int = Field(default=900, ge=60)
 
     @model_validator(mode="after")
     def ensure_postgres(cls, values: "Settings") -> "Settings":

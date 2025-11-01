@@ -171,6 +171,19 @@ Pass a UUID or an email address to identify the user. Add the `--remove` flag to
 python -m backend.tools.db_tools set-admin user@example.com --remove
 ```
 
+### Tool registry maintenance
+
+The API validates every tool registration during startup and continues to check for drift on a schedule. Adjust the cadence with `TOOL_REGISTRY_CHECK_INTERVAL_SECONDS` in your `.env`; the default value of `900` seconds performs a sweep every fifteen minutes.
+
+Use the helper below whenever you add or modify a callable that should be available to agents. The script imports the function, derives JSON Schemas from its type hints, and updates the database entry along with signature and schema hashes.
+
+```bash
+python backend/scripts/register_tool.py backend.tools.git_tools:_ai_clone_repo --name clone_repository \
+  --description "Clone a Git repository for analysis"
+```
+
+Run the command again after changing a function signature so the stored schemas and hashes stay in sync with the code.
+
 ### Running the Application
 
 **Development mode:**
