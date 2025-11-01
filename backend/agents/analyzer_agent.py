@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated, Any, Callable, Dict, List, Optional, Sequence
+from typing import Annotated, Any, Dict, List, Optional, Sequence
 
 from agent_framework import ChatAgent
 from agent_framework.openai import OpenAIResponsesClient
@@ -37,7 +37,7 @@ def _ai_parse_repository(
 async def create_analyzer_agent(
     chat_client: Any,
     *,
-    tools: Optional[Sequence[Callable[..., Any]]] = None,
+    tools: Optional[Sequence[Any]] = None,
 ) -> ChatAgent:
     resolved_tools = list(tools) if tools is not None else [
         _ai_clone_repo,
@@ -57,7 +57,7 @@ async def create_analyzer_agent(
 async def analyzer_agent(
     settings: Any,
     *,
-    tools: Optional[Sequence[Callable[..., Any]]] = None,
+    tools: Optional[Sequence[Any]] = None,
 ) -> ChatAgent:
     client = OpenAIResponsesClient(**build_responses_client_options(settings))
     return await create_analyzer_agent(client, tools=tools)
