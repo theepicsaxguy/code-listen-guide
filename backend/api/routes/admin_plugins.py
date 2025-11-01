@@ -4,13 +4,13 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from backend.api.dependencies import require_admin
 from backend.db.session import get_db
-from backend.models.tool_registry import ToolRegistry
+from backend.models.tool_registry import ToolRegistry, slugify_tool_name
 
 
 router = APIRouter(prefix="/api/v1/admin/plugins", tags=["admin", "plugins"])
@@ -24,6 +24,19 @@ class PluginCreate(BaseModel):
     description: Optional[str] = None
     input_schema: Optional[dict] = None
     output_schema: Optional[dict] = None
+    stable_slug: Optional[str] = None
+    semantic_version: str = Field(default="1.0.0")
+    owning_team: str = Field(default="core-platform")
+    authorization_scope: str = Field(default="internal")
+    approval_mode: str = Field(default="auto")
+    cost_profile: Optional[dict] = None
+
+    @field_validator("cost_profile", mode="before")
+    @classmethod
+    def _validate_cost_profile(cls, value: Optional[dict]) -> Optional[dict]:
+        if value is None or isinstance(value, dict):
+            return value
+        raise ValueError("cost_profile must be a JSON object")
 
 
 class PluginUpdate(BaseModel):
@@ -32,17 +45,37 @@ class PluginUpdate(BaseModel):
     description: Optional[str] = None
     input_schema: Optional[dict] = None
     output_schema: Optional[dict] = None
+    stable_slug: Optional[str] = None
+    semantic_version: Optional[str] = None
+    owning_team: Optional[str] = None
+    authorization_scope: Optional[str] = None
+    approval_mode: Optional[str] = None
+    cost_profile: Optional[dict] = None
+
+    @field_validator("cost_profile", mode="before")
+    @classmethod
+    def _validate_cost_profile(cls, value: Optional[dict]) -> Optional[dict]:
+        if value is None or isinstance(value, dict):
+            return value
+        raise ValueError("cost_profile must be a JSON object")
 
 
 class PluginOut(BaseModel):
     id: str
     name: str
+    stable_slug: str
+    semantic_version: str
     module_path: str
     function_name: str
     description: Optional[str] = None
     input_schema: Optional[dict] = None
     output_schema: Optional[dict] = None
+    owning_team: str
+    authorization_scope: str
+    approval_mode: str
+    cost_profile: dict
     created_at: str
+    updated_at: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -50,11 +83,17 @@ class PluginOut(BaseModel):
 class ToolRegistryItem(BaseModel):
     id: str
     name: str
+    stable_slug: str
+    semantic_version: str
     module_path: str
     function_name: str
     description: str
     input_schema: dict
     output_schema: dict
+    owning_team: str
+    authorization_scope: str
+    approval_mode: str
+    cost_profile: dict
     created_at: str
     updated_at: str
 
@@ -70,12 +109,19 @@ def _serialize_plugin(plugin: ToolRegistry) -> PluginOut:
     return PluginOut(
         id=str(plugin.id),
         name=plugin.name,
+        stable_slug=plugin.stable_slug,
+        semantic_version=plugin.semantic_version,
         module_path=plugin.module_path,
         function_name=plugin.function_name,
         description=plugin.description,
         input_schema=plugin.input_schema or {},
         output_schema=plugin.output_schema or {},
+        owning_team=plugin.owning_team,
+        authorization_scope=plugin.authorization_scope,
+        approval_mode=plugin.approval_mode,
+        cost_profile=ToolRegistry.normalize_cost_profile(plugin.cost_profile),
         created_at=plugin.created_at.isoformat() if plugin.created_at else "",
+        updated_at=plugin.updated_at.isoformat() if plugin.updated_at else "",
     )
 
 
@@ -83,11 +129,17 @@ def _serialize_registry_item(plugin: ToolRegistry) -> ToolRegistryItem:
     return ToolRegistryItem(
         id=str(plugin.id),
         name=plugin.name,
+        stable_slug=plugin.stable_slug,
+        semantic_version=plugin.semantic_version,
         module_path=plugin.module_path,
         function_name=plugin.function_name,
         description=plugin.description or "",
         input_schema=plugin.input_schema or {},
         output_schema=plugin.output_schema or {},
+        owning_team=plugin.owning_team,
+        authorization_scope=plugin.authorization_scope,
+        approval_mode=plugin.approval_mode,
+        cost_profile=ToolRegistry.normalize_cost_profile(plugin.cost_profile),
         created_at=plugin.created_at.isoformat() if plugin.created_at else "",
         updated_at=plugin.updated_at.isoformat() if plugin.updated_at else "",
     )
@@ -107,6 +159,7 @@ async def get_tool_registry(
         query = query.filter(
             or_(
                 ToolRegistry.name.ilike(pattern),
+                ToolRegistry.stable_slug.ilike(pattern),
                 ToolRegistry.description.ilike(pattern),
             )
         )
@@ -151,13 +204,35 @@ async def create_plugin(
             detail="Plugin with that name already exists",
         )
 
+    stable_slug = slugify_tool_name(payload.stable_slug or payload.name)
+    version = payload.semantic_version
+    slug_conflict = (
+        db.query(ToolRegistry)
+        .filter(
+            ToolRegistry.stable_slug == stable_slug,
+            ToolRegistry.semantic_version == version,
+        )
+        .first()
+    )
+    if slug_conflict:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Plugin version already exists for that slug",
+        )
+
     plugin = ToolRegistry(
         name=payload.name,
+        stable_slug=stable_slug,
+        semantic_version=version,
         module_path=payload.module_path,
         function_name=payload.function_name,
         description=payload.description,
         input_schema=payload.input_schema,
         output_schema=payload.output_schema,
+        owning_team=payload.owning_team,
+        authorization_scope=payload.authorization_scope,
+        approval_mode=payload.approval_mode,
+        cost_profile=ToolRegistry.normalize_cost_profile(payload.cost_profile),
     )
     db.add(plugin)
     db.commit()
@@ -192,6 +267,33 @@ async def update_plugin(
     if not plugin:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plugin not found")
 
+    next_slug = plugin.stable_slug
+    next_version = plugin.semantic_version
+    slug_version_updated = False
+    if payload.stable_slug is not None:
+        next_slug = slugify_tool_name(payload.stable_slug)
+        slug_version_updated = True
+    if payload.semantic_version is not None:
+        next_version = payload.semantic_version
+        slug_version_updated = True
+    if slug_version_updated:
+        conflict = (
+            db.query(ToolRegistry)
+            .filter(
+                ToolRegistry.stable_slug == next_slug,
+                ToolRegistry.semantic_version == next_version,
+                ToolRegistry.id != plugin.id,
+            )
+            .first()
+        )
+        if conflict:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Plugin version already exists for that slug",
+            )
+        plugin.stable_slug = next_slug
+        plugin.semantic_version = next_version
+
     if payload.module_path is not None:
         plugin.module_path = payload.module_path
     if payload.function_name is not None:
@@ -202,6 +304,14 @@ async def update_plugin(
         plugin.input_schema = payload.input_schema
     if payload.output_schema is not None:
         plugin.output_schema = payload.output_schema
+    if payload.owning_team is not None:
+        plugin.owning_team = payload.owning_team
+    if payload.authorization_scope is not None:
+        plugin.authorization_scope = payload.authorization_scope
+    if payload.approval_mode is not None:
+        plugin.approval_mode = payload.approval_mode
+    if payload.cost_profile is not None:
+        plugin.cost_profile = ToolRegistry.normalize_cost_profile(payload.cost_profile)
 
     db.commit()
     db.refresh(plugin)

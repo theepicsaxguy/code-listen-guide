@@ -21,7 +21,7 @@ sys.path.insert(0, str(backend_path))
 from sqlalchemy.orm import Session
 from backend.db.session import SessionLocal
 from backend.models.agent_registry import AgentRegistry
-from backend.models.tool_registry import ToolRegistry
+from backend.models.tool_registry import ToolRegistry, default_cost_profile, slugify_tool_name
 from backend.tools.audio_tools import (
     CONCAT_INPUT_SCHEMA,
     CONCAT_OUTPUT_SCHEMA,
@@ -507,19 +507,50 @@ def seed_tools(db: Session):
     ]
     
     for tool_data in tools:
-        # Check if tool already exists
+        stable_slug = tool_data.get("stable_slug") or slugify_tool_name(tool_data["name"])
+        semantic_version = tool_data.get("semantic_version", "1.0.0")
+        owning_team = tool_data.get("owning_team", "core-platform")
+        authorization_scope = tool_data.get("authorization_scope", "internal")
+        approval_mode = tool_data.get("approval_mode", "auto")
+        raw_cost_profile = tool_data.get("cost_profile")
+        cost_profile = (
+            ToolRegistry.normalize_cost_profile(raw_cost_profile)
+            if raw_cost_profile is not None
+            else default_cost_profile()
+        )
+
         existing = db.query(ToolRegistry).filter(ToolRegistry.name == tool_data["name"]).first()
         if existing:
             print(f"✓ Tool '{tool_data['name']}' already exists, skipping")
             continue
-        
+
+        slug_existing = (
+            db.query(ToolRegistry)
+            .filter(
+                ToolRegistry.stable_slug == stable_slug,
+                ToolRegistry.semantic_version == semantic_version,
+            )
+            .first()
+        )
+        if slug_existing:
+            print(
+                f"✓ Tool '{tool_data['name']}' version {semantic_version} already exists, skipping"
+            )
+            continue
+
         tool = ToolRegistry(
             name=tool_data["name"],
+            stable_slug=stable_slug,
+            semantic_version=semantic_version,
             module_path=tool_data["module_path"],
             function_name=tool_data["function_name"],
             description=tool_data["description"],
             input_schema=tool_data["input_schema"],
             output_schema=tool_data["output_schema"],
+            owning_team=owning_team,
+            authorization_scope=authorization_scope,
+            approval_mode=approval_mode,
+            cost_profile=cost_profile,
             created_at=datetime.utcnow()
         )
         db.add(tool)

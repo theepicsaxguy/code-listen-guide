@@ -107,6 +107,15 @@ The modules under `backend/tools` now pair each callable with JSON Schema metada
 - An async wrapper that dispatches to the sync logic with `asyncio.to_thread` when concurrency helps.
 - `*_INPUT_SCHEMA` and `*_OUTPUT_SCHEMA` constants that the seeding script uses when it writes to the database.
 
+Registry rows also include operational metadata that keeps cache keys and governance aligned:
+
+- `stable_slug`: a lowercase, hyphenated identifier used for cache lookups and workflow bindings.
+- `semantic_version`: the tool’s schema version, expressed as standard SemVer text.
+- `owning_team`: who is on the hook when the tool misbehaves.
+- `authorization_scope`: the policy bucket the runtime checks before executing the call.
+- `approval_mode`: whether usage is auto-approved, manual, or guarded.
+- `cost_profile`: a JSON object describing unit economics (unit name plus rough cost estimates).
+
 `backend/scripts/seed_workflow_registry.py` imports these schema constants directly, so the runtime registry, the database seed data, and the LLM-facing tool surface stay in sync. When you add a new tool, follow the same pattern: define the callable, export the schema dictionaries, then register it in the seed script.
 
 ## Setup Instructions
@@ -202,10 +211,16 @@ Use the helper below whenever you add or modify a callable that should be availa
 
 ```bash
 python backend/scripts/register_tool.py backend.tools.git_tools:_ai_clone_repo --name clone_repository \
+  --stable-slug clone-repository --semantic-version 1.0.0 \
+  --owning-team core-platform --authorization-scope internal --approval-mode auto \
+  --cost-profile '{"unit": "call", "estimated_cost_usd": 0.0}' \
   --description "Clone a Git repository for analysis"
 ```
 
-Run the command again after changing a function signature so the stored schemas and hashes stay in sync with the code.
+Run the command again after changing a function signature so the stored schemas and hashes stay in sync with the code. The CLI
+guards both the display name and the `(stable_slug, semantic_version)` pair so descriptor caching never collides. Leave the
+metadata flags off and `collect_tool_metadata` will fill in the slug, version, owning team, approval mode, and cost profile
+based on the callable’s own annotations or the standard defaults.
 
 ### Running the Application
 
