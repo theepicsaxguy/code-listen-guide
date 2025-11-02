@@ -1,6 +1,7 @@
 """Database session management and initialization utilities."""
 
 import logging
+import sys
 from importlib import import_module
 from importlib.util import find_spec
 from pathlib import Path
@@ -17,6 +18,16 @@ if TYPE_CHECKING:
     from alembic.config import Config
 
 logger = logging.getLogger(__name__)
+
+# Ensure a dedicated stream handler for migration diagnostics so logs are always visible
+if not any(getattr(h, 'name', '') == 'migration_stream' for h in logger.handlers):
+    _handler = logging.StreamHandler(stream=sys.stdout)
+    _handler.name = 'migration_stream'
+    _handler.setLevel(logging.INFO)
+    _handler.setFormatter(logging.Formatter('%(asctime)s | MIGRATION | %(levelname)s | %(message)s'))
+    logger.addHandler(_handler)
+    # Avoid duplicate propagation to root if root also logs
+    logger.propagate = False
 
 settings = get_settings()
 
@@ -46,11 +57,20 @@ def get_db() -> Generator[Session, None, None]:
 
 def run_migrations() -> None:
     """Apply Alembic upgrades and manual schema migrations."""
-
+    
+    logger.info("=" * 60)
+    logger.info("Starting database migration check")
+    logger.info("=" * 60)
+    
     _apply_alembic_upgrades()
+    
     with engine.begin() as connection:
         inspector = inspect(connection)
         _ensure_is_admin_column(connection, inspector)
+    
+    logger.info("=" * 60)
+    logger.info("Database migration check completed successfully")
+    logger.info("=" * 60)
 
 
 def _apply_alembic_upgrades() -> None:
@@ -84,20 +104,28 @@ def _apply_alembic_upgrades() -> None:
     alembic_cfg.set_main_option("script_location", str(migrations_dir))
     alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
     
+    logger.info("Checking Alembic configuration...")
+    
     # Ensure alembic_version table exists with correct schema
     _ensure_alembic_version_table()
     
     # Auto-stamp database if tables exist but Alembic isn't tracking them
     _auto_stamp_if_needed(alembic_cfg)
-    
+
+    # Pre-upgrade diagnostics
+    _log_migration_diagnostics(alembic_cfg, phase="pre-upgrade")
+
     # Run all pending migrations to bring database to latest state
-    logger.info("Applying Alembic migrations to latest revisions")
+    logger.info("Running Alembic migration upgrade to 'heads'...")
     try:
         command.upgrade(alembic_cfg, "heads")
-        logger.info("✓ Successfully applied Alembic migrations")
+        logger.info("✓ All Alembic migrations applied successfully")
     except Exception as exc:
         logger.error("Failed to apply Alembic migrations: %s", exc, exc_info=True)
         raise
+
+    # Post-upgrade diagnostics
+    _log_migration_diagnostics(alembic_cfg, phase="post-upgrade")
 
 
 def _ensure_alembic_version_table() -> None:
@@ -194,16 +222,64 @@ def _auto_stamp_if_needed(alembic_cfg: "Config") -> None:
         has_version = result.scalar() > 0
         
         if not has_version:
-            logger.info(
-                "Database has %d tables but no Alembic version - auto-stamping to head",
+            logger.warning(
+                "⚠ Database has %d tables but no Alembic version tracked!",
                 len(existing_tables)
             )
+            logger.info("Auto-stamping database to 'head' revision...")
             try:
                 command.stamp(alembic_cfg, "head")
-                logger.info("✓ Successfully stamped database to head revision")
+                logger.info("✓ Database stamped to head revision")
             except Exception as exc:
                 logger.warning("Failed to auto-stamp database: %s", exc)
                 # Don't raise - upgrade might still work
+
+
+def _log_migration_diagnostics(alembic_cfg: "Config", phase: str) -> None:
+    """Output detailed migration diagnostics (current revision, heads, pending scripts).
+
+    Args:
+        alembic_cfg: Loaded Alembic Config
+        phase: A label (e.g. 'pre-upgrade', 'post-upgrade')
+    """
+    try:
+        from alembic.script import ScriptDirectory
+    except ImportError:
+        logger.debug("Alembic not available for diagnostics")
+        return
+
+    script_dir = ScriptDirectory.from_config(alembic_cfg)
+    heads = script_dir.get_heads()  # list of head revision ids
+    # Collect all revisions in linear order (may include branches)
+    all_revs: list[str] = []
+    try:
+        for rev in script_dir.walk_revisions():  # walk from heads backwards
+            all_revs.append(rev.revision)
+    except Exception as exc:
+        logger.debug("Failed walking revisions: %s", exc)
+
+    # Current tracked revision(s)
+    current_versions: list[str] = []
+    with engine.connect() as connection:
+        result = connection.execute(text("SELECT version_num FROM alembic_version"))
+        current_versions = [row[0] for row in result.fetchall()]
+
+    # Determine if any head not present in current_versions (multi-head scenarios)
+    missing_heads = [h for h in heads if h not in current_versions]
+
+    logger.info("-" * 60)
+    logger.info("Alembic diagnostics (%s)", phase)
+    logger.info("Heads: %s", ', '.join(heads) if heads else '<none>')
+    logger.info("Current versions: %s", ', '.join(current_versions) if current_versions else '<none>')
+    if missing_heads:
+        logger.info("Missing heads (will upgrade): %s", ', '.join(missing_heads))
+    else:
+        logger.info("All heads present in current versions")
+    logger.info("Total migrations discovered: %d", len(all_revs))
+    if phase == "pre-upgrade" and missing_heads:
+        logger.info("Pending upgrade count: %d", len(missing_heads))
+    logger.info("-" * 60)
+
 
 
 def _ensure_is_admin_column(connection: Connection, inspector: Inspector) -> None:
