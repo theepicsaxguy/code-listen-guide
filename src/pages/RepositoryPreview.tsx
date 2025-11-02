@@ -35,7 +35,7 @@ export default function RepositoryPreview() {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [readmeContent, setReadmeContent] = useState<string | null>(null);
 
-  const parseMutation = useParseRepositoryApiV1ParseRepositoryPost();
+  const parseMutation = useParseRepository();
   const isLoading = parseMutation.isPending;
 
   // Get repo details from location state

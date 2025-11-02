@@ -47,7 +47,7 @@ export default function AdminParse() {
   const [parseResults, setParseResults] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   
-  const parseMutation = useParseRepositoryApiV1ParseRepositoryPost();
+  const parseMutation = useParseRepository();
   const isLoading = parseMutation.isPending;
   
   const handleParse = async () => {
