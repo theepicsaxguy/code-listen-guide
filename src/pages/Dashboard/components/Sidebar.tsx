@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Library, Settings, CreditCard, Mic, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Library, Settings, CreditCard, Mic, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 import type { User } from '../../../lib/types';
 
@@ -17,6 +18,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, isCollapsed, onToggleCollapse, isMobileMenuOpen = false }) => {
  const navigate = useNavigate();
+ const { logout } = useAuth();
 
  const navItems = [
  { id: 'home', label: 'Overview', icon: <Home size={20} /> },
@@ -32,6 +34,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
  } else {
  setActiveTab(itemId);
  }
+ };
+
+ const handleLogout = async () => {
+   try {
+     await logout();
+     navigate('/auth');
+   } catch (error) {
+     console.error('Logout failed:', error);
+   }
  };
 
   return (
@@ -105,7 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
       })}
     </nav>
     {user && (
-      <div className="px-4 py-4 border-t border-sidebar-border">
+      <div className="px-4 py-4 border-t border-sidebar-border space-y-2">
         <div className={cn('flex items-center rounded-lg px-3 py-2.5', isCollapsed ? 'justify-center' : 'gap-3')}>
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-secondary text-xs font-semibold text-zinc-300">
             {user.name
@@ -120,6 +131,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
             </div>
           )}
         </div>
+        <button
+          onClick={handleLogout}
+          className={cn(
+            'group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-fast',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-surface',
+            'text-zinc-500 hover:bg-sidebar-accent/60 hover:text-zinc-200',
+            isCollapsed && 'justify-center gap-0 px-0'
+          )}
+          title={isCollapsed ? 'Logout' : undefined}
+        >
+          <LogOut className={cn('h-4 w-4 text-zinc-500 stroke-[1.5] transition-fast', !isCollapsed && 'shrink-0')} />
+          {!isCollapsed && <span className="truncate">Logout</span>}
+        </button>
       </div>
     )}
  </aside>
