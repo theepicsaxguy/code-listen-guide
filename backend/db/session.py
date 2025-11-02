@@ -66,7 +66,13 @@ def _apply_alembic_upgrades() -> None:
         logger.warning("Alembic configuration file not found at %s", alembic_cfg_path)
         return
 
+    migrations_dir = project_root / "db" / "migrations"
+    if not migrations_dir.exists():
+        logger.warning("Alembic migrations directory not found at %s", migrations_dir)
+        return
+
     alembic_cfg = Config(str(alembic_cfg_path))
+    alembic_cfg.set_main_option("script_location", str(migrations_dir))
     alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
     logger.info("Applying Alembic migrations to latest revisions")
     try:
