@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from backend.api.dependencies import get_current_user, limiter, oauth2_scheme
 from backend.api.schemas.user import (
+    LogoutResponse,
     TokenRefreshRequest,
     UserCreate,
     UserResponse,
@@ -190,7 +191,7 @@ async def login(
     )
 
 
-@router.post("/logout")
+@router.post("/logout", response_model=LogoutResponse)
 async def logout(
     request: Request,
     response: Response,
@@ -206,7 +207,7 @@ async def logout(
         response: Response object to clear cookies
 
     Returns:
-        Success message
+        LogoutResponse with success message
 
     Note: Token blacklisting with Redis can be added for enhanced security.
     """
@@ -217,7 +218,7 @@ async def logout(
     response.delete_cookie(key="access_token")
     response.delete_cookie(key="refresh_token")
 
-    return {"message": "Successfully logged out"}
+    return LogoutResponse(message="Successfully logged out")
 
 
 @router.get("/me", response_model=UserResponse)

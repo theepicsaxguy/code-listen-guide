@@ -104,3 +104,9 @@ class TokenRefreshRequest(BaseModel):
     """Input payload for refreshing access tokens."""
 
     refresh_token: str = Field(..., min_length=1)
+
+
+class LogoutResponse(BaseModel):
+    """Response schema for logout."""
+
+    message: str
