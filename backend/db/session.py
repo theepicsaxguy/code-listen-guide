@@ -68,9 +68,9 @@ def _apply_alembic_upgrades() -> None:
 
     alembic_cfg = Config(str(alembic_cfg_path))
     alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
-    logger.info("Applying Alembic migrations to latest revision")
+    logger.info("Applying Alembic migrations to latest revisions")
     try:
-        command.upgrade(alembic_cfg, "head")
+        command.upgrade(alembic_cfg, "heads")
     except Exception as exc:
         logger.warning("Failed to apply Alembic migrations: %s", exc)
         return
@@ -107,5 +107,5 @@ def init_db() -> None:
             "Model import failed during init_db: %s", module_name, exc_info=exc
         )
 
-    Base.metadata.create_all(bind=engine)
     run_migrations()
+    Base.metadata.create_all(bind=engine)
