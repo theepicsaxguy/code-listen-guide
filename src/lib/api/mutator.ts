@@ -25,31 +25,112 @@ export const customInstance = async <T>(
   const baseUrl = getBaseUrl();
   
   // Construct full URL
-  const url = config.url.startsWith('http') 
-    ? config.url 
-    : `${baseUrl}${config.url.startsWith('/') ? '' : '/'}${config.url}`;
+  let url: string;
+  if (config.url.startsWith('http')) {
+    // Already a full URL
+    url = config.url;
+  } else if (config.url.startsWith('/api/v1')) {
+    // URL already includes /api/v1, so just prepend the domain
+    const baseUrlWithoutPath = baseUrl.replace(/\/api\/v1\/?$/, '');
+    url = `${baseUrlWithoutPath}${config.url}`;
+  } else {
+    // Relative URL, prepend base URL
+    url = `${baseUrl}${config.url.startsWith('/') ? '' : '/'}${config.url}`;
+  }
 
   // Get auth token from localStorage
   const token = localStorage.getItem('auth_token');
   
+  // Extract data/body from config
+  const requestBody = (config as any).data || (config as any).body || null;
+  
+  // Determine content type from headers or body type
+  // Headers can be a Headers object, Record<string, string>, or array of tuples
+  let contentTypeFromHeaders: string | null = null;
+  
+  if (config.headers) {
+    if (config.headers instanceof Headers) {
+      contentTypeFromHeaders = config.headers.get('Content-Type') || config.headers.get('content-type');
+    } else if (typeof config.headers === 'object') {
+      const headersObj = config.headers as Record<string, string>;
+      contentTypeFromHeaders = headersObj['Content-Type'] || headersObj['content-type'] || null;
+    }
+  }
+  
+  if (!contentTypeFromHeaders && options?.headers) {
+    if (options.headers instanceof Headers) {
+      contentTypeFromHeaders = options.headers.get('Content-Type') || options.headers.get('content-type');
+    } else if (typeof options.headers === 'object') {
+      const headersObj = options.headers as Record<string, string>;
+      contentTypeFromHeaders = headersObj['Content-Type'] || headersObj['content-type'] || null;
+    }
+  }
+  
+  const isFormUrlEncoded = contentTypeFromHeaders === 'application/x-www-form-urlencoded';
+  const isURLSearchParams = requestBody instanceof URLSearchParams;
+  
   // Merge headers
-  const headers = new Headers({
-    'Content-Type': 'application/json',
-    ...(options?.headers as HeadersInit),
-    ...(config.headers as HeadersInit),
-  });
+  const headers = new Headers();
+  
+  // Set Content-Type - preserve if already set (especially for form-urlencoded)
+  if (isFormUrlEncoded) {
+    headers.set('Content-Type', 'application/x-www-form-urlencoded');
+  } else if (contentTypeFromHeaders) {
+    headers.set('Content-Type', contentTypeFromHeaders as string);
+  } else {
+    headers.set('Content-Type', 'application/json');
+  }
+  
+  // Add other headers from options and config
+  if (options?.headers) {
+    const optsHeaders = new Headers(options.headers as HeadersInit);
+    optsHeaders.forEach((value, key) => {
+      if (key.toLowerCase() !== 'content-type' || !isFormUrlEncoded) {
+        headers.set(key, value);
+      }
+    });
+  }
+  
+  if (config.headers) {
+    const configHeaders = new Headers(config.headers as HeadersInit);
+    configHeaders.forEach((value, key) => {
+      if (key.toLowerCase() !== 'content-type' || !isFormUrlEncoded) {
+        headers.set(key, value);
+      }
+    });
+  }
 
   // Add authorization header if token exists
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
+  // Prepare fetch config (exclude data/body from config, handle separately)
+  const { data: _data, body: _body, ...fetchConfig } = config as any;
+  
+  // Serialize body based on content type
+  let serializedBody: string | undefined = undefined;
+  if (requestBody) {
+    if (typeof requestBody === 'string') {
+      serializedBody = requestBody;
+    } else if (isURLSearchParams || isFormUrlEncoded) {
+      // For form-urlencoded, convert URLSearchParams to string
+      serializedBody = requestBody instanceof URLSearchParams 
+        ? requestBody.toString() 
+        : (typeof requestBody === 'string' ? requestBody : new URLSearchParams(requestBody as any).toString());
+    } else {
+      // JSON serialization for other types
+      serializedBody = JSON.stringify(requestBody);
+    }
+  }
+  
   // Make request
   const response = await fetch(url, {
     ...options,
-    ...config,
+    ...fetchConfig,
     headers,
     credentials: 'include',
+    body: serializedBody,
   });
 
   // Handle empty responses (204 No Content, etc.)
