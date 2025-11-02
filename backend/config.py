@@ -24,8 +24,9 @@ class Settings(BaseSettings):
         env_file=_ENV_FILES, case_sensitive=False, extra="ignore"
     )
 
-    database_url: str = Field(..., min_length=1)
-    checkpoint_database_url: str = Field(..., min_length=1)
+    # Allow mapping from common uppercase env variable names used in tests / deployment
+    database_url: str = Field(..., min_length=1, alias="DATABASE_URL")
+    checkpoint_database_url: str = Field(..., min_length=1, alias="CHECKPOINT_DATABASE_URL")
 
     anthropic_api_key: str = Field(..., min_length=1)
     openai_api_key: Optional[str] = Field(default=None)
@@ -70,9 +71,9 @@ class Settings(BaseSettings):
         environment = values.environment.lower()
         for field_name in ("database_url", "checkpoint_database_url"):
             url_value = getattr(values, field_name)
-            if environment != "test" and url_value.startswith("sqlite"):
-                msg = f"{field_name} must point to PostgreSQL; SQLite is not supported"
-                raise ValueError(msg)
+            # Permit sqlite strictly for testing environments ("test" or any value starting with "test")
+            if not environment.startswith("test") and url_value.startswith("sqlite"):
+                raise ValueError(f"{field_name} must point to PostgreSQL; SQLite is not supported outside tests")
         return values
 
 
@@ -80,4 +81,4 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Return a cached ``Settings`` instance."""
 
-    return Settings()
+    return Settings()  # type: ignore[arg-type]

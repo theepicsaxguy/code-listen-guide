@@ -1,40 +1,45 @@
-"""
-Pytest configuration and shared fixtures for backend tests.
+"""Pytest configuration for backend tests.
 
-This file provides:
-- Database fixtures for testing
-- Mock clients for external services (OpenAI, Anthropic, Stripe, S3)
-- Test data factories
-- Async test support
+Responsibilities:
+ - Provision a test database (SQLite file) isolated per test run.
+ - Apply Alembic migrations up to current head so all tables (including episodes) exist.
+ - Provide a SQLAlchemy Session fixture for tests.
+
+Permanent migration resolution:
+ Running migrations in tests ensures schema drift does not silently break episode
+ tests and validates future migrations against real upgrade path instead of
+ metadata.create_all shortcuts.
 """
 
-import asyncio
-import json
+from __future__ import annotations
+
 import os
-import sqlite3
 import sys
+import tempfile
 import uuid
+import json
+import sqlite3
 from pathlib import Path
+from typing import Generator, Any, Dict
 from types import ModuleType
-from unittest.mock import AsyncMock, MagicMock, Mock
-from typing import Any, Dict, Generator
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.pool import StaticPool
 
-# Add backend to path if not already there
-ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))
+# Repository paths
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = BACKEND_ROOT.parent
+for p in (str(BACKEND_ROOT), str(PROJECT_ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 os.environ.setdefault("ENVIRONMENT", "test")
-os.environ.setdefault("DATABASE_URL", "sqlite:///./backend_test.db")
-os.environ.setdefault("CHECKPOINT_DATABASE_URL", "sqlite:///./backend_test.db")
 os.environ.setdefault("API_BASE_URL", "http://testserver/api/v1")
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("ANTHROPIC_API_KEY", "test-anthropic-key")
@@ -47,20 +52,43 @@ os.environ.setdefault("S3_BUCKET_NAME", "test-bucket")
 os.environ.setdefault("S3_REGION", "us-east-1")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 
-from backend.db.base import Base
-from backend.db.session import get_db
-from backend.utils.auth import (
-    create_access_token,
-    create_refresh_token,
-    get_password_hash,
-)
+from backend.db.session import SessionLocal, get_db  # noqa: E402
+from backend.db.base import Base  # noqa: E402
+from backend.utils.auth import create_access_token, create_refresh_token, get_password_hash  # noqa: E402
+from backend.models.episode import Episode  # Ensure model imported so Alembic/metadata aware
 
-# Register JSON adapters for SQLite
+# ---------------------------------------------------------------------------
+# Migration application (single unified path)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="session", autouse=True)
+def apply_migrations() -> None:
+    """Apply Alembic migrations once for the test session using SQLite.
+
+    If DATABASE_URL is not set, create a temporary file-based sqlite DB so
+    JSON-like behavior persists across multiple connections.
+    """
+    if not os.getenv("DATABASE_URL"):
+        tmp_dir = tempfile.mkdtemp(prefix="test_db_")
+        db_path = Path(tmp_dir) / "test.db"
+        os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
+
+    alembic_cfg = Config(str(BACKEND_ROOT / "alembic.ini"))
+    alembic_cfg.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
+    command.upgrade(alembic_cfg, "head")
+
+
+@pytest.fixture(scope="function")
+def db_session() -> Generator[Session, None, None]:
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
 sqlite3.register_adapter(dict, lambda value: json.dumps(value))
 sqlite3.register_adapter(list, lambda value: json.dumps(value))
-sqlite3.register_converter(
-    "JSON", lambda value: value.decode("utf-8") if value else None
-)
+sqlite3.register_converter("JSON", lambda value: value.decode("utf-8") if value else None)
 
 # Mock OpenTelemetry before any imports
 trace_module = ModuleType("opentelemetry.trace")
@@ -152,84 +180,14 @@ sys.modules.setdefault("botocore", botocore_module)
 sys.modules.setdefault("botocore.exceptions", botocore_exceptions)
 
 
-# ============================================================================
-# Database Fixtures
-# ============================================================================
-
-
-@pytest.fixture(scope="session")
-def test_db_engine():
-    """Create a test database engine using SQLite in-memory."""
-    from backend.db.session import Base
-    from backend.models import (
-        agent_registry,
-        chapter,
-        deliverable,
-        job,
-        outline,
-        payment,
-        tool_registry,
-        user,
-        workflow_definition,
-        workflow_instance,
-        workflow_revision,
-        workflow_step,
-    )
-
-    engine = create_engine(
-        "sqlite:///./backend_test.db",
-        connect_args={
-            "check_same_thread": False,
-            "detect_types": sqlite3.PARSE_DECLTYPES,
-        },
-        poolclass=StaticPool,
-        json_serializer=lambda value: json.dumps(value),
-        json_deserializer=lambda value: (
-            json.loads(value) if isinstance(value, str) else value
-        ),
-        echo=False,
-    )
-
-    # Create all tables
-    Base.metadata.create_all(bind=engine)
-
-    yield engine
-
-    # Cleanup
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
-
-
-@pytest.fixture(scope="function")
-def test_db(test_db_engine) -> Generator[Session, None, None]:
-    """Create a test database session for each test."""
-    TestingSessionLocal = sessionmaker(
-        autocommit=False, autoflush=False, bind=test_db_engine
-    )
-
-    session = TestingSessionLocal()
-    for table in reversed(Base.metadata.sorted_tables):
-        session.execute(table.delete())
-    session.commit()
-
-    try:
-        yield session
-    finally:
-        session.rollback()
-        session.close()
-
-
 @pytest.fixture
-def override_get_db(test_db):
-    """Override the get_db dependency for FastAPI testing."""
-
-    def _override_get_db():
+def override_get_db(db_session):
+    def _override():
         try:
-            yield test_db
+            yield db_session
         finally:
             pass
-
-    return _override_get_db
+    return _override
 
 
 # ============================================================================
@@ -239,15 +197,10 @@ def override_get_db(test_db):
 
 @pytest.fixture
 def test_client(override_get_db):
-    """Create a test client for the FastAPI application."""
     from backend.main import app
-    from backend.db.session import get_db
-
     app.dependency_overrides[get_db] = override_get_db
-
     with TestClient(app) as client:
         yield client
-
     app.dependency_overrides.clear()
 
 
@@ -485,7 +438,7 @@ def mock_workflow():
 
 
 @pytest.fixture
-def create_user(test_db):
+def create_user(db_session):
     """Factory fixture for creating test users."""
     from backend.models.user import User
 
@@ -505,9 +458,9 @@ def create_user(test_db):
         user_data.update(kwargs)
 
         user = User(**user_data)
-        test_db.add(user)
-        test_db.commit()
-        test_db.refresh(user)
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
         return user
 
     return _create_user
@@ -540,7 +493,7 @@ def auth_header(auth_tokens):
 
 
 @pytest.fixture
-def create_job(test_db, create_user):
+def create_job(db_session, create_user):
     """Factory fixture for creating test jobs."""
     from backend.models.job import Job
 
@@ -561,9 +514,9 @@ def create_job(test_db, create_user):
         job_data.update(kwargs)
 
         job = Job(**job_data)
-        test_db.add(job)
-        test_db.commit()
-        test_db.refresh(job)
+        db_session.add(job)
+        db_session.commit()
+        db_session.refresh(job)
         return job
 
     return _create_job
