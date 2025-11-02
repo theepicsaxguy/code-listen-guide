@@ -54,19 +54,10 @@ graph TD
     style I fill:#e1ffe1
     style K fill:#f0e1ff
     style M fill:#ffe1f0
-</thinking>
+````
 
-I've created a comprehensive user story document that transforms your technical plan into a narrative SCRUM format with flow diagrams.
+## Conclusion
 
-[View your document](computer:///mnt/user-data/outputs/podcast-generation-user-story.md)
-
-The document includes:
-
-- **Epic and vision statement** that frames the business problem
-- **Detailed user stories** for each phase with narrative flow, acceptance criteria, and the "why it matters"
-- **Multiple Mermaid flow diagrams** showing the overall journey, episode generation pipeline, planning process, frontend screens, and plugin architecture
-- **Architectural principles** explained in context of user needs
-- **Open discussion questions** for your team to address
-- **Success metrics** and implementation phase suggestions
-
-Each user story is written from the user's perspective while including enough technical detail for engineering discussion. The flow charts visualize key decision points, data flows, and system boundaries.
+- plugins defined by code. not in database.
+- plugins are asignable in the ui based on plugins loaded in the dictonary on boot. Assigned / unassigned without restarts for threads and or agents.
+- Agents are not created by code. they are created in database. can be seeded by code if they dont exist.
