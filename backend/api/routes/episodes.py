@@ -9,6 +9,7 @@ from backend.models.episode import Episode, EpisodeStatus
 from backend.models.job import Job
 from backend.api.schemas.episode import EpisodeResponse, EpisodesListResponse
 from backend.services.dependency_analyzer import DependencyAnalyzer
+from math import ceil
 from backend.config import get_settings
 from sqlalchemy import func
 import math
@@ -89,12 +90,22 @@ def plan_episodes(
     analyzer = DependencyAnalyzer(repo_root=job.metadata.get("local_repo_path", "."), primary_language=getattr(job, "primary_language", None))  # type: ignore[attr-defined]
     cluster_dicts = analyzer.plan_episodes(selected_files)
 
+    # Cost/token allocation heuristic: distribute job.estimated_total_tokens across clusters proportionally
+    total_tokens = getattr(job, "estimated_total_tokens", None)
+    cluster_sizes = [sum(len(v) for v in cluster.values()) for cluster in cluster_dicts]
+    size_sum = sum(cluster_sizes) or 1
+
     # Heuristic: each cluster becomes an episode
     episodes: list[Episode] = []
-    for idx, cluster in enumerate(cluster_dicts, start=1):
+    for idx, (cluster, cluster_size) in enumerate(zip(cluster_dicts, cluster_sizes), start=1):
         # Flatten file list length for duration heuristic (approx 3 mins per file baseline)
         files = [f for files in cluster.values() for f in files]
         est_duration = int(math.ceil(len(files) * 3)) or 5
+        est_tokens = None
+        if total_tokens:
+            proportional = total_tokens * (cluster_size / size_sum)
+            # Add small overhead for dialogue connective tissue
+            est_tokens = int(ceil(proportional * 1.15))
         ep = Episode(
             id=uuid.uuid4(),
             job_id=job_id,
@@ -112,7 +123,7 @@ def plan_episodes(
             depends_on=[f"Episode {idx-1}" ] if idx > 1 else [],
             leads_to=[],
             estimated_duration_minutes=est_duration,
-            estimated_tokens=None,
+            estimated_tokens=est_tokens,
             status=EpisodeStatus.PLANNING,
         )
         episodes.append(ep)

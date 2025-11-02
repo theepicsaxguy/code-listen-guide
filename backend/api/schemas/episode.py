@@ -37,3 +37,21 @@ class EpisodeResponse(BaseModel):
 class EpisodesListResponse(BaseModel):
     episodes: List[EpisodeResponse]
     total: int
+
+
+class EpisodeUpdate(BaseModel):
+    """Editable fields for an Episode via PATCH.
+
+    All fields optional; only provided values are updated.
+    """
+    title: str | None = None
+    narrative_theme: str | None = None
+    conversation_hooks: List[str] | None = None
+    learning_objectives: List[str] | None = None
+    goals: List[str] | Dict[str, Any] | None = None
+    dependency_inputs: List[str] | Dict[str, Any] | None = None
+    dependency_outputs: List[str] | Dict[str, Any] | None = None
+    architectural_boundary: str | None = None
+
+    class Config:
+        extra = 'forbid'
