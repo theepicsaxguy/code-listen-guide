@@ -11,7 +11,7 @@ Provides endpoints for:
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from backend.api.dependencies import get_current_user, limiter, oauth2_scheme
@@ -68,8 +68,11 @@ async def register(
     Raises:
         HTTPException: 400 if email already exists or validation fails
     """
-    # Validate email format
-    if not validate_email_format(user_data.email):
+    # Normalize email to lowercase for case-insensitive handling
+    normalized_email = user_data.email.strip().lower()
+
+    # Validate email format (use original case-insensitive form)
+    if not validate_email_format(normalized_email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email format"
         )
@@ -80,7 +83,8 @@ async def register(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     # Check if user already exists
-    stmt = select(User).where(User.email == user_data.email)
+    # Case-insensitive uniqueness check (handles legacy mixed-case rows)
+    stmt = select(User).where(func.lower(User.email) == normalized_email)
     existing_user = db.scalars(stmt).first()
     if existing_user:
         raise HTTPException(
@@ -92,9 +96,9 @@ async def register(
 
     # Create new user
     new_user = User(
-        email=user_data.email,
+        email=normalized_email,
         hashed_password=hashed_password,
-        name=user_data.name or user_data.email.split("@")[0],
+        name=user_data.name or normalized_email.split("@")[0],
         subscription_tier="free",
         subscription_status="active",
         credits_remaining=100,  # Default free credits
@@ -133,7 +137,9 @@ async def login(
         HTTPException: 401 if credentials are invalid
     """
     # Find user by email (username field in OAuth2 form)
-    stmt = select(User).where(User.email == form_data.username)
+    # Case-insensitive login: normalize provided username (email)
+    login_email = form_data.username.strip().lower()
+    stmt = select(User).where(func.lower(User.email) == login_email)
     user = db.scalars(stmt).first()
 
     if not user:

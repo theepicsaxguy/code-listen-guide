@@ -203,15 +203,27 @@ alembic -c backend/alembic.ini downgrade 20241010_initial_schema
 Granting an existing account access to the admin dashboard now happens through a dedicated helper. Run the `20241028_add_is_admin` migration if you have not already, then toggle the flag with the CLI below:
 
 ```bash
+cd /path/to/repo/root   # IMPORTANT: run from repository root, not the backend/ directory
 alembic -c backend/alembic.ini upgrade 20241028_add_is_admin
-python -m backend.tools.db_tools set-admin user@example.com
+python -m backend.scripts.create_admin --email user@example.com
 ```
 
-Pass a UUID or an email address to identify the user. Add the `--remove` flag to revoke access:
+Emails are case-insensitive across registration and login flows. The backend normalizes all stored addresses to lowercase, so users can log in with any mix of uppercase and lowercase characters. The admin promotion script also lowercases the provided email before lookup.
+
+Promote an existing user (must already be registered). If the user is already an admin the command exits successfully without changes:
 
 ```bash
-python -m backend.tools.db_tools set-admin user@example.com --remove
+cd /path/to/repo/root
+python -m backend.scripts.create_admin --email USER@Example.COM
 ```
+
+If the user does not exist the script returns exit code 2 and prints `User not found`.
+
+Exit codes:
+- 0 success (promoted or already admin)
+- 1 invalid email format
+- 2 user not found
+- 3 unexpected error
 
 ### Tool registry maintenance
 
