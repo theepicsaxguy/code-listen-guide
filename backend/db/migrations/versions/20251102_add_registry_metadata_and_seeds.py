@@ -15,8 +15,6 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-from backend.models.tool_registry import CORE_TOOL_REGISTRY_SEED_DATA
-
 
 revision: str = "20251102_add_registry_metadata"
 down_revision: str = "20251031_add_workflow_schema"
@@ -41,6 +39,8 @@ def _tools_table() -> sa.Table:
 
 
 def _seed_tool_rows(bind: sa.engine.Connection) -> None:
+    from backend.models.tool_registry import CORE_TOOL_REGISTRY_SEED_DATA
+    
     tools = _tools_table()
     for definition in CORE_TOOL_REGISTRY_SEED_DATA:
         exists = bind.execute(
@@ -138,6 +138,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    from backend.models.tool_registry import CORE_TOOL_REGISTRY_SEED_DATA
+    
     bind = op.get_bind()
     tools = _tools_table()
 

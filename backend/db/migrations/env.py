@@ -14,11 +14,13 @@ if str(BASE_DIR) not in sys.path:
 from backend.config import get_settings  # noqa: E402
 from backend.db.base import Base  # noqa: E402
 from backend.models import (  # noqa: E402
+    agent_registry,
     chapter,
     deliverable,
     job,
     outline,
     payment,
+    tool_registry,
     usage_log,
     user,
     workflow_checkpoint,
