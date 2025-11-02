@@ -1,7 +1,13 @@
 """Database migration runner for production deployments."""
 
+from __future__ import annotations
+
 import logging
 import sys
+from pathlib import Path
+
+if __package__ in {None, ""}:
+    sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from backend.db.session import run_migrations as session_run_migrations
 
