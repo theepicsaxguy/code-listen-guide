@@ -4,7 +4,7 @@ import logging
 from importlib import import_module
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Generator
+from typing import TYPE_CHECKING, Generator
 
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Connection, Inspector
@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from backend.config import get_settings
 from backend.db.base import Base
+
+if TYPE_CHECKING:
+    from alembic.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +54,13 @@ def run_migrations() -> None:
 
 
 def _apply_alembic_upgrades() -> None:
-    """Apply the latest Alembic revision when configuration is available."""
+    """Apply all pending Alembic migrations to bring database to latest revision.
+    
+    This function follows Alembic best practices:
+    1. Ensures alembic_version table exists with proper schema
+    2. Automatically stamps database if tables exist but aren't tracked
+    3. Runs all pending migrations using 'upgrade heads'
+    """
 
     if find_spec("alembic") is None:
         logger.info("Alembic not installed; skipping migration upgrade")
@@ -59,7 +68,6 @@ def _apply_alembic_upgrades() -> None:
 
     from alembic import command
     from alembic.config import Config
-    from alembic.script import ScriptDirectory
 
     project_root = Path(__file__).resolve().parents[1]
     alembic_cfg_path = project_root / "alembic.ini"
@@ -76,53 +84,34 @@ def _apply_alembic_upgrades() -> None:
     alembic_cfg.set_main_option("script_location", str(migrations_dir))
     alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
     
-    # Ensure alembic_version table exists with correct size
+    # Ensure alembic_version table exists with correct schema
     _ensure_alembic_version_table()
     
-    # Check if database needs to be stamped (tables exist but no alembic tracking)
-    with engine.connect() as connection:
-        inspector = inspect(connection)
-        
-        # Check if we have tables but no alembic version
-        existing_tables = inspector.get_table_names()
-        has_tables = len(existing_tables) > 0
-        
-        # Check if alembic_version is populated
-        has_alembic_version = False
-        if "alembic_version" in existing_tables:
-            result = connection.execute(text("SELECT COUNT(*) FROM alembic_version"))
-            count = result.scalar()
-            has_alembic_version = count > 0
-        
-        # If we have tables but no alembic version, stamp to head
-        if has_tables and not has_alembic_version:
-            logger.info("Database has tables but no Alembic tracking - stamping to head")
-            try:
-                command.stamp(alembic_cfg, "head")
-                logger.info("✓ Successfully stamped database to head revision")
-            except Exception as exc:
-                logger.warning("Failed to stamp database: %s", exc)
-                # Continue anyway, the upgrade might still work
+    # Auto-stamp database if tables exist but Alembic isn't tracking them
+    _auto_stamp_if_needed(alembic_cfg)
     
+    # Run all pending migrations to bring database to latest state
     logger.info("Applying Alembic migrations to latest revisions")
     try:
         command.upgrade(alembic_cfg, "heads")
+        logger.info("✓ Successfully applied Alembic migrations")
     except Exception as exc:
-        logger.warning("Failed to apply Alembic migrations: %s", exc)
-        return
-
-    logger.info("✓ Successfully applied Alembic migrations")
+        logger.error("Failed to apply Alembic migrations: %s", exc, exc_info=True)
+        raise
 
 
 def _ensure_alembic_version_table() -> None:
-    """Ensure alembic_version table exists with sufficient VARCHAR size for revision IDs."""
+    """Ensure alembic_version table exists with sufficient VARCHAR size.
+    
+    Creates the table if missing, or recreates it if the version_num column
+    is too small to hold modern Alembic revision IDs (which can be 40+ chars).
+    """
     
     with engine.connect() as connection:
         inspector = inspect(connection)
         
         if "alembic_version" not in inspector.get_table_names():
-            # Create the table with VARCHAR(64) to handle long revision IDs
-            logger.info("Creating alembic_version table with VARCHAR(64)")
+            logger.info("Creating alembic_version table")
             connection.execute(
                 text(
                     "CREATE TABLE alembic_version ("
@@ -133,46 +122,88 @@ def _ensure_alembic_version_table() -> None:
             )
             connection.commit()
             logger.info("✓ Created alembic_version table")
-        else:
-            # Check if the version_num column has sufficient size
-            # If it's too small, recreate the table
-            try:
-                columns = inspector.get_columns("alembic_version")
-                version_col = next((c for c in columns if c["name"] == "version_num"), None)
-                
-                if version_col and hasattr(version_col["type"], "length"):
-                    if version_col["type"].length < 64:
-                        logger.info(
-                            "alembic_version.version_num is too small (%s), recreating table",
-                            version_col["type"].length
+            return
+        
+        # Check if existing table has sufficient column size
+        try:
+            columns = inspector.get_columns("alembic_version")
+            version_col = next((c for c in columns if c["name"] == "version_num"), None)
+            
+            if version_col and hasattr(version_col["type"], "length"):
+                if version_col["type"].length and version_col["type"].length < 64:
+                    logger.info(
+                        "Upgrading alembic_version.version_num from VARCHAR(%s) to VARCHAR(64)",
+                        version_col["type"].length
+                    )
+                    
+                    # Preserve existing version if present
+                    result = connection.execute(text("SELECT version_num FROM alembic_version LIMIT 1"))
+                    existing_version = result.scalar()
+                    
+                    # Recreate table with larger column
+                    connection.execute(text("DROP TABLE alembic_version"))
+                    connection.execute(
+                        text(
+                            "CREATE TABLE alembic_version ("
+                            "version_num VARCHAR(64) NOT NULL, "
+                            "CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)"
+                            ")"
                         )
-                        # Save existing version if any
-                        result = connection.execute(text("SELECT version_num FROM alembic_version"))
-                        existing_versions = [row[0] for row in result]
-                        
-                        # Drop and recreate
-                        connection.execute(text("DROP TABLE alembic_version"))
+                    )
+                    
+                    # Restore version if it exists and fits
+                    if existing_version and len(existing_version) <= 64:
                         connection.execute(
-                            text(
-                                "CREATE TABLE alembic_version ("
-                                "version_num VARCHAR(64) NOT NULL, "
-                                "CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)"
-                                ")"
-                            )
+                            text("INSERT INTO alembic_version (version_num) VALUES (:version)"),
+                            {"version": existing_version}
                         )
-                        
-                        # Restore versions if they fit
-                        for version in existing_versions:
-                            if len(version) <= 64:
-                                connection.execute(
-                                    text("INSERT INTO alembic_version (version_num) VALUES (:version)"),
-                                    {"version": version}
-                                )
-                        
-                        connection.commit()
-                        logger.info("✓ Recreated alembic_version table with VARCHAR(64)")
+                    
+                    connection.commit()
+                    logger.info("✓ Upgraded alembic_version table schema")
+        except Exception as exc:
+            logger.debug("Could not check/upgrade alembic_version column size: %s", exc)
+
+
+def _auto_stamp_if_needed(alembic_cfg: "Config") -> None:
+    """Automatically stamp database to head if tables exist but aren't tracked.
+    
+    This handles the common scenario where:
+    - Database was created manually or by SQLAlchemy Base.metadata.create_all()
+    - Alembic migrations exist but database has never been stamped
+    - Tables are present and match the current models
+    
+    In this case, we stamp the database to 'head' so future migrations work correctly.
+    """
+    
+    from alembic import command
+    
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        existing_tables = inspector.get_table_names()
+        
+        # Skip if no tables exist (fresh database)
+        if not existing_tables:
+            return
+        
+        # Skip if alembic_version doesn't exist (will be created by first migration)
+        if "alembic_version" not in existing_tables:
+            return
+            
+        # Check if alembic_version is populated
+        result = connection.execute(text("SELECT COUNT(*) FROM alembic_version"))
+        has_version = result.scalar() > 0
+        
+        if not has_version:
+            logger.info(
+                "Database has %d tables but no Alembic version - auto-stamping to head",
+                len(existing_tables)
+            )
+            try:
+                command.stamp(alembic_cfg, "head")
+                logger.info("✓ Successfully stamped database to head revision")
             except Exception as exc:
-                logger.debug("Could not check alembic_version column size: %s", exc)
+                logger.warning("Failed to auto-stamp database: %s", exc)
+                # Don't raise - upgrade might still work
 
 
 def _ensure_is_admin_column(connection: Connection, inspector: Inspector) -> None:
