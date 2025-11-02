@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useGetJobApiV1JobsJobIdGet, useCancelJobApiV1JobsJobIdCancelPost } from '@/lib/api/generated';
+import { useGetJob, useCancelJob } from '@/lib/api/generated';
 import type { JobResponse } from '@/lib/api/generated';
 import { Job } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ export default function JobDetails() {
   const { toast } = useToast();
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const { data: job, isLoading, refetch } = useGetJobApiV1JobsJobIdGet(
+  const { data: job, isLoading, refetch } = useGetJob(
     jobId || '',
     {
       query: {
@@ -37,7 +37,7 @@ export default function JobDetails() {
     }
   );
 
-  const cancelJobMutation = useCancelJobApiV1JobsJobIdCancelPost();
+  const cancelJobMutation = useCancelJob();
 
   const handleCancelJob = async () => {
     if (!jobId) return;

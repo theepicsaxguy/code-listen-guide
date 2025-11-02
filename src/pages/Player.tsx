@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { useGetAudiobookPlayerDataApiV1PlayerJobIdGet } from '@/lib/api/generated';
-import type { GetAudiobookPlayerDataApiV1PlayerJobIdGet200 } from '@/lib/api/generated';
+import { useGetPlayerData } from '@/lib/api/generated';
+import type { GetPlayerData200 } from '@/lib/api/generated';
 import { PlayerData, Chapter } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,7 @@ export default function Player() {
   const { toast } = useToast();
   const audioRef = useRef<HTMLAudioElement>(null);
   
-  const { data: playerDataResponse, isLoading } = useGetAudiobookPlayerDataApiV1PlayerJobIdGet(
+  const { data: playerDataResponse, isLoading } = useGetPlayerData(
     jobId || '',
     { query: { enabled: !!jobId } }
   );

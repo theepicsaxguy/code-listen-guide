@@ -1,24 +1,22 @@
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  useListJobsApiV1JobsGet,
-  useGetJobApiV1JobsJobIdGet,
-  useCreateJobApiV1JobsPost,
-  useDeleteJobApiV1JobsJobIdDelete,
-  useGetAudiobookPlayerDataApiV1PlayerJobIdGet,
+  useListJobs,
+  useGetJob,
+  useCreateJob,
+  useDeleteJob,
+  useGetPlayerData,
 } from '@/lib/api/generated';
 
 export const useAudiobooks = (params?: { status_filter?: string; limit?: number; offset?: number }) => {
-  return useListJobsApiV1JobsGet(params ? {
-    query: {
-      status_filter: params.status_filter,
-      limit: params.limit || 10,
-      offset: params.offset || 0,
-    },
-  } : undefined);
+  return useListJobs(params ? {
+    status_filter: params.status_filter,
+    limit: params.limit || 10,
+    offset: params.offset || 0,
+  } : undefined, {});
 };
 
 export const useAudiobook = (jobId: string | null) => {
-  return useGetJobApiV1JobsJobIdGet(jobId || '', {
+  return useGetJob(jobId || '', {
     query: {
       enabled: !!jobId,
     },
@@ -27,10 +25,10 @@ export const useAudiobook = (jobId: string | null) => {
 
 export const useCreateAudiobook = () => {
   const queryClient = useQueryClient();
-  const mutation = useCreateJobApiV1JobsPost({
+  const mutation = useCreateJob({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['listJobsApiV1JobsGet'] });
+        queryClient.invalidateQueries({ queryKey: ['listJobs'] });
       },
     },
   });
@@ -45,10 +43,10 @@ export const useCreateAudiobook = () => {
 
 export const useDeleteAudiobook = () => {
   const queryClient = useQueryClient();
-  const mutation = useDeleteJobApiV1JobsJobIdDelete({
+  const mutation = useDeleteJob({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['listJobsApiV1JobsGet'] });
+        queryClient.invalidateQueries({ queryKey: ['listJobs'] });
       },
     },
   });
@@ -56,13 +54,13 @@ export const useDeleteAudiobook = () => {
   return {
     ...mutation,
     mutateAsync: async (jobId: string) => {
-      return mutation.mutateAsync(jobId);
+      return mutation.mutateAsync({ jobId });
     },
   };
 };
 
 export const useAudiobookChapters = (jobId: string | null) => {
-  return useGetAudiobookPlayerDataApiV1PlayerJobIdGet(jobId || '', {
+  return useGetPlayerData(jobId || '', {
     query: {
       enabled: !!jobId,
     },

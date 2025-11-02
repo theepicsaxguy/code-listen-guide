@@ -8,7 +8,7 @@ import { ArrowLeft, ArrowRight, FileText, FolderTree, Languages } from 'lucide-r
 import { ReadmeViewer } from '@/components/ReadmeViewer';
 import { RepositoryBrowser } from '@/components/RepositoryBrowser';
 import { useToast } from '@/hooks/use-toast';
-import { useParseRepositoryApiV1ParseRepositoryPost } from '@/lib/api/generated';
+import { useParseRepository } from '@/lib/api/generated';
 
 interface ParseResult {
   repository_url: string;

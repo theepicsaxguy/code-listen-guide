@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, DollarSign, Zap, Clock, FileText, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useEstimateJobCostApiV1JobsEstimatePost, useCreateJobApiV1JobsPost } from '@/lib/api/generated';
+import { useEstimateCost, useCreateJob } from '@/lib/api/generated';
 
 interface CostEstimate {
   estimated_cost_cents: number;
@@ -40,8 +40,8 @@ export default function CostEstimate() {
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
   const [approved, setApproved] = useState(false);
 
-  const estimateMutation = useEstimateJobCostApiV1JobsEstimatePost();
-  const createJobMutation = useCreateJobApiV1JobsPost();
+  const estimateMutation = useEstimateCost();
+  const createJobMutation = useCreateJob();
 
   const isLoading = estimateMutation.isPending;
   const isCreatingJob = createJobMutation.isPending;

@@ -1,5 +1,5 @@
-import { useGetMeApiV1AuthMeGet } from '@/lib/api/generated';
+import { useGetMe } from '@/lib/api/generated';
 
 export const useUser = () => {
-  return useGetMeApiV1AuthMeGet();
+  return useGetMe();
 };

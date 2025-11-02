@@ -9,7 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { useParseRepositoryApiV1ParseRepositoryPost } from '@/lib/api/generated';
+import { useParseRepository } from '@/lib/api/generated';
 import { 
   Loader2, 
   PlayCircle, 

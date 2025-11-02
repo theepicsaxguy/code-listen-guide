@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  useGetJobApiV1JobsJobIdGet,
-  useGetOutlineApiV1JobsJobIdOutlineGet,
-  useApproveOutlineApiV1JobsJobIdOutlineApprovePost,
-  useParseRepositoryApiV1ParseRepositoryPost,
+  useGetJob,
+  useGetOutline,
+  useApproveOutline,
+  useParseRepository,
 } from '@/lib/api/generated';
 import { Outline, Job } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -23,16 +23,16 @@ export default function OutlinePreview() {
   const [repositoryData, setRepositoryData] = useState<Record<string, FileNode> | null>(null);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
 
-  const { data: jobData, isLoading: jobLoading } = useGetJobApiV1JobsJobIdGet(
+  const { data: jobData, isLoading: jobLoading } = useGetJob(
     jobId || '',
     { query: { enabled: !!jobId } }
   );
-  const { data: outlineData, isLoading: outlineLoading, refetch: refetchOutline } = useGetOutlineApiV1JobsJobIdOutlineGet(
+  const { data: outlineData, isLoading: outlineLoading, refetch: refetchOutline } = useGetOutline(
     jobId || '',
     { query: { enabled: !!jobId } }
   );
-  const approveMutation = useApproveOutlineApiV1JobsJobIdOutlineApprovePost();
-  const parseMutation = useParseRepositoryApiV1ParseRepositoryPost();
+  const approveMutation = useApproveOutline();
+  const parseMutation = useParseRepository();
 
   const job = jobData as unknown as Job | null;
   const outline = outlineData as unknown as Outline | null;

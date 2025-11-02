@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   useListJobEpisodesEpisodesJobJobIdGet,
-  useGetJobApiV1JobsJobIdGet,
+  useGetJob,
   usePlanEpisodesEpisodesJobJobIdPlanPost,
 } from '@/lib/api/generated';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ export default function EpisodeOutlinePreview() {
   const { toast } = useToast();
   const [approved, setApproved] = useState(false);
 
-  const { data: jobData, isLoading: jobLoading } = useGetJobApiV1JobsJobIdGet(
+  const { data: jobData, isLoading: jobLoading } = useGetJob(
     jobId || '',
     { query: { enabled: !!jobId } }
   );

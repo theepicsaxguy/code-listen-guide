@@ -1,10 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
-  useLoginApiV1AuthLoginPost,
-  useRegisterApiV1AuthRegisterPost,
-  useRefreshTokenApiV1AuthRefreshPost,
-  useGetMeApiV1AuthMeGet,
-  useLogoutApiV1AuthLogoutPost,
+  useLogin,
+  useRegister,
+  useRefreshToken,
+  useGetMe,
+  useLogout,
 } from '@/lib/api/generated';
 import type { UserResponse, TokenResponse, TokenRefreshRequest } from '@/lib/api/generated';
 import { User } from '@/lib/types';
@@ -28,11 +28,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
-  const loginMutation = useLoginApiV1AuthLoginPost();
-  const registerMutation = useRegisterApiV1AuthRegisterPost();
-  const refreshMutation = useRefreshTokenApiV1AuthRefreshPost();
-  const getMeQuery = useGetMeApiV1AuthMeGet({ query: { enabled: false } });
-  const logoutMutation = useLogoutApiV1AuthLogoutPost();
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
+  const refreshMutation = useRefreshToken();
+  const getMeQuery = useGetMe({ query: { enabled: false } });
+  const logoutMutation = useLogout();
 
   // Restore session on mount
   useEffect(() => {
