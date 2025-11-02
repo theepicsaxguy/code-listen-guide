@@ -67,11 +67,19 @@ class JobCreate(BaseModel):
     
     Validates GitHub URL format and extracts owner/repo information.
     Ensures git ref contains only valid characters.
+    Includes scope selection fields for podcast vision.
     """
 
     repo_url: str = Field(..., description="GitHub repository URL")
     depth_tier: DepthTier
     git_ref: Optional[str] = Field(default="main", description="Git branch or tag")
+    
+    # Scope selection fields (podcast vision)
+    selected_files: Optional[List[str]] = Field(default=None, description="User-selected file paths or null for all")
+    excluded_patterns: Optional[List[str]] = Field(default=None, description="User exclusion patterns (e.g., *.test.ts)")
+    primary_language: Optional[str] = Field(default=None, description="Primary language for mixed-stack repos")
+    estimated_total_tokens: Optional[int] = Field(default=None, description="Pre-calculated token estimate")
+    user_approved_cost: Optional[bool] = Field(default=False, description="Whether user approved cost estimate")
 
     @field_validator("repo_url")
     @classmethod
@@ -147,6 +155,12 @@ class JobEstimateRequest(BaseModel):
 
     repo_url: HttpUrl = Field(..., description="Git repository URL to analyze")
     depth_tier: DepthTier = Field(..., description="Requested audiobook depth tier")
+    git_ref: Optional[str] = Field(default="main", description="Git branch or tag")
+    
+    # Scope selection fields for accurate estimation
+    selected_files: Optional[List[str]] = Field(default=None, description="User-selected file paths")
+    excluded_patterns: Optional[List[str]] = Field(default=None, description="User exclusion patterns")
+    primary_language: Optional[str] = Field(default=None, description="Primary language for mixed-stack repos")
 
 
 class JobEstimate(BaseModel):
@@ -156,6 +170,13 @@ class JobEstimate(BaseModel):
     estimated_duration_minutes: int = Field(..., ge=0)
     estimated_chapters: int = Field(..., ge=0)
     depth_tier: str
+    
+    # Token estimation (podcast vision)
+    llm_tokens: Optional[int] = Field(default=None, description="Estimated LLM tokens")
+    tts_chars: Optional[int] = Field(default=None, description="Estimated TTS characters")
+    llm_cost_cents: Optional[int] = Field(default=None, description="Estimated LLM cost")
+    tts_cost_cents: Optional[int] = Field(default=None, description="Estimated TTS cost")
+    total_cost_cents: Optional[int] = Field(default=None, description="Total estimated cost")
 
     @classmethod
     def from_tier(

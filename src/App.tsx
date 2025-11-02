@@ -15,6 +15,8 @@ import OutlinePreview from "./pages/OutlinePreview";
 import Player from "./pages/Player";
 import NotFound from "./pages/NotFound";
 import WhyWeExist from "./pages/WhyWeExist";
+import RepositoryPreview from "./pages/RepositoryPreview";
+import ScopeSelection from "./pages/ScopeSelection";
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
@@ -51,6 +53,8 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/submit" element={<Submit />} />
+              <Route path="/repository-preview" element={<RepositoryPreview />} />
+              <Route path="/scope-selection" element={<ScopeSelection />} />
               <Route path="/jobs/:jobId" element={<JobDetails />} />
               <Route path="/jobs/:jobId/outline" element={<OutlinePreview />} />
               <Route path="/player/:jobId" element={<Player />} />

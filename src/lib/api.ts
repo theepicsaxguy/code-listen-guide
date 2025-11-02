@@ -452,6 +452,45 @@ export class ApiClient {
         });
       }
 
+      // Job endpoints
+      async estimateJob(params: {
+        repo_url: string;
+        git_ref?: string;
+        depth_tier: 'survey' | 'standard' | 'comprehensive';
+        selected_files?: string[] | null;
+        excluded_patterns?: string[] | null;
+        primary_language?: string | null;
+      }) {
+        return this.request<{
+          estimated_total_tokens: number;
+          estimated_llm_tokens: number;
+          estimated_tts_chars: number;
+          estimated_llm_cost_cents: number;
+          estimated_tts_cost_cents: number;
+          estimated_total_cost_cents: number;
+          estimated_duration_minutes: number;
+          estimated_episodes: number;
+        }>('/jobs/estimate', {
+          method: 'POST',
+          body: JSON.stringify(params),
+        });
+      }
+
+      async createJob(params: {
+        repo_url: string;
+        git_ref?: string;
+        depth_tier: 'survey' | 'standard' | 'comprehensive';
+        selected_files?: string[] | null;
+        excluded_patterns?: string[] | null;
+        primary_language?: string | null;
+        user_approved_cost?: boolean;
+      }) {
+        return this.request<Job>('/jobs', {
+          method: 'POST',
+          body: JSON.stringify(params),
+        });
+      }
+
       // Agent monitoring endpoints
       async getAgentStats() {
         return this.request<any>('/admin/agents/stats');

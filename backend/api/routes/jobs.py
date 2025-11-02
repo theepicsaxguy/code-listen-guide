@@ -111,12 +111,97 @@ async def delete_job(
 async def estimate_job_cost(
     estimate_request: JobEstimateRequest,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    """Estimate cost and timeline for a repository without creating a job."""
-    estimate = calculate_job_estimate(
-        str(estimate_request.repo_url), estimate_request.depth_tier.value
-    )
-    return JobEstimate(**estimate)
+    """
+    Estimate cost and timeline for a repository without creating a job.
+    
+    This endpoint:
+    1. Parses the repository to get file contents
+    2. Applies user's scope selection (files, exclusions)
+    3. Calculates real token counts using tiktoken
+    4. Returns detailed cost breakdown
+    """
+    from backend.services.token_estimator import TokenEstimator
+    from backend.tools.git_tools import clone_repository
+    import shutil
+    from pathlib import Path
+    import tempfile
+    
+    # Clone repository
+    repo_path = None
+    try:
+        repo_path = clone_repository(str(estimate_request.repo_url))
+        
+        # Read file contents based on scope selection
+        file_contents = []
+        repo_path_obj = Path(repo_path)
+        
+        # Get all files or selected files
+        if estimate_request.selected_files:
+            # User selected specific files
+            for file_path in estimate_request.selected_files:
+                full_path = repo_path_obj / file_path
+                if full_path.exists() and full_path.is_file():
+                    try:
+                        with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            file_contents.append(f.read())
+                    except Exception as e:
+                        logger.warning(f"Could not read {file_path}: {e}")
+        else:
+            # Include all files (excluding patterns)
+            excluded_patterns = estimate_request.excluded_patterns or [
+                '*.test.ts', '*.test.js', '*.spec.ts', '*.spec.js',
+                'node_modules/**', '__pycache__/**', '.git/**'
+            ]
+            
+            for file_path in repo_path_obj.rglob('*'):
+                if file_path.is_file():
+                    rel_path = file_path.relative_to(repo_path_obj)
+                    
+                    # Check exclusion patterns
+                    from fnmatch import fnmatch
+                    should_exclude = any(
+                        fnmatch(str(rel_path), pattern) 
+                        for pattern in excluded_patterns
+                    )
+                    
+                    if not should_exclude:
+                        try:
+                            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                file_contents.append(f.read())
+                        except Exception as e:
+                            logger.warning(f"Could not read {file_path}: {e}")
+        
+        # Estimate tokens and costs
+        estimator = TokenEstimator()
+        cost_breakdown = estimator.estimate_job_cost(
+            file_contents,
+            depth_tier=estimate_request.depth_tier.value,
+            selected_files=estimate_request.selected_files,
+            excluded_patterns=estimate_request.excluded_patterns,
+        )
+        
+        return JobEstimate(
+            estimated_cost_cents=cost_breakdown['total_cost_cents'],
+            estimated_duration_minutes=cost_breakdown['estimated_duration_minutes'],
+            estimated_chapters=cost_breakdown['estimated_episodes'],
+            depth_tier=estimate_request.depth_tier.value,
+            llm_tokens=cost_breakdown['llm_tokens'],
+            tts_chars=cost_breakdown['tts_chars'],
+            llm_cost_cents=cost_breakdown['llm_cost_cents'],
+            tts_cost_cents=cost_breakdown['tts_cost_cents'],
+            total_cost_cents=cost_breakdown['total_cost_cents'],
+        )
+        
+    finally:
+        # Cleanup cloned repository
+        if repo_path:
+            try:
+                sandbox_dir = Path(repo_path).parent
+                shutil.rmtree(sandbox_dir, ignore_errors=True)
+            except Exception as e:
+                logger.warning(f"Failed to cleanup repository: {e}")
 
 
 @router.post("/{job_id}/start", status_code=status.HTTP_202_ACCEPTED)

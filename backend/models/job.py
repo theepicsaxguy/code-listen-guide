@@ -50,6 +50,13 @@ class Job(Base):
     estimated_duration_minutes = Column(Integer)
     estimated_chapters = Column(Integer)
 
+    # Scope Selection (podcast vision)
+    selected_files = Column(JSONB)  # User-selected file paths or null for all
+    excluded_patterns = Column(JSONB)  # User exclusions (e.g., ["*.test.ts"])
+    primary_language = Column(String(50))  # For mixed stacks
+    estimated_total_tokens = Column(Integer)  # Pre-calculated token estimate
+    user_approved_cost = Column(Integer, default=0)  # Whether user approved cost estimate (0=no, 1=yes)
+
     # Processing Status
     status = Column(String(50), default="pending", index=True)
     # pending, analyzing, scripting, synthesizing, post_processing, completed, failed

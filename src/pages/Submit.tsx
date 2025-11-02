@@ -28,29 +28,14 @@ export default function Submit() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await apiClient.createJob({
-        repo_url: repoUrl,
-        depth_tier: selectedDepth,
-        git_ref: gitRef,
-      });
-
-      toast({
-        title: 'Job created!',
-        description: 'Repository is being analyzed. Redirecting to outline...',
-      });
-
-      navigate(`/jobs/${response.id}/outline`);
-    } catch (error: any) {
-      toast({
-        title: 'Failed to create job',
-        description: error.message || 'Please check the repository URL',
-        variant: 'danger',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    // Navigate to repository preview instead of creating job directly
+    navigate('/repository-preview', {
+      state: {
+        repoUrl,
+        gitRef,
+        selectedDepth,
+      },
+    });
   };
 
   return (
@@ -130,10 +115,10 @@ export default function Submit() {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing Repository...
+                      Processing...
                     </>
                   ) : (
-                    'Continue to Outline'
+                    'Preview Repository'
                   )}
                 </Button>
               </div>
