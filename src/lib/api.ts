@@ -491,6 +491,31 @@ export class ApiClient {
         });
       }
 
+      async getJobEpisodes(jobId: string) {
+        return this.request<{
+          episodes: Array<{
+            id: string;
+            job_id: string;
+            episode_number: number;
+            title: string;
+            narrative_theme: string;
+            file_clusters?: Record<string, string[]>;
+            dependency_graph?: Record<string, string[]>;
+            architectural_boundary?: string | null;
+            conversation_hooks?: string[];
+            learning_objectives?: string[];
+            estimated_tokens?: number;
+            status?: string;
+            dialogue_script?: string | null;
+            audio_url?: string | null;
+            duration_seconds?: number | null;
+            created_at?: string;
+            updated_at?: string;
+          }>;
+          total: number;
+        }>(`/episodes/job/${jobId}`);
+      }
+
       // Agent monitoring endpoints
       async getAgentStats() {
         return this.request<any>('/admin/agents/stats');

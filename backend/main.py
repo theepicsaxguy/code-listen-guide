@@ -39,7 +39,7 @@ if __name__ == "__main__":
         sys.path.insert(0, str(project_root))
 
 from backend.api.dependencies import limiter
-from backend.api.routes import auth, jobs, outlines, payments, player, admin, parse, agents_admin
+from backend.api.routes import auth, jobs, outlines, payments, player, admin, parse, agents_admin, episodes
 from backend.api.routes.admin_workflows import router as admin_workflows_router
 from backend.api.routes.admin_routes.agent_test import router as agent_test_router
 from backend.api.routes.admin_plugins import (
@@ -244,6 +244,7 @@ app.include_router(traces_router)
 app.include_router(agent_test_router)
 app.include_router(parse.router)
 app.include_router(ws_router)
+app.include_router(episodes.router)
 
 
 def custom_openapi():

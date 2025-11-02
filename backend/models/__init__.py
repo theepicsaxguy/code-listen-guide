@@ -11,6 +11,7 @@ from . import payment
 from . import usage_log
 from . import user
 from . import workflow_checkpoint
+from . import episode
 from .workflow_definition import WorkflowDefinition
 from .workflow_revision import WorkflowRevision
 from .workflow_step import WorkflowStep
@@ -27,6 +28,7 @@ _IMPORTED_MODELS = (
     usage_log,
     user,
     workflow_checkpoint,
+    episode,
 )
 
 __all__ = ["Base"]
