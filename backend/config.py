@@ -9,14 +9,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Get the directory where this config file is located
 _CONFIG_DIR = Path(__file__).resolve().parent
-_ENV_FILE = _CONFIG_DIR / ".env"
+_PROJECT_ROOT = _CONFIG_DIR.parent
+_ENV_FILES = (
+    str(_PROJECT_ROOT / ".env.development"),
+    str(_PROJECT_ROOT / ".env"),
+    str(_CONFIG_DIR / ".env"),
+)
 
 
 class Settings(BaseSettings):
     """Runtime configuration with sensible defaults for local development."""
 
     model_config = SettingsConfigDict(
-        env_file=str(_ENV_FILE), case_sensitive=False, extra="ignore"
+        env_file=_ENV_FILES, case_sensitive=False, extra="ignore"
     )
 
     database_url: str = Field(..., min_length=1)

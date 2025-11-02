@@ -1,5 +1,41 @@
 # Migration Guide: chonkie Parser Integration & Cookie Auth
 
+## Release: v0.2.3
+**Date:** January 8, 2026
+
+This release fixes the most common startup traps when provisioning a fresh database.
+
+### 1. Alembic upgrades happen before metadata scaffolding
+
+**What changed:**
+- `backend/db/session.py` now runs Alembic migrations before touching `Base.metadata`
+  so branch-aware upgrades create the schema instead of the ORM doing it first.
+- Alembic is instructed to upgrade all heads, matching the branched history in
+  `backend/db/migrations/versions/`.
+
+**Migration required:** None. The application automatically applies all branches
+in order during startup.
+
+**Benefits:**
+- Prevents `relation already exists` crashes on brand-new databases.
+- Keeps divergent migration branches in sync without manual merge targeting.
+
+### 2. Postgres-friendly defaults for local tooling
+
+**What changed:**
+- `backend/alembic.ini` defaults to a Postgres connection string so CLI commands
+  use the same dialect as runtime migrations.
+- `backend/config.py` looks for project-level `.env.development` and `.env` files
+  before falling back to `backend/.env`, mirroring how developers usually store
+  credentials.
+
+**Migration required:** Update local environment files if they relied on the old
+SQLite default.
+
+**Benefits:**
+- Alembic CLI invocations succeed with Postgres-specific types.
+- Fresh checkouts no longer need duplicate env files to satisfy the settings loader.
+
 ## Release: v0.2.2
 **Date:** November 6, 2025
 
