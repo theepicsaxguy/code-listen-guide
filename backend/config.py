@@ -62,6 +62,8 @@ class Settings(BaseSettings):
     redis_url: str = Field(..., min_length=1)
     log_level: str = Field(default="INFO")
     tool_registry_check_interval_seconds: int = Field(default=900, ge=60)
+    # Feature flags
+    feature_episode_planning: bool = Field(default=True, description="Toggle new episode planning logic")
 
     @model_validator(mode="after")
     def ensure_postgres(cls, values: "Settings") -> "Settings":

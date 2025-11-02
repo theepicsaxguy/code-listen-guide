@@ -60,6 +60,16 @@ class Episode(Base):
     # Planning / educational metadata
     conversation_hooks = Column(JSONB)  # [questions / prompts driving dialogue]
     learning_objectives = Column(JSONB)  # [learning goals]
+    goals = Column(JSONB)  # High-level outcome goals for the episode (future use / editable)
+
+    # Dependency planning (graph-level semantics for Episode relationships)
+    dependency_inputs = Column(JSONB)  # Concepts / components this episode depends ON (ingress)
+    dependency_outputs = Column(JSONB)  # Concepts / components this episode produces / clarifies (egress)
+    depends_on = Column(JSONB)  # Episode IDs (UUID strings) that must precede this one (planning time)
+    leads_to = Column(JSONB)  # Episode IDs that commonly follow from this one (narrative suggestions)
+
+    # Scheduling / pacing
+    estimated_duration_minutes = Column(Integer)  # Planner's duration estimate for balancing arc
 
     # Generation metrics
     estimated_tokens = Column(Integer)  # Est tokens for dialogue gen

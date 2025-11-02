@@ -62,13 +62,14 @@ export default function RepositoryPreview() {
         );
 
         if (readmeFile) {
-          setReadmeContent(readmeFile[1].content || '');
+          const readmeData = readmeFile[1] as { content: string };
+          setReadmeContent(readmeData.content || '');
         }
       } catch (error: any) {
         toast({
           title: 'Failed to parse repository',
           description: error.message || 'Could not analyze the repository',
-          variant: 'destructive',
+          variant: 'danger',
         });
         navigate('/submit');
       } finally {
@@ -120,7 +121,7 @@ export default function RepositoryPreview() {
   return (
     <div className="min-h-screen bg-background">
       {/* Radial gradient accent */}
-      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+      <div className="fixed inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
 
       <header className="relative z-10 bg-surface border-b">
         <div className="container mx-auto px-6 py-4">
