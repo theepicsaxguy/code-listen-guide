@@ -83,6 +83,35 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Starting up...")
     init_db()
+    
+    # Auto-seed agents and tools if tables are empty
+    from backend.db.session import SessionLocal
+    from backend.models.agent_registry import AgentRegistry
+    from backend.models.tool_registry import ToolRegistry
+    from backend.scripts.seed_workflow_registry import seed_agents, seed_tools
+    
+    db = SessionLocal()
+    try:
+        agent_count = db.query(AgentRegistry).count()
+        tool_count = db.query(ToolRegistry).count()
+        
+        if agent_count == 0:
+            logger.info("No agents found, seeding agents_registry...")
+            seed_agents(db)
+        else:
+            logger.info(f"Found {agent_count} existing agents, skipping seed")
+        
+        if tool_count == 0:
+            logger.info("No tools found, seeding tools_registry...")
+            seed_tools(db)
+        else:
+            logger.info(f"Found {tool_count} existing tools, skipping seed")
+    except Exception as e:
+        logger.error(f"Error during auto-seeding: {e}", exc_info=True)
+        # Don't fail startup if seeding fails - allow manual seeding
+    finally:
+        db.close()
+    
     get_tool_registry_manager().reload()
     try:
         results = validate_registered_tools(raise_on_error=True)

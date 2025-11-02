@@ -1,5 +1,5 @@
-import { useGetToolRegistryApiV1AdminToolsRegistryGet } from "@/lib/api/generated";
-import type { AdminPlugin } from "@/lib/types";
+import { useGetCodeRegistryPluginsApiV1AdminToolsCodeRegistryGet } from "@/lib/api/generated";
+import type { ToolRegistryItem } from "@/lib/api/generated/codebaseAudiobookAPI.schemas";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,8 +14,8 @@ import {
 import { Package, Info } from "lucide-react";
 
 export default function AdminPlugins() {
-  const { data: pluginsResponse, isLoading } = useGetToolRegistryApiV1AdminToolsRegistryGet();
-  const plugins = pluginsResponse?.tools as AdminPlugin[] | undefined;
+  const { data: pluginsResponse, isLoading } = useGetCodeRegistryPluginsApiV1AdminToolsCodeRegistryGet();
+  const plugins = pluginsResponse?.tools as ToolRegistryItem[] | undefined;
 
   return (
     <div className="p-8 space-y-6">
