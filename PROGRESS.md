@@ -62,19 +62,41 @@ Upcoming work shifts from surface trust features to the **structural/content mod
 
 ---
 ## 4. Remaining Work (Future Sprints)
-### 4.1 Sprint 2 – Episode Architecture (NOT STARTED)
+### 4.1 Sprint 2 – Episode Architecture (IN PROGRESS – Foundational layer added)
 Goal: Shift from linear file enumeration to **relational episode graph**.
-Planned Components:
-- New `Episode` model (fields: id, job_id, ordinal, title, goals, dependency_inputs, dependency_outputs, depends_on[], leads_to[], status, script_draft, final_script, estimated_duration)
-- Dependency analyzer:
-  - Build import/inheritance graph
-  - Identify entry clusters
-  - Collapse trivial utility chains
-  - Detect architectural seams (framework boundaries, adapters, domain layers)
-- Relationship-based outline generator:
-  - Produces graph-first plan (episodes are nodes with edges representing conceptual progression)
-  - Duration balancing & narrative arc (intro → core systems → cross-cutting → scaling/edge cases)
-- Migration(s): create episodes table + relationship tables (if many-to-many via link table) or JSONB arrays initially (MVP choice)
+
+#### 4.1.1 Completed Foundations (this update)
+The minimum viable Episode substrate has been introduced to unblock planner & dialogue work:
+- `Episode` SQLAlchemy model + Alembic migration (table created; includes ordinal/number, title, status, draft/final script fields stubbed)
+- Pydantic schemas: `EpisodeResponse`, `EpisodesListResponse`
+- Read APIs: `GET /api/v1/episodes/job/{job_id}` (ordered list) and `GET /api/v1/episodes/{episode_id}`
+- Router inclusion in FastAPI app
+- Frontend API client method `getJobEpisodes(jobId)` (read-only consumption path)
+- Basic schema test (`test_episode_schema.py`) validating serialization shape
+
+These are intentionally read-only & schematic; no planner or dependency semantics yet. They allow the UI (or future admin tools) to display placeholder episodes once generation exists and reduce future migration churn.
+
+#### 4.1.2 Remaining (planned for remainder of Sprint 2)
+Planned Components (still outstanding unless noted):
+- Enrich `Episode` model with: `goals`, `dependency_inputs`, `dependency_outputs`, `depends_on[]`, `leads_to[]`, `estimated_duration` (JSONB arrays initially) – (NOT DONE)
+- Dependency analyzer service:
+  - Build import/inheritance graph (language-aware) – (NOT DONE)
+  - Identify entry clusters – (NOT DONE)
+  - Collapse trivial utility chains – (NOT DONE)
+  - Detect architectural seams (framework boundaries, adapters, domain layers) – (NOT DONE)
+- Episode planning service:
+  - Graph → episode grouping heuristic – (NOT DONE)
+  - Duration balancing & narrative arc (intro → core systems → cross-cutting → scaling/edge cases) – (NOT DONE)
+- Mutation & approval endpoints:
+  - `POST /api/v1/jobs/{job_id}/episodes/plan` (idempotent planner trigger) – (NOT DONE)
+  - `PATCH /api/v1/episodes/{id}` (title/goals edits) – (NOT DONE)
+  - Episode approval / locking mechanism – (NOT DONE)
+- Integration with Job lifecycle & statuses (planning → waiting_episode_approval) – (NOT DONE)
+- Cost/token distribution per episode – (NOT DONE)
+- Expanded tests: planner unit tests, dependency graph fixture, endpoint integration – (NOT DONE)
+- Documentation: developer guide for planner heuristics – (NOT DONE)
+
+Decision still pending on normalized join tables vs JSONB arrays; MVP path remains JSONB arrays for iteration speed.
 
 ### 4.2 Sprint 3 – Podcast Dialogue Layer (NOT STARTED)
 Goals: Convert static narration into engaging two-host conversation.
@@ -108,7 +130,7 @@ Planned Items:
 | Scope Selection | COMPLETE | Granular file selection & language priority |
 | Cost Estimation | COMPLETE | Real token counts & cost model implemented |
 | DB Schema (Scope Fields) | COMPLETE | Migration applied (multi-head env) |
-| Episode Model | PENDING | To be designed & migrated (Sprint 2) |
+| Episode Model | PARTIAL | Base table + read APIs & schemas present; dependency & planning fields pending |
 | Dependency Graph Engine | PENDING | Requires parsing & graph algorithms |
 | Outline → Episodes | PENDING | Replace legacy chapter planning |
 | Two-Host Personas | PENDING | Persona prompt design |
@@ -182,3 +204,95 @@ Foundation for informed user commitment is complete. We now pivot to **internal 
 
 ---
 *Generated automatically as a progress artifact. Update cadence: per major sprint milestone or weekly, whichever comes first.*
+
+---
+## 13. Incremental Update (Episode Planning Foundations – Added This Iteration)
+
+New implementation work completed since prior snapshot (without altering earlier log):
+
+### Backend Enhancements
+- Extended `Episode` model with planning & graph relationship fields: `goals`, `dependency_inputs`, `dependency_outputs`, `depends_on`, `leads_to`, `estimated_duration_minutes`.
+- Alembic migration `20251102_add_episode_planning_fields` added to evolve schema (appends to existing `episodes` table created earlier).
+- Added minimal `DependencyAnalyzer` service (`backend/services/dependency_analyzer.py`) providing:
+  - Basic Python import graph extraction via `ast`.
+  - Naive connected-component clustering → provisional episode clusters.
+  - Simple largest-first ordering heuristic.
+- Introduced feature flag `feature_episode_planning` (settings) to allow controlled rollout / rollback.
+- Implemented idempotent planning endpoint: `POST /episodes/job/{job_id}/plan` which:
+  - Validates feature flag and job existence.
+  - Requires prior scope selection (`selected_files`) to avoid blind planning.
+  - Generates one episode per cluster with provisional duration (3 min/file heuristic, min 5).
+  - Seeds basic placeholder metadata (conversation hooks, objectives, goals).
+  - Establishes linear `depends_on` / `leads_to` chain for initial sequencing.
+
+### Schema / API Surface
+- Updated `EpisodeResponse` schema to expose new planning fields (ensuring forward compatibility for future UI editing tools).
+- Maintained backward compatibility: existing episode list & get endpoints unchanged in route shape.
+
+### Testing
+- Extended `test_episode_schema.py` with:
+  - Field presence & default assertions for new planning attributes.
+  - Validation that planning cannot proceed without scope (`400` guard case).
+- Added `test_episode_planning_endpoint.py` covering happy-path planning given a seeded job with `selected_files`.
+
+### Outstanding / Next Steps (Focused Within Sprint 2 Scope)
+| Item | Status | Notes |
+|------|--------|-------|
+| End-to-end pytest run (coverage args failing locally) | PENDING | Need to reconcile coverage plugin availability or temporarily relax addopts for local run. |
+| Enrich Dependency Analyzer (multi-language, layer detection) | PENDING | Current implementation Python-only & structural; no semantic weighting yet. |
+| Episode duration balancing & narrative arc heuristics | PENDING | Currently linear order by cluster size; no pacing adjustment. |
+| Editable episode mutation (`PATCH /episodes/{id}`) | PENDING | Not yet exposed; will enable manual curation loop. |
+| Approval workflow integration (status transitions) | PENDING | Requires tying planning output to job lifecycle (e.g., `waiting_episode_approval`). |
+| Cost/token distribution per episode | PENDING | Need to apportion precomputed token estimate across cluster sizes. |
+| Documentation for planning heuristics | PENDING | To be added after heuristic stabilization. |
+
+### Risks Introduced / Mitigations
+- Simplistic clustering may over-fragment utility modules → plan to introduce a merge pass (threshold on cluster size) before dialogue phase.
+- Linear `depends_on` chain is artificial; future graph-based ordering (topological / centrality) will replace once richer analyzer is in place.
+- Migration ordering (date-based) intentionally precedes some later-dated migrations already present; will require a merge migration if chronology semantics enforced—currently acceptable while on development branch.
+
+### Immediate Technical Tasks Queued
+1. Resolve pytest coverage argument failure (install `pytest-cov` in active venv or guard addopts by plugin detection).
+2. Implement cluster merge heuristic (e.g., fold clusters with <2 files into nearest neighbor by import edge count).
+3. Add token/cost proportional allocation stub: `estimated_tokens = (cluster_file_count / total_selected_files) * job.estimated_total_tokens`.
+4. Introduce lightweight narrative arc tagging (intro/core/cross-cutting/scaling) based on cluster centrality (placeholder centrality = degree).
+
+This additive section leaves earlier historical context intact as requested.
+
+### Additional Update (Migration Lineage & Test Infra Stabilization – Current Session)
+
+Recent backend maintenance focused on ensuring long-term migration health and preparing episode planning for reliable evolution:
+
+#### Migration Lineage Consolidation
+- Identified multi-head Alembic divergence (scope selection vs episode planning paths) and introduced explicit merge migration (`8327b05d4d00_merge_scope_and_episode_heads`) documenting strategy for future merges.
+- Added subsequent episodes table migration (`20251123_add_episodes_table`) encapsulating `estimated_episodes` field on `jobs` and initial episode columns; later planning-fields migration builds atop this.
+- Confirmed presence of planning fields evolution migration (`20251102_add_episode_planning_fields`) enriching existing table instead of recreating.
+
+#### Configuration Adjustments
+- Updated `backend/config.py` to map uppercase environment variables (`DATABASE_URL`, `CHECKPOINT_DATABASE_URL`) via `alias` for pydantic settings – eliminating mismatch between env naming conventions and internal attribute resolution.
+- Relaxed strict Postgres enforcement for any environment starting with `test`, allowing SQLite usage in ephemeral test contexts.
+
+#### Test Infrastructure Refactor
+- Simplified `backend/tests/conftest.py` removing dual engine setup (previous conflict between Alembic-migrated session and metadata.create_all in-memory engine) – now single migration-driven path.
+- Added direct import of `Episode` model and unified `db_session` fixture tied to `SessionLocal` after migrations.
+- Ensured feature flags (`feature_episode_planning`) accessible in test environment by centralizing environment variable declarations early.
+
+#### Outstanding Issue (Episodes Table Absent in Test Run)
+- Despite migration presence, latest targeted test run still reports `UndefinedTable: episodes`; root cause isolated to migration ordering when applying `upgrade heads` under SQLite + dynamic stamping.
+- Action Deferred (per user request to skip further test stabilization) – next corrective step would be enforcing deterministic linear revision chain or invoking targeted upgrade sequence (`command.upgrade(cfg, revision)`) for episodes migration explicitly before tests.
+
+#### Next Suggested (Deferred) Steps
+1. Add diagnostic hook to print applied revision list inside test fixture post-upgrade.
+2. Verify `down_revision` chain continuity from initial schema through all added episodes-related migrations.
+3. If branch persists: create merge revision that sets single head at latest episodes planning migration and adjust earlier episode creation revision `down_revision` accordingly.
+4. Re-run minimal episode insertion test to confirm table existence.
+
+#### Summary of Current Session Additions
+| Item | Type | Status |
+|------|------|--------|
+| Merge migration for multi-head resolution | Infra | Added |
+| Config env aliasing for DB URLs | Config | Added |
+| Test conftest unification | Tests | Applied |
+| Episode table absent error investigation | Debug | In Progress (deferred) |
+
+This section augments prior progress without altering historical records, providing clarity on migration and test environment readiness for upcoming Episode planner enhancements.
