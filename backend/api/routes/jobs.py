@@ -18,6 +18,7 @@ from backend.api.schemas.job import (
 from backend.db.session import get_db
 from backend.models.job import Job
 from backend.models.user import User
+from backend.models.episode import Episode
 from backend.tasks.audiobook_tasks import start_audiobook_workflow
 from backend.tools.db_tools import (
     create_job_record,
@@ -227,6 +228,58 @@ async def start_job(
         start_audiobook_workflow, str(job.id), job.repo_url, job.depth_tier
     )
     return {"accepted": True}
+
+
+@router.post("/{job_id}/episodes/approve", operation_id="approveEpisodes", status_code=status.HTTP_200_OK)
+async def approve_episodes(
+    job_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Approve episode outline and transition job to scripting phase.
+    
+    This endpoint transitions the job from `waiting_episode_approval` to `scripting`,
+    allowing the workflow to proceed with dialogue generation.
+    """
+    job = get_job_record(db, job_id, current_user.id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Verify episodes exist
+    episodes = db.query(Episode).filter(Episode.job_id == str(job_id)).all()
+    if not episodes:
+        raise HTTPException(
+            status_code=400,
+            detail="No episodes found for this job. Please plan episodes first."
+        )
+    
+    # Check current status
+    if job.status not in {"waiting_episode_approval", "planning"}:
+        if job.status == "scripting" or job.status == "running":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Job already approved and in progress (status: {job.status})"
+            )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot approve episodes for job with status: {job.status}"
+        )
+    
+    # Transition to scripting status
+    job.status = "scripting"
+    job.current_stage = "episode_approval_complete"
+    db.commit()
+    db.refresh(job)
+    
+    logger.info(f"User {current_user.email} approved {len(episodes)} episodes for job {job_id}")
+    
+    return {
+        "success": True,
+        "message": f"Approved {len(episodes)} episodes",
+        "episode_count": len(episodes),
+        "job_status": job.status,
+    }
 
 
 @router.post("/{job_id}/cancel", operation_id="cancelJob", status_code=status.HTTP_200_OK)

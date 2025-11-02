@@ -12,8 +12,9 @@ import time
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from importlib import import_module
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from uuid import UUID
+import uuid
 
 import requests
 from agent_framework import (
@@ -31,6 +32,11 @@ from agent_framework import AIFunction, AgentExecutor, ChatMessage, Role, TextCo
 
 from backend.api.events import emit_job_event
 from backend.config import get_settings
+from backend.models.episode import Episode, EpisodeStatus
+from backend.models.job import Job as JobModel
+from backend.services.code_context_retriever import retrieve_episode_code_context
+from backend.services.dual_voice_synthesizer import DualVoiceSynthesizer
+from backend.agents.dialogue_agent import dialogue_agent, generate_dialogue
 from backend.tools.db_tools import (
     get_job_by_id,
     mark_job_status,
@@ -38,6 +44,8 @@ from backend.tools.db_tools import (
     persist_outline,
 )
 from backend.utils.checkpointing import PostgresCheckpointStorage
+from backend.db.session import SessionLocal
+from sqlalchemy.orm import Session
 from backend.workflows.dynamic_loader import (
     AgentDescriptor,
     RevisionDescriptor,
@@ -290,37 +298,191 @@ class AudiobookWorkflow:
         )
         self._update_instance(approval_step, status="running")
 
-        mark_job_status(self.job_id, "running", "scripting")
-        emit_job_event(self.job_id, {"stage": "scripting", "total": len(approved_outline.get("chapters", []))})
+        # Check for episodes - if using episode planning, episodes should already exist
+        # If episodes don't exist but feature flag is on, trigger planning
+        db = SessionLocal()
+        try:
+            episodes = db.query(Episode).filter(Episode.job_id == self.job_uuid).order_by(Episode.episode_number).all()
+            job = db.query(JobModel).filter(JobModel.id == self.job_uuid).first()
+            
+            # If feature flag is on but no episodes exist, trigger planning
+            if settings.feature_episode_planning and not episodes and job:
+                # Check if job has selected_files (required for planning)
+                selected_files = getattr(job, "selected_files", None)
+                if selected_files:
+                    logger.info(f"Triggering episode planning for job {self.job_id}")
+                    # Import here to avoid circular dependency
+                    from backend.api.routes.episodes import plan_episodes
+                    try:
+                        # Call planning endpoint logic directly
+                        from backend.services.dependency_analyzer import DependencyAnalyzer, ClusterPlan
+                        from backend.services.episode_planner import plan_episodes_from_clusters
+                        import math
+                        from math import ceil
+                        
+                        metadata = getattr(job, "metadata_json", None) or {}
+                        repo_root = metadata.get("local_repo_path", ".")
+                        primary_language = getattr(job, "primary_language", None)
+                        
+                        # Build dependency graph and clusters
+                        analyzer = DependencyAnalyzer(repo_root=repo_root, primary_language=primary_language)
+                        dependency_graph = analyzer.build_import_graph(selected_files)
+                        clusters = analyzer.cluster_graph(dependency_graph)
+                        architectural_layers = analyzer.identify_architectural_layers(clusters)
+                        
+                        repo_context = {
+                            "repo_name": job.repo_name,
+                            "repo_owner": job.repo_owner,
+                            "depth_tier": job.depth_tier,
+                        }
+                        
+                        # Generate LLM-based episode plans
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            episode_plans = loop.run_until_complete(
+                                plan_episodes_from_clusters(clusters, dependency_graph, architectural_layers, repo_context)
+                            )
+                        finally:
+                            loop.close()
+                        
+                        # Create episode records (simplified version - full logic is in episodes.py)
+                        total_tokens = getattr(job, "estimated_total_tokens", None)
+                        cluster_sizes = [len(cluster.files) for cluster in clusters]
+                        size_sum = sum(cluster_sizes) or 1
+                        
+                        for idx, (cluster, cluster_size, plan) in enumerate(zip(clusters, cluster_sizes, episode_plans), start=1):
+                            files = sorted(cluster.files)
+                            est_duration = int(math.ceil(len(files) * 3)) or 5
+                            est_tokens = None
+                            if total_tokens:
+                                proportional = total_tokens * (cluster_size / size_sum)
+                                est_tokens = int(ceil(proportional * 1.15))
+                            
+                            cluster_deps = {f: deps for f, deps in dependency_graph.items() if f in cluster.files}
+                            arch_boundary = None
+                            for layer_name, layer_cluster in architectural_layers.items():
+                                if cluster.files.intersection(layer_cluster.files):
+                                    arch_boundary = layer_name
+                                    break
+                            
+                            cluster_dict = {f"cluster_{idx}": files}
+                            
+                            ep = Episode(
+                                id=uuid.uuid4(),
+                                job_id=str(self.job_uuid),
+                                episode_number=idx,
+                                title=plan["title"],
+                                narrative_theme=plan["narrative_theme"],
+                                file_clusters=cluster_dict,
+                                dependency_graph=cluster_deps,
+                                architectural_boundary=arch_boundary,
+                                conversation_hooks=plan["conversation_hooks"],
+                                learning_objectives=plan["learning_objectives"],
+                                goals=plan.get("learning_objectives", []),
+                                dependency_inputs=[],
+                                dependency_outputs=[],
+                                depends_on=[],
+                                leads_to=[],
+                                estimated_duration_minutes=est_duration,
+                                estimated_tokens=est_tokens,
+                                status=EpisodeStatus.PLANNING,
+                            )
+                            db.add(ep)
+                        
+                        db.commit()
+                        
+                        # Reload episodes
+                        episodes = db.query(Episode).filter(Episode.job_id == self.job_uuid).order_by(Episode.episode_number).all()
+                        
+                        # Set up depends_on/leads_to chain
+                        if len(episodes) > 1:
+                            for i, ep in enumerate(episodes):
+                                if i > 0:
+                                    ep.depends_on = [str(episodes[i-1].id)]
+                                if i < len(episodes) - 1:
+                                    ep.leads_to = [str(episodes[i+1].id)]
+                            db.commit()
+                        
+                        logger.info(f"Created {len(episodes)} episodes for job {self.job_id}")
+                    except Exception as e:
+                        logger.error(f"Failed to auto-plan episodes: {e}", exc_info=e)
+                        # Continue with legacy workflow
+            
+            if episodes and settings.feature_episode_planning:
+                # Episode-based workflow
+                # Check if episodes are approved
+                if job and job.status not in {"scripting", "running"}:
+                    mark_job_status(self.job_id, "waiting_episode_approval", "episodes")
+                    emit_job_event(self.job_id, {"stage": "episode_approval_wait", "episode_count": len(episodes)})
+                    return {"episodes": len(episodes), "status": "waiting_approval"}
+                
+                # Proceed with episode-based dialogue generation
+                mark_job_status(self.job_id, "running", "scripting")
+                emit_job_event(self.job_id, {"stage": "scripting", "total": len(episodes)})
+                
+                script_step = self._get_step("scripting")
+                dialogue_scripts = await self._run_episode_dialogue(script_step, episodes)
+                self._record_step_output(script_step, {"data": dialogue_scripts})
+                self._update_instance(script_step)
+                
+                mark_job_status(self.job_id, "running", "audio")
+                emit_job_event(self.job_id, {"stage": "audio", "total": len(episodes)})
+                
+                audio_step = self._get_step("audio")
+                audio_urls = await self._run_episode_audio(audio_step, episodes, dialogue_scripts)
+                self._record_step_output(audio_step, {"data": audio_urls})
+                self._update_instance(audio_step)
+                
+                mark_job_status(self.job_id, "running", "postprocess")
+                emit_job_event(self.job_id, {"stage": "postprocess"})
+                
+                post_step = self._get_step("post_processing")
+                final_payload = await self._run_postprocess(post_step, audio_urls, {"episodes": len(episodes)})
+                self._record_step_output(post_step, final_payload)
+                self._update_instance(post_step, completed=True, status="completed")
+                
+                mark_job_status(self.job_id, "completed", "done")
+                emit_job_event(self.job_id, {"stage": "done"})
+                return {
+                    "deliverables": final_payload.get("text"),
+                    "episodes": len(episodes),
+                }
+            else:
+                # Legacy chapter-based workflow (fallback)
+                mark_job_status(self.job_id, "running", "scripting")
+                emit_job_event(self.job_id, {"stage": "scripting", "total": len(approved_outline.get("chapters", []))})
 
-        script_step = self._get_step("scripting")
-        scripts = await self._run_scripting(script_step, approved_outline)
-        self._record_step_output(script_step, {"data": scripts})
-        self._update_instance(script_step)
+                script_step = self._get_step("scripting")
+                scripts = await self._run_scripting(script_step, approved_outline)
+                self._record_step_output(script_step, {"data": scripts})
+                self._update_instance(script_step)
 
-        mark_job_status(self.job_id, "running", "audio")
-        emit_job_event(self.job_id, {"stage": "audio", "total": len(scripts)})
+                mark_job_status(self.job_id, "running", "audio")
+                emit_job_event(self.job_id, {"stage": "audio", "total": len(scripts)})
 
-        audio_step = self._get_step("audio")
-        audio_urls = await self._run_audio(audio_step, scripts)
-        persist_audio_parts(self.job_id, audio_urls)
-        self._record_step_output(audio_step, {"data": audio_urls})
-        self._update_instance(audio_step)
+                audio_step = self._get_step("audio")
+                audio_urls = await self._run_audio(audio_step, scripts)
+                persist_audio_parts(self.job_id, audio_urls)
+                self._record_step_output(audio_step, {"data": audio_urls})
+                self._update_instance(audio_step)
 
-        mark_job_status(self.job_id, "running", "postprocess")
-        emit_job_event(self.job_id, {"stage": "postprocess"})
+                mark_job_status(self.job_id, "running", "postprocess")
+                emit_job_event(self.job_id, {"stage": "postprocess"})
 
-        post_step = self._get_step("post_processing")
-        final_payload = await self._run_postprocess(post_step, audio_urls, approved_outline)
-        self._record_step_output(post_step, final_payload)
-        self._update_instance(post_step, completed=True, status="completed")
+                post_step = self._get_step("post_processing")
+                final_payload = await self._run_postprocess(post_step, audio_urls, approved_outline)
+                self._record_step_output(post_step, final_payload)
+                self._update_instance(post_step, completed=True, status="completed")
 
-        mark_job_status(self.job_id, "completed", "done")
-        emit_job_event(self.job_id, {"stage": "done"})
-        return {
-            "deliverables": final_payload.get("text"),
-            "chapters": len(approved_outline.get("chapters", [])),
-        }
+                mark_job_status(self.job_id, "completed", "done")
+                emit_job_event(self.job_id, {"stage": "done"})
+                return {
+                    "deliverables": final_payload.get("text"),
+                    "chapters": len(approved_outline.get("chapters", [])),
+                }
+        finally:
+            db.close()
 
     def cancel(self) -> None:
         mark_job_status(self.job_id, "cancelled", "cancelled")
@@ -473,6 +635,206 @@ class AudiobookWorkflow:
         return response, result_index
         )
         return response_text, result_index
+
+    async def _run_episode_dialogue(self, step: StepDescriptor, episodes: List[Episode]) -> List[str]:
+        """Generate dialogue scripts for episodes using dialogue agent.
+        
+        Args:
+            step: Scripting step descriptor
+            episodes: List of episode records from database
+            
+        Returns:
+            List of dialogue script texts (one per episode)
+        """
+        if not episodes:
+            return []
+        
+        # Get repository path for code context retrieval
+        job_record = get_job_by_id(self.job_id)
+        metadata = getattr(job_record, "metadata_json", None) or {}
+        repo_root = metadata.get("local_repo_path", ".")
+        
+        # Create dialogue agent
+        agent = await dialogue_agent(settings)
+        
+        dialogue_scripts: List[str] = [""] * len(episodes)
+        tasks = []
+        
+        for index, episode in enumerate(episodes):
+            tasks.append(
+                asyncio.create_task(
+                    self._run_single_episode_dialogue(
+                        agent,
+                        episode,
+                        repo_root,
+                        result_index=index,
+                    )
+                )
+            )
+        
+        if not tasks:
+            return []
+        
+        completed = 0
+        for future in asyncio.as_completed(tasks):
+            script_text, result_index = await future
+            dialogue_scripts[result_index] = script_text
+            completed += 1
+            emit_job_event(
+                self.job_id,
+                {"stage": "dialogue", "completed": completed, "total": len(episodes)},
+            )
+        
+        # Save dialogue scripts to episode records
+        db = SessionLocal()
+        try:
+            for episode, script in zip(episodes, dialogue_scripts):
+                episode.dialogue_script = script
+                episode.status = EpisodeStatus.SCRIPTING  # Mark as scripting complete
+            db.commit()
+        finally:
+            db.close()
+        
+        return dialogue_scripts
+
+    async def _run_single_episode_dialogue(
+        self,
+        agent: Any,
+        episode: Episode,
+        repo_root: str,
+        *,
+        result_index: int,
+    ) -> tuple[str, int]:
+        """Generate dialogue script for a single episode.
+        
+        Args:
+            agent: Dialogue agent instance
+            episode: Episode database record
+            repo_root: Repository root path
+            result_index: Index in result list
+            
+        Returns:
+            Tuple of (dialogue_script_text, result_index)
+        """
+        # Retrieve code context for episode
+        file_clusters = episode.file_clusters or {}
+        dependency_graph = episode.dependency_graph or {}
+        code_snippets = retrieve_episode_code_context(repo_root, file_clusters, dependency_graph)
+        
+        # Build episode payload for dialogue agent
+        episode_payload = {
+            "narrative_theme": episode.narrative_theme,
+            "file_clusters": file_clusters,
+            "conversation_hooks": episode.conversation_hooks or [],
+            "learning_objectives": episode.learning_objectives or [],
+            "dependency_graph": dependency_graph,
+            "architectural_boundary": episode.architectural_boundary,
+            "code_context_snippets": code_snippets[:10],  # Limit to 10 snippets for token efficiency
+            "episode_number": episode.episode_number,
+            "episode_title": episode.title,
+        }
+        
+        try:
+            # Format episode payload as JSON for agent
+            payload_text = json.dumps(episode_payload, indent=2, ensure_ascii=False)
+            message = ChatMessage(
+                role=Role.USER,
+                contents=[TextContent(text=f"Generate dialogue for this episode:\n\n{payload_text}")],
+            )
+            
+            executor = AgentExecutor(agent)
+            builder = WorkflowBuilder().set_start_executor(executor)
+            workflow = builder.build()
+            
+            final_text: Optional[str] = None
+            async for event in workflow.run_stream(message):
+                if isinstance(event, AgentRunEvent):
+                    result = event.data
+                    if result and result.text:
+                        final_text = result.text.strip()
+                    elif result:
+                        # Try to extract text from response
+                        for msg in result.messages:
+                            if msg.text:
+                                final_text = msg.text.strip()
+                                break
+            
+            if not final_text:
+                raise ValueError("Dialogue agent returned empty response")
+            
+            return final_text, result_index
+        except Exception as e:
+            logger.error(f"Dialogue generation failed for episode {episode.id}: {e}", exc_info=e)
+            # Return fallback dialogue
+            fallback = f"Marcus: Welcome to {episode.title}. {episode.narrative_theme}\n\nSara: Let's dive into the code and see how this works."
+            return fallback, result_index
+
+    async def _run_episode_audio(
+        self,
+        step: StepDescriptor,
+        episodes: List[Episode],
+        dialogue_scripts: List[str],
+    ) -> List[str]:
+        """Synthesize dual-voice audio for episodes.
+        
+        Args:
+            step: Audio step descriptor
+            episodes: Episode records
+            dialogue_scripts: Dialogue script texts (one per episode)
+            
+        Returns:
+            List of audio URLs (one per episode)
+        """
+        if not episodes or not dialogue_scripts:
+            return []
+        
+        if len(episodes) != len(dialogue_scripts):
+            logger.error(f"Episode count ({len(episodes)}) != script count ({len(dialogue_scripts)})")
+            return []
+        
+        # Initialize dual voice synthesizer
+        synthesizer = DualVoiceSynthesizer(
+            api_key=settings.openai_api_key,
+            model="tts-1-hd",
+        )
+        
+        audio_urls: List[str] = []
+        db = SessionLocal()
+        try:
+            for episode, script in zip(episodes, dialogue_scripts):
+                try:
+                    # Update episode status
+                    episode.status = EpisodeStatus.SYNTHESIZING
+                    db.commit()
+                    
+                    # Synthesize dialogue
+                    audio_path, turns = await synthesizer.synthesize_dialogue(script)
+                    
+                    # Upload to S3 (using storage tools)
+                    from backend.tools.storage_tools import upload_to_s3
+                    s3_key = f"jobs/{self.job_id}/episodes/{episode.episode_number}.mp3"
+                    audio_url = upload_to_s3(audio_path, s3_key)
+                    
+                    # Save to episode
+                    episode.audio_url = audio_url
+                    episode.duration_seconds = sum(turn.word_count * 60 // 150 for turn in turns)  # Rough estimate: 150 words/min
+                    episode.status = EpisodeStatus.COMPLETED
+                    db.commit()
+                    
+                    audio_urls.append(audio_url)
+                    emit_job_event(
+                        self.job_id,
+                        {"stage": "audio", "completed": len(audio_urls), "total": len(episodes)},
+                    )
+                except Exception as e:
+                    logger.error(f"Audio synthesis failed for episode {episode.id}: {e}", exc_info=e)
+                    episode.status = EpisodeStatus.FAILED
+                    db.commit()
+                    audio_urls.append("")  # Placeholder for failed episode
+        finally:
+            db.close()
+        
+        return audio_urls
 
     async def _run_audio(self, step: StepDescriptor, scripts: List[str]) -> List[str]:
         if not scripts:

@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Submit from "./pages/Submit";
 import JobDetails from "./pages/JobDetails";
 import OutlinePreview from "./pages/OutlinePreview";
+import EpisodeOutlinePreview from "./pages/EpisodeOutlinePreview";
 import Player from "./pages/Player";
 import NotFound from "./pages/NotFound";
 import WhyWeExist from "./pages/WhyWeExist";
@@ -58,7 +59,8 @@ const App = () => (
               <Route path="/scope-selection" element={<ScopeSelection />} />
               <Route path="/cost-estimate" element={<CostEstimate />} />
               <Route path="/jobs/:jobId" element={<JobDetails />} />
-              <Route path="/jobs/:jobId/outline" element={<OutlinePreview />} />
+              <Route path="/jobs/:jobId/outline" element={<EpisodeOutlinePreview />} />
+              <Route path="/jobs/:jobId/outline-legacy" element={<OutlinePreview />} />
               <Route path="/player/:jobId" element={<Player />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminLayout />}>

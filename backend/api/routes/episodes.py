@@ -8,12 +8,14 @@ from backend.db.session import get_db
 from backend.models.episode import Episode, EpisodeStatus
 from backend.models.job import Job
 from backend.api.schemas.episode import EpisodeResponse, EpisodesListResponse
-from backend.services.dependency_analyzer import DependencyAnalyzer
+from backend.services.dependency_analyzer import DependencyAnalyzer, ClusterPlan
+from backend.services.episode_planner import plan_episodes_from_clusters
 from math import ceil
 from backend.config import get_settings
 from sqlalchemy import func
 import math
 import uuid
+import asyncio
 
 # TODO: integrate auth dependency when user system active
 def get_current_user_optional():  # placeholder
@@ -87,40 +89,81 @@ def plan_episodes(
         # Fallback: cannot plan without scope selection for MVP
         raise HTTPException(status_code=400, detail="Job has no selected files scope to plan episodes")
 
-    analyzer = DependencyAnalyzer(repo_root=job.metadata.get("local_repo_path", "."), primary_language=getattr(job, "primary_language", None))  # type: ignore[attr-defined]
-    cluster_dicts = analyzer.plan_episodes(selected_files)
+    # Get repository path from metadata
+    metadata = getattr(job, "metadata_json", None) or {}
+    repo_root = metadata.get("local_repo_path", ".")
+    primary_language = getattr(job, "primary_language", None)
+
+    # Build dependency graph and clusters
+    analyzer = DependencyAnalyzer(repo_root=repo_root, primary_language=primary_language)
+    dependency_graph = analyzer.build_import_graph(selected_files)
+    clusters = analyzer.cluster_graph(dependency_graph)
+    
+    # Identify architectural layers
+    architectural_layers = analyzer.identify_architectural_layers(clusters)
+    
+    # Prepare repository context for LLM
+    repo_context = {
+        "repo_name": job.repo_name,
+        "repo_owner": job.repo_owner,
+        "depth_tier": job.depth_tier,
+    }
+
+    # Generate LLM-based episode plans
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        episode_plans = loop.run_until_complete(
+            plan_episodes_from_clusters(clusters, dependency_graph, architectural_layers, repo_context)
+        )
+    finally:
+        loop.close()
 
     # Cost/token allocation heuristic: distribute job.estimated_total_tokens across clusters proportionally
     total_tokens = getattr(job, "estimated_total_tokens", None)
-    cluster_sizes = [sum(len(v) for v in cluster.values()) for cluster in cluster_dicts]
+    cluster_sizes = [len(cluster.files) for cluster in clusters]
     size_sum = sum(cluster_sizes) or 1
 
-    # Heuristic: each cluster becomes an episode
+    # Create episode records with LLM-generated metadata
     episodes: list[Episode] = []
-    for idx, (cluster, cluster_size) in enumerate(zip(cluster_dicts, cluster_sizes), start=1):
+    for idx, (cluster, cluster_size, plan) in enumerate(zip(clusters, cluster_sizes, episode_plans), start=1):
         # Flatten file list length for duration heuristic (approx 3 mins per file baseline)
-        files = [f for files in cluster.values() for f in files]
+        files = sorted(cluster.files)
         est_duration = int(math.ceil(len(files) * 3)) or 5
         est_tokens = None
         if total_tokens:
             proportional = total_tokens * (cluster_size / size_sum)
             # Add small overhead for dialogue connective tissue
             est_tokens = int(ceil(proportional * 1.15))
+        
+        # Extract cluster-specific dependency graph
+        cluster_deps = {f: deps for f, deps in dependency_graph.items() if f in cluster.files}
+        
+        # Find architectural boundary for this cluster
+        arch_boundary = None
+        for layer_name, layer_cluster in architectural_layers.items():
+            if cluster.files.intersection(layer_cluster.files):
+                arch_boundary = layer_name
+                break
+
+        # Convert cluster to dict format for JSONB storage
+        cluster_dict = {f"cluster_{idx}": files}
+
         ep = Episode(
             id=uuid.uuid4(),
             job_id=job_id,
             episode_number=idx,
-            title=f"Episode {idx}",
-            narrative_theme="Initial thematic grouping (auto)",
-            file_clusters=cluster,
-            dependency_graph=None,
-            architectural_boundary=None,
-            conversation_hooks=["Explain key relationships", "Discuss trade-offs"],
-            learning_objectives=["Understand grouped files purpose"],
-            goals=["Refine in editor"],
+            title=plan["title"],
+            narrative_theme=plan["narrative_theme"],
+            file_clusters=cluster_dict,
+            dependency_graph=cluster_deps,
+            architectural_boundary=arch_boundary,
+            conversation_hooks=plan["conversation_hooks"],
+            learning_objectives=plan["learning_objectives"],
+            goals=plan.get("learning_objectives", []),  # Use learning objectives as goals
             dependency_inputs=[],
             dependency_outputs=[],
-            depends_on=[f"Episode {idx-1}" ] if idx > 1 else [],
+            depends_on=[],
             leads_to=[],
             estimated_duration_minutes=est_duration,
             estimated_tokens=est_tokens,
@@ -131,10 +174,13 @@ def plan_episodes(
 
     db.commit()
 
-    # Post-process leads_to after all created
+    # Post-process depends_on and leads_to after all created (linear chain for now)
     if len(episodes) > 1:
-        for i, ep in enumerate(episodes[:-1]):
-            ep.leads_to = [episodes[i+1].id.hex]
+        for i, ep in enumerate(episodes):
+            if i > 0:
+                ep.depends_on = [str(episodes[i-1].id)]
+            if i < len(episodes) - 1:
+                ep.leads_to = [str(episodes[i+1].id)]
         db.commit()
 
     return EpisodesListResponse(episodes=episodes, total=len(episodes))
