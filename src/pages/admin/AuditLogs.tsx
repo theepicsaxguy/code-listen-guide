@@ -1,5 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api";
+import { useGetAuditLogsApiV1AdminAuditLogsGet } from "@/lib/api/generated";
 import { Card, CardContent } from "@/components/ui/card";
 import {
  Table,
@@ -11,10 +10,7 @@ import {
 } from "@/components/ui/table";
 
 export default function AdminAuditLogs() {
- const { data, isLoading } = useQuery({
- queryKey: ["audit-logs"],
- queryFn: () => apiClient.request("/admin/audit-logs"),
- });
+ const { data, isLoading } = useGetAuditLogsApiV1AdminAuditLogsGet();
 
  return (
  <div className="p-8 space-y-6">

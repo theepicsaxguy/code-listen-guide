@@ -1,7 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-// TODO: Update imports once API is generated
-// import { usePostAuthLogin, usePostAuthRegister, usePostAuthRefresh, useGetAuthMe, usePostAuthLogout } from '@/lib/api/generated';
-// import type { UserResponse, TokenResponse, UserCreate, TokenRefreshRequest } from '@/lib/api/generated';
+import { 
+  useLoginApiV1AuthLoginPost,
+  useRegisterApiV1AuthRegisterPost,
+  useRefreshTokenApiV1AuthRefreshPost,
+  useGetMeApiV1AuthMeGet,
+  useLogoutApiV1AuthLogoutPost,
+} from '@/lib/api/generated';
+import type { UserResponse, TokenResponse, TokenRefreshRequest } from '@/lib/api/generated';
 import { User } from '@/lib/types';
 
 interface AuthContextType {
@@ -23,12 +28,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
-  // TODO: Use generated hooks once API is generated:
-  // const loginMutation = usePostAuthLogin();
-  // const registerMutation = usePostAuthRegister();
-  // const refreshMutation = usePostAuthRefresh();
-  // const getMeQuery = useGetAuthMe();
-  // const logoutMutation = usePostAuthLogout();
+  const loginMutation = useLoginApiV1AuthLoginPost();
+  const registerMutation = useRegisterApiV1AuthRegisterPost();
+  const refreshMutation = useRefreshTokenApiV1AuthRefreshPost();
+  const getMeQuery = useGetMeApiV1AuthMeGet({ query: { enabled: false } });
+  const logoutMutation = useLogoutApiV1AuthLogoutPost();
 
   // Restore session on mount
   useEffect(() => {
@@ -38,15 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
 
         if (storedToken) {
-          // Token is injected via mutator, no need to set it on a client
-          
           // Try to get user data with stored token
-          // TODO: Use generated hook: const { data: userData } = await getMeQuery.refetch();
           try {
-            // Placeholder - will use generated hook after generation
-            const userData = null as any; // await getMeQuery.refetch().then(r => r.data);
-            if (userData) {
-              setUser(userData);
+            const result = await getMeQuery.refetch();
+            if (result.data) {
+              setUser(result.data as unknown as User);
               if (storedRefreshToken) {
                 setRefreshToken(storedRefreshToken);
               }
@@ -62,18 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // If no token or token expired, try refresh token
         if (storedRefreshToken) {
           try {
-            // TODO: Use generated hook: const { data: newTokens } = await refreshMutation.mutateAsync({ refresh_token: storedRefreshToken });
-            const newTokens = null as any; // await refreshMutation.mutateAsync({ refresh_token: storedRefreshToken });
+            const newTokens = await refreshMutation.mutateAsync({
+              data: { refresh_token: storedRefreshToken },
+            });
             if (newTokens) {
               localStorage.setItem(AUTH_TOKEN_KEY, newTokens.access_token);
               localStorage.setItem(REFRESH_TOKEN_KEY, newTokens.refresh_token);
               setRefreshToken(newTokens.refresh_token);
               
               // Get user data with new token
-              // TODO: Use generated hook
-              const userData = null as any; // await getMeQuery.refetch().then(r => r.data);
-              if (userData) {
-                setUser(userData);
+              const userResult = await getMeQuery.refetch();
+              if (userResult.data) {
+                setUser(userResult.data as unknown as User);
               }
               setIsLoading(false);
               return;
@@ -93,15 +93,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     restoreSession();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async (email: string, password: string) => {
-    // TODO: Replace with generated hook after generation:
-    // const response = await loginMutation.mutateAsync({
-    //   username: email, // OAuth2PasswordRequestForm uses 'username' field
-    //   password: password,
-    // });
-    const response = null as any;
+    const response = await loginMutation.mutateAsync({
+      data: {
+        username: email, // OAuth2PasswordRequestForm uses 'username' field
+        password: password,
+      },
+    });
     
     // Store tokens in localStorage for persistence
     if (response?.access_token) {
@@ -112,25 +112,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRefreshToken(response.refresh_token);
     }
     
-    // TODO: Get user data via generated hook after login
-    // const userData = await getMeQuery.refetch().then(r => r.data);
-    if (response?.user) {
-      setUser(response.user);
+    // Get user data via generated hook after login
+    const userResult = await getMeQuery.refetch();
+    if (userResult.data) {
+      setUser(userResult.data as unknown as User);
     }
   };
 
   const register = async (email: string, password: string, name: string) => {
-    // TODO: Replace with generated hook after generation:
-    // const response = await registerMutation.mutateAsync({ email, password, name });
-    const response = null as any;
+    const response = await registerMutation.mutateAsync({
+      data: { email, password, name },
+    });
     // Auto-login after registration
     await login(email, password);
   };
 
   const logout = async () => {
     try {
-      // TODO: Replace with generated hook after generation:
-      // await logoutMutation.mutateAsync();
+      await logoutMutation.mutateAsync();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -147,9 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const refreshInterval = setInterval(async () => {
       try {
-        // TODO: Use generated hook after generation:
-        // const { data: newTokens } = await refreshMutation.mutateAsync({ refresh_token: refreshToken });
-        const newTokens = null as any;
+        const newTokens = await refreshMutation.mutateAsync({
+          data: { refresh_token: refreshToken },
+        });
         if (newTokens) {
           localStorage.setItem(AUTH_TOKEN_KEY, newTokens.access_token);
           localStorage.setItem(REFRESH_TOKEN_KEY, newTokens.refresh_token);
@@ -163,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 60 * 60 * 1000); // Check every hour
 
     return () => clearInterval(refreshInterval);
-  }, [refreshToken]);
+  }, [refreshToken, refreshMutation]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshToken }}>

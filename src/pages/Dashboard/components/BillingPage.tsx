@@ -4,7 +4,7 @@ import { useUser, usePaymentHistory } from '../hooks';
 import type { Payment } from '../../../lib/types';
 
 
-import { apiClient } from '../../../lib/api';
+// No direct API calls - uses hooks from parent
 
 export const BillingPage: React.FC = () => {
  const { data: user } = useUser();

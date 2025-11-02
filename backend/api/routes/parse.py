@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/parse", tags=["parse"])
 
 
-@router.post("/repository", response_model=ParseRepositoryResponse)
+@router.post("/repository", operation_id="parseRepository", response_model=ParseRepositoryResponse)
 async def parse_repository(
     request: ParseRepositoryRequest,
     current_user: User = Depends(get_current_user),

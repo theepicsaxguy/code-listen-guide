@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { apiClient } from '@/lib/api';
+import {
+  useGetJobApiV1JobsJobIdGet,
+  useGetOutlineApiV1JobsJobIdOutlineGet,
+  useApproveOutlineApiV1JobsJobIdOutlineApprovePost,
+  useParseRepositoryApiV1ParseRepositoryPost,
+} from '@/lib/api/generated';
 import { Outline, Job } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,86 +20,72 @@ export default function OutlinePreview() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [job, setJob] = useState<Job | null>(null);
-  const [outline, setOutline] = useState<Outline | null>(null);
   const [repositoryData, setRepositoryData] = useState<Record<string, FileNode> | null>(null);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isApproving, setIsApproving] = useState(false);
 
+  const { data: jobData, isLoading: jobLoading } = useGetJobApiV1JobsJobIdGet(
+    jobId || '',
+    { query: { enabled: !!jobId } }
+  );
+  const { data: outlineData, isLoading: outlineLoading, refetch: refetchOutline } = useGetOutlineApiV1JobsJobIdOutlineGet(
+    jobId || '',
+    { query: { enabled: !!jobId } }
+  );
+  const approveMutation = useApproveOutlineApiV1JobsJobIdOutlineApprovePost();
+  const parseMutation = useParseRepositoryApiV1ParseRepositoryPost();
+
+  const job = jobData as unknown as Job | null;
+  const outline = outlineData as unknown as Outline | null;
+  const isLoading = jobLoading || outlineLoading;
+  const isApproving = approveMutation.isPending;
+
+  // Fetch repository data when job loads
   useEffect(() => {
-    let isActive = true;
-    if (!jobId) {
-      setJob(null);
-      setOutline(null);
-      setIsLoading(false);
-      return;
-    }
+    if (!job || !jobId) return;
 
-    const fetchData = async () => {
-      setIsLoading(true);
+    const fetchRepoData = async () => {
       try {
-        const [jobData, outlineData] = await Promise.all([
-          apiClient.getJob(jobId),
-          apiClient.getOutline(jobId),
-        ]);
-
-        if (!isActive) return;
-
-        setJob(jobData as Job);
-        setOutline(outlineData as Outline);
-
-        // Fetch repository analysis if available
-        try {
-          const parseResponse = await apiClient.parseRepository({
-            repo_url: jobData.repo_url,
-            git_ref: jobData.git_ref || 'main',
-          });
-          if (!isActive) return;
-          // Convert ParsedFile to FileNode format
-          const fileNodes: Record<string, FileNode> = {};
-          Object.entries(parseResponse.modules).forEach(([path, file]) => {
-            fileNodes[path] = {
-              path: file.path,
-              language: file.language,
-              size_bytes: file.metadata.size_bytes,
-              tags: file.metadata.tags,
-              summary: file.metadata.summary,
-              complexity: file.metadata.complexity,
-              content: file.content,
-              num_chunks: file.metadata.num_chunks,
-              total_tokens: file.metadata.total_tokens,
-            };
-          });
-          setRepositoryData(fileNodes);
-        } catch (parseError) {
-          console.warn('Failed to fetch repository data:', parseError);
-        }
-      } catch (error: unknown) {
-        if (!isActive) return;
-        setOutline(null);
-        toast({
-          title: 'Failed to load outline',
-          description:
-            error instanceof Error ? error.message : 'Unable to fetch outline details.',
-          variant: 'danger',
+        const parseResponse = await parseMutation.mutateAsync({
+          data: {
+            repo_url: job.repo_url,
+            git_ref: job.git_ref || 'main',
+          },
         });
-      } finally {
-        if (isActive) setIsLoading(false);
+        // Convert ParsedFile to FileNode format
+        const fileNodes: Record<string, FileNode> = {};
+        Object.entries(parseResponse.modules).forEach(([path, file]: [string, any]) => {
+          fileNodes[path] = {
+            path: file.path,
+            language: file.language,
+            size_bytes: file.metadata.size_bytes,
+            tags: file.metadata.tags,
+            summary: file.metadata.summary,
+            complexity: file.metadata.complexity,
+            content: file.content,
+            num_chunks: file.metadata.num_chunks,
+            total_tokens: file.metadata.total_tokens,
+          };
+        });
+        setRepositoryData(fileNodes);
+      } catch (parseError) {
+        console.warn('Failed to fetch repository data:', parseError);
       }
     };
-    fetchData();
-    return () => {
-      isActive = false;
-    };
-  }, [jobId, toast]);
+
+    fetchRepoData();
+  }, [job, jobId, parseMutation]);
 
   const handleApprove = async () => {
     if (!jobId || !outline) return;
 
-    setIsApproving(true);
     try {
-      const response = await apiClient.approveOutline(jobId, outline.id);
+      const response = await approveMutation.mutateAsync({
+        jobId: jobId,
+        data: {
+          outline_id: outline.id,
+          // Payment amount is optional - backend will calculate if not provided
+        },
+      });
       
       toast({
         title: 'Outline approved!',
@@ -110,8 +101,6 @@ export default function OutlinePreview() {
         description: error.message,
         variant: 'danger',
       });
-    } finally {
-      setIsApproving(false);
     }
   };
 

@@ -6,48 +6,31 @@ import { StatCard } from "@/components/admin/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { apiClient } from "@/lib/api";
+import {
+  useGetDashboardStatsApiV1AdminDashboardStatsGet,
+  useListWorkflowsApiV1AdminWorkflowsGet,
+  useGetAgentRegistryApiV1AdminAgentsRegistryGet,
+  useGetToolRegistryApiV1AdminToolsRegistryGet,
+} from "@/lib/api/generated";
 import { DashboardStats } from "@/types/admin";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
 
 export default function AdminDashboard() {
- const [stats, setStats] = useState<DashboardStats | null>(null);
- const [isLoading, setIsLoading] = useState(true);
+ const { data: stats, isLoading } = useGetDashboardStatsApiV1AdminDashboardStatsGet();
 
- const { data: agents } = useQuery({
-   queryKey: ["admin-agents"],
-   queryFn: () => apiClient.listAgents(),
-   staleTime: 60000, // 1 minute
+ const { data: workflows } = useListWorkflowsApiV1AdminWorkflowsGet({
+   query: { staleTime: 60000 },
  });
 
- const { data: plugins } = useQuery({
-   queryKey: ["admin-plugins"],
-   queryFn: () => apiClient.listPlugins(),
-   staleTime: 60000,
+ const { data: agentsResponse } = useGetAgentRegistryApiV1AdminAgentsRegistryGet({
+   query: { staleTime: 60000 },
  });
+ const agents = agentsResponse?.agents;
 
- const { data: workflows } = useQuery({
-   queryKey: ["admin-workflows"],
-   queryFn: () => apiClient.listWorkflows(),
-   staleTime: 60000,
+ const { data: pluginsResponse } = useGetToolRegistryApiV1AdminToolsRegistryGet({
+   query: { staleTime: 60000 },
  });
-
- useEffect(() => {
- const fetchStats = async () => {
- try {
- const data = await apiClient.getDashboardStats();
- setStats(data);
- } catch (error) {
- toast.error("Failed to load dashboard stats");
- console.error(error);
- } finally {
- setIsLoading(false);
- }
- };
-
- fetchStats();
- }, []);
+ const plugins = pluginsResponse?.tools;
 
  if (isLoading) {
  return (

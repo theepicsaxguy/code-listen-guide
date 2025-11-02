@@ -1,6 +1,11 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useGetToolRegistryApiV1AdminToolsRegistryGet,
+  useCreatePluginApiV1AdminPluginsPost,
+  useUpdatePluginApiV1AdminPluginsPluginIdPatch,
+  useDeletePluginApiV1AdminPluginsPluginIdDelete,
+} from "@/lib/api/generated";
 import type { AdminPlugin } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,60 +39,45 @@ export default function AdminPlugins() {
   const [editingPlugin, setEditingPlugin] = useState<AdminPlugin | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: plugins, isLoading } = useQuery<AdminPlugin[]>({
-    queryKey: ["admin-plugins"],
-    queryFn: () => apiClient.listPlugins(),
-  });
+  const { data: pluginsResponse, isLoading } = useGetToolRegistryApiV1AdminToolsRegistryGet();
+  const plugins = pluginsResponse?.tools as AdminPlugin[] | undefined;
 
-  type PluginMutationPayload = {
-    name: string;
-    module_path: string;
-    function_name: string;
-    description?: string;
-    input_schema?: Record<string, unknown>;
-    output_schema?: Record<string, unknown>;
-    stable_slug?: string;
-    semantic_version?: string;
-    owning_team?: string;
-    authorization_scope?: string;
-    approval_mode?: string;
-    cost_profile?: Record<string, unknown>;
-  };
-
-  const createMutation = useMutation({
-    mutationFn: (plugin: PluginMutationPayload) => apiClient.createPlugin(plugin),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-plugins"] });
-      setIsCreateDialogOpen(false);
-      toast.success("Plugin created successfully");
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to create plugin: ${error.message}`);
+  const createMutation = useCreatePluginApiV1AdminPluginsPost({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["listPluginsApiV1AdminPluginsGet"] });
+        setIsCreateDialogOpen(false);
+        toast.success("Plugin created successfully");
+      },
+      onError: (error: Error) => {
+        toast.error(`Failed to create plugin: ${error.message}`);
+      },
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<PluginMutationPayload> }) =>
-      apiClient.updatePlugin(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-plugins"] });
-      setIsEditDialogOpen(false);
-      setEditingPlugin(null);
-      toast.success("Plugin updated successfully");
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to update plugin: ${error.message}`);
+  const updateMutation = useUpdatePluginApiV1AdminPluginsPluginIdPatch({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["listPluginsApiV1AdminPluginsGet"] });
+        setIsEditDialogOpen(false);
+        setEditingPlugin(null);
+        toast.success("Plugin updated successfully");
+      },
+      onError: (error: Error) => {
+        toast.error(`Failed to update plugin: ${error.message}`);
+      },
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiClient.deletePlugin(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-plugins"] });
-      toast.success("Plugin deleted successfully");
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to delete plugin: ${error.message}`);
+  const deleteMutation = useDeletePluginApiV1AdminPluginsPluginIdDelete({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["listPluginsApiV1AdminPluginsGet"] });
+        toast.success("Plugin deleted successfully");
+      },
+      onError: (error: Error) => {
+        toast.error(`Failed to delete plugin: ${error.message}`);
+      },
     },
   });
 
@@ -98,7 +88,7 @@ export default function AdminPlugins() {
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this plugin?")) {
-      deleteMutation.mutate(id);
+      deleteMutation.mutateAsync(id);
     }
   };
 
@@ -129,7 +119,7 @@ export default function AdminPlugins() {
             </DialogHeader>
             <PluginForm
               onSubmit={(data) => {
-                createMutation.mutate(data as PluginMutationPayload);
+                createMutation.mutateAsync({ data });
               }}
               isLoading={createMutation.isPending}
             />
@@ -249,7 +239,7 @@ export default function AdminPlugins() {
             <PluginForm
               initialData={editingPlugin}
               onSubmit={(data) => {
-                updateMutation.mutate({ id: editingPlugin.id, updates: data });
+                updateMutation.mutateAsync({ pluginId: editingPlugin.id, data });
               }}
               isLoading={updateMutation.isPending}
             />

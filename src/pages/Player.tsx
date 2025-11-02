@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { apiClient } from '@/lib/api';
+import { useGetAudiobookPlayerDataApiV1PlayerJobIdGet } from '@/lib/api/generated';
+import type { GetAudiobookPlayerDataApiV1PlayerJobIdGet200 } from '@/lib/api/generated';
 import { PlayerData, Chapter } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,8 +18,13 @@ export default function Player() {
   const { toast } = useToast();
   const audioRef = useRef<HTMLAudioElement>(null);
   
-  const [playerData, setPlayerData] = useState<PlayerData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: playerDataResponse, isLoading } = useGetAudiobookPlayerDataApiV1PlayerJobIdGet(
+    jobId || '',
+    { query: { enabled: !!jobId } }
+  );
+  
+  const playerData = playerDataResponse as unknown as PlayerData | null;
+  
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -26,11 +32,6 @@ export default function Player() {
   const [isMuted, setIsMuted] = useState(false);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
-
-  useEffect(() => {
-    if (!jobId) return;
-    loadPlayerData();
-  }, [jobId]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -56,23 +57,6 @@ export default function Player() {
       audio.removeEventListener('ended', handleEnded);
     };
   }, [playerData, currentChapterIndex]);
-
-  const loadPlayerData = async () => {
-    if (!jobId) return;
-
-    try {
-      const data = await apiClient.getPlayerData(jobId);
-      setPlayerData(data as PlayerData);
-    } catch (error: any) {
-      toast({
-        title: 'Failed to load player',
-        description: error.message,
-        variant: 'danger',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const togglePlay = () => {
     const audio = audioRef.current;

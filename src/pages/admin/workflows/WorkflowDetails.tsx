@@ -26,7 +26,7 @@ import {
   Plus,
   Loader2,
 } from "lucide-react";
-import { apiClient } from "@/lib/api";
+// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
 import {
   WorkflowWithSteps,
   WorkflowRevision,

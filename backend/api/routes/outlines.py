@@ -39,7 +39,7 @@ def _get_outline_for_job(db: Session, job_id: uuid.UUID) -> Outline | None:
     return db.query(Outline).filter(Outline.job_id == job_id).first()
 
 
-@router.get("", response_model=OutlineResponse)
+@router.get("", operation_id="getOutline", response_model=OutlineResponse)
 async def get_outline(
     job_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
@@ -56,7 +56,7 @@ async def get_outline(
     return OutlineResponse.model_validate(outline)
 
 
-@router.post("", response_model=OutlineResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", operation_id="generateOutline", response_model=OutlineResponse, status_code=status.HTTP_201_CREATED)
 async def generate_outline(
     job_id: uuid.UUID,
     payload: OutlineGenerateRequest,
@@ -81,7 +81,7 @@ async def generate_outline(
     return OutlineResponse.model_validate(outline_record)
 
 
-@router.put("", response_model=OutlineResponse)
+@router.put("", operation_id="updateOutline", response_model=OutlineResponse)
 async def update_outline(
     job_id: uuid.UUID,
     outline_update: OutlineUpdate,
@@ -107,7 +107,7 @@ async def update_outline(
     return OutlineResponse.model_validate(outline)
 
 
-@router.post("/approve", response_model=PaymentIntentResponse)
+@router.post("/approve", operation_id="approveOutline", response_model=PaymentIntentResponse)
 async def approve_outline(
     job_id: uuid.UUID,
     approval: OutlineApprove,

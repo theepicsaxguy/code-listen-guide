@@ -1,9 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api';
+import { useGetMeApiV1AuthMeGet } from '@/lib/api/generated';
 
 export const useUser = () => {
-  return useQuery({
-    queryKey: ['user'],
-    queryFn: () => apiClient.getMe(),
-  });
+  return useGetMeApiV1AuthMeGet();
 };

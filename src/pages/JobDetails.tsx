@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { apiClient } from '@/lib/api';
+import { useGetJobApiV1JobsJobIdGet, useCancelJobApiV1JobsJobIdCancelPost } from '@/lib/api/generated';
+import type { JobResponse } from '@/lib/api/generated';
 import { Job } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,46 +25,31 @@ export default function JobDetails() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [job, setJob] = useState<Job | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  useEffect(() => {
-    if (!jobId) return;
-
-    loadJob();
-    const interval = setInterval(loadJob, 3000); // Poll every 3s
-    return () => clearInterval(interval);
-  }, [jobId]);
-
-  const loadJob = async () => {
-    if (!jobId) return;
-
-    try {
-      const response = await apiClient.getJob(jobId);
-      setJob(response as Job);
-    } catch (error: any) {
-      toast({
-        title: 'Failed to load job',
-        description: error.message,
-        variant: 'danger',
-      });
-    } finally {
-      setIsLoading(false);
+  const { data: job, isLoading, refetch } = useGetJobApiV1JobsJobIdGet(
+    jobId || '',
+    {
+      query: {
+        enabled: !!jobId,
+        refetchInterval: 3000, // Poll every 3s
+      },
     }
-  };
+  );
+
+  const cancelJobMutation = useCancelJobApiV1JobsJobIdCancelPost();
 
   const handleCancelJob = async () => {
     if (!jobId) return;
     
     setIsCancelling(true);
     try {
-      await apiClient.cancelJob(jobId);
+      await cancelJobMutation.mutateAsync(jobId);
       toast({
         title: 'Job cancelled',
         description: 'The job has been cancelled successfully.',
       });
-      loadJob(); // Reload to get updated status
+      refetch(); // Reload to get updated status
     } catch (error: any) {
       toast({
         title: 'Failed to cancel job',
@@ -83,7 +69,8 @@ export default function JobDetails() {
     );
   }
 
-  if (!job) {
+  const jobData = job as unknown as Job | null;
+  if (!jobData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card>
@@ -99,7 +86,7 @@ export default function JobDetails() {
     );
   }
 
-  const isProcessing = job.status !== 'completed' && job.status !== 'failed';
+  const isProcessing = jobData?.status !== 'completed' && jobData?.status !== 'failed';
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -119,15 +106,15 @@ export default function JobDetails() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-semibold mb-2 text-foreground">{job.repo_name}</h1>
-              <p className="text-muted-foreground leading-relaxed">{job.repo_url}</p>
+              <h1 className="text-3xl font-semibold mb-2 text-foreground">{jobData.repo_name}</h1>
+              <p className="text-muted-foreground leading-relaxed">{jobData.repo_url}</p>
             </div>
             <div className="flex gap-2">
               {isProcessing && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="danger" disabled={isCancelling}>
-                      {isCancelling ? (
+                      {isCancelling || cancelJobMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Cancelling...
@@ -156,16 +143,16 @@ export default function JobDetails() {
                   </AlertDialogContent>
                 </AlertDialog>
               )}
-              {job.status === 'completed' && (
-                <Button onClick={() => navigate(`/player/${job.id}`)}>
+              {jobData.status === 'completed' && (
+                <Button onClick={() => navigate(`/player/${jobData.id}`)}>
                   <ExternalLink className="mr-2 h-4 w-4" />
                   Open Player
                 </Button>
               )}
             </div>
           </div>
-          <Badge variant={job.status === 'completed' ? 'default' : job.status === 'failed' ? 'danger' : 'secondary'} className="text-sm">
-            {job.status}
+          <Badge variant={jobData.status === 'completed' ? 'default' : jobData.status === 'failed' ? 'danger' : 'secondary'} className="text-sm">
+            {jobData.status}
           </Badge>
         </div>
 
@@ -177,10 +164,10 @@ export default function JobDetails() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{job.current_stage}</span>
-                  <span className="font-semibold text-foreground">{Math.round(job.progress_percentage)}%</span>
+                  <span className="text-muted-foreground">{jobData.current_stage}</span>
+                  <span className="font-semibold text-foreground">{Math.round(jobData.progress_percentage)}%</span>
                 </div>
-                <Progress value={job.progress_percentage} className="h-2" />
+                <Progress value={jobData.progress_percentage} className="h-2" />
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 This may take 15-45 minutes depending on repository size and depth tier.
@@ -189,7 +176,7 @@ export default function JobDetails() {
           </Card>
         )}
 
-        {job.status === 'failed' && job.error_message && (
+        {jobData.status === 'failed' && jobData.error_message && (
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="text-danger flex items-center gap-2">

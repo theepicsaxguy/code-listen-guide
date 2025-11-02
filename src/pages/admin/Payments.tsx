@@ -26,7 +26,7 @@ import {
  SelectTrigger,
  SelectValue,
 } from "@/components/ui/select";
-import { apiClient } from "@/lib/api";
+// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
 import { Payment, PaymentDetails, PaymentStats } from "@/types/admin";
 import { toast } from "sonner";
 import {

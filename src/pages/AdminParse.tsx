@@ -9,7 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { apiClient } from '@/lib/api';
+import { useParseRepositoryApiV1ParseRepositoryPost } from '@/lib/api/generated';
 import { 
   Loader2, 
   PlayCircle, 
@@ -44,22 +44,25 @@ export default function AdminParse() {
   const [enableTableExtraction, setEnableTableExtraction] = useState(true);
   
   // Results state
-  const [isLoading, setIsLoading] = useState(false);
   const [parseResults, setParseResults] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   
+  const parseMutation = useParseRepositoryApiV1ParseRepositoryPost();
+  const isLoading = parseMutation.isPending;
+  
   const handleParse = async () => {
-    setIsLoading(true);
     try {
-      const response = await apiClient.parseRepository({
-        repo_url: repoUrl,
-        git_ref: gitRef,
-        include_patterns: includePatterns ? includePatterns.split(',').map(p => p.trim()) : undefined,
-        exclude_patterns: excludePatterns ? excludePatterns.split(',').map(p => p.trim()) : undefined,
-        max_file_size_kb: maxFileSizeKb,
-        enable_code_enrichment: enableCodeEnrichment,
-        enable_formula_enrichment: enableFormulaEnrichment,
-        enable_table_extraction: enableTableExtraction,
+      const response = await parseMutation.mutateAsync({
+        data: {
+          repo_url: repoUrl,
+          git_ref: gitRef,
+          include_patterns: includePatterns ? includePatterns.split(',').map(p => p.trim()) : undefined,
+          exclude_patterns: excludePatterns ? excludePatterns.split(',').map(p => p.trim()) : undefined,
+          max_file_size_kb: maxFileSizeKb,
+          enable_code_enrichment: enableCodeEnrichment,
+          enable_formula_enrichment: enableFormulaEnrichment,
+          enable_table_extraction: enableTableExtraction,
+        },
       });
       
       setParseResults(response);
@@ -73,8 +76,6 @@ export default function AdminParse() {
         description: error.message,
         variant: 'danger',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 

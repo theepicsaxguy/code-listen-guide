@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, DollarSign, Zap, Clock, FileText, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { apiClient } from '@/lib/api';
+import { useEstimateJobCostApiV1JobsEstimatePost, useCreateJobApiV1JobsPost } from '@/lib/api/generated';
 
 interface CostEstimate {
   estimated_cost_cents: number;
@@ -38,9 +38,13 @@ export default function CostEstimate() {
   } = location.state || {};
 
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [approved, setApproved] = useState(false);
-  const [isCreatingJob, setIsCreatingJob] = useState(false);
+
+  const estimateMutation = useEstimateJobCostApiV1JobsEstimatePost();
+  const createJobMutation = useCreateJobApiV1JobsPost();
+
+  const isLoading = estimateMutation.isPending;
+  const isCreatingJob = createJobMutation.isPending;
 
   useEffect(() => {
     if (!repoUrl || !selectedDepth) {
@@ -50,16 +54,29 @@ export default function CostEstimate() {
 
     const getEstimate = async () => {
       try {
-        setIsLoading(true);
-        const result = await apiClient.estimateJob({
-          repo_url: repoUrl,
-          git_ref: gitRef || 'main',
-          depth_tier: selectedDepth,
-          selected_files: selectedFiles,
-          excluded_patterns: excludedPatterns,
+        const result = await estimateMutation.mutateAsync({
+          data: {
+            repo_url: repoUrl,
+            git_ref: gitRef || 'main',
+            depth_tier: selectedDepth,
+            selected_files: selectedFiles,
+            excluded_patterns: excludedPatterns,
+          },
         });
 
-        setEstimate(result);
+        // Convert result to CostEstimate format
+        const estimateData: CostEstimate = {
+          estimated_cost_cents: result.estimated_total_cost_cents,
+          estimated_duration_minutes: result.estimated_duration_minutes,
+          estimated_chapters: result.estimated_episodes,
+          depth_tier: selectedDepth,
+          llm_tokens: result.estimated_llm_tokens,
+          tts_chars: result.estimated_tts_chars,
+          llm_cost_cents: result.estimated_llm_cost_cents,
+          tts_cost_cents: result.estimated_tts_cost_cents,
+          total_cost_cents: result.estimated_total_cost_cents,
+        };
+        setEstimate(estimateData);
       } catch (error: any) {
         toast({
           title: 'Failed to estimate cost',
@@ -67,13 +84,11 @@ export default function CostEstimate() {
           variant: 'destructive',
         });
         navigate('/scope-selection', { state: location.state });
-      } finally {
-        setIsLoading(false);
       }
     };
 
     getEstimate();
-  }, [repoUrl, selectedDepth, gitRef, selectedFiles, excludedPatterns, navigate, toast]);
+  }, [repoUrl, selectedDepth, gitRef, selectedFiles, excludedPatterns, navigate, toast, estimateMutation]);
 
   const handleApprove = async () => {
     if (!approved) {
@@ -86,16 +101,16 @@ export default function CostEstimate() {
     }
 
     try {
-      setIsCreatingJob(true);
-      const job = await apiClient.createJob({
-        repo_url: repoUrl,
-        depth_tier: selectedDepth,
-        git_ref: gitRef || 'main',
-        selected_files: selectedFiles,
-        excluded_patterns: excludedPatterns,
-        primary_language: primaryLanguage,
-        estimated_total_tokens: estimate?.llm_tokens || 0 + (estimate?.tts_chars || 0),
-        user_approved_cost: true,
+      const job = await createJobMutation.mutateAsync({
+        data: {
+          repo_url: repoUrl,
+          depth_tier: selectedDepth,
+          git_ref: gitRef || 'main',
+          selected_files: selectedFiles,
+          excluded_patterns: excludedPatterns,
+          primary_language: primaryLanguage,
+          user_approved_cost: true,
+        },
       });
 
       toast({
@@ -111,8 +126,6 @@ export default function CostEstimate() {
         description: error.message || 'Could not create audiobook job',
         variant: 'destructive',
       });
-    } finally {
-      setIsCreatingJob(false);
     }
   };
 

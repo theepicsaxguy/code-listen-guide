@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { apiClient } from "@/lib/api";
+// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
 import {
   AgentAclMetric,
   BlockedCallMetric,

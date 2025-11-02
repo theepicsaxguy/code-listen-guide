@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FileCode2, Loader2, CheckCircle, XCircle, Settings } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/api";
+// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
 
 interface ParseResult {
  repository_url: string;

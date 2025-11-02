@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, GitBranch, Play, Edit, Eye } from "lucide-react";
-import { apiClient } from "@/lib/api";
+// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
 import { WorkflowWithSteps } from "@/lib/types/workflow";
 import { normalizeWorkflowList } from "@/lib/workflow-utils";
 import { toast } from "sonner";

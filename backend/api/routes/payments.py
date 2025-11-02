@@ -44,7 +44,7 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/create-intent", response_model=PaymentIntentResponse)
+@router.post("/create-intent", operation_id="createPaymentIntent", response_model=PaymentIntentResponse)
 async def create_payment_intent_route(
     payment_data: PaymentIntentCreate,
     current_user: User = Depends(get_current_user),
@@ -420,7 +420,7 @@ async def stripe_webhook(
     return {"received": True}
 
 
-@router.get("/history", response_model=PaymentHistoryResponse)
+@router.get("/history", operation_id="getPaymentHistory", response_model=PaymentHistoryResponse)
 async def get_payment_history(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):

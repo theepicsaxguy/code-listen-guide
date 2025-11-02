@@ -42,7 +42,10 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
 @router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+    "/register",
+    operation_id="register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
 )
 @limiter.limit("3/minute")
 async def register(
@@ -112,7 +115,7 @@ async def register(
     return new_user
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", operation_id="login", response_model=TokenResponse)
 @limiter.limit("10/minute")
 async def login(
     request: Request,
@@ -191,7 +194,7 @@ async def login(
     )
 
 
-@router.post("/logout", response_model=LogoutResponse)
+@router.post("/logout", operation_id="logout", response_model=LogoutResponse)
 async def logout(
     request: Request,
     response: Response,
@@ -221,7 +224,7 @@ async def logout(
     return LogoutResponse(message="Successfully logged out")
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", operation_id="getMe", response_model=UserResponse)
 async def get_me(request: Request, current_user: User = Depends(get_current_user)):
     """
     Get current authenticated user.
@@ -235,7 +238,7 @@ async def get_me(request: Request, current_user: User = Depends(get_current_user
     return current_user
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh", operation_id="refreshToken", response_model=TokenResponse)
 @limiter.limit("30/minute")
 async def refresh_token(
     request: Request,

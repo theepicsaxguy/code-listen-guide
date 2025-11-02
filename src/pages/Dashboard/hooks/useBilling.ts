@@ -1,9 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api';
+import { useGetPaymentHistoryApiV1PaymentsHistoryGet } from '@/lib/api/generated';
 
 export const usePaymentHistory = () => {
-  return useQuery({
-    queryKey: ['payments', 'history'],
-    queryFn: () => apiClient.getPaymentHistory(),
-  });
+  return useGetPaymentHistoryApiV1PaymentsHistoryGet();
 };

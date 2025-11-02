@@ -1,56 +1,70 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api';
-import type { Job } from '../../../lib/types';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useListJobsApiV1JobsGet,
+  useGetJobApiV1JobsJobIdGet,
+  useCreateJobApiV1JobsPost,
+  useDeleteJobApiV1JobsJobIdDelete,
+  useGetAudiobookPlayerDataApiV1PlayerJobIdGet,
+} from '@/lib/api/generated';
 
-export const useAudiobooks = (params?: { status?: string; limit?: number; page?: number }) => {
-  return useQuery({
-    queryKey: ['audiobooks', params],
-    queryFn: () => apiClient.getJobs(params),
-  });
+export const useAudiobooks = (params?: { status_filter?: string; limit?: number; offset?: number }) => {
+  return useListJobsApiV1JobsGet(params ? {
+    query: {
+      status_filter: params.status_filter,
+      limit: params.limit || 10,
+      offset: params.offset || 0,
+    },
+  } : undefined);
 };
 
 export const useAudiobook = (jobId: string | null) => {
-  return useQuery({
-    queryKey: ['audiobook', jobId],
-    queryFn: () => {
-      if (!jobId) throw new Error('Job ID is required');
-      return apiClient.getJob(jobId);
+  return useGetJobApiV1JobsJobIdGet(jobId || '', {
+    query: {
+      enabled: !!jobId,
     },
-    enabled: !!jobId,
   });
 };
 
 export const useCreateAudiobook = () => {
   const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: { repo_url: string; depth_tier: string; git_ref?: string }) =>
-      apiClient.createJob(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['audiobooks'] });
+  const mutation = useCreateJobApiV1JobsPost({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['listJobsApiV1JobsGet'] });
+      },
     },
   });
+
+  return {
+    ...mutation,
+    mutateAsync: async (data: { repo_url: string; depth_tier: 'survey' | 'standard' | 'comprehensive'; git_ref?: string }) => {
+      return mutation.mutateAsync({ data });
+    },
+  };
 };
 
 export const useDeleteAudiobook = () => {
   const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (jobId: string) => apiClient.deleteJob(jobId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['audiobooks'] });
+  const mutation = useDeleteJobApiV1JobsJobIdDelete({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['listJobsApiV1JobsGet'] });
+      },
     },
   });
+
+  return {
+    ...mutation,
+    mutateAsync: async (jobId: string) => {
+      return mutation.mutateAsync(jobId);
+    },
+  };
 };
 
 export const useAudiobookChapters = (jobId: string | null) => {
-  return useQuery({
-    queryKey: ['audiobook', jobId, 'chapters'],
-    queryFn: async () => {
-      if (!jobId) throw new Error('Job ID is required');
-      const playerData = await apiClient.getPlayerData(jobId);
-      return playerData;
+  return useGetAudiobookPlayerDataApiV1PlayerJobIdGet(jobId || '', {
+    query: {
+      enabled: !!jobId,
     },
-    enabled: !!jobId,
   });
 };

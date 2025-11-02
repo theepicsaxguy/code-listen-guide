@@ -8,7 +8,7 @@ import { ArrowLeft, ArrowRight, FileText, FolderTree, Languages } from 'lucide-r
 import { ReadmeViewer } from '@/components/ReadmeViewer';
 import { RepositoryBrowser } from '@/components/RepositoryBrowser';
 import { useToast } from '@/hooks/use-toast';
-import { apiClient } from '@/lib/api';
+import { useParseRepositoryApiV1ParseRepositoryPost } from '@/lib/api/generated';
 
 interface ParseResult {
   repository_url: string;
@@ -33,8 +33,10 @@ export default function RepositoryPreview() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [readmeContent, setReadmeContent] = useState<string | null>(null);
+
+  const parseMutation = useParseRepositoryApiV1ParseRepositoryPost();
+  const isLoading = parseMutation.isPending;
 
   // Get repo details from location state
   const { repoUrl, gitRef, selectedDepth } = location.state || {};
@@ -47,13 +49,23 @@ export default function RepositoryPreview() {
 
     const parseRepo = async () => {
       try {
-        setIsLoading(true);
-        const result = await apiClient.parseRepository({
-          repo_url: repoUrl,
-          git_ref: gitRef || 'main',
+        const result = await parseMutation.mutateAsync({
+          data: {
+            repo_url: repoUrl,
+            git_ref: gitRef || 'main',
+          },
         });
 
-        setParseResult(result);
+        const parsedResult: ParseResult = {
+          repository_url: result.repository_url,
+          git_ref: result.git_ref,
+          commit_sha: result.commit_sha,
+          modules: result.modules,
+          summary: result.summary,
+          execution_time_seconds: result.execution_time_seconds,
+        };
+
+        setParseResult(parsedResult);
 
         // Find README file
         const readmeFile = Object.entries(result.modules).find(([path]) => 
@@ -72,13 +84,11 @@ export default function RepositoryPreview() {
           variant: 'danger',
         });
         navigate('/submit');
-      } finally {
-        setIsLoading(false);
       }
     };
 
     parseRepo();
-  }, [repoUrl, gitRef, navigate, toast]);
+  }, [repoUrl, gitRef, navigate, toast, parseMutation]);
 
   const handleContinue = () => {
     navigate('/scope-selection', {

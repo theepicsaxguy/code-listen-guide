@@ -17,7 +17,7 @@ import {
  DropdownMenuItem,
  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { apiClient } from "@/lib/api";
+  // TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
 import { AdminUser } from "@/types/admin";
 import { toast } from "sonner";
 import { UserDetailsDialog } from "./UserDetails";

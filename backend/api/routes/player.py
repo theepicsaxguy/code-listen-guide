@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/v1/player", tags=["player"])
 settings = get_settings()
 
 
-@router.get("/{job_id}")
+@router.get("/{job_id}", operation_id="getPlayerData")
 async def get_audiobook_player_data(
     job_id: uuid.UUID, db: Session = Depends(get_db)
 ) -> Dict[str, Any]:

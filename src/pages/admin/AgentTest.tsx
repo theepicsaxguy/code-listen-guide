@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Activity, Loader2, Settings, Play, Workflow, MessageSquare, Code2, Clock, CheckCircle2, XCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/api";
+// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

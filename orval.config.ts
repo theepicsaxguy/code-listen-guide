@@ -14,7 +14,11 @@ export default defineConfig({
           path: './src/lib/api/mutator.ts',
           name: 'customInstance',
         },
-      },
+        query: {
+          useQuery: true,
+          useInfinite: false,
+          useInfiniteQueryParam: 'page',
+        },
     },
   },
 });

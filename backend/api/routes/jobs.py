@@ -29,7 +29,12 @@ router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 logger = logging.getLogger(__name__)
 
 
-@router.post("", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    operation_id="createJob",
+    response_model=JobResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_job(
     job_data: JobCreate,
     db: Session = Depends(get_db),
@@ -54,7 +59,7 @@ async def create_job(
     return JobResponse.from_orm(job)
 
 
-@router.get("", response_model=JobListResponse)
+@router.get("", operation_id="listJobs", response_model=JobListResponse)
 async def list_jobs(
     status_filter: Optional[str] = Query(None),
     limit: int = Query(10, le=100),
@@ -79,7 +84,7 @@ async def list_jobs(
     )
 
 
-@router.get("/{job_id}", response_model=JobResponse)
+@router.get("/{job_id}", operation_id="getJob", response_model=JobResponse)
 async def get_job(
     job_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
@@ -92,7 +97,7 @@ async def get_job(
     return JobResponse.from_orm(job)
 
 
-@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{job_id}", operation_id="deleteJob", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_job(
     job_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
@@ -107,7 +112,7 @@ async def delete_job(
     return
 
 
-@router.post("/estimate", response_model=JobEstimate)
+@router.post("/estimate", operation_id="estimateCost", response_model=JobEstimate)
 async def estimate_job_cost(
     estimate_request: JobEstimateRequest,
     current_user: User = Depends(get_current_user),
@@ -204,7 +209,7 @@ async def estimate_job_cost(
                 logger.warning(f"Failed to cleanup repository: {e}")
 
 
-@router.post("/{job_id}/start", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/{job_id}/start", operation_id="startJob", status_code=status.HTTP_202_ACCEPTED)
 async def start_job(
     job_id: uuid.UUID,
     background: BackgroundTasks,
@@ -224,7 +229,7 @@ async def start_job(
     return {"accepted": True}
 
 
-@router.post("/{job_id}/cancel", status_code=status.HTTP_200_OK)
+@router.post("/{job_id}/cancel", operation_id="cancelJob", status_code=status.HTTP_200_OK)
 async def cancel_job(
     job_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
