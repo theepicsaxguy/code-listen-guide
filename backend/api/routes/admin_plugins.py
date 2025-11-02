@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from backend.api.dependencies import require_admin
 from backend.db.session import get_db
 from backend.models.tool_registry import ToolRegistry, slugify_tool_name
+from backend.workflows.dynamic_loader import get_tool_registry_manager, ToolDescriptor
 
 
 router = APIRouter(prefix="/api/v1/admin/plugins", tags=["admin", "plugins"])
@@ -145,6 +146,38 @@ def _serialize_registry_item(plugin: ToolRegistry) -> ToolRegistryItem:
     )
 
 
+def _serialize_tool_descriptor(descriptor: ToolDescriptor) -> ToolRegistryItem:
+    """Serialize a ToolDescriptor from the code registry to ToolRegistryItem format."""
+    cost_profile = {
+        "cost_per_call_cents": descriptor.cost_profile.cost_per_call_cents,
+        "cost_per_1k_tokens_cents": descriptor.cost_profile.cost_per_1k_tokens_cents,
+        "cost_per_second_cents": descriptor.cost_profile.cost_per_second_cents,
+        "currency": descriptor.cost_profile.currency,
+        "provider": descriptor.cost_profile.provider,
+        **descriptor.cost_profile.metadata,
+    }
+    # Remove None values from cost profile
+    cost_profile = {k: v for k, v in cost_profile.items() if v is not None}
+    
+    return ToolRegistryItem(
+        id=str(descriptor.id),
+        name=descriptor.name,
+        stable_slug=descriptor.stable_slug,
+        semantic_version=descriptor.semantic_version,
+        module_path=descriptor.module_path,
+        function_name=descriptor.function_name,
+        description=descriptor.description or "",
+        input_schema=descriptor.input_schema or {},
+        output_schema=descriptor.output_schema or {},
+        owning_team=descriptor.owning_team,
+        authorization_scope=descriptor.authorization_scope,
+        approval_mode=descriptor.approval_mode,
+        cost_profile=cost_profile,
+        created_at="",  # Code-defined plugins don't have created_at
+        updated_at="",  # Code-defined plugins don't have updated_at
+    )
+
+
 @tools_router.get("/registry", response_model=ToolRegistryListResponse)
 async def get_tool_registry(
     page: int = Query(1, ge=1),
@@ -185,9 +218,38 @@ async def list_plugins(
     db: Session = Depends(get_db),
     _current_admin=Depends(require_admin),
 ):
-    """List all registered plugins/tools."""
+    """List all registered plugins/tools from database.
+    
+    Note: Plugins are defined in code and seeded to database. 
+    This endpoint returns database records for viewing/assignment only.
+    Plugins should not be created/updated/deleted via UI.
+    """
     plugins = db.query(ToolRegistry).order_by(ToolRegistry.name.asc()).all()
     return [_serialize_plugin(item) for item in plugins]
+
+
+@tools_router.get("/code-registry", response_model=ToolRegistryListResponse)
+async def get_code_registry_plugins(
+    _current_admin=Depends(require_admin),
+) -> ToolRegistryListResponse:
+    """List all plugins loaded from code registry at boot time.
+    
+    This endpoint exposes plugins that are defined in code (not database).
+    These are read-only and can only be modified in source code.
+    """
+    tool_manager = get_tool_registry_manager()
+    descriptors = tool_manager.list_all()
+    
+    # Sort by name
+    descriptors = sorted(descriptors, key=lambda d: d.name)
+    
+    items = [_serialize_tool_descriptor(desc) for desc in descriptors]
+    return ToolRegistryListResponse(
+        tools=items,
+        total=len(items),
+        page=1,
+        page_size=len(items),
+    )
 
 
 @router.post("", response_model=PluginOut, status_code=status.HTTP_201_CREATED)

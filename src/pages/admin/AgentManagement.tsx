@@ -1,7 +1,13 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
-import type { AdminAgent, AdminPlugin } from "@/lib/types";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useListAgentsApiV1AdminAgentsListGet,
+  useCreateAgentApiV1AdminAgentsPost,
+  useUpdateAgentApiV1AdminAgentsAgentIdPatch,
+  useDeleteAgentApiV1AdminAgentsAgentIdDelete,
+  useListPluginsApiV1AdminPluginsGet,
+} from "@/lib/api/generated";
+import type { AgentOut, PluginOut } from "@/lib/api/generated/codebaseAudiobookAPI.schemas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,73 +44,60 @@ import { toast } from "sonner";
 export default function AgentManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingAgent, setEditingAgent] = useState<AdminAgent | null>(null);
+  const [editingAgent, setEditingAgent] = useState<AgentOut | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: agents, isLoading } = useQuery<AdminAgent[]>({
-    queryKey: ["admin-agents"],
-    queryFn: () => apiClient.listAgents(),
-  });
+  const { data: agents, isLoading } = useListAgentsApiV1AdminAgentsListGet();
 
-  const { data: plugins } = useQuery<AdminPlugin[]>({
-    queryKey: ["admin-plugins"],
-    queryFn: () => apiClient.listPlugins(),
-  });
+  const { data: plugins } = useListPluginsApiV1AdminPluginsGet();
 
-  type AgentMutationPayload = {
-    name: string;
-    module_path: string;
-    factory_function: string;
-    description?: string;
-    config_schema?: Record<string, unknown>;
-    tools?: string[];
-  };
-
-  const createMutation = useMutation({
-    mutationFn: (agent: AgentMutationPayload) => apiClient.createAgent(agent),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-agents"] });
-      setIsCreateDialogOpen(false);
-      toast.success("Agent created successfully");
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to create agent: ${error.message}`);
+  const createMutation = useCreateAgentApiV1AdminAgentsPost({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["listAgentsApiV1AdminAgentsListGet"] });
+        setIsCreateDialogOpen(false);
+        toast.success("Agent created successfully");
+      },
+      onError: (error: Error) => {
+        toast.error(`Failed to create agent: ${error.message}`);
+      },
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Omit<AgentMutationPayload, "name">> }) =>
-      apiClient.updateAgent(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-agents"] });
-      setIsEditDialogOpen(false);
-      setEditingAgent(null);
-      toast.success("Agent updated successfully");
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to update agent: ${error.message}`);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiClient.deleteAgent(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-agents"] });
-      toast.success("Agent deleted successfully");
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to delete agent: ${error.message}`);
+  const updateMutation = useUpdateAgentApiV1AdminAgentsAgentIdPatch({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["listAgentsApiV1AdminAgentsListGet"] });
+        setIsEditDialogOpen(false);
+        setEditingAgent(null);
+        toast.success("Agent updated successfully");
+      },
+      onError: (error: Error) => {
+        toast.error(`Failed to update agent: ${error.message}`);
+      },
     },
   });
 
-  const handleEdit = (agent: AdminAgent) => {
+  const deleteMutation = useDeleteAgentApiV1AdminAgentsAgentIdDelete({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["listAgentsApiV1AdminAgentsListGet"] });
+        toast.success("Agent deleted successfully");
+      },
+      onError: (error: Error) => {
+        toast.error(`Failed to delete agent: ${error.message}`);
+      },
+    },
+  });
+
+  const handleEdit = (agent: AgentOut) => {
     setEditingAgent(agent);
     setIsEditDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this agent?")) {
-      deleteMutation.mutate(id);
+      deleteMutation.mutate({ agentId: id });
     }
   };
 
@@ -136,7 +129,7 @@ export default function AgentManagement() {
             <AgentForm
               plugins={plugins || []}
               onSubmit={(data) => {
-                createMutation.mutate(data as AgentMutationPayload);
+                createMutation.mutate({ data });
               }}
               isLoading={createMutation.isPending}
             />
@@ -180,11 +173,21 @@ export default function AgentManagement() {
                       <TableCell>
                         {agent.tools && agent.tools.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
-                            {agent.tools.map((tool) => (
-                              <Badge key={tool.id} variant="outline" className="text-xs">
-                                {tool.name}
-                              </Badge>
-                            ))}
+                            {agent.tools.map((tool, idx) => {
+                              const toolId = typeof tool === 'object' && tool !== null && 'id' in tool 
+                                ? String((tool as any).id) 
+                                : String(idx);
+                              const toolName = typeof tool === 'object' && tool !== null && 'name' in tool
+                                ? String((tool as any).name)
+                                : typeof tool === 'string' 
+                                  ? tool 
+                                  : 'Unknown';
+                              return (
+                                <Badge key={toolId} variant="outline" className="text-xs">
+                                  {toolName}
+                                </Badge>
+                              );
+                            })}
                           </div>
                         ) : (
                           <span className="text-muted-foreground text-xs">None</span>
@@ -237,7 +240,7 @@ export default function AgentManagement() {
               plugins={plugins || []}
               initialData={editingAgent}
               onSubmit={(data) => {
-                updateMutation.mutate({ id: editingAgent.id, updates: data });
+                updateMutation.mutate({ agentId: editingAgent.id, data });
               }}
               isLoading={updateMutation.isPending}
             />
@@ -263,11 +266,29 @@ function AgentForm({
   onSubmit,
   isLoading,
 }: {
-  plugins: AdminPlugin[];
-  initialData?: AdminAgent;
-  onSubmit: (data: Partial<Omit<AgentMutationPayload, "name">> & { name?: string }) => void;
+  plugins: PluginOut[];
+  initialData?: AgentOut;
+  onSubmit: (data: any) => void;
   isLoading: boolean;
 }) {
+  // Extract tool IDs from initialData
+  const getToolIds = (tools: AgentOut['tools']): string[] => {
+    if (!tools || !Array.isArray(tools)) return [];
+    return tools
+      .map((tool) => {
+        if (typeof tool === 'object' && tool !== null && 'id' in tool) {
+          return String((tool as any).id);
+        }
+        if (typeof tool === 'string') {
+          // If it's a string, try to find plugin by name or slug
+          const plugin = plugins.find(p => p.name === tool || p.stable_slug === tool);
+          return plugin?.id || tool;
+        }
+        return null;
+      })
+      .filter((id): id is string => Boolean(id));
+  };
+
   const [formData, setFormData] = useState<AgentFormState>({
     name: initialData?.name || "",
     module_path: initialData?.module_path || "",
@@ -276,10 +297,7 @@ function AgentForm({
     config_schema: initialData?.config_schema
       ? JSON.stringify(initialData.config_schema, null, 2)
       : "",
-    selectedTools:
-      initialData?.tools
-        ?.map((t) => t.id)
-        .filter((id): id is string => Boolean(id)) || [],
+    selectedTools: initialData ? getToolIds(initialData.tools) : [],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -299,7 +317,7 @@ function AgentForm({
         return;
       }
 
-      const data: Partial<Omit<AgentMutationPayload, "name">> & { name?: string } = {
+      const data: any = {
         module_path: modulePath,
         factory_function: factoryFunction,
         description: description ? description : undefined,
@@ -391,7 +409,7 @@ function AgentForm({
           </SelectTrigger>
           <SelectContent>
             {plugins
-              .filter((plugin) => Boolean(plugin.id))
+              ?.filter((plugin) => Boolean(plugin.id))
               .map((plugin) => (
                 <SelectItem key={plugin.id} value={plugin.id}>
                   {plugin.name}

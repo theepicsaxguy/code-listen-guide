@@ -10,6 +10,9 @@
  */
 
 const getBaseUrl = (): string => {
+  // Note: The orval/esbuild warning about import.meta is expected and harmless.
+  // import.meta.env is available at runtime in Vite, which handles this correctly.
+  // The mutator file is not compiled by orval - it's just referenced by the generated code.
   const env = import.meta.env as { [key: string]: string | undefined };
   const baseUrl = env.VITE_API_BASE_URL || env.VITE_API_BASE_PATH || 'http://localhost:8000/api/v1';
   

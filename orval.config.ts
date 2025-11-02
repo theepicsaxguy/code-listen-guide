@@ -19,6 +19,7 @@ export default defineConfig({
           useInfinite: false,
           useInfiniteQueryParam: 'page',
         },
+      },
     },
   },
 });

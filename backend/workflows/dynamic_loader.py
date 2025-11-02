@@ -316,6 +316,23 @@ class ToolRegistryManager:
             self._by_slug.clear()
             self._by_slug_version.clear()
 
+    def list_all(self) -> List[ToolDescriptor]:
+        """List all tool descriptors, loading from database if cache is empty."""
+        with self._lock:
+            # If cache is empty, preload all tools from database
+            if not self._by_id:
+                self._preload_all_from_db()
+            # Return unique descriptors (use by_id to avoid duplicates)
+            return list(self._by_id.values())
+
+    def _preload_all_from_db(self) -> None:
+        """Preload all tools from database into cache."""
+        with self._session_scope() as session:
+            all_tools = session.query(ToolRegistry).all()
+            for tool in all_tools:
+                descriptor = self._build_descriptor(tool)
+                self._store_descriptor(descriptor)
+
 
 @dataclass(frozen=True)
 class StepDescriptor:
