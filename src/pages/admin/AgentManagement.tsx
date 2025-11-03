@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useListAgents,
-  useCreateAgent,
-  useUpdateAgent,
-  useDeleteAgent,
-  useListPlugins,
+  useListAgentsApiV1AdminAgentsListGet,
+  useCreateAgentApiV1AdminAgentsPost,
+  useUpdateAgentApiV1AdminAgentsAgentIdPatch,
+  useDeleteAgentApiV1AdminAgentsAgentIdDelete,
+  useListPluginsApiV1AdminPluginsGet,
 } from "@/lib/api/generated";
 import type { AgentOut, PluginOut } from "@/lib/api/generated/codebaseAudiobookAPI.schemas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,11 +47,11 @@ export default function AgentManagement() {
   const [editingAgent, setEditingAgent] = useState<AgentOut | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: agents, isLoading } = useListAgents();
+  const { data: agents, isLoading } = useListAgentsApiV1AdminAgentsListGet();
 
-  const { data: plugins } = useListPlugins();
+  const { data: plugins } = useListPluginsApiV1AdminPluginsGet();
 
-  const createMutation = useCreateAgent({
+  const createMutation = useCreateAgentApiV1AdminAgentsPost({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["listAgents"] });
@@ -64,7 +64,7 @@ export default function AgentManagement() {
     },
   });
 
-  const updateMutation = useUpdateAgent({
+  const updateMutation = useUpdateAgentApiV1AdminAgentsAgentIdPatch({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["listAgents"] });
@@ -78,7 +78,7 @@ export default function AgentManagement() {
     },
   });
 
-  const deleteMutation = useDeleteAgent({
+  const deleteMutation = useDeleteAgentApiV1AdminAgentsAgentIdDelete({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["listAgents"] });
@@ -96,9 +96,9 @@ export default function AgentManagement() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this agent?")) {
-      deleteMutation.mutate({ agentId: id });
-    }
+      if (confirm("Are you sure you want to delete this agent?")) {
+        deleteMutation.mutate({ agentId: id });
+      }
   };
 
   return (

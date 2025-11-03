@@ -1,6 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+import {
+  useGetAgentStatsApiV1AdminAgentsStatsGet,
+  useListAgentJobsApiV1AdminAgentsJobsGet,
+  useGetAgentJobDetailsApiV1AdminAgentsJobsJobIdGet,
+  useGetJobLogsApiV1AdminAgentsJobsJobIdLogsGet,
+  useRetryFailedJobApiV1AdminAgentsJobsJobIdRetryPost,
+} from "@/lib/api/generated";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/admin/StatCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -139,58 +144,63 @@ export default function AgentMonitoring() {
  const [showLogs, setShowLogs] = useState(false);
 
  // Fetch agent stats
- const { data: stats, isLoading: statsLoading } = useQuery<AgentStats>({
- queryKey: ["agent-stats"],
- queryFn: async () => {
- const response = await apiClient.getAgentStats();
- return response as AgentStats;
- },
- refetchInterval: 5000, // Refresh every 5 seconds
+ const { data: stats, isLoading: statsLoading } = useGetAgentStatsApiV1AdminAgentsStatsGet<AgentStats>({
+   query: {
+     refetchInterval: 5000, // Refresh every 5 seconds
+   },
  });
 
  // Fetch agent jobs
- const { data: jobsData, isLoading: jobsLoading, refetch: refetchJobs } = useQuery({
- queryKey: ["agent-jobs", statusFilter],
- queryFn: async () => {
  const status = statusFilter === "all" ? undefined : statusFilter;
- const response = await apiClient.getAgentJobs(status);
- return response as { jobs: AgentJob[]; total: number };
- },
- refetchInterval: 3000, // Refresh every 3 seconds for real-time feel
- });
+ const { data: jobsData, isLoading: jobsLoading, refetch: refetchJobs } = useListAgentJobsApiV1AdminAgentsJobsGet<{ jobs: AgentJob[]; total: number }>(
+   status ? { status } : undefined,
+   {
+     query: {
+       refetchInterval: 3000, // Refresh every 3 seconds for real-time feel
+     },
+   }
+ );
 
  // Fetch job details
- const { data: jobDetails } = useQuery<JobDetails>({
- queryKey: ["agent-job-details", selectedJobId],
- queryFn: async () => {
- const response = await apiClient.getAgentJobDetails(selectedJobId!);
- return response as JobDetails;
- },
- enabled: !!selectedJobId,
- });
+ const { data: jobDetails } = useGetAgentJobDetailsApiV1AdminAgentsJobsJobIdGet<JobDetails>(
+   selectedJobId || "",
+   {
+     query: {
+       enabled: !!selectedJobId,
+     },
+   }
+ );
 
  // Fetch job logs
- const { data: logsData } = useQuery({
- queryKey: ["agent-job-logs", selectedJobId],
- queryFn: async () => {
- const response = await apiClient.getAgentJobLogs(selectedJobId!);
- return response as { logs: JobLog[]; total: number };
- },
- enabled: !!selectedJobId && showLogs,
+ const { data: logsData } = useGetJobLogsApiV1AdminAgentsJobsJobIdLogsGet<{ logs: JobLog[]; total: number }>(
+   selectedJobId || "",
+   undefined,
+   {
+     query: {
+       enabled: !!selectedJobId && showLogs,
+     },
+   }
+ );
+
+ // Retry job mutation
+ const retryJobMutation = useRetryFailedJobApiV1AdminAgentsJobsJobIdRetryPost({
+   mutation: {
+     onSuccess: () => {
+       toast.success("Job queued for retry");
+       refetchJobs();
+     },
+     onError: (error: any) => {
+       toast.error(error.message || "Failed to retry job");
+     },
+   },
  });
 
  const handleRetryJob = async (jobId: string) => {
- try {
- await apiClient.restartAgentJob(jobId);
- toast.success("Job queued for retry");
- refetchJobs();
- } catch (error: any) {
- toast.error(error.message || "Failed to retry job");
- }
+   retryJobMutation.mutate({ jobId });
  };
 
 
- const filteredJobs = jobsData?.jobs.filter((job) =>
+ const filteredJobs = jobsData?.jobs?.filter((job) =>
  searchTerm === "" ||
  job.repo_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
  job.user_email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -217,7 +227,7 @@ export default function AgentMonitoring() {
  </Card>
  ))}
  </>
- ) : (
+ ) : stats ? (
  <>
  <StatCard
  title="Total Jobs"
@@ -267,6 +277,16 @@ export default function AgentMonitoring() {
  icon={GitBranch}
  description="Total saved states"
  />
+ </>
+ ) : (
+ <>
+ {[1, 2, 3, 4].map((i) => (
+ <Card key={i} className="bg-card">
+ <CardContent className="p-6">
+ <div className="animate-pulse h-20 bg-muted rounded" />
+ </CardContent>
+ </Card>
+ ))}
  </>
  )}
  </div>

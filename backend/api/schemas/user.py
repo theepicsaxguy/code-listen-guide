@@ -13,7 +13,7 @@ password strength, and proper data sanitization.
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
@@ -110,3 +110,70 @@ class LogoutResponse(BaseModel):
     """Response schema for logout."""
 
     message: str
+
+
+# WebAuthn/Passkey schemas
+class PasskeyRegistrationOptionsRequest(BaseModel):
+    """Request to generate passkey registration options."""
+
+    name: Optional[str] = Field(None, description="User-friendly name for the passkey")
+
+
+class PasskeyRegistrationOptionsResponse(BaseModel):
+    """Response with registration options."""
+
+    options: Dict
+    challenge: str
+
+    model_config = ConfigDict(extra="allow")
+
+
+class PasskeyRegistrationRequest(BaseModel):
+    """Request to complete passkey registration."""
+
+    registration_response: Dict
+    challenge: str
+    name: Optional[str] = None
+
+
+class PasskeyRegistrationResponse(BaseModel):
+    """Response after successful passkey registration."""
+
+    passkey_id: UUID
+    name: Optional[str] = None
+    message: str = "Passkey registered successfully"
+
+
+class PasskeyAuthenticationOptionsRequest(BaseModel):
+    """Request to generate passkey authentication options."""
+
+    email: EmailStr
+
+
+class PasskeyAuthenticationOptionsResponse(BaseModel):
+    """Response with authentication options."""
+
+    options: Dict
+    challenge: str
+
+    model_config = ConfigDict(extra="allow")
+
+
+class PasskeyAuthenticationRequest(BaseModel):
+    """Request to complete passkey authentication."""
+
+    authentication_response: Dict
+    challenge: str
+    credential_id: str
+
+
+class PasskeyResponse(BaseModel):
+    """Response schema for passkey information."""
+
+    id: UUID
+    name: Optional[str]
+    last_used_at: Optional[datetime]
+    created_at: datetime
+    is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)

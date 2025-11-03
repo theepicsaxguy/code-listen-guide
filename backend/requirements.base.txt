@@ -33,6 +33,8 @@ jsonschema==4.25.1
 # Authentication (REQUIRED - already implemented in utils/auth.py)
 python-jose[cryptography]==3.5.0
 argon2-cffi==25.1.0
+# WebAuthn/Passkeys support
+pywebauthn==1.1.0
 
 # Real-time Updates (WebSocket - optional for MVP)
 redis==7.0.1

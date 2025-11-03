@@ -1,4 +1,4 @@
-import { useGetCodeRegistryPlugins } from "@/lib/api/generated";
+import { useGetCodeRegistryPluginsApiV1AdminToolsCodeRegistryGet } from "@/lib/api/generated";
 import type { ToolRegistryItem } from "@/lib/api/generated/codebaseAudiobookAPI.schemas";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import {
 import { Package, Info } from "lucide-react";
 
 export default function AdminPlugins() {
-  const { data: pluginsResponse, isLoading } = useGetCodeRegistryPlugins();
+  const { data: pluginsResponse, isLoading } = useGetCodeRegistryPluginsApiV1AdminToolsCodeRegistryGet();
   const plugins = pluginsResponse?.tools as ToolRegistryItem[] | undefined;
 
   return (
