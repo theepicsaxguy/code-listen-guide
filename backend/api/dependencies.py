@@ -33,9 +33,15 @@ class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
         # First try to get token from Authorization header
         authorization: str = request.headers.get("Authorization")
         if authorization:
-            scheme, param = authorization.split()
-            if scheme.lower() == "bearer":
-                return param
+            try:
+                parts = authorization.split()
+                if len(parts) == 2:
+                    scheme, param = parts
+                    if scheme.lower() == "bearer":
+                        return param
+            except (ValueError, AttributeError):
+                # Invalid Authorization header format, continue to cookie check
+                pass
 
         # Fall back to cookie if no Authorization header
         token = request.cookies.get("access_token")

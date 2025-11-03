@@ -323,10 +323,34 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle HTTP exceptions with CORS headers."""
+    # Get origin from request for CORS
+    origin = request.headers.get("origin")
+    headers = dict(exc.headers) if exc.headers else {}
+    if origin and origin in cors_origins:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=headers,
+    )
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Return structured validation errors."""
+    """Return structured validation errors with CORS headers."""
     logger.error(f"Request validation error for {request.method} {request.url.path}: {exc.errors()}")
+    
+    # Get origin from request for CORS
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin and origin in cors_origins:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
     
     # Safely serialize errors by converting to JSON-serializable format
     def sanitize_error(error):
@@ -366,16 +390,26 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={"detail": errors, "body": body},
+        headers=headers,
     )
 
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """Log unexpected errors and return a generic response."""
+    """Log unexpected errors and return a generic response with CORS headers."""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    # Get origin from request for CORS
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin and origin in cors_origins:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "Internal server error"},
+        headers=headers,
     )
 
 

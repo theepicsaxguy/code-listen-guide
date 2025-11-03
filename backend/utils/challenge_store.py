@@ -62,16 +62,28 @@ class ChallengeStore:
             challenge_key: Unique key for the challenge
             challenge_data: Challenge data dictionary
             ttl_seconds: Optional TTL override (defaults to 300 seconds)
+
+        Raises:
+            ConnectionError: If Redis connection fails
         """
         key = f"{self._key_prefix}{challenge_key}"
         ttl = ttl_seconds or self._ttl_seconds
+
+        try:
+            # Test connection first
+            await self._redis.ping()
+        except Exception as e:
+            logger.error(f"Redis connection failed: {e}")
+            raise ConnectionError(
+                f"Redis is not available. Please ensure Redis is running and accessible at {settings.redis_url}"
+            ) from e
 
         try:
             serialized = json.dumps(challenge_data).encode("utf-8")
             await self._redis.setex(key, ttl, serialized)
             logger.debug(f"Stored challenge: {challenge_key} (TTL: {ttl}s)")
         except Exception as e:
-            logger.error(f"Failed to store challenge {challenge_key}: {e}")
+            logger.error(f"Failed to store challenge {challenge_key}: {e}", exc_info=True)
             raise
 
     async def get(self, challenge_key: str) -> Optional[Dict]:

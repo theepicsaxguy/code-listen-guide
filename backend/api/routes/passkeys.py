@@ -53,34 +53,69 @@ async def get_passkey_registration_options(
 
     Returns challenge and options for creating a new passkey.
     """
-    # Get user's existing passkeys
-    stmt = select(Passkey).where(
-        Passkey.user_id == current_user.id,
-        Passkey.is_active == True  # noqa: E712
-    )
-    existing_passkeys = list(db.scalars(stmt).all())
+    try:
+        # Get user's existing passkeys
+        stmt = select(Passkey).where(
+            Passkey.user_id == current_user.id,
+            Passkey.is_active == True  # noqa: E712
+        )
+        existing_passkeys = list(db.scalars(stmt).all())
 
-    # Generate registration options
-    options = webauthn_service.generate_registration_options(
-        user=current_user,
-        existing_passkeys=existing_passkeys,
-    )
+        logger.info(f"Generating registration options for user {current_user.id} with {len(existing_passkeys)} existing passkeys")
 
-    # Store challenge for verification
-    challenge = options["challenge"]
-    challenge_key = f"reg:{current_user.id}:{challenge}"
-    await challenge_store.store(
-        challenge_key,
-        {
-            "user_id": str(current_user.id),
-            "challenge": challenge,
-        },
-    )
+        # Generate registration options
+        options = webauthn_service.generate_registration_options(
+            user=current_user,
+            existing_passkeys=existing_passkeys,
+        )
 
-    return PasskeyRegistrationOptionsResponse(
-        options=options,
-        challenge=challenge,
-    )
+        logger.debug(f"Generated options keys: {list(options.keys()) if isinstance(options, dict) else 'not a dict'}")
+
+        # Extract challenge from options
+        if not isinstance(options, dict):
+            logger.error(f"Options is not a dict, type: {type(options)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Invalid registration options format",
+            )
+
+        challenge = options.get("challenge")
+        if not challenge:
+            logger.error(f"Challenge not found in options. Options keys: {list(options.keys())}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Challenge not found in registration options",
+            )
+
+        # Store challenge for verification
+        challenge_key = f"reg:{current_user.id}:{challenge}"
+        try:
+            await challenge_store.store(
+                challenge_key,
+                {
+                    "user_id": str(current_user.id),
+                    "challenge": challenge,
+                },
+            )
+        except Exception as e:
+            logger.error(f"Failed to store challenge: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to store challenge: {str(e)}",
+            )
+
+        return PasskeyRegistrationOptionsResponse(
+            options=options,
+            challenge=challenge,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating passkey registration options: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate registration options: {str(e)}",
+        )
 
 
 @router.post(
