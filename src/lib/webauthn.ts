@@ -15,19 +15,19 @@ interface RegistrationOptions {
   user: {
     id: string;
     name: string;
-    display_name: string;
+    displayName: string;
   };
-  pub_key_cred_params: Array<{
+  pubKeyCredParams: Array<{
     type: string;
     alg: number;
   }>;
-  authenticator_selection?: {
-    authenticator_attachment?: string;
-    user_verification?: string;
-    require_resident_key?: boolean;
+  authenticatorSelection?: {
+    authenticatorAttachment?: string;
+    userVerification?: string;
+    requireResidentKey?: boolean;
   };
   timeout?: number;
-  exclude_credentials?: Array<{
+  excludeCredentials?: Array<{
     id: string;
     type: string;
     transports?: string[];
@@ -98,47 +98,31 @@ export async function registerPasskey(
   const userId = base64urlToArrayBuffer(options.user.id);
 
   // Prepare public key credential creation options
+  // options already has camelCase field names from options_to_json
   const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
     challenge,
     rp: options.rp,
     user: {
       id: userId,
       name: options.user.name,
-      displayName: options.user.display_name,
+      displayName: options.user.displayName,
     },
-    pubKeyCredParams: (() => {
-      const params = options.pub_key_cred_params;
-      if (Array.isArray(params)) {
-        return params.map((param) => ({
-          type: param.type as PublicKeyCredentialType,
-          alg: Number(param.alg),
-        }));
-      }
-      // Handle case where it's a single object (shouldn't happen, but defensive)
-      if (params && typeof params === 'object') {
-        return [
-          {
-            type: (params as any).type as PublicKeyCredentialType || 'public-key',
-            alg: Number((params as any).alg || -7),
-          },
-        ];
-      }
-      // Fallback to default
-      return [{ type: 'public-key' as PublicKeyCredentialType, alg: -7 }];
-    })(),
-    // Map authenticator_selection to proper TypeScript types
-    authenticatorSelection: options.authenticator_selection ? {
-      authenticatorAttachment: options.authenticator_selection.authenticator_attachment as AuthenticatorAttachment | undefined,
-      userVerification: options.authenticator_selection.user_verification as UserVerificationRequirement | undefined,
-      requireResidentKey: options.authenticator_selection.require_resident_key,
+    pubKeyCredParams: options.pubKeyCredParams.map((param) => ({
+      type: param.type as PublicKeyCredentialType,
+      alg: Number(param.alg),
+    })),
+    authenticatorSelection: options.authenticatorSelection ? {
+      authenticatorAttachment: options.authenticatorSelection.authenticatorAttachment as AuthenticatorAttachment | undefined,
+      userVerification: options.authenticatorSelection.userVerification as UserVerificationRequirement | undefined,
+      requireResidentKey: options.authenticatorSelection.requireResidentKey,
     } : undefined,
     timeout: options.timeout,
-    attestation: options.attestation ?? 'none', // Use provided attestation or 'none' by default
+    attestation: options.attestation ?? 'none',
   };
 
   // Add exclude credentials if provided
-  if (options.exclude_credentials && options.exclude_credentials.length > 0) {
-    publicKeyCredentialCreationOptions.excludeCredentials = options.exclude_credentials.map(
+  if (options.excludeCredentials && options.excludeCredentials.length > 0) {
+    publicKeyCredentialCreationOptions.excludeCredentials = options.excludeCredentials.map(
       (cred) => ({
         id: base64urlToArrayBuffer(cred.id),
         type: cred.type as PublicKeyCredentialType,
