@@ -7,6 +7,7 @@ from . import chapter
 from . import deliverable
 from . import job
 from . import outline
+from . import passkey
 from . import payment
 from . import usage_log
 from . import user
@@ -24,6 +25,7 @@ _IMPORTED_MODELS = (
     deliverable,
     job,
     outline,
+    passkey,
     payment,
     usage_log,
     user,

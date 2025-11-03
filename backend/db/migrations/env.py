@@ -19,6 +19,7 @@ from backend.models import (  # noqa: E402
     deliverable,
     job,
     outline,
+    passkey,
     payment,
     tool_registry,
     usage_log,
