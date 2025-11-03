@@ -26,6 +26,7 @@ from webauthn.helpers.structs import (
     AuthenticatorSelectionCriteria,
     AuthenticatorAttachment,
     UserVerificationRequirement,
+    ResidentKeyRequirement,
     PublicKeyCredentialDescriptor,
     PublicKeyCredentialType,
     COSEAlgorithmIdentifier,
@@ -100,7 +101,7 @@ class WebAuthnService:
             authenticator_selection=AuthenticatorSelectionCriteria(
                 authenticator_attachment=AuthenticatorAttachment.PLATFORM,
                 user_verification=UserVerificationRequirement.PREFERRED,
-                resident_key="required",
+                resident_key=ResidentKeyRequirement.REQUIRED,
             ),
             supported_pub_key_algs=[
                 COSEAlgorithmIdentifier.ECDSA_SHA_256,
@@ -108,9 +109,15 @@ class WebAuthnService:
             ],
         )
 
-        # Convert to JSON-serializable dict
-        options_dict = options_to_json(options)
-        return options_dict
+        # Convert options to dict (webauthn returns Pydantic models)
+        # Try .model_dump() first (Pydantic v2), then .dict() (Pydantic v1), then fallback
+        if hasattr(options, 'model_dump'):
+            return options.model_dump(mode='json')
+        elif hasattr(options, 'dict'):
+            return options.dict()
+        else:
+            # Fallback: return as-is if already serializable
+            return options
 
     def verify_registration(
         self, registration_response: Dict, challenge: str, user: User
@@ -182,9 +189,15 @@ class WebAuthnService:
             user_verification=UserVerificationRequirement.PREFERRED,
         )
 
-        # Convert to JSON-serializable dict
-        options_dict = options_to_json(options)
-        return options_dict
+        # Convert options to dict (webauthn returns Pydantic models)
+        # Try .model_dump() first (Pydantic v2), then .dict() (Pydantic v1), then fallback
+        if hasattr(options, 'model_dump'):
+            return options.model_dump(mode='json')
+        elif hasattr(options, 'dict'):
+            return options.dict()
+        else:
+            # Fallback: return as-is if already serializable
+            return options
 
     def verify_authentication(
         self,
