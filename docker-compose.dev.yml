@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:8.2.2-alpine
+    image: redis:8.2.3-alpine
     container_name: audiobook-redis-dev
     ports:
       - "6380:6379"
