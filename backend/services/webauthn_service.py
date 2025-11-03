@@ -169,8 +169,18 @@ class WebAuthnService:
 
             # Extract credential data
             credential_id = self._bytes_to_base64url(verification.credential_id)
-            # Serialize the public key (COSE key dict)
-            public_key_dict = verification.credential_public_key
+
+            # Public key (COSE key) may contain bytes; recursively encode to base64url
+            def _encode_bytes(obj):  # type: ignore[override]
+                if isinstance(obj, bytes):
+                    return self._bytes_to_base64url(obj)
+                if isinstance(obj, dict):
+                    return {k: _encode_bytes(v) for k, v in obj.items()}
+                if isinstance(obj, list):
+                    return [_encode_bytes(v) for v in obj]
+                return obj
+
+            public_key_dict = _encode_bytes(verification.credential_public_key)
             public_key_json = json.dumps(public_key_dict)
 
             logger.info("Successfully verified passkey registration for user %s", user.id)

@@ -58,11 +58,29 @@ async def create_job(
         depth_tier=job_data.depth_tier.value,
         git_ref=job_data.git_ref,
     )
-    # Use model_validate for Pydantic v2, fallback to from_orm for v1
-    if hasattr(JobResponse, 'model_validate'):
-        return JobResponse.model_validate(job)
-    else:
-        return JobResponse.from_orm(job)
+
+    # Avoid relying on ORM relationship population (relationships are currently commented out).
+    # Manually construct response to prevent AttributeError when Pydantic attempts to access missing attributes.
+    return JobResponse(
+        id=job.id,
+        user_id=job.user_id,
+        repo_url=job.repo_url,
+        repo_name=job.repo_name,
+        repo_owner=job.repo_owner,
+        git_ref=job.git_ref,
+        depth_tier=job.depth_tier,
+        status=job.status,
+        current_stage=job.current_stage,
+        progress_percentage=job.progress_percentage,
+        error_message=job.error_message,
+        estimated_duration_minutes=job.estimated_duration_minutes,
+        estimated_chapters=job.estimated_chapters,
+        created_at=job.created_at,
+        started_at=job.started_at,
+        completed_at=job.completed_at,
+        chapters=[],  # relationships not yet active
+        deliverables=[],  # relationships not yet active
+    )
 
 
 @router.get("", operation_id="listJobs", response_model=JobListResponse)
@@ -84,12 +102,31 @@ async def list_jobs(
     items = query.order_by(Job.created_at.desc()).offset(offset).limit(limit).all()
     page = (offset // limit) + 1 if limit else 1
     has_next = offset + limit < total
+    jobs_serialized = [
+        JobResponse(
+            id=item.id,
+            user_id=item.user_id,
+            repo_url=item.repo_url,
+            repo_name=item.repo_name,
+            repo_owner=item.repo_owner,
+            git_ref=item.git_ref,
+            depth_tier=item.depth_tier,
+            status=item.status,
+            current_stage=item.current_stage,
+            progress_percentage=item.progress_percentage,
+            error_message=item.error_message,
+            estimated_duration_minutes=item.estimated_duration_minutes,
+            estimated_chapters=item.estimated_chapters,
+            created_at=item.created_at,
+            started_at=item.started_at,
+            completed_at=item.completed_at,
+            chapters=[],
+            deliverables=[],
+        )
+        for item in items
+    ]
     return JobListResponse(
-        jobs=[
-            JobResponse.model_validate(item) if hasattr(JobResponse, 'model_validate') 
-            else JobResponse.from_orm(item) 
-            for item in items
-        ],
+        jobs=jobs_serialized,
         total=total,
         page=page,
         page_size=limit,
@@ -108,10 +145,26 @@ async def get_job(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     # Use model_validate for Pydantic v2, fallback to from_orm for v1
-    if hasattr(JobResponse, 'model_validate'):
-        return JobResponse.model_validate(job)
-    else:
-        return JobResponse.from_orm(job)
+    return JobResponse(
+        id=job.id,
+        user_id=job.user_id,
+        repo_url=job.repo_url,
+        repo_name=job.repo_name,
+        repo_owner=job.repo_owner,
+        git_ref=job.git_ref,
+        depth_tier=job.depth_tier,
+        status=job.status,
+        current_stage=job.current_stage,
+        progress_percentage=job.progress_percentage,
+        error_message=job.error_message,
+        estimated_duration_minutes=job.estimated_duration_minutes,
+        estimated_chapters=job.estimated_chapters,
+        created_at=job.created_at,
+        started_at=job.started_at,
+        completed_at=job.completed_at,
+        chapters=[],
+        deliverables=[],
+    )
 
 
 @router.delete("/{job_id}", operation_id="deleteJob", status_code=status.HTTP_204_NO_CONTENT)

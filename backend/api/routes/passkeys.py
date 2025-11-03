@@ -170,7 +170,7 @@ async def register_passkey(
     passkey = Passkey(
         user_id=current_user.id,
         credential_id=credential_id,
-        public_key=public_key,
+        public_key=public_key,  # already JSON string with sanitized bytes
         name=registration_data.name or "Unnamed Passkey",
         counter=0,
     )
