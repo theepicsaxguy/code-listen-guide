@@ -19,6 +19,8 @@ export default defineConfig({
           useInfinite: false,
           useInfiniteQueryParam: 'page',
         },
+        // Orval should automatically use operationId from OpenAPI spec
+        // If operationId exists, it will be used; otherwise path-based naming is used
       },
     },
   },

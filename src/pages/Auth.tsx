@@ -7,14 +7,18 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Code2 } from 'lucide-react';
+import { Code2, Key } from 'lucide-react';
 import { getErrorMessage } from '@/lib/error-utils';
+import { isWebAuthnSupported } from '@/lib/webauthn';
+import { Separator } from '@/components/ui/separator';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
-  const { login, register, user, isLoading: isAuthLoading } = useAuth();
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
+  const { login, loginWithPasskey, register, registerPasskey, user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const supportsWebAuthn = isWebAuthnSupported();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -157,10 +161,54 @@ export default function Auth() {
                     />
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                <CardFooter className="flex flex-col gap-3">
+                  <Button type="submit" className="w-full" disabled={isLoading || isPasskeyLoading}>
                     {isLoading ? 'Logging in...' : 'Login'}
                   </Button>
+                  {supportsWebAuthn && (
+                    <>
+                      <div className="flex items-center gap-2 w-full">
+                        <Separator className="flex-1" />
+                        <span className="text-xs text-muted-foreground">OR</span>
+                        <Separator className="flex-1" />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={async () => {
+                          setIsPasskeyLoading(true);
+                          try {
+                            const formData = new FormData(document.querySelector('form') as HTMLFormElement);
+                            const email = formData.get('email');
+                            if (!email || typeof email !== 'string') {
+                              toast({
+                                title: 'Validation Error',
+                                description: 'Please enter your email first',
+                                variant: 'danger',
+                              });
+                              return;
+                            }
+                            await loginWithPasskey(email.trim());
+                            toast({ title: 'Welcome back!', description: 'Successfully logged in with passkey.' });
+                            navigate('/dashboard');
+                          } catch (error) {
+                            toast({
+                              title: 'Passkey login failed',
+                              description: getErrorMessage(error),
+                              variant: 'danger',
+                            });
+                          } finally {
+                            setIsPasskeyLoading(false);
+                          }
+                        }}
+                        disabled={isLoading || isPasskeyLoading}
+                      >
+                        <Key className="mr-2 h-4 w-4" />
+                        {isPasskeyLoading ? 'Authenticating...' : 'Login with Passkey'}
+                      </Button>
+                    </>
+                  )}
                 </CardFooter>
               </form>
             </Card>
@@ -209,10 +257,68 @@ export default function Auth() {
                     />
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                <CardFooter className="flex flex-col gap-3">
+                  <Button type="submit" className="w-full" disabled={isLoading || isPasskeyLoading}>
                     {isLoading ? 'Creating account...' : 'Create Account'}
                   </Button>
+                  {supportsWebAuthn && (
+                    <>
+                      <div className="flex items-center gap-2 w-full">
+                        <Separator className="flex-1" />
+                        <span className="text-xs text-muted-foreground">OR</span>
+                        <Separator className="flex-1" />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={async () => {
+                          setIsPasskeyLoading(true);
+                          try {
+                            const formData = new FormData(document.querySelector('form[action*="register"]') as HTMLFormElement);
+                            const name = formData.get('name');
+                            const email = formData.get('email');
+                            if (!email || typeof email !== 'string') {
+                              toast({
+                                title: 'Validation Error',
+                                description: 'Please enter your email first',
+                                variant: 'danger',
+                              });
+                              return;
+                            }
+                            // First register with password, then register passkey
+                            if (!name || typeof name !== 'string' || !formData.get('password')) {
+                              toast({
+                                title: 'Validation Error',
+                                description: 'Please complete the form first, then you can add a passkey',
+                                variant: 'danger',
+                              });
+                              return;
+                            }
+                            // Register account first
+                            await register(email.trim(), formData.get('password') as string, name.trim());
+                            // Then register passkey
+                            await registerPasskey(`${name.trim()}'s Passkey`);
+                            toast({ title: 'Account created!', description: 'Account and passkey registered successfully.' });
+                            navigate('/dashboard');
+                          } catch (error) {
+                            toast({
+                              title: 'Registration failed',
+                              description: getErrorMessage(error),
+                              variant: 'danger',
+                              duration: 6000,
+                            });
+                          } finally {
+                            setIsPasskeyLoading(false);
+                          }
+                        }}
+                        disabled={isLoading || isPasskeyLoading}
+                      >
+                        <Key className="mr-2 h-4 w-4" />
+                        {isPasskeyLoading ? 'Registering...' : 'Add Passkey (Optional)'}
+                      </Button>
+                    </>
+                  )}
                 </CardFooter>
               </form>
             </Card>

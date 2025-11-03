@@ -8,12 +8,26 @@ import {
 } from '@/lib/api/generated';
 import type { UserResponse, TokenResponse, TokenRefreshRequest } from '@/lib/api/generated';
 import { User } from '@/lib/types';
+import {
+  getPasskeyAuthenticationOptions,
+  authenticatePasskey as authenticatePasskeyAPI,
+  getPasskeyRegistrationOptions,
+  registerPasskey as registerPasskeyAPI,
+} from '@/lib/api/passkeys';
+import {
+  authenticatePasskey as authenticatePasskeyWebAuthn,
+  registerPasskey as registerPasskeyWebAuthn,
+  credentialToJSON,
+  isWebAuthnSupported,
+} from '@/lib/webauthn';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithPasskey: (email: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
+  registerPasskey: (name?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: string | null;
 }
@@ -127,6 +141,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await login(email, password);
   };
 
+  const loginWithPasskey = async (email: string) => {
+    if (!isWebAuthnSupported()) {
+      throw new Error('WebAuthn is not supported in this browser');
+    }
+
+    // Get authentication options
+    const authOptions = await getPasskeyAuthenticationOptions(email);
+
+    // Authenticate with passkey
+    const credential = await authenticatePasskeyWebAuthn(authOptions.options);
+
+    // Convert credential to JSON
+    const credentialJSON = credentialToJSON(credential);
+
+    // Complete authentication
+    const tokenResponse = await authenticatePasskeyAPI({
+      authentication_response: credentialJSON,
+      challenge: authOptions.challenge,
+      credential_id: credentialJSON.id,
+    });
+
+    // Store tokens
+    if (tokenResponse?.access_token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, tokenResponse.access_token);
+    }
+    if (tokenResponse?.refresh_token) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, tokenResponse.refresh_token);
+      setRefreshToken(tokenResponse.refresh_token);
+    }
+
+    // Get user data
+    const userResult = await getMeQuery.refetch();
+    if (userResult.data) {
+      setUser(userResult.data as unknown as User);
+    }
+  };
+
+  const registerPasskey = async (name?: string) => {
+    if (!isWebAuthnSupported()) {
+      throw new Error('WebAuthn is not supported in this browser');
+    }
+
+    // Get registration options
+    const regOptions = await getPasskeyRegistrationOptions(name);
+
+    // Register passkey using WebAuthn API
+    const credential = await registerPasskeyWebAuthn(regOptions.options);
+
+    // Convert credential to JSON
+    const credentialJSON = credentialToJSON(credential);
+
+    // Complete registration
+    await registerPasskeyAPI({
+      registration_response: credentialJSON,
+      challenge: regOptions.challenge,
+      name,
+    });
+  };
+
   const logout = async () => {
     try {
       await logoutMutation.mutateAsync();
@@ -165,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshToken, refreshMutation]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshToken }}>
+    <AuthContext.Provider value={{ user, isLoading, login, loginWithPasskey, register, registerPasskey, logout, refreshToken }}>
       {children}
     </AuthContext.Provider>
   );

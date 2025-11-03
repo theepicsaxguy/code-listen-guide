@@ -1,10 +1,10 @@
 import { useState } from "react";
 import {
-  useGetAgentStatsApiV1AdminAgentsStatsGet,
-  useListAgentJobsApiV1AdminAgentsJobsGet,
-  useGetAgentJobDetailsApiV1AdminAgentsJobsJobIdGet,
-  useGetJobLogsApiV1AdminAgentsJobsJobIdLogsGet,
-  useRetryFailedJobApiV1AdminAgentsJobsJobIdRetryPost,
+  useGetAgentStats,
+  useListAgentJobs,
+  useGetAgentJobDetails,
+  useGetJobLogs,
+  useRetryFailedJob,
 } from "@/lib/api/generated";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/admin/StatCard";
@@ -144,7 +144,7 @@ export default function AgentMonitoring() {
  const [showLogs, setShowLogs] = useState(false);
 
  // Fetch agent stats
- const { data: stats, isLoading: statsLoading } = useGetAgentStatsApiV1AdminAgentsStatsGet<AgentStats>({
+  const { data: stats, isLoading: statsLoading } = useGetAgentStats<AgentStats>({
    query: {
      refetchInterval: 5000, // Refresh every 5 seconds
    },
@@ -152,7 +152,7 @@ export default function AgentMonitoring() {
 
  // Fetch agent jobs
  const status = statusFilter === "all" ? undefined : statusFilter;
- const { data: jobsData, isLoading: jobsLoading, refetch: refetchJobs } = useListAgentJobsApiV1AdminAgentsJobsGet<{ jobs: AgentJob[]; total: number }>(
+  const { data: jobsData, isLoading: jobsLoading, refetch: refetchJobs } = useListAgentJobs<{ jobs: AgentJob[]; total: number }>(
    status ? { status } : undefined,
    {
      query: {
@@ -162,7 +162,7 @@ export default function AgentMonitoring() {
  );
 
  // Fetch job details
- const { data: jobDetails } = useGetAgentJobDetailsApiV1AdminAgentsJobsJobIdGet<JobDetails>(
+  const { data: jobDetails } = useGetAgentJobDetails<JobDetails>(
    selectedJobId || "",
    {
      query: {
@@ -172,7 +172,7 @@ export default function AgentMonitoring() {
  );
 
  // Fetch job logs
- const { data: logsData } = useGetJobLogsApiV1AdminAgentsJobsJobIdLogsGet<{ logs: JobLog[]; total: number }>(
+  const { data: logsData } = useGetJobLogs<{ logs: JobLog[]; total: number }>(
    selectedJobId || "",
    undefined,
    {
@@ -183,7 +183,7 @@ export default function AgentMonitoring() {
  );
 
  // Retry job mutation
- const retryJobMutation = useRetryFailedJobApiV1AdminAgentsJobsJobIdRetryPost({
+  const retryJobMutation = useRetryFailedJob({
    mutation: {
      onSuccess: () => {
        toast.success("Job queued for retry");

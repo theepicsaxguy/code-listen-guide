@@ -7,27 +7,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
-  useGetDashboardStatsApiV1AdminDashboardStatsGet,
-  useListWorkflowsApiV1AdminWorkflowsGet,
-  useGetAgentRegistryApiV1AdminAgentsRegistryGet,
-  useGetToolRegistryApiV1AdminToolsRegistryGet,
+  useGetDashboardStats,
+  useListWorkflows,
+  useGetAgentRegistry,
+  useGetToolRegistry,
 } from "@/lib/api/generated";
 import { DashboardStats } from "@/types/admin";
 import { toast } from "sonner";
 
 export default function AdminDashboard() {
- const { data: stats, isLoading } = useGetDashboardStatsApiV1AdminDashboardStatsGet();
+ const { data: stats, isLoading } = useGetDashboardStats();
 
- const { data: workflows } = useListWorkflowsApiV1AdminWorkflowsGet({
+ const { data: workflows } = useListWorkflows({
    query: { staleTime: 60000 },
  });
 
- const { data: agentsResponse } = useGetAgentRegistryApiV1AdminAgentsRegistryGet({
+ const { data: agentsResponse } = useGetAgentRegistry({
    query: { staleTime: 60000 },
  });
  const agents = agentsResponse?.agents;
 
- const { data: pluginsResponse } = useGetToolRegistryApiV1AdminToolsRegistryGet({
+ const { data: pluginsResponse } = useGetToolRegistry({
    query: { staleTime: 60000 },
  });
  const plugins = pluginsResponse?.tools;

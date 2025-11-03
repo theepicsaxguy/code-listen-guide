@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useListAgentsApiV1AdminAgentsListGet,
-  useCreateAgentApiV1AdminAgentsPost,
-  useUpdateAgentApiV1AdminAgentsAgentIdPatch,
-  useDeleteAgentApiV1AdminAgentsAgentIdDelete,
-  useListPluginsApiV1AdminPluginsGet,
+  useListAgents,
+  useCreateAgent,
+  useUpdateAgent,
+  useDeleteAgent,
+  useListPlugins,
 } from "@/lib/api/generated";
 import type { AgentOut, PluginOut } from "@/lib/api/generated/codebaseAudiobookAPI.schemas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,11 +47,11 @@ export default function AgentManagement() {
   const [editingAgent, setEditingAgent] = useState<AgentOut | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: agents, isLoading } = useListAgentsApiV1AdminAgentsListGet();
+  const { data: agents, isLoading } = useListAgents();
 
-  const { data: plugins } = useListPluginsApiV1AdminPluginsGet();
+  const { data: plugins } = useListPlugins();
 
-  const createMutation = useCreateAgentApiV1AdminAgentsPost({
+  const createMutation = useCreateAgent({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["listAgents"] });
@@ -64,7 +64,7 @@ export default function AgentManagement() {
     },
   });
 
-  const updateMutation = useUpdateAgentApiV1AdminAgentsAgentIdPatch({
+  const updateMutation = useUpdateAgent({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["listAgents"] });
@@ -78,7 +78,7 @@ export default function AgentManagement() {
     },
   });
 
-  const deleteMutation = useDeleteAgentApiV1AdminAgentsAgentIdDelete({
+  const deleteMutation = useDeleteAgent({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["listAgents"] });
