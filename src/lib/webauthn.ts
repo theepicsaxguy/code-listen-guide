@@ -32,6 +32,7 @@ interface RegistrationOptions {
     type: string;
     transports?: string[];
   }>;
+  attestation?: 'none' | 'indirect' | 'direct';
 }
 
 interface AuthenticationOptions {
@@ -107,11 +108,16 @@ export async function registerPasskey(
     },
     pubKeyCredParams: options.pub_key_cred_params.map((param) => ({
       type: param.type as PublicKeyCredentialType,
-      alg: param.alg,
+      alg: Number(param.alg),
     })),
-    authenticatorSelection: options.authenticator_selection,
+    // Map authenticator_selection to proper TypeScript types
+    authenticatorSelection: options.authenticator_selection ? {
+      authenticatorAttachment: options.authenticator_selection.authenticator_attachment as AuthenticatorAttachment | undefined,
+      userVerification: options.authenticator_selection.user_verification as UserVerificationRequirement | undefined,
+      requireResidentKey: options.authenticator_selection.require_resident_key,
+    } : undefined,
     timeout: options.timeout,
-    attestation: 'none', // Don't require attestation for better compatibility
+    attestation: options.attestation ?? 'none', // Use provided attestation or 'none' by default
   };
 
   // Add exclude credentials if provided
