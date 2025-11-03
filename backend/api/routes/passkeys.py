@@ -16,7 +16,6 @@ from sqlalchemy.orm import Session
 
 from backend.api.dependencies import get_current_user, limiter
 from backend.api.schemas.user import (
-    PasskeyRegistrationOptionsRequest,
     PasskeyRegistrationOptionsResponse,
     PasskeyRegistrationRequest,
     PasskeyRegistrationResponse,
@@ -31,14 +30,11 @@ from backend.models.passkey import Passkey
 from backend.models.user import User
 from backend.services.webauthn_service import webauthn_service
 from backend.utils.auth import create_access_token, create_refresh_token, ACCESS_TOKEN_EXPIRE_DAYS
+from backend.utils.challenge_store import challenge_store
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/auth/passkeys", tags=["passkeys"])
-
-
-# Store challenges in memory (in production, use Redis)
-_challenge_store: dict = {}
 
 
 @router.post(
@@ -72,10 +68,14 @@ async def get_passkey_registration_options(
 
     # Store challenge for verification
     challenge = options["challenge"]
-    _challenge_store[f"reg:{current_user.id}:{challenge}"] = {
-        "user_id": str(current_user.id),
-        "challenge": challenge,
-    }
+    challenge_key = f"reg:{current_user.id}:{challenge}"
+    await challenge_store.store(
+        challenge_key,
+        {
+            "user_id": str(current_user.id),
+            "challenge": challenge,
+        },
+    )
 
     return PasskeyRegistrationOptionsResponse(
         options=options,
@@ -103,7 +103,7 @@ async def register_passkey(
     """
     # Verify challenge
     challenge_key = f"reg:{current_user.id}:{registration_data.challenge}"
-    stored_challenge = _challenge_store.get(challenge_key)
+    stored_challenge = await challenge_store.get(challenge_key)
     if not stored_challenge:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -111,7 +111,7 @@ async def register_passkey(
         )
 
     # Remove challenge after use
-    del _challenge_store[challenge_key]
+    await challenge_store.delete(challenge_key)
 
     # Verify registration
     try:
@@ -205,10 +205,14 @@ async def get_passkey_authentication_options(
 
     # Store challenge for verification
     challenge = options["challenge"]
-    _challenge_store[f"auth:{user.id}:{challenge}"] = {
-        "user_id": str(user.id),
-        "challenge": challenge,
-    }
+    challenge_key = f"auth:{user.id}:{challenge}"
+    await challenge_store.store(
+        challenge_key,
+        {
+            "user_id": str(user.id),
+            "challenge": challenge,
+        },
+    )
 
     return PasskeyAuthenticationOptionsResponse(
         options=options,
@@ -247,7 +251,7 @@ async def authenticate_passkey(
 
     # Verify challenge
     challenge_key = f"auth:{passkey.user_id}:{auth_data.challenge}"
-    stored_challenge = _challenge_store.get(challenge_key)
+    stored_challenge = await challenge_store.get(challenge_key)
     if not stored_challenge:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -255,7 +259,7 @@ async def authenticate_passkey(
         )
 
     # Remove challenge after use
-    del _challenge_store[challenge_key]
+    await challenge_store.delete(challenge_key)
 
     # Verify authentication
     try:

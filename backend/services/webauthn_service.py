@@ -6,6 +6,8 @@ Provides:
 - Passkey authentication challenge generation
 - Credential verification
 - Credential storage and retrieval
+
+Uses the webauthn library for WebAuthn operations.
 """
 
 import base64
@@ -13,21 +15,26 @@ import json
 import logging
 from datetime import datetime
 from typing import Dict, Optional, Tuple
-from uuid import uuid4
 
-from pywebauthn import (
+from webauthn import (
     generate_registration_options,
     verify_registration_response,
     generate_authentication_options,
     verify_authentication_response,
-    RelyingParty,
 )
-from pywebauthn.helpers import bytes_to_base64url, base64url_to_bytes
+from webauthn.helpers.structs import (
+    AuthenticatorSelectionCriteria,
+    AuthenticatorAttachment,
+    UserVerificationRequirement,
+    PublicKeyCredentialDescriptor,
+    PublicKeyCredentialType,
+    COSEAlgorithmIdentifier,
+)
+from webauthn.helpers import base64url_to_bytes, bytes_to_base64url
 
 from backend.config import get_settings
 from backend.models.passkey import Passkey
 from backend.models.user import User
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +42,7 @@ settings = get_settings()
 
 
 class WebAuthnService:
-    """Service for WebAuthn passkey operations."""
+    """Service for WebAuthn passkey operations using webauthn library."""
 
     def __init__(self):
         """Initialize WebAuthn service with relying party configuration."""
@@ -44,12 +51,20 @@ class WebAuthnService:
         if origin.endswith("/"):
             origin = origin[:-1]
 
-        self.rp = RelyingParty(
-            name="Codebase Audiobook",
-            id=origin.replace("https://", "").replace("http://", "").split(":")[0],
-            origin=origin,
-        )
-        logger.info(f"Initialized WebAuthn service with RP ID: {self.rp.id}, Origin: {origin}")
+        # Extract RP ID from origin (domain without protocol)
+        self.rp_id = origin.replace("https://", "").replace("http://", "").split(":")[0]
+        self.rp_name = "Codebase Audiobook"
+        self.origin = origin
+
+        logger.info(f"Initialized WebAuthn service with RP ID: {self.rp_id}, Origin: {origin}")
+
+    def _base64url_to_bytes(self, data: str) -> bytes:
+        """Convert base64url string to bytes."""
+        return base64url_to_bytes(data)
+
+    def _bytes_to_base64url(self, data: bytes) -> str:
+        """Convert bytes to base64url string."""
+        return bytes_to_base64url(data)
 
     def generate_registration_options(
         self, user: User, existing_passkeys: list[Passkey]
@@ -64,66 +79,38 @@ class WebAuthnService:
         Returns:
             Dictionary with registration options (challenge, etc.)
         """
-        # Exclude existing credential IDs to prevent duplicate registrations
+        # Exclude existing credential IDs
         exclude_credentials = [
-            {
-                "id": base64url_to_bytes(pk.credential_id),
-                "type": "public-key",
-                "transports": ["internal", "usb", "nfc", "ble"],
-            }
+            PublicKeyCredentialDescriptor(
+                id=self._base64url_to_bytes(pk.credential_id),
+                type=PublicKeyCredentialType.PUBLIC_KEY,
+            )
             for pk in existing_passkeys
             if pk.is_active
         ]
 
+        # Generate registration options
         options = generate_registration_options(
-            rp=self.rp,
-            user={
-                "id": str(user.id).encode(),
-                "name": user.email,
-                "display_name": user.name or user.email,
-            },
-            challenge_length=32,
+            rp_id=self.rp_id,
+            rp_name=self.rp_name,
+            user_id=str(user.id).encode("utf-8"),
+            user_name=user.email,
+            user_display_name=user.name or user.email,
             exclude_credentials=exclude_credentials,
-            authenticator_selection={
-                "authenticator_attachment": "platform",  # Can be "platform" or "cross-platform"
-                "user_verification": "preferred",
-                "require_resident_key": True,
-            },
+            authenticator_selection=AuthenticatorSelectionCriteria(
+                authenticator_attachment=AuthenticatorAttachment.PLATFORM,
+                user_verification=UserVerificationRequirement.PREFERRED,
+                resident_key="required",
+            ),
+            supported_pub_key_algs=[
+                COSEAlgorithmIdentifier.ECDSA_SHA_256,
+                COSEAlgorithmIdentifier.RSASSA_PSS_SHA_256,
+            ],
         )
 
-        return {
-            "challenge": bytes_to_base64url(options.challenge),
-            "rp": {
-                "name": options.rp.name,
-                "id": options.rp.id,
-            },
-            "user": {
-                "id": bytes_to_base64url(options.user.id),
-                "name": options.user.name,
-                "display_name": options.user.display_name,
-            },
-            "pub_key_cred_params": [
-                {
-                    "type": param.type,
-                    "alg": param.alg,
-                }
-                for param in options.pub_key_cred_params
-            ],
-            "authenticator_selection": {
-                "authenticator_attachment": options.authenticator_selection.authenticator_attachment,
-                "user_verification": options.authenticator_selection.user_verification,
-                "require_resident_key": options.authenticator_selection.require_resident_key,
-            },
-            "timeout": options.timeout,
-            "exclude_credentials": [
-                {
-                    "id": bytes_to_base64url(cred.id),
-                    "type": cred.type,
-                    "transports": cred.transports,
-                }
-                for cred in options.exclude_credentials
-            ],
-        }
+        # Convert to JSON-serializable dict
+        options_dict = options_to_json(options)
+        return options_dict
 
     def verify_registration(
         self, registration_response: Dict, challenge: str, user: User
@@ -143,25 +130,23 @@ class WebAuthnService:
             ValueError: If verification fails
         """
         try:
-            # Convert challenge from base64url to bytes
-            challenge_bytes = base64url_to_bytes(challenge)
-
             # Verify the registration response
             verification = verify_registration_response(
-                rp=self.rp,
-                expected_challenge=challenge_bytes,
-                expected_origin=self.rp.origin,
-                expected_rp_id=self.rp.id,
-                registration_response=registration_response,
-                expected_user_id=str(user.id).encode(),
+                response=registration_response,
+                expected_challenge=challenge,
+                expected_origin=self.origin,
+                expected_rp_id=self.rp_id,
+                require_user_verification=True,
             )
 
             # Extract credential data
-            credential_id = bytes_to_base64url(verification.credential_id)
-            public_key = json.dumps(verification.credential_public_key)
+            credential_id = self._bytes_to_base64url(verification.credential_id)
+            # Serialize the public key (COSE key dict)
+            public_key_dict = verification.credential_public_key
+            public_key_json = json.dumps(public_key_dict)
 
             logger.info(f"Successfully verified passkey registration for user {user.id}")
-            return credential_id, public_key
+            return credential_id, public_key_json
 
         except Exception as e:
             logger.error(f"Passkey registration verification failed: {e}")
@@ -182,36 +167,24 @@ class WebAuthnService:
         """
         # Include allowed credentials
         allow_credentials = [
-            {
-                "id": base64url_to_bytes(pk.credential_id),
-                "type": "public-key",
-                "transports": ["internal", "usb", "nfc", "ble"],
-            }
+            PublicKeyCredentialDescriptor(
+                id=self._base64url_to_bytes(pk.credential_id),
+                type=PublicKeyCredentialType.PUBLIC_KEY,
+            )
             for pk in passkeys
             if pk.is_active
         ]
 
+        # Generate authentication options
         options = generate_authentication_options(
-            rp_id=self.rp.id,
-            challenge_length=32,
+            rp_id=self.rp_id,
             allow_credentials=allow_credentials,
-            user_verification="preferred",
+            user_verification=UserVerificationRequirement.PREFERRED,
         )
 
-        return {
-            "challenge": bytes_to_base64url(options.challenge),
-            "timeout": options.timeout,
-            "rp_id": options.rp_id,
-            "allow_credentials": [
-                {
-                    "id": bytes_to_base64url(cred.id),
-                    "type": cred.type,
-                    "transports": cred.transports,
-                }
-                for cred in options.allow_credentials
-            ],
-            "user_verification": options.user_verification,
-        }
+        # Convert to JSON-serializable dict
+        options_dict = options_to_json(options)
+        return options_dict
 
     def verify_authentication(
         self,
@@ -234,26 +207,21 @@ class WebAuthnService:
             ValueError: If verification fails
         """
         try:
-            # Convert challenge and credential ID from base64url to bytes
-            challenge_bytes = base64url_to_bytes(challenge)
-            credential_id_bytes = base64url_to_bytes(passkey.credential_id)
-
             # Parse public key from JSON
-            public_key = json.loads(passkey.public_key)
+            public_key_dict = json.loads(passkey.public_key)
 
-            # Verify the authentication response
+            # Verify the authentication
             verification = verify_authentication_response(
-                rp=self.rp,
-                expected_challenge=challenge_bytes,
-                expected_origin=self.rp.origin,
-                expected_rp_id=self.rp.id,
-                authentication_response=authentication_response,
-                credential_public_key=public_key,
+                response=authentication_response,
+                expected_challenge=challenge,
+                expected_origin=self.origin,
+                expected_rp_id=self.rp_id,
+                credential_public_key=public_key_dict,
                 credential_current_sign_count=passkey.counter,
+                require_user_verification=True,
             )
 
             # Update passkey counter and last_used_at
-            # This will be saved by the caller
             passkey.counter = verification.new_sign_count
             passkey.last_used_at = datetime.utcnow()
 
@@ -267,4 +235,3 @@ class WebAuthnService:
 
 # Global service instance
 webauthn_service = WebAuthnService()
-
