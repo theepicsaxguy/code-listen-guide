@@ -106,10 +106,26 @@ export async function registerPasskey(
       name: options.user.name,
       displayName: options.user.display_name,
     },
-    pubKeyCredParams: options.pub_key_cred_params.map((param) => ({
-      type: param.type as PublicKeyCredentialType,
-      alg: Number(param.alg),
-    })),
+    pubKeyCredParams: (() => {
+      const params = options.pub_key_cred_params;
+      if (Array.isArray(params)) {
+        return params.map((param) => ({
+          type: param.type as PublicKeyCredentialType,
+          alg: Number(param.alg),
+        }));
+      }
+      // Handle case where it's a single object (shouldn't happen, but defensive)
+      if (params && typeof params === 'object') {
+        return [
+          {
+            type: (params as any).type as PublicKeyCredentialType || 'public-key',
+            alg: Number((params as any).alg || -7),
+          },
+        ];
+      }
+      // Fallback to default
+      return [{ type: 'public-key' as PublicKeyCredentialType, alg: -7 }];
+    })(),
     // Map authenticator_selection to proper TypeScript types
     authenticatorSelection: options.authenticator_selection ? {
       authenticatorAttachment: options.authenticator_selection.authenticator_attachment as AuthenticatorAttachment | undefined,

@@ -110,56 +110,165 @@ class WebAuthnService:
         )
 
         # Convert options to dict (webauthn returns Pydantic models)
-        # Try .model_dump() first (Pydantic v2), then .dict() (Pydantic v1), then fallback
-        if hasattr(options, 'model_dump'):
-            options_dict = options.model_dump(mode='json')
-        elif hasattr(options, 'dict'):
-            options_dict = options.dict()
-        else:
-            # Fallback: try to convert to dict
-            try:
-                options_dict = dict(options) if hasattr(options, '__iter__') else {}
-            except Exception:
-                logger.error(f"Failed to convert options to dict, type: {type(options)}")
+        # Use JSON serialization to ensure all nested Pydantic models are converted
+        import json
+        
+        def serialize_pydantic_model(obj):
+            """Recursively serialize Pydantic models to plain dicts."""
+            if hasattr(obj, 'model_dump_json'):
+                # Use model_dump_json to get JSON string, then parse back
+                # This ensures all nested models are serialized
+                return json.loads(obj.model_dump_json())
+            elif hasattr(obj, 'model_dump'):
+                # Try model_dump with mode='json', but it might not be recursive enough
+                dumped = obj.model_dump(mode='json')
+                # Recursively process the result to catch any remaining Pydantic models
+                return serialize_pydantic_model(dumped) if isinstance(dumped, dict) else dumped
+            elif hasattr(obj, 'dict'):
+                # Pydantic v1
+                dumped = obj.dict()
+                return serialize_pydantic_model(dumped) if isinstance(dumped, dict) else dumped
+            elif isinstance(obj, dict):
+                # Recursively process dict values
+                return {k: serialize_pydantic_model(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple)):
+                # Recursively process list items
+                return [serialize_pydantic_model(item) for item in obj]
+            else:
+                return obj
+        
+        try:
+            # Try to serialize the entire options object
+            if hasattr(options, 'model_dump_json'):
+                # Best approach: use JSON serialization which handles nested models
+                options_json = options.model_dump_json()
+                options_dict = json.loads(options_json)
+                logger.debug(f"Options serialized via model_dump_json, keys: {list(options_dict.keys())}")
+            elif hasattr(options, 'model_dump'):
+                # Fallback: use model_dump and recursively process
+                options_dict = serialize_pydantic_model(options)
+            elif hasattr(options, 'dict'):
+                options_dict = serialize_pydantic_model(options)
+            else:
+                # Fallback: try to convert to dict
+                try:
+                    options_dict = dict(options) if hasattr(options, '__iter__') else {}
+                except Exception:
+                    logger.error(f"Failed to convert options to dict, type: {type(options)}")
+                    options_dict = {}
+        except Exception as e:
+            logger.error(f"Failed to serialize options object: {e}", exc_info=True)
+            # Last resort: try basic conversion
+            if hasattr(options, 'model_dump'):
+                options_dict = options.model_dump(mode='json')
+            elif hasattr(options, 'dict'):
+                options_dict = options.dict()
+            else:
                 options_dict = {}
         
-        # Immediately serialize pubKeyCredParams if it contains Pydantic models
+        # CRITICAL: Immediately serialize pubKeyCredParams BEFORE any iteration
         # This prevents "'PublicKeyCredentialParameters' object is not iterable" errors
+        # The error happens when Python tries to iterate over a Pydantic model
         if isinstance(options_dict, dict) and 'pubKeyCredParams' in options_dict:
             pub_key_params = options_dict['pubKeyCredParams']
-            # Check if it's a list/tuple that might contain Pydantic models
+            logger.debug(f"Processing pubKeyCredParams: type={type(pub_key_params)}, is_list={isinstance(pub_key_params, (list, tuple))}")
+            
+            # CRITICAL: Check if it's a Pydantic model BEFORE any iteration attempts
+            # Pydantic models can have __iter__ but aren't actually iterable in the way we need
+            # The error "'PublicKeyCredentialParameters' object is not iterable" happens when
+            # Python tries to iterate over a Pydantic model object
+            if not isinstance(pub_key_params, (list, tuple, dict)):
+                # It's not a list, tuple, or dict - might be a Pydantic model
+                try:
+                    # First, check if it's a Pydantic model by trying to serialize it
+                    if hasattr(pub_key_params, 'model_dump_json'):
+                        # Use JSON serialization to ensure it's converted
+                        param_json = pub_key_params.model_dump_json()
+                        param_dict = json.loads(param_json)
+                        pub_key_params = [param_dict] if isinstance(param_dict, dict) else param_dict
+                    elif hasattr(pub_key_params, 'model_dump'):
+                        # Pydantic v2 model
+                        param_dict = pub_key_params.model_dump(mode='json')
+                        pub_key_params = [param_dict] if isinstance(param_dict, dict) else param_dict
+                    elif hasattr(pub_key_params, 'dict'):
+                        # Pydantic v1 model
+                        param_dict = pub_key_params.dict()
+                        pub_key_params = [param_dict] if isinstance(param_dict, dict) else param_dict
+                    else:
+                        # Not a Pydantic model, try to extract attributes
+                        try:
+                            pub_key_params = [{
+                                'type': getattr(pub_key_params, 'type', 'public-key'),
+                                'alg': int(getattr(pub_key_params, 'alg', -7)),
+                            }]
+                        except Exception:
+                            # Fallback: default params
+                            pub_key_params = [{'type': 'public-key', 'alg': -7}]
+                except Exception as e:
+                    logger.error(f"Failed to convert pubKeyCredParams object: {e}", exc_info=True)
+                    logger.error(f"  Object type: {type(pub_key_params)}")
+                    logger.error(f"  Object attributes: {dir(pub_key_params)}")
+                    # Fallback: default params
+                    pub_key_params = [{'type': 'public-key', 'alg': -7}]
+            
+            # Now check if it's a list/tuple that might contain Pydantic models
             if isinstance(pub_key_params, (list, tuple)):
                 serialized_params = []
-                for param in pub_key_params:
-                    if hasattr(param, 'model_dump'):
-                        serialized_params.append(param.model_dump(mode='json'))
-                    elif hasattr(param, 'dict'):
-                        serialized_params.append(param.dict())
-                    elif isinstance(param, dict):
-                        serialized_params.append(param)
-                    else:
-                        # Extract type and alg from Pydantic model
-                        try:
-                            serialized_params.append({
-                                'type': getattr(param, 'type', 'public-key'),
-                                'alg': getattr(param, 'alg', -7),
-                            })
-                        except Exception as e:
-                            logger.warning(f"Failed to serialize pubKeyCredParam: {e}, using fallback")
-                            serialized_params.append({'type': 'public-key', 'alg': -7})
+                try:
+                    for param in pub_key_params:
+                        if isinstance(param, dict):
+                            # Already a dict, but ensure it's plain types
+                            serialized_params.append(param)
+                        elif hasattr(param, 'model_dump'):
+                            # Pydantic v2 model
+                            param_dict = param.model_dump(mode='json')
+                            serialized_params.append(param_dict)
+                        elif hasattr(param, 'dict'):
+                            # Pydantic v1 model
+                            param_dict = param.dict()
+                            serialized_params.append(param_dict)
+                        else:
+                            # Extract type and alg from any object
+                            try:
+                                serialized_params.append({
+                                    'type': getattr(param, 'type', 'public-key'),
+                                    'alg': int(getattr(param, 'alg', -7)),
+                                })
+                            except Exception as e:
+                                logger.warning(f"Failed to serialize pubKeyCredParam: {e}, using fallback")
+                                serialized_params.append({'type': 'public-key', 'alg': -7})
+                except Exception as e:
+                    logger.error(f"Failed to iterate over pubKeyCredParams: {e}", exc_info=True)
+                    # Fallback: create default params
+                    serialized_params = [{'type': 'public-key', 'alg': -7}]
                 options_dict['pubKeyCredParams'] = serialized_params
-            elif pub_key_params and not isinstance(pub_key_params, dict):
-                # Single Pydantic model object (not a list)
-                if hasattr(pub_key_params, 'model_dump'):
+            elif pub_key_params is not None:
+                # Single object (could be Pydantic model, dict, or other object)
+                if isinstance(pub_key_params, dict):
+                    # Already a dict, use as-is but wrap in list
+                    options_dict['pubKeyCredParams'] = [pub_key_params]
+                elif hasattr(pub_key_params, 'model_dump'):
+                    # Pydantic v2 model
                     param_dict = pub_key_params.model_dump(mode='json')
+                    options_dict['pubKeyCredParams'] = [param_dict]
                 elif hasattr(pub_key_params, 'dict'):
+                    # Pydantic v1 model
                     param_dict = pub_key_params.dict()
+                    options_dict['pubKeyCredParams'] = [param_dict]
                 else:
-                    param_dict = {
-                        'type': getattr(pub_key_params, 'type', 'public-key'),
-                        'alg': getattr(pub_key_params, 'alg', -7),
-                    }
-                options_dict['pubKeyCredParams'] = [param_dict]
+                    # Try to extract type and alg from object
+                    try:
+                        param_dict = {
+                            'type': getattr(pub_key_params, 'type', 'public-key'),
+                            'alg': int(getattr(pub_key_params, 'alg', -7)),
+                        }
+                        options_dict['pubKeyCredParams'] = [param_dict]
+                    except Exception as e:
+                        logger.error(f"Failed to extract pubKeyCredParam fields: {e}")
+                        options_dict['pubKeyCredParams'] = [{'type': 'public-key', 'alg': -7}]
+            else:
+                # None or empty, set to empty list
+                options_dict['pubKeyCredParams'] = []
         
         # Log the structure for debugging
         logger.debug(f"Options dict type: {type(options_dict)}, keys: {list(options_dict.keys()) if isinstance(options_dict, dict) else 'not a dict'}")
@@ -475,17 +584,58 @@ class WebAuthnService:
             logger.error(f"Available keys: {list(converted_dict.keys())}")
             # Don't raise here - let the frontend handle it, but log the issue
         
+        # Final JSON serialization to ensure everything is plain Python types
+        # This prevents any Pydantic models from slipping through
+        def ensure_serializable(obj):
+            """Recursively convert objects to JSON-serializable types."""
+            if isinstance(obj, dict):
+                return {k: ensure_serializable(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple)):
+                return [ensure_serializable(item) for item in obj]
+            elif hasattr(obj, 'model_dump'):
+                # Pydantic v2 model
+                return ensure_serializable(obj.model_dump(mode='json'))
+            elif hasattr(obj, 'dict'):
+                # Pydantic v1 model
+                return ensure_serializable(obj.dict())
+            elif hasattr(obj, '__dict__') and not isinstance(obj, (str, bytes, int, float, bool, type(None))):
+                # Other object with __dict__
+                return ensure_serializable(dict(obj.__dict__))
+            elif isinstance(obj, bytes):
+                # Convert bytes to base64url string
+                return self._bytes_to_base64url(obj)
+            elif isinstance(obj, (str, int, float, bool)) or obj is None:
+                # Already serializable
+                return obj
+            else:
+                # Fallback: convert to string
+                logger.warning(f"Converting non-serializable object to string: {type(obj)}")
+                return str(obj)
+        
+        # Ensure everything is serializable
+        final_dict = ensure_serializable(converted_dict)
+        
+        # Double-check that pub_key_cred_params is a list
+        if 'pub_key_cred_params' in final_dict:
+            if not isinstance(final_dict['pub_key_cred_params'], list):
+                logger.error(f"pub_key_cred_params is still not a list after serialization: {type(final_dict['pub_key_cred_params'])}")
+                # Force it to be a list
+                if final_dict['pub_key_cred_params']:
+                    final_dict['pub_key_cred_params'] = [final_dict['pub_key_cred_params']]
+                else:
+                    final_dict['pub_key_cred_params'] = []
+        
         # Log final structure for debugging
         logger.debug(f"Returning registration options:")
-        logger.debug(f"  - challenge: {converted_dict.get('challenge')}")
-        logger.debug(f"  - user exists: {'user' in converted_dict}")
-        if 'user' in converted_dict:
-            user_keys = list(converted_dict['user'].keys()) if isinstance(converted_dict['user'], dict) else 'not a dict'
+        logger.debug(f"  - challenge: {final_dict.get('challenge')}")
+        logger.debug(f"  - user exists: {'user' in final_dict}")
+        if 'user' in final_dict:
+            user_keys = list(final_dict['user'].keys()) if isinstance(final_dict['user'], dict) else 'not a dict'
             logger.debug(f"  - user keys: {user_keys}")
-        logger.debug(f"  - rp exists: {'rp' in converted_dict}")
-        logger.debug(f"  - pub_key_cred_params exists: {'pub_key_cred_params' in converted_dict}")
-        if 'pub_key_cred_params' in converted_dict:
-            pub_params = converted_dict['pub_key_cred_params']
+        logger.debug(f"  - rp exists: {'rp' in final_dict}")
+        logger.debug(f"  - pub_key_cred_params exists: {'pub_key_cred_params' in final_dict}")
+        if 'pub_key_cred_params' in final_dict:
+            pub_params = final_dict['pub_key_cred_params']
             logger.debug(f"  - pub_key_cred_params type: {type(pub_params)}")
             if isinstance(pub_params, list):
                 logger.debug(f"  - pub_key_cred_params length: {len(pub_params)}")
@@ -494,9 +644,9 @@ class WebAuthnService:
                     logger.debug(f"  - pub_key_cred_params[0]: {pub_params[0]}")
             else:
                 logger.warning(f"  - pub_key_cred_params is not a list: {pub_params}")
-        logger.debug(f"  - All keys in converted_dict: {list(converted_dict.keys())}")
+        logger.debug(f"  - All keys in final_dict: {list(final_dict.keys())}")
         
-        return converted_dict
+        return final_dict
 
     def verify_registration(
         self, registration_response: Dict, challenge: str, user: User

@@ -11,6 +11,7 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -29,6 +30,7 @@ from backend.db.session import get_db
 from backend.models.passkey import Passkey
 from backend.models.user import User
 from backend.services.webauthn_service import webauthn_service
+from webauthn.helpers import bytes_to_base64url
 from backend.utils.auth import create_access_token, create_refresh_token, ACCESS_TOKEN_EXPIRE_DAYS
 from backend.utils.challenge_store import challenge_store
 
@@ -87,6 +89,51 @@ async def get_passkey_registration_options(
                 detail="Challenge not found in registration options",
             )
 
+        # Force JSON serialization to ensure all nested objects are plain dicts
+        # This prevents Pydantic models from slipping through FastAPI's serialization
+        try:
+            # Recursively serialize to ensure everything is plain Python types
+            # Use a custom function to handle bytes and Pydantic models
+            def make_serializable(obj):
+                """Recursively make object JSON serializable."""
+                if isinstance(obj, dict):
+                    return {k: make_serializable(v) for k, v in obj.items()}
+                elif isinstance(obj, (list, tuple)):
+                    return [make_serializable(item) for item in obj]
+                elif isinstance(obj, bytes):
+                    # Convert bytes to base64url string
+                    return bytes_to_base64url(obj)
+                elif hasattr(obj, 'model_dump'):
+                    # Pydantic v2 model
+                    return make_serializable(obj.model_dump(mode='json'))
+                elif hasattr(obj, 'dict'):
+                    # Pydantic v1 model
+                    return make_serializable(obj.dict())
+                elif isinstance(obj, (str, int, float, bool)) or obj is None:
+                    return obj
+                else:
+                    # Fallback: convert to string for unknown types
+                    logger.warning(f"Converting non-serializable object to string: {type(obj)}")
+                    return str(obj)
+            
+            options_serialized = make_serializable(options)
+            logger.debug(f"Options serialized successfully, keys: {list(options_serialized.keys())}")
+            
+            # Verify pub_key_cred_params is a list
+            if 'pub_key_cred_params' in options_serialized:
+                pub_params = options_serialized['pub_key_cred_params']
+                if not isinstance(pub_params, list):
+                    logger.error(f"pub_key_cred_params is still not a list after serialization: {type(pub_params)}")
+                    options_serialized['pub_key_cred_params'] = [pub_params] if pub_params else []
+        except Exception as e:
+            logger.error(f"Failed to serialize options: {e}", exc_info=True)
+            # If JSON serialization fails, log the structure for debugging
+            logger.error(f"Options structure: {type(options)}, keys: {list(options.keys()) if isinstance(options, dict) else 'not a dict'}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to serialize registration options: {str(e)}",
+            )
+
         # Store challenge for verification
         challenge_key = f"reg:{current_user.id}:{challenge}"
         try:
@@ -104,10 +151,80 @@ async def get_passkey_registration_options(
                 detail=f"Failed to store challenge: {str(e)}",
             )
 
-        return PasskeyRegistrationOptionsResponse(
-            options=options,
-            challenge=challenge,
-        )
+        # Final validation: ensure the response can be serialized by FastAPI
+        # Log the structure to help debug if there are still issues
+        logger.debug(f"Final options structure check:")
+        logger.debug(f"  - Type: {type(options_serialized)}")
+        logger.debug(f"  - Keys: {list(options_serialized.keys()) if isinstance(options_serialized, dict) else 'not a dict'}")
+        if isinstance(options_serialized, dict) and 'pub_key_cred_params' in options_serialized:
+            pub_params = options_serialized['pub_key_cred_params']
+            logger.debug(f"  - pub_key_cred_params type: {type(pub_params)}")
+            logger.debug(f"  - pub_key_cred_params is list: {isinstance(pub_params, list)}")
+            if isinstance(pub_params, list) and len(pub_params) > 0:
+                logger.debug(f"  - pub_key_cred_params[0] type: {type(pub_params[0])}")
+                logger.debug(f"  - pub_key_cred_params[0]: {pub_params[0]}")
+        
+        # Return JSONResponse directly to bypass Pydantic serialization
+        # This ensures all nested objects remain as plain dicts/lists
+        try:
+            # Double-check: ensure pub_key_cred_params is definitely a list
+            if 'pub_key_cred_params' in options_serialized:
+                if not isinstance(options_serialized['pub_key_cred_params'], list):
+                    logger.error(f"CRITICAL: pub_key_cred_params is still not a list! Type: {type(options_serialized['pub_key_cred_params'])}")
+                    logger.error(f"Value: {options_serialized['pub_key_cred_params']}")
+                    # Force it to be a list
+                    if options_serialized['pub_key_cred_params']:
+                        options_serialized['pub_key_cred_params'] = [dict(options_serialized['pub_key_cred_params']) if hasattr(options_serialized['pub_key_cred_params'], '__dict__') else options_serialized['pub_key_cred_params']]
+                    else:
+                        options_serialized['pub_key_cred_params'] = []
+            
+            # Force a JSON round-trip to ensure everything is plain Python types
+            # This is the final guarantee that no Pydantic models remain
+            import json
+            try:
+                # Custom JSON encoder that handles bytes by converting to base64url
+                def json_encoder(obj):
+                    if isinstance(obj, bytes):
+                        return bytes_to_base64url(obj)
+                    elif hasattr(obj, 'model_dump_json'):
+                        return json.loads(obj.model_dump_json())
+                    elif hasattr(obj, 'model_dump'):
+                        return obj.model_dump(mode='json')
+                    elif hasattr(obj, 'dict'):
+                        return obj.dict()
+                    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+                
+                # Serialize to JSON and parse back - this ensures all objects are plain dicts/lists
+                json_str = json.dumps(options_serialized, default=json_encoder)
+                options_final = json.loads(json_str)
+                
+                # Verify pub_key_cred_params one more time
+                if 'pub_key_cred_params' in options_final:
+                    if not isinstance(options_final['pub_key_cred_params'], list):
+                        logger.error(f"FINAL CHECK FAILED: pub_key_cred_params is not a list after JSON round-trip!")
+                        options_final['pub_key_cred_params'] = []
+                
+                response_data = {
+                    "options": options_final,
+                    "challenge": challenge,
+                }
+                logger.debug("Returning JSONResponse with fully serialized data")
+                return JSONResponse(content=response_data)
+            except Exception as json_error:
+                logger.error(f"JSON round-trip failed: {json_error}", exc_info=True)
+                # Fallback: return as-is but log the error
+                response_data = {
+                    "options": options_serialized,
+                    "challenge": challenge,
+                }
+                return JSONResponse(content=response_data)
+        except Exception as e:
+            logger.error(f"Failed to create response: {e}", exc_info=True)
+            logger.error(f"Options structure: {options_serialized}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to create response: {str(e)}",
+            )
     except HTTPException:
         raise
     except Exception as e:
