@@ -112,12 +112,72 @@ class WebAuthnService:
         # Convert options to dict (webauthn returns Pydantic models)
         # Try .model_dump() first (Pydantic v2), then .dict() (Pydantic v1), then fallback
         if hasattr(options, 'model_dump'):
-            return options.model_dump(mode='json')
+            options_dict = options.model_dump(mode='json')
         elif hasattr(options, 'dict'):
-            return options.dict()
+            options_dict = options.dict()
         else:
-            # Fallback: return as-is if already serializable
-            return options
+            # Fallback: try to convert to dict
+            try:
+                options_dict = dict(options) if hasattr(options, '__iter__') else {}
+            except Exception:
+                logger.error(f"Failed to convert options to dict, type: {type(options)}")
+                options_dict = {}
+        
+        # Log the structure for debugging
+        logger.debug(f"Options dict type: {type(options_dict)}, keys: {list(options_dict.keys()) if isinstance(options_dict, dict) else 'not a dict'}")
+        
+        # Ensure we have a dict
+        if not isinstance(options_dict, dict):
+            logger.error(f"Options dict is not a dict, type: {type(options_dict)}, value: {options_dict}")
+            raise ValueError(f"Invalid options format: expected dict, got {type(options_dict)}")
+        
+        # Check if challenge exists (might be nested or have different name)
+        challenge = None
+        if 'challenge' in options_dict:
+            challenge = options_dict['challenge']
+        elif hasattr(options, 'challenge'):
+            # Fallback: try to get from original object
+            challenge = getattr(options, 'challenge', None)
+            if challenge:
+                options_dict['challenge'] = challenge
+        
+        # Ensure challenge is a string (might be bytes or base64url)
+        if challenge is not None:
+            challenge = options_dict['challenge']
+            # If challenge is bytes, convert to base64url string
+            if isinstance(challenge, bytes):
+                options_dict['challenge'] = self._bytes_to_base64url(challenge)
+            # If challenge is already a string, ensure it's base64url format
+            elif not isinstance(challenge, str):
+                options_dict['challenge'] = str(challenge)
+        else:
+            logger.warning(f"Challenge not found in options_dict. Keys: {list(options_dict.keys())}")
+        
+        # Ensure user.id is base64url-encoded string (webauthn expects this)
+        if 'user' in options_dict:
+            user_data = options_dict['user']
+            if isinstance(user_data, dict) and 'id' in user_data:
+                user_id = user_data['id']
+                # If user_id is bytes, convert to base64url string
+                if isinstance(user_id, bytes):
+                    options_dict['user']['id'] = self._bytes_to_base64url(user_id)
+                elif not isinstance(user_id, str):
+                    # Convert UUID or other types to base64url-encoded bytes
+                    user_id_bytes = str(user_id).encode('utf-8')
+                    options_dict['user']['id'] = self._bytes_to_base64url(user_id_bytes)
+        
+        # Ensure exclude_credentials have base64url-encoded IDs
+        if 'excludeCredentials' in options_dict:
+            exclude_creds = options_dict['excludeCredentials']
+            if isinstance(exclude_creds, list):
+                for cred in exclude_creds:
+                    if isinstance(cred, dict) and 'id' in cred:
+                        cred_id = cred['id']
+                        if isinstance(cred_id, bytes):
+                            cred['id'] = self._bytes_to_base64url(cred_id)
+        
+        logger.debug(f"Returning registration options with challenge: {options_dict.get('challenge')}")
+        return options_dict
 
     def verify_registration(
         self, registration_response: Dict, challenge: str, user: User
