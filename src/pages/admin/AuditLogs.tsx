@@ -1,4 +1,4 @@
-import { useGetAuditLogsApiV1AdminAuditLogsGet } from "@/lib/api/generated";
+import { useGetAuditLogs } from "@/lib/api/generated";
 import { Card, CardContent } from "@/components/ui/card";
 import {
  Table,
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 
 export default function AdminAuditLogs() {
- const { data, isLoading } = useGetAuditLogsApiV1AdminAuditLogsGet();
+ const { data, isLoading } = useGetAuditLogs();
 
  return (
  <div className="p-8 space-y-6">
