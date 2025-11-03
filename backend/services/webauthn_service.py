@@ -22,6 +22,7 @@ from webauthn import (
     verify_authentication_response,
     options_to_json,
 )
+from webauthn.helpers import parse_registration_credential_json, parse_authentication_credential_json
 from webauthn.helpers.structs import (
     AuthenticatorSelectionCriteria,
     AuthenticatorAttachment,
@@ -133,9 +134,12 @@ class WebAuthnService:
         """
         Verify passkey registration response and extract credential.
 
+        Uses the library's parse_registration_credential_json() to parse client JSON
+        and verify_registration_response() with correct parameter names.
+
         Args:
-            registration_response: Registration response from client
-            challenge: Original challenge from registration options
+            registration_response: Registration response JSON from client
+            challenge: Original challenge from registration options (base64url string)
             user: User registering the passkey
 
         Returns:
@@ -145,10 +149,16 @@ class WebAuthnService:
             ValueError: If verification fails
         """
         try:
-            # Verify the registration response
+            # Parse client JSON into RegistrationCredential
+            credential = parse_registration_credential_json(registration_response)
+            
+            # Convert challenge from base64url string to bytes
+            expected_challenge_bytes = self._base64url_to_bytes(challenge)
+            
+            # Verify the registration response using correct parameter names
             verification = verify_registration_response(
-                response=registration_response,
-                expected_challenge=challenge,
+                credential=credential,
+                expected_challenge=expected_challenge_bytes,
                 expected_origin=self.origin,
                 expected_rp_id=self.rp_id,
                 require_user_verification=True,
@@ -164,7 +174,7 @@ class WebAuthnService:
             return credential_id, public_key_json
 
         except Exception as e:
-            logger.error(f"Passkey registration verification failed: {e}")
+            logger.error(f"Passkey registration verification failed: {e}", exc_info=True)
             raise ValueError(f"Registration verification failed: {str(e)}")
 
     def generate_authentication_options(
@@ -255,10 +265,16 @@ class WebAuthnService:
             # Parse public key from JSON
             public_key_dict = json.loads(passkey.public_key)
 
-            # Verify the authentication
+            # Parse client JSON into AuthenticationCredential
+            credential = parse_authentication_credential_json(authentication_response)
+            
+            # Convert challenge from base64url string to bytes
+            expected_challenge_bytes = self._base64url_to_bytes(challenge)
+            
+            # Verify the authentication using correct parameter names
             verification = verify_authentication_response(
-                response=authentication_response,
-                expected_challenge=challenge,
+                credential=credential,
+                expected_challenge=expected_challenge_bytes,
                 expected_origin=self.origin,
                 expected_rp_id=self.rp_id,
                 credential_public_key=public_key_dict,
