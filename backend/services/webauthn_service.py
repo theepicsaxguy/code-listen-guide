@@ -58,7 +58,7 @@ class WebAuthnService:
         self.rp_name = "Codebase Audiobook"
         self.origin = origin
 
-        logger.info(f"Initialized WebAuthn service with RP ID: {self.rp_id}, Origin: {origin}")
+        logger.info("Initialized WebAuthn service with RP ID: %s, Origin: %s", self.rp_id, origin)
 
     def _base64url_to_bytes(self, data: str) -> bytes:
         """Convert base64url string to bytes."""
@@ -84,8 +84,6 @@ class WebAuthnService:
         Returns:
             Dictionary with registration options (challenge, etc.) in camelCase
         """
-        import json
-        
         # Exclude existing credential IDs
         exclude_credentials = [
             PublicKeyCredentialDescriptor(
@@ -122,9 +120,14 @@ class WebAuthnService:
         # Parse JSON string to dict
         options_dict = json.loads(options_json)
         
-        logger.debug(f"Generated registration options with keys: {list(options_dict.keys())}")
+        logger.debug("Generated registration options with keys: %s", list(options_dict.keys()))
         if 'pubKeyCredParams' in options_dict:
-            logger.debug(f"pubKeyCredParams type: {type(options_dict['pubKeyCredParams'])}, length: {len(options_dict['pubKeyCredParams']) if isinstance(options_dict['pubKeyCredParams'], list) else 'N/A'}")
+            _pk = options_dict['pubKeyCredParams']
+            logger.debug(
+                "pubKeyCredParams type: %s length: %s",
+                type(_pk),
+                len(_pk) if isinstance(_pk, list) else 'N/A'
+            )
         
         return options_dict
 
@@ -170,27 +173,29 @@ class WebAuthnService:
             public_key_dict = verification.credential_public_key
             public_key_json = json.dumps(public_key_dict)
 
-            logger.info(f"Successfully verified passkey registration for user {user.id}")
+            logger.info("Successfully verified passkey registration for user %s", user.id)
             return credential_id, public_key_json
 
         except Exception as e:
-            logger.error(f"Passkey registration verification failed: {e}", exc_info=True)
-            raise ValueError(f"Registration verification failed: {str(e)}")
+            logger.error("Passkey registration verification failed: %s", e, exc_info=True)
+            raise ValueError(f"Registration verification failed: {str(e)}") from e
 
     def generate_authentication_options(
         self, user: User, passkeys: list[Passkey]
     ) -> Dict:
-        """
-        Generate authentication options for passkey login.
+        """Generate authentication options for passkey login.
+
+        Uses the library's options_to_json() helper to ensure all bytes values
+        (credential IDs, challenge) are base64url encoded and safe for JSON transport.
 
         Args:
             user: User authenticating
             passkeys: List of user's active passkeys
 
         Returns:
-            Dictionary with authentication options (challenge, etc.)
+            Dict containing properly serialized authentication options.
         """
-        # Include allowed credentials
+        # Build allow list from stored base64url credential ids -> bytes for library
         allow_credentials = [
             PublicKeyCredentialDescriptor(
                 id=self._base64url_to_bytes(pk.credential_id),
@@ -198,48 +203,29 @@ class WebAuthnService:
             )
             for pk in passkeys
             if pk.is_active
-        ]
+        ] or None
 
-        # Generate authentication options
-        options = generate_authentication_options(
+        opts = generate_authentication_options(
             rp_id=self.rp_id,
-            allow_credentials=allow_credentials,
             user_verification=UserVerificationRequirement.PREFERRED,
+            allow_credentials=allow_credentials,
         )
 
-        # Convert options to dict (webauthn returns Pydantic models)
-        # Try .model_dump() first (Pydantic v2), then .dict() (Pydantic v1), then fallback
-        if hasattr(options, 'model_dump'):
-            return options.model_dump(mode='json')
-        elif hasattr(options, 'dict'):
-            return options.dict()
-        else:
-            # Fallback: return as-is if already serializable
-            return options
+        # Serialize with helper (returns JSON string) then load to dict
+        return json.loads(options_to_json(opts))
 
     def generate_conditional_authentication_options(self) -> Dict:
-        """
-        Generate authentication options for conditional UI (no email required).
+        """Generate authentication options for conditional UI.
 
-        Returns:
-            Dictionary with authentication options (challenge, etc.)
-            Without allow_credentials, so browser shows all available passkeys.
+        No allow_credentials list is provided so the browser can surface all
+        available platform credentials for the RP domain.
         """
-        # Generate authentication options without allow_credentials
-        # This enables conditional UI where browser shows all passkeys for the domain
-        options = generate_authentication_options(
+        opts = generate_authentication_options(
             rp_id=self.rp_id,
-            allow_credentials=None,  # None enables conditional UI
+            allow_credentials=None,
             user_verification=UserVerificationRequirement.PREFERRED,
         )
-
-        # Convert options to dict
-        if hasattr(options, 'model_dump'):
-            return options.model_dump(mode='json')
-        elif hasattr(options, 'dict'):
-            return options.dict()
-        else:
-            return options
+        return json.loads(options_to_json(opts))
 
     def verify_authentication(
         self,
@@ -286,12 +272,12 @@ class WebAuthnService:
             passkey.counter = verification.new_sign_count
             passkey.last_used_at = datetime.utcnow()
 
-            logger.info(f"Successfully verified passkey authentication for passkey {passkey.id}")
+            logger.info("Successfully verified passkey authentication for passkey %s", passkey.id)
             return True
 
         except Exception as e:
-            logger.error(f"Passkey authentication verification failed: {e}")
-            raise ValueError(f"Authentication verification failed: {str(e)}")
+            logger.error("Passkey authentication verification failed: %s", e)
+            raise ValueError(f"Authentication verification failed: {str(e)}") from e
 
 
 # Global service instance

@@ -11,7 +11,6 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -19,7 +18,6 @@ from backend.api.dependencies import get_current_user, limiter
 from backend.api.schemas.user import (
     PasskeyRegistrationOptionsResponse,
     PasskeyRegistrationRequest,
-    PasskeyRegistrationResponse,
     PasskeyAuthenticationOptionsRequest,
     PasskeyAuthenticationOptionsResponse,
     PasskeyAuthenticationRequest,
@@ -30,7 +28,6 @@ from backend.db.session import get_db
 from backend.models.passkey import Passkey
 from backend.models.user import User
 from backend.services.webauthn_service import webauthn_service
-from webauthn.helpers import bytes_to_base64url
 from backend.utils.auth import create_access_token, create_refresh_token, ACCESS_TOKEN_EXPIRE_DAYS
 from backend.utils.challenge_store import challenge_store
 
@@ -63,7 +60,11 @@ async def get_passkey_registration_options(
         )
         existing_passkeys = list(db.scalars(stmt).all())
 
-        logger.info(f"Generating registration options for user {current_user.id} with {len(existing_passkeys)} existing passkeys")
+        logger.info(
+            "Generating registration options for user %s with %d existing passkeys",
+            current_user.id,
+            len(existing_passkeys),
+        )
 
         # Generate registration options (already properly serialized by options_to_json)
         options = webauthn_service.generate_registration_options(
@@ -74,7 +75,7 @@ async def get_passkey_registration_options(
         # Extract challenge from options (already base64url string from options_to_json)
         challenge = options.get("challenge")
         if not challenge:
-            logger.error(f"Challenge not found in options. Options keys: {list(options.keys())}")
+            logger.error("Challenge not found in options. Options keys: %s", list(options.keys()))
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Challenge not found in registration options",
@@ -91,11 +92,11 @@ async def get_passkey_registration_options(
                 },
             )
         except Exception as e:
-            logger.error(f"Failed to store challenge: {e}", exc_info=True)
+            logger.error("Failed to store challenge: %s", e, exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to store challenge: {str(e)}",
-            )
+            ) from e
 
         # Return response - options are already properly serialized by options_to_json
         # pubKeyCredParams is guaranteed to be an array of dicts
@@ -106,17 +107,16 @@ async def get_passkey_registration_options(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error generating passkey registration options: {e}", exc_info=True)
+        logger.error("Error generating passkey registration options: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate registration options: {str(e)}",
-        )
+        ) from e
 
 
 @router.post(
     "/registration",
     operation_id="registerPasskey",
-    response_model=PasskeyRegistrationResponse,
     status_code=status.HTTP_201_CREATED,
 )
 @limiter.limit("10/minute")
@@ -154,7 +154,7 @@ async def register_passkey(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
 
     # Check if credential already exists
     existing = db.query(Passkey).filter(
@@ -179,12 +179,10 @@ async def register_passkey(
     db.commit()
     db.refresh(passkey)
 
-    logger.info(f"Passkey {passkey.id} registered for user {current_user.id}")
+    logger.info("Passkey %s registered for user %s", passkey.id, current_user.id)
 
-    return PasskeyRegistrationResponse(
-        passkey_id=passkey.id,
-        name=passkey.name,
-    )
+    # Return minimal OK response per spec guidance (avoid sending credential bytes)
+    return {"ok": True}
 
 
 @router.post(
@@ -367,7 +365,7 @@ async def authenticate_passkey(
         max_age=30 * 24 * 60 * 60,
     )
 
-    logger.info(f"User {user.id} authenticated with passkey {passkey.id}")
+    logger.info("User %s authenticated with passkey %s", user.id, passkey.id)
 
     return TokenResponse(
         access_token=access_token,
@@ -435,7 +433,7 @@ async def delete_passkey(
     passkey.is_active = False
     db.commit()
 
-    logger.info(f"Passkey {passkey_id} deleted for user {current_user.id}")
+    logger.info("Passkey %s deleted for user %s", passkey_id, current_user.id)
 
     return None
 
