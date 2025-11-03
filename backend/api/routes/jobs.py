@@ -58,7 +58,11 @@ async def create_job(
         depth_tier=job_data.depth_tier.value,
         git_ref=job_data.git_ref,
     )
-    return JobResponse.from_orm(job)
+    # Use model_validate for Pydantic v2, fallback to from_orm for v1
+    if hasattr(JobResponse, 'model_validate'):
+        return JobResponse.model_validate(job)
+    else:
+        return JobResponse.from_orm(job)
 
 
 @router.get("", operation_id="listJobs", response_model=JobListResponse)
@@ -81,7 +85,11 @@ async def list_jobs(
     page = (offset // limit) + 1 if limit else 1
     has_next = offset + limit < total
     return JobListResponse(
-        jobs=[JobResponse.from_orm(item) for item in items],
+        jobs=[
+            JobResponse.model_validate(item) if hasattr(JobResponse, 'model_validate') 
+            else JobResponse.from_orm(item) 
+            for item in items
+        ],
         total=total,
         page=page,
         page_size=limit,
@@ -99,7 +107,11 @@ async def get_job(
     job = get_job_record(db, job_id, current_user.id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    return JobResponse.from_orm(job)
+    # Use model_validate for Pydantic v2, fallback to from_orm for v1
+    if hasattr(JobResponse, 'model_validate'):
+        return JobResponse.model_validate(job)
+    else:
+        return JobResponse.from_orm(job)
 
 
 @router.delete("/{job_id}", operation_id="deleteJob", status_code=status.HTTP_204_NO_CONTENT)

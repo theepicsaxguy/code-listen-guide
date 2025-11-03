@@ -123,6 +123,44 @@ class WebAuthnService:
                 logger.error(f"Failed to convert options to dict, type: {type(options)}")
                 options_dict = {}
         
+        # Immediately serialize pubKeyCredParams if it contains Pydantic models
+        # This prevents "'PublicKeyCredentialParameters' object is not iterable" errors
+        if isinstance(options_dict, dict) and 'pubKeyCredParams' in options_dict:
+            pub_key_params = options_dict['pubKeyCredParams']
+            # Check if it's a list/tuple that might contain Pydantic models
+            if isinstance(pub_key_params, (list, tuple)):
+                serialized_params = []
+                for param in pub_key_params:
+                    if hasattr(param, 'model_dump'):
+                        serialized_params.append(param.model_dump(mode='json'))
+                    elif hasattr(param, 'dict'):
+                        serialized_params.append(param.dict())
+                    elif isinstance(param, dict):
+                        serialized_params.append(param)
+                    else:
+                        # Extract type and alg from Pydantic model
+                        try:
+                            serialized_params.append({
+                                'type': getattr(param, 'type', 'public-key'),
+                                'alg': getattr(param, 'alg', -7),
+                            })
+                        except Exception as e:
+                            logger.warning(f"Failed to serialize pubKeyCredParam: {e}, using fallback")
+                            serialized_params.append({'type': 'public-key', 'alg': -7})
+                options_dict['pubKeyCredParams'] = serialized_params
+            elif pub_key_params and not isinstance(pub_key_params, dict):
+                # Single Pydantic model object (not a list)
+                if hasattr(pub_key_params, 'model_dump'):
+                    param_dict = pub_key_params.model_dump(mode='json')
+                elif hasattr(pub_key_params, 'dict'):
+                    param_dict = pub_key_params.dict()
+                else:
+                    param_dict = {
+                        'type': getattr(pub_key_params, 'type', 'public-key'),
+                        'alg': getattr(pub_key_params, 'alg', -7),
+                    }
+                options_dict['pubKeyCredParams'] = [param_dict]
+        
         # Log the structure for debugging
         logger.debug(f"Options dict type: {type(options_dict)}, keys: {list(options_dict.keys()) if isinstance(options_dict, dict) else 'not a dict'}")
         if isinstance(options_dict, dict):
@@ -225,15 +263,67 @@ class WebAuthnService:
             if 'display_name' not in options_dict['user']:
                 options_dict['user']['display_name'] = options_dict['user'].get('displayName', '')
         
-        # Ensure exclude_credentials have base64url-encoded IDs
+        # Ensure exclude_credentials are properly serialized and have base64url-encoded IDs
         if 'excludeCredentials' in options_dict:
             exclude_creds = options_dict['excludeCredentials']
-            if isinstance(exclude_creds, list):
+            # Serialize if it contains Pydantic models
+            if isinstance(exclude_creds, (list, tuple)):
+                serialized_creds = []
                 for cred in exclude_creds:
-                    if isinstance(cred, dict) and 'id' in cred:
-                        cred_id = cred['id']
-                        if isinstance(cred_id, bytes):
-                            cred['id'] = self._bytes_to_base64url(cred_id)
+                    if isinstance(cred, dict):
+                        # Already a dict, just ensure ID is base64url
+                        cred_copy = cred.copy()
+                        if 'id' in cred_copy:
+                            cred_id = cred_copy['id']
+                            if isinstance(cred_id, bytes):
+                                cred_copy['id'] = self._bytes_to_base64url(cred_id)
+                        serialized_creds.append(cred_copy)
+                    elif hasattr(cred, 'model_dump'):
+                        # Pydantic model - serialize it
+                        cred_dict = cred.model_dump(mode='json')
+                        if 'id' in cred_dict and isinstance(cred_dict['id'], bytes):
+                            cred_dict['id'] = self._bytes_to_base64url(cred_dict['id'])
+                        serialized_creds.append(cred_dict)
+                    elif hasattr(cred, 'dict'):
+                        # Pydantic v1 model
+                        cred_dict = cred.dict()
+                        if 'id' in cred_dict and isinstance(cred_dict['id'], bytes):
+                            cred_dict['id'] = self._bytes_to_base64url(cred_dict['id'])
+                        serialized_creds.append(cred_dict)
+                    else:
+                        # Try to extract fields
+                        try:
+                            cred_dict = {
+                                'id': self._bytes_to_base64url(getattr(cred, 'id', b'')) if isinstance(getattr(cred, 'id', None), bytes) else getattr(cred, 'id', ''),
+                                'type': getattr(cred, 'type', 'public-key'),
+                            }
+                            if hasattr(cred, 'transports'):
+                                cred_dict['transports'] = getattr(cred, 'transports', [])
+                            serialized_creds.append(cred_dict)
+                        except Exception as e:
+                            logger.warning(f"Failed to serialize exclude credential: {e}")
+                options_dict['excludeCredentials'] = serialized_creds
+            elif exclude_creds and not isinstance(exclude_creds, dict):
+                # Single Pydantic model object
+                if hasattr(exclude_creds, 'model_dump'):
+                    cred_dict = exclude_creds.model_dump(mode='json')
+                    if 'id' in cred_dict and isinstance(cred_dict['id'], bytes):
+                        cred_dict['id'] = self._bytes_to_base64url(cred_dict['id'])
+                    options_dict['excludeCredentials'] = [cred_dict]
+                elif hasattr(exclude_creds, 'dict'):
+                    cred_dict = exclude_creds.dict()
+                    if 'id' in cred_dict and isinstance(cred_dict['id'], bytes):
+                        cred_dict['id'] = self._bytes_to_base64url(cred_dict['id'])
+                    options_dict['excludeCredentials'] = [cred_dict]
+                else:
+                    # Fallback
+                    cred_id = getattr(exclude_creds, 'id', b'')
+                    if isinstance(cred_id, bytes):
+                        cred_id = self._bytes_to_base64url(cred_id)
+                    options_dict['excludeCredentials'] = [{
+                        'id': cred_id,
+                        'type': getattr(exclude_creds, 'type', 'public-key'),
+                    }]
         
         # Convert camelCase field names to snake_case for frontend compatibility
         # Frontend expects: pub_key_cred_params, authenticator_selection, exclude_credentials
