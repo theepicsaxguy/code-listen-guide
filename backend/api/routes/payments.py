@@ -150,7 +150,7 @@ async def create_payment_intent_route(
     )
 
 
-@router.post("/webhook")
+@router.post("/webhook", operation_id="stripeWebhook")
 async def stripe_webhook(
     request: Request,
     background: BackgroundTasks,
@@ -437,8 +437,8 @@ async def get_payment_history(
     )
 
 
-@router.post("/create-checkout-session", response_model=CheckoutSessionResponse)
-async def create_checkout_session_route(
+@router.post("/create-checkout-session", operation_id="createCheckoutSession", response_model=CheckoutSessionResponse)
+async def create_checkout_session(
     checkout_data: CheckoutSessionCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -478,7 +478,7 @@ async def create_checkout_session_route(
     )
 
 
-@router.post("/refund")
+@router.post("/refund", operation_id="createRefund")
 async def create_refund(
     payment_intent_id: str,
     amount_cents: Optional[int] = None,

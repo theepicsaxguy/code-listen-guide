@@ -270,7 +270,7 @@ def _resolve_tools(db: Session, tool_refs: Optional[List[str]]) -> Optional[List
     return tools if tools else None
 
 
-@router.get("/registry", response_model=AgentRegistryListResponse)
+@router.get("/registry", operation_id="getAgentRegistry", response_model=AgentRegistryListResponse)
 async def get_agent_registry(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -299,7 +299,7 @@ async def get_agent_registry(
     )
 
 
-@router.get("/list", response_model=List[AgentOut])
+@router.get("/list", operation_id="listAgents", response_model=List[AgentOut])
 async def list_agents(
     db: Session = Depends(get_db),
     _current_admin=Depends(require_admin),
@@ -316,7 +316,7 @@ async def list_agents(
     return result
 
 
-@router.post("", response_model=AgentOut, status_code=status.HTTP_201_CREATED)
+@router.post("", operation_id="createAgent", response_model=AgentOut, status_code=status.HTTP_201_CREATED)
 async def create_agent(
     payload: AgentCreate,
     db: Session = Depends(get_db),
@@ -371,7 +371,7 @@ async def create_agent(
     return _serialize_agent(agent, resolved_tools)
 
 
-@router.get("/{agent_id}", response_model=AgentOut)
+@router.get("/{agent_id}", operation_id="getAgent", response_model=AgentOut)
 async def get_agent(
     agent_id: UUID,
     db: Session = Depends(get_db),
@@ -390,7 +390,7 @@ async def get_agent(
     return _serialize_agent(agent, tools)
 
 
-@router.patch("/{agent_id}", response_model=AgentOut)
+@router.patch("/{agent_id}", operation_id="updateAgent", response_model=AgentOut)
 async def update_agent(
     agent_id: UUID,
     payload: AgentUpdate,
@@ -453,7 +453,7 @@ async def update_agent(
     return _serialize_agent(agent, tools)
 
 
-@router.delete("/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{agent_id}", operation_id="deleteAgent", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_agent(
     agent_id: UUID,
     db: Session = Depends(get_db),

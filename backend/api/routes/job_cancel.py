@@ -11,7 +11,7 @@ from backend.models.user import User
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
-@router.post("/{job_id}/cancel")
+@router.post("/{job_id}/cancel", operation_id="cancelJobDuplicate")
 async def cancel_job(
     job_id: str,
     db: Session = Depends(get_db),

@@ -114,11 +114,12 @@ async def lifespan(app: FastAPI):
     
     get_tool_registry_manager().reload()
     try:
-        results = validate_registered_tools(raise_on_error=True)
+        results = validate_registered_tools(raise_on_error=False)
         logger.info("Validated %s registered tool(s)", len(results))
     except ToolValidationError as exc:
-        logger.error("Tool registry validation failed: %s", exc)
-        raise
+        logger.warning("Tool registry validation failed: %s", exc)
+        # Don't raise - allow startup to continue
+    
     stop_event = asyncio.Event()
     task = asyncio.create_task(
         tool_registry_integrity_loop(

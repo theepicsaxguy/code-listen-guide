@@ -134,7 +134,7 @@ def _derive_stage_status(
     return "pending"
 
 
-@router.get("/{job_id}", response_model=JobTraceResponse)
+@router.get("/{job_id}", operation_id="getJobTrace", response_model=JobTraceResponse)
 async def get_job_trace(
     job_id: UUID,
     current_user=Depends(get_current_user),
@@ -217,7 +217,7 @@ async def get_job_trace(
     )
 
 
-@router.post("/{job_id}/stages/{stage_name}/replay", response_model=StageReplayResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/{job_id}/stages/{stage_name}/replay", operation_id="replayStage", response_model=StageReplayResponse, status_code=status.HTTP_202_ACCEPTED)
 async def replay_stage(
     job_id: UUID,
     stage_name: str,

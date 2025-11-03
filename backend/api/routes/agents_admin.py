@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/v1/admin/agents", tags=["admin", "agents"])
 logger = logging.getLogger(__name__)
 
 
-@router.get("/jobs")
+@router.get("/jobs", operation_id="listAgentJobs")
 async def list_agent_jobs(
     status: Optional[str] = Query(None),
     limit: int = Query(20, le=100),
@@ -91,7 +91,7 @@ async def list_agent_jobs(
     }
 
 
-@router.get("/jobs/{job_id}")
+@router.get("/jobs/{job_id}", operation_id="getAgentJobDetails")
 async def get_agent_job_details(
     job_id: UUID,
     db: Session = Depends(get_db),
@@ -174,7 +174,7 @@ async def get_agent_job_details(
     }
 
 
-@router.get("/stats")
+@router.get("/stats", operation_id="getAgentStats")
 async def get_agent_stats(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_admin),
@@ -217,7 +217,7 @@ async def get_agent_stats(
     }
 
 
-@router.get("/jobs/{job_id}/logs")
+@router.get("/jobs/{job_id}/logs", operation_id="getJobLogs")
 async def get_job_logs(
     job_id: UUID,
     limit: int = Query(100, le=500),
@@ -271,7 +271,7 @@ async def get_job_logs(
     }
 
 
-@router.post("/jobs/{job_id}/retry")
+@router.post("/jobs/{job_id}/retry", operation_id="retryFailedJob")
 async def retry_failed_job(
     job_id: UUID,
     db: Session = Depends(get_db),

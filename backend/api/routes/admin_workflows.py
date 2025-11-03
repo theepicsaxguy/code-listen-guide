@@ -94,7 +94,7 @@ def _validate_revision(revision: WorkflowRevision) -> RevisionValidationResult:
     return RevisionValidationResult(is_valid=not errors, errors=errors)
 
 
-@router.get("", response_model=List[WorkflowDefinitionOut])
+@router.get("", operation_id="listWorkflows", response_model=List[WorkflowDefinitionOut])
 async def list_workflows(
     db: Session = Depends(get_db),
     _current_admin=Depends(require_admin),
@@ -108,8 +108,8 @@ async def list_workflows(
     return [_definition_to_out(defn) for defn in definitions]
 
 
-@router.post("", response_model=WorkflowDefinitionOut, status_code=status.HTTP_201_CREATED)
-async def create_workflow_definition(
+@router.post("", operation_id="createWorkflow", response_model=WorkflowDefinitionOut, status_code=status.HTTP_201_CREATED)
+async def create_workflow(
     payload: WorkflowDefinitionCreate,
     db: Session = Depends(get_db),
     _current_admin=Depends(require_admin),
@@ -129,8 +129,8 @@ async def create_workflow_definition(
     return _definition_to_out(definition)
 
 
-@router.get("/{workflow_id}/revisions", response_model=List[WorkflowRevisionOut])
-async def list_revisions(
+@router.get("/{workflow_id}/revisions", operation_id="listWorkflowRevisions", response_model=List[WorkflowRevisionOut])
+async def list_workflow_revisions(
     workflow_id: UUID,
     db: Session = Depends(get_db),
     _current_admin=Depends(require_admin),
@@ -147,6 +147,7 @@ async def list_revisions(
 
 @router.post(
     "/{workflow_id}/revisions",
+    operation_id="createWorkflowRevision",
     response_model=WorkflowRevisionOut,
     status_code=status.HTTP_201_CREATED,
 )
@@ -215,6 +216,7 @@ async def create_revision(
 
 @router.get(
     "/{workflow_id}/revisions/{revision_id}",
+    operation_id="getWorkflowRevision",
     response_model=WorkflowRevisionOut,
 )
 async def get_revision(
@@ -239,6 +241,7 @@ async def get_revision(
 
 @router.post(
     "/{workflow_id}/revisions/{revision_id}/publish",
+    operation_id="publishWorkflowRevision",
     response_model=WorkflowRevisionOut,
 )
 async def publish_revision(
@@ -280,6 +283,7 @@ async def publish_revision(
 
 @router.post(
     "/{workflow_id}/revisions/{revision_id}/validate",
+    operation_id="validateWorkflowRevision",
     response_model=RevisionValidationResult,
 )
 async def validate_revision_endpoint(

@@ -18,7 +18,7 @@ class CreditUpdate(BaseModel):
     operation: str  # "add" or "subtract"
 
 
-@router.get("/{user_id}")
+@router.get("/{user_id}", operation_id="getAdminUser")
 async def get_user(
     user_id: str,
     db: Session = Depends(get_db),
@@ -41,7 +41,7 @@ async def get_user(
     }
 
 
-@router.get("/{user_id}/jobs")
+@router.get("/{user_id}/jobs", operation_id="getAdminUserJobs")
 async def get_user_jobs(
     user_id: str,
     db: Session = Depends(get_db),
@@ -67,7 +67,7 @@ async def get_user_jobs(
     }
 
 
-@router.post("/{user_id}/credits")
+@router.post("/{user_id}/credits", operation_id="updateAdminUserCredits")
 async def update_user_credits(
     user_id: str,
     update: CreditUpdate,

@@ -173,3 +173,61 @@ def _iter_files(path: Path) -> Iterable[Path]:
     for entry in path.rglob("*"):
         if entry.is_file():
             yield entry
+
+
+# AI-callable wrapper functions for agent use
+def _ai_clone_repo(repo_url: str, git_ref: str = "main") -> dict:
+    """
+    Clone a GitHub repository to a temporary directory.
+    
+    Args:
+        repo_url: GitHub repository URL (https://github.com/user/repo)
+        git_ref: Branch, tag, or commit hash (default: main)
+    
+    Returns:
+        Dictionary with local_path, commit_hash, and files_count
+    """
+    try:
+        local_path = clone_repository(repo_url)
+        files = list_repository_files(local_path)
+        
+        # Get commit hash if possible
+        commit_hash = "unknown"
+        try:
+            git_dir = Path(local_path) / ".git"
+            if git_dir.exists():
+                head_file = git_dir / "HEAD"
+                if head_file.exists():
+                    commit_hash = head_file.read_text().strip()[:7]
+        except Exception:
+            pass
+        
+        return {
+            "local_path": local_path,
+            "commit_hash": commit_hash,
+            "files_count": len(files)
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "local_path": "",
+            "commit_hash": "",
+            "files_count": 0
+        }
+
+
+def _ai_list_files(repo_path: str) -> dict:
+    """
+    List files in a cloned repository directory.
+    
+    Args:
+        repo_path: Path to repository directory
+    
+    Returns:
+        Dictionary with files list
+    """
+    try:
+        files = list_repository_files(repo_path)
+        return {"files": files}
+    except Exception as e:
+        return {"error": str(e), "files": []}

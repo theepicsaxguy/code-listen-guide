@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 logger = logging.getLogger(__name__)
 
 
-@router.get("/dashboard/stats")
+@router.get("/dashboard/stats", operation_id="getDashboardStats")
 async def get_dashboard_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
@@ -63,7 +63,7 @@ async def get_dashboard_stats(
         )
 
 
-@router.get("/users")
+@router.get("/users", operation_id="getUsers")
 async def get_users(
     page: int = Query(1, ge=1),
     search: Optional[str] = Query(None),
@@ -123,7 +123,7 @@ async def get_users(
         )
 
 
-@router.get("/users/{user_id}")
+@router.get("/users/{user_id}", operation_id="getUserById")
 async def get_user(
     user_id: str,
     db: Session = Depends(get_db),
@@ -163,7 +163,7 @@ async def get_user(
         )
 
 
-@router.patch("/users/{user_id}/status")
+@router.patch("/users/{user_id}/status", operation_id="updateUserStatus")
 async def update_user_status(
     user_id: str,
     status_data: dict,
@@ -209,7 +209,7 @@ async def update_user_status(
         )
 
 
-@router.get("/users/{user_id}/jobs")
+@router.get("/users/{user_id}/jobs", operation_id="getUserJobs")
 async def get_user_jobs(
     user_id: str,
     db: Session = Depends(get_db),
@@ -254,7 +254,7 @@ async def get_user_jobs(
         )
 
 
-@router.post("/users/{user_id}/credits")
+@router.post("/users/{user_id}/credits", operation_id="updateUserCredits")
 async def update_user_credits(
     user_id: str,
     credit_data: dict,
@@ -327,7 +327,7 @@ async def update_user_credits(
         )
 
 
-@router.get("/jobs")
+@router.get("/jobs", operation_id="getAllJobs")
 async def get_all_jobs(
     page: int = Query(1, ge=1),
     status_filter: Optional[str] = Query(None),
@@ -380,7 +380,7 @@ async def get_all_jobs(
         )
 
 
-@router.get("/audit-logs")
+@router.get("/audit-logs", operation_id="getAuditLogs")
 async def get_audit_logs(
     page: int = Query(1, ge=1),
     action: Optional[str] = Query(None),
@@ -404,7 +404,7 @@ async def get_audit_logs(
     }
 
 
-@router.get("/settings")
+@router.get("/settings", operation_id="getSettings")
 async def get_settings(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
@@ -431,7 +431,7 @@ async def get_settings(
     }
 
 
-@router.patch("/settings")
+@router.patch("/settings", operation_id="updateSettings")
 async def update_settings(
     settings_data: dict,
     db: Session = Depends(get_db),
@@ -447,7 +447,7 @@ async def update_settings(
     return {"success": True}
 
 
-@router.get("/payments")
+@router.get("/payments", operation_id="getPayments")
 async def get_payments(
     page: int = Query(1, ge=1),
     db: Session = Depends(get_db),
@@ -509,7 +509,7 @@ async def get_payments(
         )
 
 
-@router.get("/payments/stats")
+@router.get("/payments/stats", operation_id="getPaymentStats")
 async def get_payment_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
@@ -610,7 +610,7 @@ async def get_payment_stats(
         )
 
 
-@router.get("/payments/{payment_id}")
+@router.get("/payments/{payment_id}", operation_id="getPaymentDetails")
 async def get_payment_details(
     payment_id: str,
     db: Session = Depends(get_db),
@@ -686,7 +686,7 @@ async def get_payment_details(
         )
 
 
-@router.get("/payments/search")
+@router.get("/payments/search", operation_id="searchPayments")
 async def search_payments(
     query: Optional[str] = Query(None),
     status_filter: Optional[str] = Query(None, alias="status"),
@@ -785,7 +785,7 @@ async def search_payments(
         )
 
 
-@router.post("/payments/{payment_id}/refund")
+@router.post("/payments/{payment_id}/refund", operation_id="refundPayment")
 async def refund_payment(
     payment_id: str,
     refund_data: RefundRequest,
@@ -1084,7 +1084,7 @@ async def refund_payment(
         )
 
 
-@router.get("/payments/export")
+@router.get("/payments/export", operation_id="exportPayments")
 async def export_payments(
     format: str = Query("csv", regex="^(csv|json)$"),
     start_date: Optional[str] = Query(None),
@@ -1194,7 +1194,7 @@ async def export_payments(
         )
 
 
-@router.get("/content")
+@router.get("/content", operation_id="getContent")
 async def get_content(
     page: int = Query(1, ge=1),
     status_filter: Optional[str] = Query(None),
@@ -1265,7 +1265,7 @@ async def get_content(
     }
 
 
-@router.get("/support/tickets")
+@router.get("/support/tickets", operation_id="getSupportTickets")
 async def get_support_tickets(
     page: int = Query(1, ge=1),
     status_filter: Optional[str] = Query(None, alias="status"),
@@ -1297,7 +1297,7 @@ async def get_support_tickets(
         )
 
 
-@router.get("/support/tickets/{ticket_id}")
+@router.get("/support/tickets/{ticket_id}", operation_id="getSupportTicket")
 async def get_support_ticket(
     ticket_id: str,
     db: Session = Depends(get_db),
@@ -1324,7 +1324,7 @@ async def get_support_ticket(
         )
 
 
-@router.post("/support/tickets/{ticket_id}/reply")
+@router.post("/support/tickets/{ticket_id}/reply", operation_id="replyToTicket")
 async def reply_to_ticket(
     ticket_id: str,
     reply_data: dict,
@@ -1357,7 +1357,7 @@ async def reply_to_ticket(
         )
 
 
-@router.patch("/support/tickets/{ticket_id}/status")
+@router.patch("/support/tickets/{ticket_id}/status", operation_id="updateTicketStatus")
 async def update_ticket_status(
     ticket_id: str,
     status_data: dict,
@@ -1390,7 +1390,7 @@ async def update_ticket_status(
         )
 
 
-@router.get("/support/canned-replies")
+@router.get("/support/canned-replies", operation_id="getCannedReplies")
 async def get_canned_replies(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),

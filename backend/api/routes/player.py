@@ -70,7 +70,7 @@ async def get_audiobook_player_data(
     }
 
 
-@router.get("/{job_id}/download/{deliverable_type}")
+@router.get("/{job_id}/download/{deliverable_type}", operation_id="downloadDeliverable")
 async def download_deliverable(
     job_id: uuid.UUID, deliverable_type: str, db: Session = Depends(get_db)
 ) -> Dict[str, str]:

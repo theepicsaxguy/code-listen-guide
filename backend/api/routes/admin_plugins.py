@@ -178,7 +178,7 @@ def _serialize_tool_descriptor(descriptor: ToolDescriptor) -> ToolRegistryItem:
     )
 
 
-@tools_router.get("/registry", response_model=ToolRegistryListResponse)
+@tools_router.get("/registry", operation_id="getToolRegistry", response_model=ToolRegistryListResponse)
 async def get_tool_registry(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -213,7 +213,7 @@ async def get_tool_registry(
     )
 
 
-@router.get("", response_model=List[PluginOut])
+@router.get("", operation_id="listPlugins", response_model=List[PluginOut])
 async def list_plugins(
     db: Session = Depends(get_db),
     _current_admin=Depends(require_admin),
@@ -228,7 +228,7 @@ async def list_plugins(
     return [_serialize_plugin(item) for item in plugins]
 
 
-@tools_router.get("/code-registry", response_model=ToolRegistryListResponse)
+@tools_router.get("/code-registry", operation_id="getCodeRegistryPlugins", response_model=ToolRegistryListResponse)
 async def get_code_registry_plugins(
     _current_admin=Depends(require_admin),
 ) -> ToolRegistryListResponse:
@@ -252,7 +252,7 @@ async def get_code_registry_plugins(
     )
 
 
-@router.post("", response_model=PluginOut, status_code=status.HTTP_201_CREATED)
+@router.post("", operation_id="createPlugin", response_model=PluginOut, status_code=status.HTTP_201_CREATED)
 async def create_plugin(
     payload: PluginCreate,
     db: Session = Depends(get_db),
@@ -303,7 +303,7 @@ async def create_plugin(
     return _serialize_plugin(plugin)
 
 
-@router.get("/{plugin_id}", response_model=PluginOut)
+@router.get("/{plugin_id}", operation_id="getPlugin", response_model=PluginOut)
 async def get_plugin(
     plugin_id: UUID,
     db: Session = Depends(get_db),
@@ -317,7 +317,7 @@ async def get_plugin(
     return _serialize_plugin(plugin)
 
 
-@router.patch("/{plugin_id}", response_model=PluginOut)
+@router.patch("/{plugin_id}", operation_id="updatePlugin", response_model=PluginOut)
 async def update_plugin(
     plugin_id: UUID,
     payload: PluginUpdate,
@@ -381,7 +381,7 @@ async def update_plugin(
     return _serialize_plugin(plugin)
 
 
-@router.delete("/{plugin_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{plugin_id}", operation_id="deletePlugin", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_plugin(
     plugin_id: UUID,
     db: Session = Depends(get_db),

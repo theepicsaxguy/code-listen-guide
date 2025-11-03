@@ -6,9 +6,9 @@ export default defineConfig({
       target: 'http://localhost:8000/openapi.json',
     },
     output: {
-      target: './src/lib/api/generated',
+      target: './src/lib/api/generated.ts',
       client: 'react-query',
-      mode: 'tags-split',
+      mode: 'single',
       override: {
         mutator: {
           path: './src/lib/api/mutator.ts',
