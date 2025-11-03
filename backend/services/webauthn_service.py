@@ -199,6 +199,30 @@ class WebAuthnService:
             # Fallback: return as-is if already serializable
             return options
 
+    def generate_conditional_authentication_options(self) -> Dict:
+        """
+        Generate authentication options for conditional UI (no email required).
+
+        Returns:
+            Dictionary with authentication options (challenge, etc.)
+            Without allow_credentials, so browser shows all available passkeys.
+        """
+        # Generate authentication options without allow_credentials
+        # This enables conditional UI where browser shows all passkeys for the domain
+        options = generate_authentication_options(
+            rp_id=self.rp_id,
+            allow_credentials=None,  # None enables conditional UI
+            user_verification=UserVerificationRequirement.PREFERRED,
+        )
+
+        # Convert options to dict
+        if hasattr(options, 'model_dump'):
+            return options.model_dump(mode='json')
+        elif hasattr(options, 'dict'):
+            return options.dict()
+        else:
+            return options
+
     def verify_authentication(
         self,
         authentication_response: Dict,

@@ -6,6 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from backend.api.dependencies import get_current_user
 from backend.api.schemas.job import (
@@ -69,9 +70,12 @@ async def list_jobs(
     db: Session = Depends(get_db),
 ):
     """Return a paginated list of jobs for the current user."""
+    # Build base query
     query = db.query(Job).filter(Job.user_id == current_user.id)
     if status_filter:
         query = query.filter(Job.status == status_filter)
+    
+    # Count is optimized by composite index (ix_jobs_user_status)
     total = query.count()
     items = query.order_by(Job.created_at.desc()).offset(offset).limit(limit).all()
     page = (offset // limit) + 1 if limit else 1

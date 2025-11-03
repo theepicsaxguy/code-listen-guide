@@ -147,7 +147,7 @@ class PasskeyRegistrationResponse(BaseModel):
 class PasskeyAuthenticationOptionsRequest(BaseModel):
     """Request to generate passkey authentication options."""
 
-    email: EmailStr
+    email: Optional[EmailStr] = None  # Optional for conditional UI
 
 
 class PasskeyAuthenticationOptionsResponse(BaseModel):

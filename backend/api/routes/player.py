@@ -7,6 +7,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from backend.api.schemas.chapter import ChapterListResponse, ChapterResponse
 from backend.api.schemas.job import JobResponse
@@ -32,6 +33,7 @@ async def get_audiobook_player_data(
             status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
         )
 
+    # Fetch chapters and deliverables in parallel queries
     chapters = (
         db.query(Chapter)
         .filter(Chapter.job_id == job_id)
@@ -44,8 +46,13 @@ async def get_audiobook_player_data(
         .order_by(Deliverable.created_at.desc())
         .all()
     )
-
-    total_duration = sum(ch.audio_duration_seconds or 0 for ch in chapters)
+    
+    # Use SQL aggregation for total duration instead of Python sum
+    total_duration = (
+        db.query(func.sum(Chapter.audio_duration_seconds))
+        .filter(Chapter.job_id == job_id)
+        .scalar() or 0
+    )
 
     return {
         "job": JobResponse.from_orm(job),

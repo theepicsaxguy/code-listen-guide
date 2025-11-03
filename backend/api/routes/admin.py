@@ -228,7 +228,19 @@ async def get_user_jobs(
                 detail="User not found"
             )
 
-        jobs = db.query(Job).filter(Job.user_id == user_id).order_by(desc(Job.created_at)).all()
+        # Add pagination to prevent loading all jobs at once
+        page = 1
+        per_page = 50
+        offset = (page - 1) * per_page
+        total = db.query(Job).filter(Job.user_id == user_id).count()
+        jobs = (
+            db.query(Job)
+            .filter(Job.user_id == user_id)
+            .order_by(desc(Job.created_at))
+            .offset(offset)
+            .limit(per_page)
+            .all()
+        )
 
         return {
             "jobs": [
@@ -1227,14 +1239,25 @@ async def get_content(
     total = query.count()
     jobs = query.order_by(desc(Job.created_at)).offset(offset).limit(per_page).all()
 
-    # Get deliverables for each job
+    # Get all deliverables for all jobs in a single query (fixes N+1 query problem)
+    job_ids = [job.id for job in jobs]
+    all_deliverables = (
+        db.query(Deliverable)
+        .filter(Deliverable.job_id.in_(job_ids))
+        .all()
+    ) if job_ids else []
+    
+    # Group deliverables by job_id for O(1) lookup
+    deliverables_by_job = {}
+    for deliverable in all_deliverables:
+        if deliverable.job_id not in deliverables_by_job:
+            deliverables_by_job[deliverable.job_id] = []
+        deliverables_by_job[deliverable.job_id].append(deliverable)
+
+    # Build job list with deliverables
     job_list = []
     for job in jobs:
-        deliverables = (
-            db.query(Deliverable)
-            .filter(Deliverable.job_id == job.id)
-            .all()
-        )
+        deliverables = deliverables_by_job.get(job.id, [])
         
         # Find the full audiobook URL if available
         full_audiobook = next(

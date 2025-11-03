@@ -3,8 +3,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { PasskeySetupPrompt } from "@/components/PasskeySetupPrompt";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -41,15 +42,12 @@ import PolicyQuotaDashboard from "./pages/admin/PolicyQuota";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
+const AppRoutes = () => {
+  const { showPasskeyPrompt, setShowPasskeyPrompt } = useAuth();
+
+  return (
+    <>
+      <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/why-we-exist" element={<WhyWeExist />} />
               <Route path="/auth" element={<Auth />} />
@@ -87,7 +85,24 @@ const App = () => (
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
               <Route path="*" element={<NotFound />} />
-            </Routes>
+      </Routes>
+      <PasskeySetupPrompt 
+        open={showPasskeyPrompt} 
+        onOpenChange={setShowPasskeyPrompt} 
+      />
+    </>
+  );
+};
+
+const App = () => (
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

@@ -29,6 +29,27 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/parse", tags=["parse"])
 
+# Maximum concurrent file reads to prevent overwhelming the system
+MAX_CONCURRENT_FILE_READS = 10
+
+
+async def _read_file_async(file_path: Path) -> tuple[str, str]:
+    """
+    Read a file asynchronously.
+    
+    Returns:
+        Tuple of (file_path, content) or (file_path, "") on error
+    """
+    try:
+        def _read_sync(path: Path) -> str:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                return f.read()
+        content = await asyncio.to_thread(_read_sync, file_path)
+        return (str(file_path), content)
+    except Exception as e:
+        logger.warning(f"Could not read {file_path}: {e}")
+        return (str(file_path), "")
+
 
 @router.post("/repository", operation_id="parseRepository", response_model=ParseRepositoryResponse)
 async def parse_repository(
@@ -138,6 +159,11 @@ async def parse_repository(
         # Both chonkie and tree-sitter return {modules: {...}}
         raw_modules = analysis_result.get("modules", {})
 
+        # Collect files that need to be read from disk (batch processing)
+        files_to_read: List[tuple[str, Path]] = []
+        filtered_modules: Dict[str, Dict] = {}
+
+        # First pass: filter and collect files that need reading
         for file_path, file_data in raw_modules.items():
             # Apply include/exclude filters if specified
             if request.include_patterns and not _matches_patterns(
@@ -150,17 +176,40 @@ async def parse_repository(
             ):
                 continue
 
-            # Get content from file_data or read from disk if not present
+            # Store filtered module data
+            filtered_modules[file_path] = file_data
+
+            # Collect files that need to be read from disk
             content = file_data.get("content", "")
             if not content and repo_path:
-                # Tree-sitter doesn't include content, so read it
-                try:
-                    file_full_path = Path(repo_path) / file_path
-                    if file_full_path.exists():
-                        with open(file_full_path, "r", encoding="utf-8", errors="ignore") as f:
-                            content = f.read()
-                except Exception as e:
-                    logger.warning(f"Could not read {file_path}: {e}")
+                file_full_path = Path(repo_path) / file_path
+                if file_full_path.exists():
+                    files_to_read.append((file_path, file_full_path))
+
+        # Batch read files with concurrency limit
+        file_contents: Dict[str, str] = {}
+        if files_to_read:
+            semaphore = asyncio.Semaphore(MAX_CONCURRENT_FILE_READS)
+            
+            async def _read_with_semaphore(file_path_str: str, file_path_obj: Path) -> tuple[str, str]:
+                async with semaphore:
+                    return await _read_file_async(file_path_obj)
+            
+            # Read all files concurrently (with semaphore limiting)
+            read_tasks = [
+                _read_with_semaphore(file_path_str, file_path_obj)
+                for file_path_str, file_path_obj in files_to_read
+            ]
+            results = await asyncio.gather(*read_tasks)
+            
+            # Store results in dictionary
+            for file_path_str, content in results:
+                file_contents[file_path_str] = content
+
+        # Second pass: process filtered modules with content
+        for file_path, file_data in filtered_modules.items():
+            # Get content from file_data or from batch read results
+            content = file_data.get("content", "") or file_contents.get(file_path, "")
 
             # Apply file size filter
             file_size = len(content.encode("utf-8"))

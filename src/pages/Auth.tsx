@@ -179,17 +179,8 @@ export default function Auth() {
                         onClick={async () => {
                           setIsPasskeyLoading(true);
                           try {
-                            const formData = new FormData(document.querySelector('form') as HTMLFormElement);
-                            const email = formData.get('email');
-                            if (!email || typeof email !== 'string') {
-                              toast({
-                                title: 'Validation Error',
-                                description: 'Please enter your email first',
-                                variant: 'danger',
-                              });
-                              return;
-                            }
-                            await loginWithPasskey(email.trim());
+                            // Conditional UI: no email required, browser shows all passkeys
+                            await loginWithPasskey();
                             toast({ title: 'Welcome back!', description: 'Successfully logged in with passkey.' });
                             navigate('/dashboard');
                           } catch (error) {

@@ -38,11 +38,11 @@ interface AuthenticationOptions {
   challenge: string;
   timeout?: number;
   rp_id: string;
-  allow_credentials: Array<{
+  allow_credentials?: Array<{
     id: string;
     type: string;
     transports?: string[];
-  }>;
+  }>; // Optional for conditional UI
   user_verification?: string;
 }
 
@@ -167,11 +167,14 @@ export async function authenticatePasskey(
     timeout: options.timeout,
     rpId: options.rp_id,
     userVerification: options.user_verification as UserVerificationRequirement,
-    allowCredentials: options.allow_credentials.map((cred) => ({
-      id: base64urlToArrayBuffer(cred.id),
-      type: cred.type as PublicKeyCredentialType,
-      transports: cred.transports as AuthenticatorTransport[],
-    })),
+    // Conditional UI: if allow_credentials is empty/undefined, browser shows all passkeys
+    allowCredentials: options.allow_credentials && options.allow_credentials.length > 0
+      ? options.allow_credentials.map((cred) => ({
+          id: base64urlToArrayBuffer(cred.id),
+          type: cred.type as PublicKeyCredentialType,
+          transports: cred.transports as AuthenticatorTransport[],
+        }))
+      : undefined, // undefined enables conditional UI
   };
 
   try {

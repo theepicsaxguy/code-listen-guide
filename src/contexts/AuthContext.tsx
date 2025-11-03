@@ -13,6 +13,7 @@ import {
   authenticatePasskey as authenticatePasskeyAPI,
   getPasskeyRegistrationOptions,
   registerPasskey as registerPasskeyAPI,
+  listPasskeys,
 } from '@/lib/api/passkeys';
 import {
   authenticatePasskey as authenticatePasskeyWebAuthn,
@@ -25,11 +26,13 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithPasskey: (email: string) => Promise<void>;
+  loginWithPasskey: (email?: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   registerPasskey: (name?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: string | null;
+  showPasskeyPrompt: boolean;
+  setShowPasskeyPrompt: (show: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [showPasskeyPrompt, setShowPasskeyPrompt] = useState(false);
 
   const loginMutation = useLogin();
   const registerMutation = useRegister();
@@ -109,6 +113,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restoreSession();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const checkAndShowPasskeyPrompt = async () => {
+    // Check if user dismissed the prompt
+    const dismissed = localStorage.getItem('passkey_prompt_dismissed') === 'true';
+    if (dismissed) {
+      return;
+    }
+
+    // Check if WebAuthn is supported
+    if (!isWebAuthnSupported()) {
+      return;
+    }
+
+    try {
+      // Check if user has any passkeys
+      const passkeys = await listPasskeys();
+      const activePasskeys = passkeys.filter(p => p.is_active);
+      
+      // Show prompt if user has no active passkeys
+      if (activePasskeys.length === 0) {
+        setShowPasskeyPrompt(true);
+      }
+    } catch (error) {
+      // If API call fails, don't show prompt
+      console.error('Failed to check passkeys:', error);
+    }
+  };
+
   const login = async (email: string, password: string) => {
     const response = await loginMutation.mutateAsync({
       data: {
@@ -130,6 +161,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userResult = await getMeQuery.refetch();
     if (userResult.data) {
       setUser(userResult.data as unknown as User);
+      // Check for passkeys and show prompt if needed
+      await checkAndShowPasskeyPrompt();
     }
   };
 
@@ -141,12 +174,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await login(email, password);
   };
 
-  const loginWithPasskey = async (email: string) => {
+  const loginWithPasskey = async (email?: string) => {
     if (!isWebAuthnSupported()) {
       throw new Error('WebAuthn is not supported in this browser');
     }
 
-    // Get authentication options
+    // Get authentication options (with or without email for conditional UI)
     const authOptions = await getPasskeyAuthenticationOptions(email);
 
     // Authenticate with passkey
@@ -175,6 +208,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userResult = await getMeQuery.refetch();
     if (userResult.data) {
       setUser(userResult.data as unknown as User);
+      // Check for passkeys and show prompt if needed
+      await checkAndShowPasskeyPrompt();
     }
   };
 
@@ -198,6 +233,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       challenge: regOptions.challenge,
       name,
     });
+
+    // Hide the prompt after successful registration
+    setShowPasskeyPrompt(false);
+    // Clear the dismissal flag so they can see it again if they delete all passkeys
+    localStorage.removeItem('passkey_prompt_dismissed');
   };
 
   const logout = async () => {
@@ -238,7 +278,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshToken, refreshMutation]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, loginWithPasskey, register, registerPasskey, logout, refreshToken }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isLoading, 
+      login, 
+      loginWithPasskey, 
+      register, 
+      registerPasskey, 
+      logout, 
+      refreshToken,
+      showPasskeyPrompt,
+      setShowPasskeyPrompt,
+    }}>
       {children}
     </AuthContext.Provider>
   );

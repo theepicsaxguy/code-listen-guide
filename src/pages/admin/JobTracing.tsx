@@ -45,12 +45,16 @@ export default function JobTracing() {
       if (!searchedJobId) {
         return false;
       }
+      // Check if tab is visible
+      if (document.hidden) {
+        return false;
+      }
       if (!data) {
-        return 4000;
+        return 10000; // Increased from 4s to 10s
       }
       return data.status === "completed" || data.status === "failed"
         ? false
-        : 4000;
+        : 10000; // Increased from 4s to 10s
     },
   });
 

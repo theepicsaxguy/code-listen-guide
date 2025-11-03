@@ -94,16 +94,17 @@ export async function registerPasskey(
 
 /**
  * Get passkey authentication options.
+ * @param email Optional email for traditional flow. If not provided, uses conditional UI.
  */
 export async function getPasskeyAuthenticationOptions(
-  email: string
+  email?: string
 ): Promise<PasskeyAuthenticationOptions> {
   const response = await fetch(`${API_BASE}/auth/passkeys/authentication/options`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify(email ? { email } : {}),
   });
 
   if (!response.ok) {

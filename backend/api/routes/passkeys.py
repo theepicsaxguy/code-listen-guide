@@ -172,47 +172,64 @@ async def get_passkey_authentication_options(
     Generate passkey authentication options.
 
     Returns challenge and options for authenticating with a passkey.
+    Supports conditional UI (no email required) when email is not provided.
     """
-    # Find user by email
-    stmt = select(User).where(User.email == auth_data.email.lower())
-    user = db.scalars(stmt).first()
+    # If email is provided, use traditional flow
+    if auth_data.email:
+        # Find user by email
+        stmt = select(User).where(User.email == auth_data.email.lower())
+        user = db.scalars(stmt).first()
 
-    if not user:
-        # Don't reveal if user exists (security best practice)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication failed",
+        if not user:
+            # Don't reveal if user exists (security best practice)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication failed",
+            )
+
+        # Get user's active passkeys
+        stmt = select(Passkey).where(
+            Passkey.user_id == user.id,
+            Passkey.is_active == True  # noqa: E712
+        )
+        passkeys = list(db.scalars(stmt).all())
+
+        if not passkeys:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No passkeys registered for this user",
+            )
+
+        # Generate authentication options with specific credentials
+        options = webauthn_service.generate_authentication_options(
+            user=user,
+            passkeys=passkeys,
         )
 
-    # Get user's active passkeys
-    stmt = select(Passkey).where(
-        Passkey.user_id == user.id,
-        Passkey.is_active == True  # noqa: E712
-    )
-    passkeys = list(db.scalars(stmt).all())
-
-    if not passkeys:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No passkeys registered for this user",
+        # Store challenge for verification
+        challenge = options["challenge"]
+        challenge_key = f"auth:{user.id}:{challenge}"
+        await challenge_store.store(
+            challenge_key,
+            {
+                "user_id": str(user.id),
+                "challenge": challenge,
+            },
         )
+    else:
+        # Conditional UI flow - no email, no specific credentials
+        # Browser will show all available passkeys for this domain
+        options = webauthn_service.generate_conditional_authentication_options()
 
-    # Generate authentication options
-    options = webauthn_service.generate_authentication_options(
-        user=user,
-        passkeys=passkeys,
-    )
-
-    # Store challenge for verification
-    challenge = options["challenge"]
-    challenge_key = f"auth:{user.id}:{challenge}"
-    await challenge_store.store(
-        challenge_key,
-        {
-            "user_id": str(user.id),
-            "challenge": challenge,
-        },
-    )
+        # Store challenge without user_id (will be determined from credential)
+        challenge = options["challenge"]
+        challenge_key = f"auth:conditional:{challenge}"
+        await challenge_store.store(
+            challenge_key,
+            {
+                "challenge": challenge,
+            },
+        )
 
     return PasskeyAuthenticationOptionsResponse(
         options=options,
@@ -236,6 +253,7 @@ async def authenticate_passkey(
     Complete passkey authentication.
 
     Verifies the authentication response and returns JWT tokens.
+    Supports both traditional (with email) and conditional UI flows.
     """
     # Find passkey by credential ID
     passkey = db.query(Passkey).filter(
@@ -249,9 +267,15 @@ async def authenticate_passkey(
             detail="Authentication failed",
         )
 
-    # Verify challenge
+    # Try to verify challenge - check both traditional and conditional UI keys
     challenge_key = f"auth:{passkey.user_id}:{auth_data.challenge}"
     stored_challenge = await challenge_store.get(challenge_key)
+    
+    # If not found, try conditional UI challenge
+    if not stored_challenge:
+        challenge_key = f"auth:conditional:{auth_data.challenge}"
+        stored_challenge = await challenge_store.get(challenge_key)
+    
     if not stored_challenge:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

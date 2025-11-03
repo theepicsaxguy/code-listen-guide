@@ -27,12 +27,30 @@ export default function JobDetails() {
   const { toast } = useToast();
   const [isCancelling, setIsCancelling] = useState(false);
 
+  // Use Page Visibility API to pause polling when tab is not visible
+  const [isVisible, setIsVisible] = useState(true);
+  
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsVisible(!document.hidden);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Poll less frequently (5s instead of 3s) and only when tab is visible
+  // Stop polling when job is completed or failed
   const { data: job, isLoading, refetch } = useGetJob(
     jobId || '',
     {
       query: {
         enabled: !!jobId,
-        refetchInterval: 3000, // Poll every 3s
+        refetchInterval: (data) => {
+          if (!isVisible) return false;
+          if (!data) return 5000;
+          // Stop polling for completed/failed jobs
+          return data.status === "completed" || data.status === "failed" ? false : 5000;
+        },
       },
     }
   );

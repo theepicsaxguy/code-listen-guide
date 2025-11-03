@@ -44,11 +44,26 @@ async def get_user(
 @router.get("/{user_id}/jobs", operation_id="getAdminUserJobs")
 async def get_user_jobs(
     user_id: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin_user),
 ):
-    """Get all jobs for a specific user."""
-    jobs = db.query(Job).filter(Job.user_id == user_id).order_by(Job.created_at.desc()).all()
+    """Get paginated jobs for a specific user."""
+    offset = (page - 1) * limit
+    
+    # Get total count
+    total = db.query(Job).filter(Job.user_id == user_id).count()
+    
+    # Get paginated jobs
+    jobs = (
+        db.query(Job)
+        .filter(Job.user_id == user_id)
+        .order_by(Job.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
     
     return {
         "jobs": [
@@ -63,7 +78,11 @@ async def get_user_jobs(
                 "created_at": job.created_at.isoformat() if job.created_at else None,
             }
             for job in jobs
-        ]
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "has_more": offset + limit < total,
     }
 
 

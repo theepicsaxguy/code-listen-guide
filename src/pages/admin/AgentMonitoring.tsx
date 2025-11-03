@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useGetAgentStats,
   useListAgentJobs,
@@ -143,20 +143,31 @@ export default function AgentMonitoring() {
  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
  const [showLogs, setShowLogs] = useState(false);
 
- // Fetch agent stats
+ // Use Page Visibility API to pause polling when tab is not visible
+ const [isVisible, setIsVisible] = useState(true);
+ 
+ useEffect(() => {
+   const handleVisibilityChange = () => {
+     setIsVisible(!document.hidden);
+   };
+   document.addEventListener('visibilitychange', handleVisibilityChange);
+   return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+ }, []);
+
+ // Fetch agent stats - reduced polling interval from 5s to 15s
   const { data: stats, isLoading: statsLoading } = useGetAgentStats<AgentStats>({
    query: {
-     refetchInterval: 5000, // Refresh every 5 seconds
+     refetchInterval: isVisible ? 15000 : false, // Refresh every 15 seconds when visible
    },
  });
 
- // Fetch agent jobs
+ // Fetch agent jobs - reduced polling interval from 3s to 10s
  const status = statusFilter === "all" ? undefined : statusFilter;
   const { data: jobsData, isLoading: jobsLoading, refetch: refetchJobs } = useListAgentJobs<{ jobs: AgentJob[]; total: number }>(
    status ? { status } : undefined,
    {
      query: {
-       refetchInterval: 3000, // Refresh every 3 seconds for real-time feel
+       refetchInterval: isVisible ? 10000 : false, // Refresh every 10 seconds when visible
      },
    }
  );
