@@ -69,7 +69,7 @@ Goal: Shift from linear file enumeration to **relational episode graph**.
 The minimum viable Episode substrate has been introduced to unblock planner & dialogue work:
 - `Episode` SQLAlchemy model + Alembic migration (table created; includes ordinal/number, title, status, draft/final script fields stubbed)
 - Pydantic schemas: `EpisodeResponse`, `EpisodesListResponse`
-- Read APIs: `GET /api/v1/episodes/job/{job_id}` (ordered list) and `GET /api/v1/episodes/{episode_id}`
+- Read APIs: `GET /api/v1/episodes/job/{job_id}` (ordered list) and `GET /api/v1/episodes/{episode_id}` — owner or admin auth now required
 - Router inclusion in FastAPI app
 - Frontend API client method `getJobEpisodes(jobId)` (read-only consumption path)
 - Basic schema test (`test_episode_schema.py`) validating serialization shape

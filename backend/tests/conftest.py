@@ -55,6 +55,7 @@ os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 from backend.db.session import SessionLocal, get_db  # noqa: E402
 from backend.db.base import Base  # noqa: E402
 from backend.utils.auth import create_access_token, create_refresh_token, get_password_hash  # noqa: E402
+from backend.config import get_settings  # noqa: E402
 from backend.models.episode import Episode  # Ensure model imported so Alembic/metadata aware
 
 # ---------------------------------------------------------------------------
@@ -68,13 +69,16 @@ def apply_migrations() -> None:
     If DATABASE_URL is not set, create a temporary file-based sqlite DB so
     JSON-like behavior persists across multiple connections.
     """
-    if not os.getenv("DATABASE_URL"):
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url or db_url.startswith("postgres") or db_url.startswith("postgresql"):
         tmp_dir = tempfile.mkdtemp(prefix="test_db_")
         db_path = Path(tmp_dir) / "test.db"
         os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
 
     alembic_cfg = Config(str(BACKEND_ROOT / "alembic.ini"))
+    get_settings.cache_clear()
     alembic_cfg.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
+    alembic_cfg.set_main_option("script_location", str(BACKEND_ROOT / "db" / "migrations"))
     command.upgrade(alembic_cfg, "head")
 
 
@@ -472,7 +476,10 @@ def auth_tokens(create_user):
 
     def _auth_tokens(user=None, **kwargs):
         user_obj = user or create_user(**kwargs)
-        payload = {"sub": str(user_obj.id)}
+        payload = {
+            "sub": str(user_obj.id),
+            "is_admin": bool(getattr(user_obj, "is_admin", False)),
+        }
         access = create_access_token(payload)
         refresh = create_refresh_token(payload)
         return {"access": access, "refresh": refresh, "user": user_obj}

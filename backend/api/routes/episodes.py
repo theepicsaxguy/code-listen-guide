@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
+from backend.api.dependencies import get_current_user
 from backend.db.session import get_db
 from backend.models.episode import Episode, EpisodeStatus
 from backend.models.job import Job
+from backend.models.user import User
 from backend.api.schemas.episode import EpisodeResponse, EpisodesListResponse
-from backend.services.dependency_analyzer import DependencyAnalyzer, ClusterPlan
+from backend.services.dependency_analyzer import DependencyAnalyzer
 from backend.services.episode_planner import plan_episodes_from_clusters
 from math import ceil
 from backend.config import get_settings
@@ -17,10 +19,6 @@ import math
 import uuid
 import asyncio
 
-# TODO: integrate auth dependency when user system active
-def get_current_user_optional():  # placeholder
-    return None
-
 router = APIRouter(prefix="/episodes", tags=["episodes"])
 
 
@@ -28,9 +26,16 @@ router = APIRouter(prefix="/episodes", tags=["episodes"])
 def list_job_episodes(
     job_id: str,
     db: Session = Depends(get_db),
-    _user = Depends(get_current_user_optional),  # noqa: B008
+    current_user: User = Depends(get_current_user),  # noqa: B008
 ):
     """Return all episodes for a job (ordered by episode_number)."""
+    job: Job | None = db.query(Job).get(job_id)
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+
+    if not current_user.is_admin and job.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this job")
+
     episodes: List[Episode] = (
         db.query(Episode)
         .filter(Episode.job_id == job_id)
@@ -44,11 +49,19 @@ def list_job_episodes(
 def get_episode(
     episode_id: str,
     db: Session = Depends(get_db),
-    _user = Depends(get_current_user_optional),  # noqa: B008
+    current_user: User = Depends(get_current_user),  # noqa: B008
 ):
     episode: Episode | None = db.query(Episode).get(episode_id)
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
+
+    job: Job | None = db.query(Job).get(episode.job_id)
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+
+    if not current_user.is_admin and job.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this job")
+
     return episode
 
 
@@ -56,7 +69,7 @@ def get_episode(
 def plan_episodes(
     job_id: str,
     db: Session = Depends(get_db),
-    _user = Depends(get_current_user_optional),  # noqa: B008
+    current_user: User = Depends(get_current_user),  # noqa: B008
 ):
     """Generate initial episode plan for a job.
 
@@ -70,6 +83,9 @@ def plan_episodes(
     job: Job | None = db.query(Job).get(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    if not current_user.is_admin and job.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this job")
 
     existing = (
         db.query(Episode)
