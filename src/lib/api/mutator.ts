@@ -41,9 +41,6 @@ export const customInstance = async <T>(
     url = `${baseUrl}${config.url.startsWith('/') ? '' : '/'}${config.url}`;
   }
 
-  // Get auth token from localStorage
-  const token = localStorage.getItem('auth_token');
-  
   // Extract data/body from config
   const requestBody = (config as any).data || (config as any).body || null;
   
@@ -101,11 +98,6 @@ export const customInstance = async <T>(
         headers.set(key, value);
       }
     });
-  }
-
-  // Add authorization header if token exists
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
   }
 
   // Prepare fetch config (exclude data/body from config, handle separately)

@@ -242,7 +242,8 @@ async def get_me(request: Request, current_user: User = Depends(get_current_user
 @limiter.limit("30/minute")
 async def refresh_token(
     request: Request,
-    payload: TokenRefreshRequest,
+    response: Response,
+    payload: TokenRefreshRequest | None = None,
     db: Session = Depends(get_db),
 ):
     """
@@ -261,18 +262,29 @@ async def refresh_token(
     Raises:
         HTTPException: 401 if refresh token is invalid
     """
-    # Verify token type
-    refresh_token = payload.refresh_token
+    raw_refresh_token = None
+    if payload and payload.refresh_token:
+        raw_refresh_token = payload.refresh_token
+    if raw_refresh_token is None:
+        raw_refresh_token = request.cookies.get("refresh_token")
+    if not raw_refresh_token:
+        response.delete_cookie(key="access_token")
+        response.delete_cookie(key="refresh_token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
 
-    if not verify_token_type(refresh_token, "refresh"):
+    if not verify_token_type(raw_refresh_token, "refresh"):
+        response.delete_cookie(key="access_token")
+        response.delete_cookie(key="refresh_token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
     try:
         # Decode refresh token
-        payload = decode_access_token(refresh_token)
-        user_id = payload.get("sub")
+        decoded_payload = decode_access_token(raw_refresh_token)
+        user_id = decoded_payload.get("sub")
 
         if not user_id:
             raise HTTPException(
@@ -288,8 +300,29 @@ async def refresh_token(
             )
 
         # Generate new tokens
-        new_access_token = create_access_token(data={"sub": str(user.id), "is_admin": user.is_admin})
+        new_access_token = create_access_token(
+            data={"sub": str(user.id), "is_admin": user.is_admin}
+        )
         new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+        is_production = settings.environment.lower() in ("production", "prod")
+
+        response.set_cookie(
+            key="access_token",
+            value=new_access_token,
+            httponly=True,
+            secure=is_production,
+            samesite="lax",
+            max_age=ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=new_refresh_token,
+            httponly=True,
+            secure=is_production,
+            samesite="lax",
+            max_age=30 * 24 * 60 * 60,
+        )
 
         return TokenResponse(
             access_token=new_access_token,
@@ -299,6 +332,8 @@ async def refresh_token(
         )
 
     except Exception:
+        response.delete_cookie(key="access_token")
+        response.delete_cookie(key="refresh_token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
