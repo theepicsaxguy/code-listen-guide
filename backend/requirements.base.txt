@@ -11,7 +11,7 @@ alembic==1.17.1
 psycopg2-binary==2.9.11
 
 # AI Agent Framework (REQUIRED)
-agent-framework-core==1.0.0b251028
+agent-framework-core==1.0.0b251105
 
 # LLM APIs (REQUIRED)
 anthropic==0.72.0
