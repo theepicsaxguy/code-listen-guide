@@ -18,6 +18,7 @@ import uuid
 
 import requests
 from agent_framework import (
+    AIFunction,
     AgentExecutor,
     AgentRunEvent,
     AgentRunUpdateEvent,
@@ -28,7 +29,6 @@ from agent_framework import (
     TextContent,
     WorkflowBuilder,
 )
-from agent_framework import AIFunction, AgentExecutor, ChatMessage, Role, TextContent, WorkflowBuilder
 
 from backend.api.events import emit_job_event
 from backend.config import get_settings
@@ -44,6 +44,7 @@ from backend.tools.db_tools import (
     persist_outline,
 )
 from backend.utils.checkpointing import PostgresCheckpointStorage
+from backend.utils.async_runner import run_async_from_sync
 from backend.db.session import SessionLocal
 from sqlalchemy.orm import Session
 from backend.workflows.dynamic_loader import (
@@ -312,14 +313,12 @@ class AudiobookWorkflow:
                 if selected_files:
                     logger.info(f"Triggering episode planning for job {self.job_id}")
                     # Import here to avoid circular dependency
-                    from backend.api.routes.episodes import plan_episodes
                     try:
                         # Call planning endpoint logic directly
-                        from backend.services.dependency_analyzer import DependencyAnalyzer, ClusterPlan
+                        from backend.services.dependency_analyzer import DependencyAnalyzer
                         from backend.services.episode_planner import plan_episodes_from_clusters
                         import math
-                        from math import ceil
-                        
+
                         metadata = getattr(job, "metadata_json", None) or {}
                         repo_root = metadata.get("local_repo_path", ".")
                         primary_language = getattr(job, "primary_language", None)
@@ -337,14 +336,13 @@ class AudiobookWorkflow:
                         }
                         
                         # Generate LLM-based episode plans
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                        try:
-                            episode_plans = loop.run_until_complete(
-                                plan_episodes_from_clusters(clusters, dependency_graph, architectural_layers, repo_context)
-                            )
-                        finally:
-                            loop.close()
+                        episode_plans = run_async_from_sync(
+                            plan_episodes_from_clusters,
+                            clusters,
+                            dependency_graph,
+                            architectural_layers,
+                            repo_context,
+                        )
                         
                         # Create episode records (simplified version - full logic is in episodes.py)
                         total_tokens = getattr(job, "estimated_total_tokens", None)
@@ -357,7 +355,7 @@ class AudiobookWorkflow:
                             est_tokens = None
                             if total_tokens:
                                 proportional = total_tokens * (cluster_size / size_sum)
-                                est_tokens = int(ceil(proportional * 1.15))
+                                est_tokens = int(math.ceil(proportional * 1.15))
                             
                             cluster_deps = {f: deps for f, deps in dependency_graph.items() if f in cluster.files}
                             arch_boundary = None
