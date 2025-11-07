@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -33,9 +33,12 @@ export function FileTreeSelector({
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
   const [newPattern, setNewPattern] = useState('');
 
-  // Build tree structure from flat modules
-  const buildTree = (): TreeNode[] => {
-    const root: Record<string, TreeNode> = {};
+  const tree = useMemo<TreeNode[]>(() => {
+    type TreeNodeRecord = Omit<TreeNode, 'children'> & {
+      children?: Record<string, TreeNodeRecord>;
+    };
+
+    const root: Record<string, TreeNodeRecord> = {};
 
     Object.entries(modules).forEach(([path, data]) => {
       const parts = path.split('/');
@@ -48,42 +51,37 @@ export function FileTreeSelector({
             name: part,
             path: parts.slice(0, index + 1).join('/'),
             isDirectory: !isLast,
-            children: isLast ? undefined : {},
             metadata: isLast ? data : undefined,
+            children: isLast ? undefined : {},
           };
         }
+
         if (!current[part].isDirectory && index < parts.length - 1) {
-          // Convert file to directory if needed
           current[part].isDirectory = true;
           current[part].children = {};
         }
+
         if (current[part].children) {
-          current = current[part].children as Record<string, TreeNode>;
+          current = current[part].children;
         }
       });
     });
 
-    // Convert to array
-    const convertToArray = (nodes: Record<string, TreeNode>): TreeNode[] => {
-      return Object.values(nodes).map(node => {
-        if (node.children && Object.keys(node.children).length > 0) {
-          return {
-            ...node,
-            children: convertToArray(node.children),
-          };
-        }
-        return node;
-      }).sort((a, b) => {
-        if (a.isDirectory && !b.isDirectory) return -1;
-        if (!a.isDirectory && b.isDirectory) return 1;
-        return a.name.localeCompare(b.name);
-      });
+    const toArray = (nodes: Record<string, TreeNodeRecord>): TreeNode[] => {
+      return Object.values(nodes)
+        .map(({ children, ...rest }) => ({
+          ...rest,
+          children: children ? toArray(children) : undefined,
+        }))
+        .sort((a, b) => {
+          if (a.isDirectory && !b.isDirectory) return -1;
+          if (!a.isDirectory && b.isDirectory) return 1;
+          return a.name.localeCompare(b.name);
+        });
     };
 
-    return convertToArray(root);
-  };
-
-  const tree = buildTree();
+    return toArray(root);
+  }, [modules]);
 
   const toggleDirectory = (path: string) => {
     const newExpanded = new Set(expandedDirs);
