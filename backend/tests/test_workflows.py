@@ -8,6 +8,8 @@ Tests for:
 - Human-in-the-loop approval
 """
 
+import logging
+
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from types import SimpleNamespace
@@ -799,21 +801,20 @@ class TestCheckpointing:
         assert restored_thread.service_thread_id == "thread-123"
 
 
-    def test_tool_call_records_metrics_billing_and_audit(self, monkeypatch):
+    @pytest.mark.asyncio
+    async def test_tool_call_records_metrics_billing_and_audit(self, monkeypatch):
         """Ensure tool instrumentation emits billing and audit payloads."""
+        import asyncio
+        import threading
         from datetime import datetime
         from types import SimpleNamespace
         from uuid import uuid4
 
-        from backend.workflows import audiobook_workflow as workflow_module
         from backend.workflows.dynamic_loader import (
             AgentDescriptor,
-            RevisionDescriptor,
-            StepDescriptor,
             ToolDescriptor,
             ToolCostProfile,
         )
-        from backend.workflows.dynamic_loader import AgentDescriptor, ToolDescriptor
 
         agent_descriptor = AgentDescriptor(
             id=uuid4(),
@@ -840,9 +841,24 @@ class TestCheckpointing:
 
         billing_events: List[Dict[str, Any]] = []
         audit_events: List[Dict[str, Any]] = []
+        billing_threads: List[int] = []
+        audit_threads: List[int] = []
+        billing_event = threading.Event()
+        audit_event = threading.Event()
+        main_thread = threading.get_ident()
 
-        workflow._billing_client = SimpleNamespace(send=lambda payload: billing_events.append(payload))
-        workflow._audit_emitter = SimpleNamespace(emit=lambda payload: audit_events.append(payload))
+        def record_billing(payload: Dict[str, Any]) -> None:
+            billing_threads.append(threading.get_ident())
+            billing_events.append(payload)
+            billing_event.set()
+
+        def record_audit(payload: Dict[str, Any]) -> None:
+            audit_threads.append(threading.get_ident())
+            audit_events.append(payload)
+            audit_event.set()
+
+        workflow._billing_client = SimpleNamespace(send=record_billing)
+        workflow._audit_emitter = SimpleNamespace(emit=record_audit)
 
         tool_descriptor = ToolDescriptor(
             id=uuid4(),
@@ -889,6 +905,9 @@ class TestCheckpointing:
             error=None,
         )
 
+        await asyncio.wait_for(asyncio.to_thread(billing_event.wait, 1), timeout=1.0)
+        await asyncio.wait_for(asyncio.to_thread(audit_event.wait, 1), timeout=1.0)
+
         assert billing_events, "billing payload should be sent"
         billing_payload = billing_events[0]
         assert billing_payload["estimated_cost_cents"] == 10
@@ -904,6 +923,111 @@ class TestCheckpointing:
         assert audit_events[0]["cost"]["provider"] == "llm-provider"
         assert tool_id in dummy_manager.instance_state["billing_summary"]["tools"]
         assert dummy_manager.updated, "workflow manager should persist state"
+        assert billing_threads[0] != main_thread
+        assert audit_threads[0] != main_thread
+
+    @pytest.mark.asyncio
+    async def test_tool_call_logs_background_failures(self, monkeypatch, caplog):
+        """Background dispatch should surface failures through logging."""
+        import asyncio
+        from datetime import datetime
+        from types import SimpleNamespace
+        from uuid import uuid4
+
+        from backend.workflows.dynamic_loader import (
+            AgentDescriptor,
+            ToolDescriptor,
+            ToolCostProfile,
+        )
+
+        caplog.set_level(logging.ERROR)
+
+        agent_descriptor = AgentDescriptor(
+            id=uuid4(),
+            name="outline-agent",
+            module_path="pkg.agents",
+            factory_function="build",
+            description=None,
+            config_schema={},
+            allowed_tools=(),
+            model_identifier="test-model",
+            provider="test-provider",
+            system_prompt="Provide assistance",
+            memory_pointers=(),
+            rollout_enabled=True,
+            rollout_stage="beta",
+            access_policies={"default": {"allow": [], "deny": [], "metadata": {}}, "overrides": []},
+            quota_limits={"default": {"limit": None, "window": None, "cooldown_seconds": None, "metadata": {}}, "overrides": []},
+            approval_requirements={"default": {"mode": "auto", "metadata": {}}, "overrides": []},
+        )
+        workflow, dummy_manager, step_descriptor = self._make_workflow(
+            monkeypatch,
+            agent_descriptor,
+        )
+
+        def failing_billing(_: Dict[str, Any]) -> None:
+            raise RuntimeError("billing-down")
+
+        def failing_audit(_: Dict[str, Any]) -> None:
+            raise RuntimeError("audit-down")
+
+        workflow._billing_client = SimpleNamespace(send=failing_billing)
+        workflow._audit_emitter = SimpleNamespace(emit=failing_audit)
+
+        tool_descriptor = ToolDescriptor(
+            id=uuid4(),
+            name="doc_search",
+            stable_slug="doc-search",
+            semantic_version="1.0.0",
+            module_path="pkg.tools",
+            function_name="run",
+            description=None,
+            input_schema={},
+            output_schema={},
+            owning_team="core-platform",
+            authorization_scope="internal",
+            approval_mode="auto",
+            cost_profile=ToolCostProfile(
+                cost_per_call_cents=None,
+                cost_per_1k_tokens_cents=20,
+                cost_per_second_cents=None,
+                currency="USD",
+                provider="llm-provider",
+                metadata={"unit": "call", "estimated_cost_usd": 0.02},
+            ),
+        )
+
+        trace: Dict[str, Any] = {
+            "tool": tool_descriptor.name,
+            "plugin_id": str(tool_descriptor.id),
+            "agent_id": str(agent_descriptor.id),
+            "agent_name": agent_descriptor.name,
+            "step": step_descriptor.name,
+            "called_at": datetime.utcnow().isoformat(),
+            "input": {"topic": "intro"},
+            "output": {"usage": {"total_tokens": 500}},
+        }
+
+        workflow._finalize_tool_call(
+            trace,
+            status="ok",
+            duration=0.4,
+            agent_descriptor=agent_descriptor,
+            tool_descriptor=tool_descriptor,
+            step_name=step_descriptor.name,
+            authorization={"policy": "agent_tool_allow_list", "allowed": True},
+            error=None,
+        )
+
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+
+        messages = [record.message for record in caplog.records]
+        assert any("Billing dispatch raised an unexpected error" in msg for msg in messages)
+        assert any("Audit dispatch raised an unexpected error" in msg for msg in messages)
+        tool_id = str(tool_descriptor.id)
+        assert workflow._billing_summary[tool_id]["successful_calls"] == 1
+        assert dummy_manager.updated
 
     def test_policy_denies_tool_calls(self, monkeypatch):
         """Agent access policies should block forbidden tools."""

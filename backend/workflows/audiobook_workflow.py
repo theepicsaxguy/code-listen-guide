@@ -245,6 +245,48 @@ class AudiobookWorkflow:
         self._billing_client = _BillingClient(settings.billing_service_url)
         self._audit_emitter = _AuditEmitter(settings.observability_ingest_url)
 
+    def _submit_blocking_task(
+        self,
+        func: Callable[..., Any],
+        /,
+        *args: Any,
+        on_error: Optional[Callable[[BaseException], None]] = None,
+        **kwargs: Any,
+    ) -> None:
+        def invoke() -> Any:
+            return func(*args, **kwargs)
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            try:
+                invoke()
+            except Exception as exc:
+                if on_error is not None:
+                    on_error(exc)
+                else:
+                    logger.exception(
+                        "Background task raised an exception",
+                        exc_info=(type(exc), exc, exc.__traceback__),
+                    )
+            return
+
+        future = loop.run_in_executor(None, invoke)
+
+        def handle_completion(completed: asyncio.Future[Any]) -> None:
+            try:
+                completed.result()
+            except Exception as exc:
+                if on_error is not None:
+                    on_error(exc)
+                else:
+                    logger.exception(
+                        "Background task raised an exception",
+                        exc_info=(type(exc), exc, exc.__traceback__),
+                    )
+
+        future.add_done_callback(handle_completion)
+
     def _build_job_context(self) -> Dict[str, Any]:
         job_record = get_job_by_id(str(self.job_uuid))
         return {
@@ -1418,7 +1460,19 @@ class AudiobookWorkflow:
         if cost_payload:
             record["cost_profile"] = self._coerce_jsonable(cost_payload)
         self._update_billing_summary(record)
-        self._billing_client.send(record)
+
+        def log_billing_failure(exc: BaseException) -> None:
+            logger.error(
+                "Billing dispatch raised an unexpected error",
+                extra={"job_id": self.job_id, "tool_id": record.get("tool_id")},
+                exc_info=(type(exc), exc, exc.__traceback__),
+            )
+
+        self._submit_blocking_task(
+            self._billing_client.send,
+            record,
+            on_error=log_billing_failure,
+        )
         return record
 
     def _forward_audit_event(
@@ -1440,7 +1494,18 @@ class AudiobookWorkflow:
             "cost": cost_record,
             "called_at": trace.get("called_at"),
         }
-        self._audit_emitter.emit(payload)
+        def log_audit_failure(exc: BaseException) -> None:
+            logger.error(
+                "Audit dispatch raised an unexpected error",
+                extra={"job_id": self.job_id, "tool_id": payload.get("tool_id")},
+                exc_info=(type(exc), exc, exc.__traceback__),
+            )
+
+        self._submit_blocking_task(
+            self._audit_emitter.emit,
+            payload,
+            on_error=log_audit_failure,
+        )
 
     def _update_billing_summary(self, record: Dict[str, Any]) -> None:
         tool_id = record["tool_id"]
