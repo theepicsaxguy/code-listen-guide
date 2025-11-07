@@ -52,6 +52,7 @@ export interface Chapter {
   status: 'pending' | 'scripting' | 'synthesizing' | 'completed' | 'failed';
   script_text?: string;
   audio_url?: string;
+  audio_inline_base64?: string;
   audio_duration_seconds?: number;
   audio_file_size_bytes?: number;
   start_timestamp_ms?: number;
