@@ -48,43 +48,40 @@ const AppRoutes = () => {
   return (
     <>
       <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/why-we-exist" element={<WhyWeExist />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/submit" element={<Submit />} />
-              <Route path="/repository-preview" element={<RepositoryPreview />} />
-              <Route path="/scope-selection" element={<ScopeSelection />} />
-              <Route path="/cost-estimate" element={<CostEstimate />} />
-              <Route path="/jobs/:jobId" element={<JobDetails />} />
-              <Route path="/jobs/:jobId/outline" element={<EpisodeOutlinePreview />} />
-              <Route path="/jobs/:jobId/outline-legacy" element={<OutlinePreview />} />
-              <Route path="/player/:jobId" element={<Player />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="payments" element={<AdminPayments />} />
-                <Route path="content" element={<AdminContent />} />
-                <Route path="versioning" element={<ContentVersioning />} />
-                <Route path="agents" element={<AgentMonitoring />} />
-                <Route path="agents/manage" element={<AgentManagement />} />
-                <Route path="plugins" element={<AdminPlugins />} />
-                <Route path="policy" element={<PolicyQuotaDashboard />} />
-                <Route path="tracing" element={<JobTracing />} />
-                <Route path="chonkie-test" element={<ChonkieTest />} />
-                <Route path="agent-test" element={<AgentTest />} />
-                <Route path="parse" element={<AdminParse />} />
-                <Route path="workflows" element={<WorkflowList />} />
-                <Route
-                  path="workflows/:workflowId"
-                  element={<WorkflowDetails />}
-                />
-                <Route path="support" element={<Support />} />
-                <Route path="audit" element={<AdminAuditLogs />} />
-                <Route path="settings" element={<AdminSettings />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
+        <Route path="/" element={<Index />} />
+        <Route path="/why-we-exist" element={<WhyWeExist />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/submit" element={<Submit />} />
+        <Route path="/repository-preview" element={<RepositoryPreview />} />
+        <Route path="/scope-selection" element={<ScopeSelection />} />
+        <Route path="/cost-estimate" element={<CostEstimate />} />
+        <Route path="/jobs/:jobId" element={<JobDetails />} />
+        <Route path="/jobs/:jobId/outline" element={<EpisodeOutlinePreview />} />
+        <Route path="/jobs/:jobId/outline-legacy" element={<OutlinePreview />} />
+        <Route path="/player/:jobId" element={<Player />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="payments" element={<AdminPayments />} />
+          <Route path="content" element={<AdminContent />} />
+          <Route path="versioning" element={<ContentVersioning />} />
+          <Route path="agents" element={<AgentMonitoring />} />
+          <Route path="agents/manage" element={<AgentManagement />} />
+          <Route path="plugins" element={<AdminPlugins />} />
+          <Route path="policy" element={<PolicyQuotaDashboard />} />
+          <Route path="tracing" element={<JobTracing />} />
+          <Route path="chonkie-test" element={<ChonkieTest />} />
+          <Route path="agent-test" element={<AgentTest />} />
+          <Route path="parse" element={<AdminParse />} />
+          <Route path="workflows" element={<WorkflowList />} />
+          <Route path="workflows/:workflowId" element={<WorkflowDetails />} />
+          <Route path="support" element={<Support />} />
+          <Route path="audit" element={<AdminAuditLogs />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <PasskeySetupPrompt 
         open={showPasskeyPrompt} 

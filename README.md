@@ -37,6 +37,7 @@ code-listen-guide/
 ### Frontend snapshot
 - **Stack:** Vite, React 19, TypeScript, Tailwind, shadcn/ui.
 - **Focus:** Display job progress, surface chapter outlines, and host the audiobook player.
+- **Player:** Streams inline chapter audio when available, handles base64 PCM without downloads, and surfaces transcripts so listeners can read along.
 - **Admin tools:** Dedicated dashboard with user, payment, content versioning, tracing, and support consoles powered by React Query. The new Agent Control Center adds a live conversation viewer with token tracking, workflow graph explorer with streaming logs, and a gallery of reusable agent setups with setup guidance.
 - **Key scripts:**
   - `npm install` – install dependencies
