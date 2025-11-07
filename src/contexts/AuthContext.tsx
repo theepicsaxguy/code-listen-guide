@@ -1,12 +1,12 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  useLogin,
-  useRegister,
-  useRefreshToken,
-  useGetMe,
-  useLogout,
-} from '@/lib/api/generated';
-import type { UserResponse, TokenResponse, TokenRefreshRequest } from '@/lib/api/generated';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from 'react';
+import { useLogin, useRegister, useRefreshToken, useGetMe, useLogout } from '@/lib/api/generated';
 import { User } from '@/lib/types';
 import {
   getPasskeyAuthenticationOptions,
@@ -30,20 +30,15 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   registerPasskey: (name?: string) => Promise<void>;
   logout: () => Promise<void>;
-  refreshToken: string | null;
   showPasskeyPrompt: boolean;
   setShowPasskeyPrompt: (show: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_TOKEN_KEY = 'auth_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [showPasskeyPrompt, setShowPasskeyPrompt] = useState(false);
 
   const loginMutation = useLogin();
@@ -52,111 +47,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const getMeQuery = useGetMe({ query: { enabled: false } });
   const logoutMutation = useLogout();
 
-  // Restore session on mount
-  useEffect(() => {
-    const restoreSession = async () => {
-      try {
-        const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
-        const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-
-        if (storedToken) {
-          // Try to get user data with stored token
-          try {
-            const result = await getMeQuery.refetch();
-            if (result.data) {
-              setUser(result.data as unknown as User);
-              if (storedRefreshToken) {
-                setRefreshToken(storedRefreshToken);
-              }
-              setIsLoading(false);
-              return;
-            }
-          } catch (error) {
-            // Token might be expired, try refresh
-            console.log('Access token expired, attempting refresh...');
-          }
-        }
-
-        // If no token or token expired, try refresh token
-        if (storedRefreshToken) {
-          try {
-            const newTokens = await refreshMutation.mutateAsync({
-              data: { refresh_token: storedRefreshToken },
-            });
-            if (newTokens) {
-              localStorage.setItem(AUTH_TOKEN_KEY, newTokens.access_token);
-              localStorage.setItem(REFRESH_TOKEN_KEY, newTokens.refresh_token);
-              setRefreshToken(newTokens.refresh_token);
-              
-              // Get user data with new token
-              const userResult = await getMeQuery.refetch();
-              if (userResult.data) {
-                setUser(userResult.data as unknown as User);
-              }
-              setIsLoading(false);
-              return;
-            }
-          } catch (error) {
-            console.error('Failed to refresh token:', error);
-            // Clear invalid tokens
-            localStorage.removeItem(AUTH_TOKEN_KEY);
-            localStorage.removeItem(REFRESH_TOKEN_KEY);
-          }
-        }
-      } catch (error) {
-        console.error('Error restoring session:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    restoreSession();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const checkAndShowPasskeyPrompt = async () => {
-    // Check if user dismissed the prompt
+  const checkAndShowPasskeyPrompt = useCallback(async () => {
     const dismissed = localStorage.getItem('passkey_prompt_dismissed') === 'true';
     if (dismissed) {
       return;
     }
 
-    // Check if WebAuthn is supported
     if (!isWebAuthnSupported()) {
       return;
     }
 
     try {
-      // Check if user has any passkeys
       const passkeys = await listPasskeys();
       const activePasskeys = passkeys.filter(p => p.is_active);
-      
-      // Show prompt if user has no active passkeys
+
       if (activePasskeys.length === 0) {
         setShowPasskeyPrompt(true);
       }
     } catch (error) {
-      // If API call fails, don't show prompt
       console.error('Failed to check passkeys:', error);
     }
-  };
+  }, [setShowPasskeyPrompt]);
+
+  // Restore session on mount
+  const restoreSession = useCallback(async () => {
+    let restored = false;
+
+    try {
+      const result = await getMeQuery.refetch();
+      if (result.data) {
+        setUser(result.data as unknown as User);
+        await checkAndShowPasskeyPrompt();
+        restored = true;
+      }
+    } catch (error) {
+      console.error('Failed to load current user:', error);
+    }
+
+    if (!restored) {
+      try {
+        const newTokens = await refreshMutation.mutateAsync();
+        if (newTokens) {
+          const userResult = await getMeQuery.refetch();
+          if (userResult.data) {
+            setUser(userResult.data as unknown as User);
+            await checkAndShowPasskeyPrompt();
+            restored = true;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to refresh session:', error);
+        setUser(null);
+      }
+    }
+
+    setIsLoading(false);
+  }, [checkAndShowPasskeyPrompt, getMeQuery, refreshMutation]);
+
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
 
   const login = async (email: string, password: string) => {
-    const response = await loginMutation.mutateAsync({
+    await loginMutation.mutateAsync({
       data: {
         username: email, // OAuth2PasswordRequestForm uses 'username' field
         password: password,
       },
     });
-    
-    // Store tokens in localStorage for persistence
-    if (response?.access_token) {
-      localStorage.setItem(AUTH_TOKEN_KEY, response.access_token);
-    }
-    if (response?.refresh_token) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
-      setRefreshToken(response.refresh_token);
-    }
-    
+
     // Get user data via generated hook after login
     const userResult = await getMeQuery.refetch();
     if (userResult.data) {
@@ -189,20 +148,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const credentialJSON = credentialToJSON(credential);
 
     // Complete authentication
-    const tokenResponse = await authenticatePasskeyAPI({
+    await authenticatePasskeyAPI({
       authentication_response: credentialJSON,
       challenge: authOptions.challenge,
       credential_id: credentialJSON.id,
     });
-
-    // Store tokens
-    if (tokenResponse?.access_token) {
-      localStorage.setItem(AUTH_TOKEN_KEY, tokenResponse.access_token);
-    }
-    if (tokenResponse?.refresh_token) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, tokenResponse.refresh_token);
-      setRefreshToken(tokenResponse.refresh_token);
-    }
 
     // Get user data
     const userResult = await getMeQuery.refetch();
@@ -247,27 +197,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
-      setRefreshToken(null);
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      setShowPasskeyPrompt(false);
     }
   };
 
   // Auto-refresh token before it expires (check every hour since tokens last 7 days)
   useEffect(() => {
-    if (!refreshToken) return;
-
     const refreshInterval = setInterval(async () => {
       try {
-        const newTokens = await refreshMutation.mutateAsync({
-          data: { refresh_token: refreshToken },
-        });
-        if (newTokens) {
-          localStorage.setItem(AUTH_TOKEN_KEY, newTokens.access_token);
-          localStorage.setItem(REFRESH_TOKEN_KEY, newTokens.refresh_token);
-          setRefreshToken(newTokens.refresh_token);
-          console.log('Token refreshed successfully');
-        }
+        await refreshMutation.mutateAsync();
+        console.log('Token refreshed successfully');
       } catch (error) {
         console.error('Failed to refresh token:', error);
         // Don't logout automatically - let the next request handle it
@@ -275,18 +214,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 60 * 60 * 1000); // Check every hour
 
     return () => clearInterval(refreshInterval);
-  }, [refreshToken, refreshMutation]);
+  }, [refreshMutation, user]);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isLoading, 
+    <AuthContext.Provider value={{
+      user,
+      isLoading,
       login, 
       loginWithPasskey, 
-      register, 
-      registerPasskey, 
-      logout, 
-      refreshToken,
+      register,
+      registerPasskey,
+      logout,
       showPasskeyPrompt,
       setShowPasskeyPrompt,
     }}>

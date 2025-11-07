@@ -56,8 +56,8 @@ export async function getPasskeyRegistrationOptions(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
+    credentials: 'include',
     body: JSON.stringify({ name }),
   });
 
@@ -79,8 +79,8 @@ export async function registerPasskey(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -104,6 +104,7 @@ export async function getPasskeyAuthenticationOptions(
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
     body: JSON.stringify(email ? { email } : {}),
   });
 
@@ -126,6 +127,7 @@ export async function authenticatePasskey(
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -145,8 +147,8 @@ export async function listPasskeys(): Promise<Passkey[]> {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -163,9 +165,7 @@ export async function listPasskeys(): Promise<Passkey[]> {
 export async function deletePasskey(passkeyId: string): Promise<void> {
   const response = await fetch(`${API_BASE}/auth/passkeys/${passkeyId}`, {
     method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-    },
+    credentials: 'include',
   });
 
   if (!response.ok) {

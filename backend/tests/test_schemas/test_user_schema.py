@@ -238,6 +238,11 @@ class TestTokenRefreshRequest:
         request = TokenRefreshRequest(**data)
         assert request.refresh_token == "valid_token"
 
+    def test_none_refresh_token_allowed(self):
+        """Test that refresh token can be omitted."""
+        request = TokenRefreshRequest()
+        assert request.refresh_token is None
+
     def test_empty_refresh_token_rejected(self):
         """Test that empty refresh token is rejected."""
         data = {"refresh_token": ""}

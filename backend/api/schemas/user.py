@@ -103,7 +103,17 @@ class TokenResponse(BaseModel):
 class TokenRefreshRequest(BaseModel):
     """Input payload for refreshing access tokens."""
 
-    refresh_token: str = Field(..., min_length=1)
+    refresh_token: Optional[str] = None
+
+    @field_validator("refresh_token")
+    @classmethod
+    def ensure_token_has_value(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("refresh_token must not be empty")
+        return cleaned
 
 
 class LogoutResponse(BaseModel):

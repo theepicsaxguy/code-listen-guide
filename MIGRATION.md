@@ -145,8 +145,8 @@ This release introduces major improvements to parsing capabilities and authentic
 - **Frontend:** All API calls now use `credentials: 'include'` (already updated)
 - **Backend:** CORS already configured with `allow_credentials=True`
 - **Cookies:** Two cookies set on login:
-  - `access_token` (HttpOnly, Secure in production, 24h expiry)
-  - `refresh_token` (HttpOnly, Secure in production, 7d expiry)
+  - `access_token` (HttpOnly, Secure in production, 7d expiry)
+  - `refresh_token` (HttpOnly, Secure in production, 30d expiry)
 
 **Breaking changes:** 
 - None for API consumers using bearer tokens
