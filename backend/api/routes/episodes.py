@@ -8,14 +8,12 @@ from backend.db.session import get_db
 from backend.models.episode import Episode, EpisodeStatus
 from backend.models.job import Job
 from backend.api.schemas.episode import EpisodeResponse, EpisodesListResponse
-from backend.services.dependency_analyzer import DependencyAnalyzer, ClusterPlan
+from backend.services.dependency_analyzer import DependencyAnalyzer
 from backend.services.episode_planner import plan_episodes_from_clusters
-from math import ceil
+from backend.utils.async_runner import run_async_from_sync
 from backend.config import get_settings
-from sqlalchemy import func
 import math
 import uuid
-import asyncio
 
 # TODO: integrate auth dependency when user system active
 def get_current_user_optional():  # placeholder
@@ -110,14 +108,13 @@ def plan_episodes(
     }
 
     # Generate LLM-based episode plans
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        episode_plans = loop.run_until_complete(
-            plan_episodes_from_clusters(clusters, dependency_graph, architectural_layers, repo_context)
-        )
-    finally:
-        loop.close()
+    episode_plans = run_async_from_sync(
+        plan_episodes_from_clusters,
+        clusters,
+        dependency_graph,
+        architectural_layers,
+        repo_context,
+    )
 
     # Cost/token allocation heuristic: distribute job.estimated_total_tokens across clusters proportionally
     total_tokens = getattr(job, "estimated_total_tokens", None)
@@ -134,7 +131,7 @@ def plan_episodes(
         if total_tokens:
             proportional = total_tokens * (cluster_size / size_sum)
             # Add small overhead for dialogue connective tissue
-            est_tokens = int(ceil(proportional * 1.15))
+            est_tokens = int(math.ceil(proportional * 1.15))
         
         # Extract cluster-specific dependency graph
         cluster_deps = {f: deps for f, deps in dependency_graph.items() if f in cluster.files}
