@@ -40,10 +40,10 @@ export default function CostEstimate() {
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
   const [approved, setApproved] = useState(false);
 
-  const estimateMutation = useEstimateCost();
+  const { mutateAsync: estimateCost, isPending: isEstimating } = useEstimateCost();
   const createJobMutation = useCreateJob();
 
-  const isLoading = estimateMutation.isPending;
+  const isLoading = isEstimating;
   const isCreatingJob = createJobMutation.isPending;
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function CostEstimate() {
 
     const getEstimate = async () => {
       try {
-        const result = await estimateMutation.mutateAsync({
+        const result = await estimateCost({
           data: {
             repo_url: repoUrl,
             git_ref: gitRef || 'main',
@@ -88,7 +88,16 @@ export default function CostEstimate() {
     };
 
     getEstimate();
-  }, [repoUrl, selectedDepth, gitRef, selectedFiles, excludedPatterns, navigate, toast, estimateMutation]);
+  }, [
+    repoUrl,
+    selectedDepth,
+    gitRef,
+    selectedFiles,
+    excludedPatterns,
+    navigate,
+    toast,
+    estimateCost,
+  ]);
 
   const handleApprove = async () => {
     if (!approved) {
