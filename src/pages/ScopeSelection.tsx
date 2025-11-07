@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,14 +32,32 @@ export default function ScopeSelection() {
     return null;
   }
 
-  const languages = parseResult.summary.languages.reduce((acc: Record<string, number>, lang: string) => {
-    // Calculate percentage based on files
-    const filesOfLang = Object.values(parseResult.modules).filter(
-      (module: any) => module.language === lang
-    ).length;
-    acc[lang] = Math.round((filesOfLang / parseResult.summary.total_files) * 100);
-    return acc;
-  }, {});
+  const languages = useMemo(() => {
+    const counts: Record<string, number> = {};
+
+    Object.values(parseResult.modules).forEach((module: any) => {
+      const language = module?.language;
+      if (!language) {
+        return;
+      }
+
+      counts[language] = (counts[language] ?? 0) + 1;
+    });
+
+    const totalFiles = parseResult.summary.total_files;
+
+    if (totalFiles === 0) {
+      return Object.keys(counts).reduce<Record<string, number>>((acc, language) => {
+        acc[language] = 0;
+        return acc;
+      }, {});
+    }
+
+    return Object.entries(counts).reduce<Record<string, number>>((acc, [language, count]) => {
+      acc[language] = Math.round((count / totalFiles) * 100);
+      return acc;
+    }, {});
+  }, [parseResult]);
 
   const isMixedStack = Object.keys(languages).length > 1;
 
