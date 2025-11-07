@@ -32,7 +32,7 @@ export default function OutlinePreview() {
     { query: { enabled: !!jobId } }
   );
   const approveMutation = useApproveOutline();
-  const parseMutation = useParseRepository();
+  const { mutateAsync: parseRepository } = useParseRepository();
 
   const job = jobData as unknown as Job | null;
   const outline = outlineData as unknown as Outline | null;
@@ -45,7 +45,7 @@ export default function OutlinePreview() {
 
     const fetchRepoData = async () => {
       try {
-        const parseResponse = await parseMutation.mutateAsync({
+        const parseResponse = await parseRepository({
           data: {
             repo_url: job.repo_url,
             git_ref: job.git_ref || 'main',
@@ -73,7 +73,7 @@ export default function OutlinePreview() {
     };
 
     fetchRepoData();
-  }, [job, jobId, parseMutation]);
+  }, [job, jobId, parseRepository]);
 
   const handleApprove = async () => {
     if (!jobId || !outline) return;

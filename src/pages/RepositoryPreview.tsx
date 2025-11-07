@@ -35,8 +35,8 @@ export default function RepositoryPreview() {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [readmeContent, setReadmeContent] = useState<string | null>(null);
 
-  const parseMutation = useParseRepository();
-  const isLoading = parseMutation.isPending;
+  const { mutateAsync: parseRepository, isPending: isParsing } = useParseRepository();
+  const isLoading = isParsing;
 
   // Get repo details from location state
   const { repoUrl, gitRef, selectedDepth } = location.state || {};
@@ -47,9 +47,9 @@ export default function RepositoryPreview() {
       return;
     }
 
-    const parseRepo = async () => {
+    const fetchRepositoryData = async () => {
       try {
-        const result = await parseMutation.mutateAsync({
+        const result = await parseRepository({
           data: {
             repo_url: repoUrl,
             git_ref: gitRef || 'main',
@@ -87,8 +87,8 @@ export default function RepositoryPreview() {
       }
     };
 
-    parseRepo();
-  }, [repoUrl, gitRef, navigate, toast, parseMutation]);
+    fetchRepositoryData();
+  }, [repoUrl, gitRef, navigate, toast, parseRepository]);
 
   const handleContinue = () => {
     navigate('/scope-selection', {
