@@ -20,7 +20,7 @@ from backend.db.session import get_db
 from backend.models.job import Job
 from backend.models.user import User
 from backend.models.episode import Episode
-from backend.tasks.audiobook_tasks import start_audiobook_workflow
+from backend.tasks.audiobook_tasks import start_audiobook_workflow, cancel_workflow
 from backend.tools.db_tools import (
     create_job_record,
     estimate_job_cost as calculate_job_estimate,
@@ -381,13 +381,20 @@ async def cancel_job(
     db.commit()
     db.refresh(job)
     
-    # TODO: Send signal to workflow to gracefully stop processing
-    # This would involve stopping any running agents and cleaning up resources
+    # Send signal to workflow to gracefully stop processing
+    # This calls the workflow's cancel() method if it's currently active
+    workflow_cancelled = cancel_workflow(str(job.id))
+    
+    if workflow_cancelled:
+        logger.info(f"Active workflow cancelled for job {job_id}")
+    else:
+        logger.info(f"No active workflow found for job {job_id}, database updated only")
     
     logger.info(f"User {current_user.email} canceled job {job_id}")
     
     return {
         "success": True,
         "message": "Job canceled successfully",
-        "job_id": str(job.id)
+        "job_id": str(job.id),
+        "workflow_cancelled": workflow_cancelled
     }

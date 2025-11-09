@@ -1,12 +1,16 @@
 """Job cancellation endpoints."""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import logging
 
 from backend.api.dependencies import get_current_user
 from backend.api.schemas.job import JobStatus
 from backend.db.session import get_db
 from backend.models.job import Job
 from backend.models.user import User
+from backend.tasks.audiobook_tasks import cancel_workflow
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -42,15 +46,19 @@ async def cancel_job(
     db.commit()
     db.refresh(job)
     
-    # TODO: Send signal to running workflow to stop processing
-    # This would typically involve:
-    # 1. Publishing a cancellation event to a message queue
-    # 2. The workflow executor checking for cancellation signals
-    # 3. Cleaning up any in-progress resources (temp files, API calls, etc.)
+    # Send signal to running workflow to stop processing
+    # This will call the workflow's cancel() method if it's currently active
+    workflow_cancelled = cancel_workflow(job_id)
+    
+    if workflow_cancelled:
+        logger.info(f"Active workflow cancelled for job {job_id}")
+    else:
+        logger.info(f"No active workflow found for job {job_id}, database updated only")
     
     return {
         "success": True,
         "message": "Job cancelled successfully",
         "job_id": str(job.id),
-        "status": job.status
+        "status": job.status,
+        "workflow_cancelled": workflow_cancelled
     }

@@ -15,6 +15,8 @@ from backend.db.session import get_db
 from backend.models.job import Job
 from backend.models.user import User
 from backend.models.workflow_checkpoint import WorkflowCheckpoint
+from backend.tasks.audiobook_tasks import resume_audiobook_workflow
+import threading
 
 router = APIRouter(prefix="/api/v1/admin/agents", tags=["admin", "agents"])
 logger = logging.getLogger(__name__)
@@ -299,7 +301,15 @@ async def retry_failed_job(
     db.commit()
     db.refresh(job)
     
-    # TODO: Trigger workflow restart from last checkpoint
+    # Trigger workflow restart from last checkpoint
+    # Run in background thread to avoid blocking the API response
+    thread = threading.Thread(
+        target=resume_audiobook_workflow,
+        args=(str(job_id),),
+        daemon=True
+    )
+    thread.start()
+    
     logger.info(f"Admin {current_admin.email} retried job {job_id}")
     
     return {
