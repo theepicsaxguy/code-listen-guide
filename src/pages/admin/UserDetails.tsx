@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+import { useQueryClient } from "@tanstack/react-query";
+// Replaced legacy apiClient calls with generated hooks from '@/lib/api/generated'
+import { useGetUserById, useGetUserJobs, useUpdateUserCredits } from "@/lib/api/generated";
 import type { AdminUser } from "@/types/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,32 +53,40 @@ export function UserDetailsDialog({ userId, isOpen, onClose }: UserDetailsDialog
  const [creditAmount, setCreditAmount] = useState("");
  const queryClient = useQueryClient();
 
- const { data: user, isLoading } = useQuery<ExtendedAdminUser>({
- queryKey: ["admin-user", userId],
- queryFn: () => apiClient.getUser(userId) as Promise<ExtendedAdminUser>,
- enabled: isOpen && Boolean(userId),
- });
+ const { data: user, isLoading } = useGetUserById(userId, {
+  query: {
+    enabled: isOpen && Boolean(userId),
+    onError: (err) => {
+      console.error(err);
+      toast.error("Failed to load user details");
+    },
+  },
+});
 
- const { data: userJobs } = useQuery<UserJobsResponse>({
- queryKey: ["admin-user-jobs", userId],
- queryFn: () => apiClient.getUserJobs(userId),
- enabled: isOpen && Boolean(userId),
- });
+ const { data: userJobs } = useGetUserJobs(userId, {
+  query: {
+    enabled: isOpen && Boolean(userId),
+    onError: (err) => {
+      console.error(err);
+      toast.error("Failed to load user jobs");
+    },
+  },
+});
 
- const creditMutation = useMutation({
- mutationFn: ({ amount, operation }: { amount: number; operation: "add" | "subtract" }) =>
- apiClient.request(`/admin/users/${userId}/credits`, {
- method: "POST",
- body: JSON.stringify({ amount, operation }),
- }),
- onSuccess: () => {
- toast.success("Credits updated successfully");
- setCreditAmount("");
- queryClient.invalidateQueries({ queryKey: ["admin-user", userId] });
- queryClient.invalidateQueries({ queryKey: ["admin-users"] });
- },
- onError: () => toast.error("Failed to update credits"),
- });
+ const creditMutation = useUpdateUserCredits({
+  mutation: {
+    onSuccess: () => {
+      toast.success("Credits updated successfully");
+      setCreditAmount("");
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/users/" + userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/users"] });
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error("Failed to update credits");
+    },
+  },
+});
 
  const handleAddCredits = () => {
  const amount = parseInt(creditAmount);
@@ -85,7 +94,7 @@ export function UserDetailsDialog({ userId, isOpen, onClose }: UserDetailsDialog
  toast.error("Please enter a valid amount");
  return;
  }
- creditMutation.mutate({ amount, operation: "add" });
+ creditMutation.mutate({ userId, data: { amount, operation: "add" } });
  };
 
  const handleRemoveCredits = () => {
@@ -94,7 +103,7 @@ export function UserDetailsDialog({ userId, isOpen, onClose }: UserDetailsDialog
  toast.error("Please enter a valid amount");
  return;
  }
- creditMutation.mutate({ amount, operation: "subtract" });
+ creditMutation.mutate({ userId, data: { amount, operation: "subtract" } });
  };
 
  if (isLoading) {

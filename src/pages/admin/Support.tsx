@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+import { useQueryClient } from "@tanstack/react-query";
+// Replaced legacy apiClient calls with generated hooks
+import { 
+  useGetSupportTickets,
+  useGetSupportTicket,
+  useGetCannedReplies,
+  useReplyToTicket,
+  useUpdateTicketStatus
+} from "@/lib/api/generated";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,56 +42,73 @@ export default function Support() {
  const [showCannedReplies, setShowCannedReplies] = useState(false);
  const queryClient = useQueryClient();
 
- const {
- data: ticketsData,
- isLoading: isTicketsLoading,
- } = useQuery({
- queryKey: ["support-tickets", filters],
- queryFn: () => apiClient.getTickets(1, filters),
- });
+ const { data: ticketsData, isLoading: isTicketsLoading } = useGetSupportTickets({ page: 1, ...filters }, {
+  query: {
+    onError: (err) => {
+      console.error(err);
+      toast.error("Failed to load tickets");
+    },
+  },
+});
 
- const { data: ticketDetail } = useQuery({
- queryKey: ["support-ticket", selectedTicket],
- queryFn: () => apiClient.getTicket(selectedTicket!),
- enabled: Boolean(selectedTicket),
- });
+ const { data: ticketDetail } = useGetSupportTicket(selectedTicket || "", {
+  query: {
+    enabled: Boolean(selectedTicket),
+    onError: (err) => {
+      console.error(err);
+      toast.error("Failed to load ticket details");
+    },
+  },
+});
 
- const { data: cannedRepliesData } = useQuery({
- queryKey: ["canned-replies"],
- queryFn: () => apiClient.getCannedReplies(),
- });
+ const { data: cannedRepliesData } = useGetCannedReplies({
+  query: {
+    onError: (err) => {
+      console.error(err);
+      toast.error("Failed to load canned replies");
+    },
+  },
+});
 
- const replyMutation = useMutation({
- mutationFn: ({ ticketId, content }: { ticketId: string; content: string }) =>
- apiClient.replyToTicket(ticketId, content),
- onSuccess: () => {
- toast.success("Reply sent successfully");
- setReplyContent("");
- queryClient.invalidateQueries({ queryKey: ["support-ticket"] });
- },
- onError: () => toast.error("Failed to send reply"),
- });
+ const replyMutation = useReplyToTicket({
+  mutation: {
+    onSuccess: () => {
+      toast.success("Reply sent successfully");
+      setReplyContent("");
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/support/tickets/" + selectedTicket] });
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error("Failed to send reply");
+    },
+  },
+});
 
- const statusMutation = useMutation({
- mutationFn: ({ ticketId, status }: { ticketId: string; status: string }) =>
- apiClient.updateTicketStatus(ticketId, status),
- onSuccess: () => {
- toast.success("Status updated");
- queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
- queryClient.invalidateQueries({ queryKey: ["support-ticket"] });
- },
- onError: () => toast.error("Failed to update status"),
- });
+ const statusMutation = useUpdateTicketStatus({
+  mutation: {
+    onSuccess: () => {
+      toast.success("Status updated");
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/support/tickets"] });
+      if (selectedTicket) {
+        queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/support/tickets/" + selectedTicket] });
+      }
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error("Failed to update status");
+    },
+  },
+});
 
  const handleReply = () => {
  if (selectedTicket && replyContent.trim()) {
- replyMutation.mutate({ ticketId: selectedTicket, content: replyContent });
+ replyMutation.mutate({ ticketId: selectedTicket, data: { content: replyContent } });
  }
  };
 
  const handleStatusChange = (status: string) => {
  if (selectedTicket) {
- statusMutation.mutate({ ticketId: selectedTicket, status });
+ statusMutation.mutate({ ticketId: selectedTicket, data: { status } });
  }
  };
 

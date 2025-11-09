@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CreditCard, Calendar, Download, Plus, FileText, DollarSign } from 'lucide-react';
 import { useUser, usePaymentHistory } from '../hooks';
 import type { Payment } from '../../../lib/types';
+import { useCreateCheckoutSession } from '@/lib/api/generated';
 
 
 // No direct API calls - uses hooks from parent
@@ -12,6 +13,16 @@ export const BillingPage: React.FC = () => {
  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
  const [selectedPlan, setSelectedPlan] = useState('professional');
  const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
+
+	// Mutation hook must be declared unconditionally (before early returns)
+	const { mutateAsync: createCheckoutSession } = useCreateCheckoutSession({
+		mutation: {
+			onError: (err) => {
+				console.error('Failed to create checkout session', err);
+				alert('Failed to create checkout session. Please try again.');
+			}
+		}
+	});
 
  // Check for upgrade success in URL
  React.useEffect(() => {
@@ -29,11 +40,11 @@ export const BillingPage: React.FC = () => {
  }, []);
 
  if (!user) {
- return (
- <div className="flex items-center justify-center h-64">
- <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
- </div>
- );
+	 return (
+		 <div className="flex items-center justify-center h-64">
+			 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+		 </div>
+	 );
  }
 
  const payments = (paymentHistory?.payments as Payment[]) || [];
@@ -101,11 +112,13 @@ export const BillingPage: React.FC = () => {
  const cancelUrl = new URL(window.location.origin + '/dashboard');
  cancelUrl.searchParams.set('tab', 'billing');
  
- const session = await apiClient.createCheckoutSession(
- selectedPlan,
- successUrl.toString(),
- cancelUrl.toString()
- );
+ const session = await createCheckoutSession({
+	data: {
+		plan_id: selectedPlan,
+		success_url: successUrl.toString(),
+		cancel_url: cancelUrl.toString()
+	}
+ });
  if (session.url) {
  window.location.href = session.url;
  }
@@ -235,7 +248,7 @@ export const BillingPage: React.FC = () => {
  ) : payments.length > 0 ? (
  <div className="space-y-2">
  {payments.map((payment) => (
- <div key={payment.id} className="py-4 flex items-center justify-between hover:bg-primary/5 px-3 rounded-lg transition-all transition-colors">
+ <div key={payment.id} className="py-4 flex items-center justify-between hover:bg-primary/5 px-3 rounded-lg transition-colors">
  <div className="flex items-center gap-4">
  <div className="w-12 h-12 bg-primary/30 rounded-lg flex items-center justify-center">
  <Calendar className="h-6 w-6 text-primary" />
@@ -297,7 +310,7 @@ export const BillingPage: React.FC = () => {
  {plans.filter(p => p.id !== 'free').map((plan) => (
  <label
  key={plan.id}
- className={`flex items-start p-5 rounded-lg cursor-pointer bg-card/70 hover:bg-primary/10 transition-all transition-colors ${
+ className={`flex items-start p-5 rounded-lg cursor-pointer bg-card/70 hover:bg-primary/10 transition-colors ${
  selectedPlan === plan.id ? 'bg-primary/10 ring-2 ring-primary' : ''
  }`}
  htmlFor={plan.id}

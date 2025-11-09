@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,52 +17,69 @@ import {
  DropdownMenuItem,
  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-  // TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+// Replaced legacy apiClient calls with generated React Query hooks
+// from '@/lib/api/generated'.
+// Pagination + search now driven by query key params.
+// Status updates use useUpdateUserStatus mutation and refetch upon success.
+// NOTE: If response shape changes, adjust access (data?.users ?? []).
+// This removes manual loading state management; we rely on hook isLoading.
+// Any previous toast error handling now handled in onError callbacks.
 import { AdminUser } from "@/types/admin";
 import { toast } from "sonner";
+import { useGetUsers, useUpdateUserStatus } from "@/lib/api/generated";
 import { UserDetailsDialog } from "./UserDetails";
 
 export default function AdminUsers() {
- const [users, setUsers] = useState<AdminUser[]>([]);
- const [isLoading, setIsLoading] = useState(true);
- const [searchInput, setSearchInput] = useState("");
- const [query, setQuery] = useState("");
- const [page, setPage] = useState(1);
- const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
- const fetchUsers = useCallback(async (pageToFetch: number, searchTerm: string) => {
- setIsLoading(true);
- try {
- const data = await apiClient.getUsers(pageToFetch, searchTerm);
- setUsers(data.users || []);
- } catch (error) {
- toast.error("Failed to load users");
- console.error(error);
- } finally {
- setIsLoading(false);
- }
- }, []);
+  // Fetch users via generated hook
+  const {
+    data: usersResponse,
+    isLoading,
+    refetch,
+  } = useGetUsers({ page, search: query }, {
+    query: {
+      onError: (err) => {
+        console.error(err);
+        toast.error("Failed to load users");
+      },
+    },
+  });
 
- useEffect(() => {
- void fetchUsers(page, query);
- }, [page, query, fetchUsers]);
+  const users: AdminUser[] = (usersResponse as any)?.users ?? [];
 
- const handleSearch = () => {
- setPage(1);
- setQuery(searchInput);
- void fetchUsers(1, searchInput);
- };
+  const { mutateAsync: mutateStatus } = useUpdateUserStatus({
+    mutation: {
+      onSuccess: (_data, variables) => {
+        const newStatus = (variables.data as any)?.status;
+        if (newStatus) {
+          toast.success(`User ${newStatus === "active" ? "activated" : "suspended"}`);
+        } else {
+          toast.success("Status updated");
+        }
+        void refetch();
+      },
+      onError: (err) => {
+        console.error(err);
+        toast.error("Failed to update user status");
+      },
+    },
+  });
 
- const handleStatusChange = async (userId: string, newStatus: "active" | "suspended") => {
- try {
- await apiClient.updateUserStatus(userId, newStatus);
- toast.success(`User ${newStatus === "active" ? "activated" : "suspended"}`);
- void fetchUsers(page, query);
- } catch (error) {
- toast.error("Failed to update user status");
- console.error(error);
- }
- };
+  const handleSearch = () => {
+    setPage(1);
+    setQuery(searchInput);
+  };
+
+  const handleStatusChange = async (userId: string, newStatus: "active" | "suspended") => {
+    await mutateStatus({
+      userId,
+      data: { status: newStatus },
+    });
+  };
 
  return (
  <div className="p-8 space-y-6">
