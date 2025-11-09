@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+import { useGetContent } from "@/lib/api/generated";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +26,9 @@ export default function AdminContent() {
  const [page, setPage] = useState(1);
  const navigate = useNavigate();
 
- const { data, isLoading } = useQuery({
- queryKey: ["admin-content", statusFilter, page],
- queryFn: () => apiClient.getAdminContent(page, statusFilter === "all" ? undefined : statusFilter),
+ const { data, isLoading } = useGetContent({
+   page,
+   status_filter: statusFilter === "all" ? undefined : statusFilter
  });
 
 const getStatusColor = (status: string) => {

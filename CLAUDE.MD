@@ -252,14 +252,13 @@ const MyComponent = ({ job }: { job: Job }) => {
   // ...
 };
 
-// ✅ GOOD: Use API client methods
-import { apiClient } from '@/lib/api';
-const jobs = await apiClient.getJobs({ status: 'completed' });
+// ✅ GOOD: Use generated hooks from '@/lib/api/generated'
+import { useListJobs } from '@/lib/api/generated';
 
-// ✅ GOOD: Use React Query for data fetching
-const { data, isLoading } = useQuery({
-  queryKey: ['jobs', status],
-  queryFn: () => apiClient.getJobs({ status })
+const { data: jobs, isLoading } = useListJobs({
+  query: {
+    // React Query options
+  }
 });
 
 // ❌ BAD: Direct fetch calls
@@ -807,12 +806,12 @@ export const queryClient = new QueryClient({
 });
 
 // Usage in components
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api';
+import { useListJobs } from '@/lib/api/generated';
 
-const { data: jobs, isLoading, error } = useQuery({
-  queryKey: ['jobs', { status: 'completed' }],
-  queryFn: () => apiClient.getJobs({ status: 'completed' })
+const { data: jobs, isLoading, error } = useListJobs({
+  query: {
+    // React Query options
+  }
 });
 ```
 
@@ -924,9 +923,8 @@ function MyComponent() {
 ```
 
 ```typescript
-// ❌ BAD: Manual API calls or imports from @/lib/api (doesn't exist anymore)
-import { apiClient } from '@/lib/api'; // This file was deleted
-const response = await fetch('/api/v1/jobs', { ... }); // Direct fetch not allowed
+// ❌ BAD: Direct fetch calls
+const response = await fetch('/api/v1/jobs', { ... }); // Not allowed - use generated hooks
 ```
 
 **Regenerating API Client:**

@@ -1,5 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+import { useGetSettings } from "@/lib/api/generated";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Settings as SettingsIcon, Zap, Shield } from "lucide-react";
@@ -20,10 +19,7 @@ interface SystemSettings {
 }
 
 export default function AdminSettings() {
- const { data: settings, isLoading } = useQuery<SystemSettings>({
- queryKey: ["admin-settings"],
- queryFn: () => apiClient.request<SystemSettings>("/admin/settings"),
- });
+ const { data: settings, isLoading } = useGetSettings<SystemSettings>();
 
  return (
  <div className="p-8 space-y-6">

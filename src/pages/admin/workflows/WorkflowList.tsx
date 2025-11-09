@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, GitBranch, Play, Edit, Eye } from "lucide-react";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+import { useListWorkflows, useCreateWorkflow } from "@/lib/api/generated";
 import { WorkflowWithSteps } from "@/lib/types/workflow";
 import { normalizeWorkflowList } from "@/lib/workflow-utils";
 import { toast } from "sonner";
@@ -30,55 +30,50 @@ import { Textarea } from "@/components/ui/textarea";
 
 export default function WorkflowList() {
   const navigate = useNavigate();
-  const [workflows, setWorkflows] = useState<WorkflowWithSteps[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newWorkflowName, setNewWorkflowName] = useState("");
   const [newWorkflowDescription, setNewWorkflowDescription] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
 
-  const fetchWorkflows = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const raw = await apiClient.getWorkflows();
-      const normalized = normalizeWorkflowList(raw);
-      setWorkflows(normalized);
-    } catch (error) {
-      toast.error("Failed to load workflows");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
+  const { data: workflowsData, isLoading } = useListWorkflows({
+    query: {
+      onError: (err) => {
+        console.error(err);
+        toast.error("Failed to load workflows");
+      }
     }
-  }, []);
+  });
 
-  useEffect(() => {
-    void fetchWorkflows();
-  }, [fetchWorkflows]);
+  const workflows = workflowsData ? normalizeWorkflowList(workflowsData) : [];
 
-  const handleCreateWorkflow = async () => {
+  const createWorkflowMutation = useCreateWorkflow({
+    mutation: {
+      onSuccess: (workflow) => {
+        toast.success("Workflow created successfully");
+        setIsCreateDialogOpen(false);
+        setNewWorkflowName("");
+        setNewWorkflowDescription("");
+        navigate(`/admin/workflows/${workflow.id}`);
+      },
+      onError: (err) => {
+        console.error(err);
+        toast.error("Failed to create workflow");
+      }
+    }
+  });
+
+  const handleCreateWorkflow = () => {
     if (!newWorkflowName.trim()) {
       toast.error("Workflow name is required");
       return;
     }
 
-    setIsCreating(true);
-    try {
-      const workflow = await apiClient.createWorkflow({
+    createWorkflowMutation.mutate({
+      data: {
         name: newWorkflowName,
-        description: newWorkflowDescription,
-      });
-      toast.success("Workflow created successfully");
-      setIsCreateDialogOpen(false);
-      setNewWorkflowName("");
-      setNewWorkflowDescription("");
-      navigate(`/admin/workflows/${workflow.id}`);
-    } catch (error) {
-      toast.error("Failed to create workflow");
-      console.error(error);
-    } finally {
-      setIsCreating(false);
-    }
+        description: newWorkflowDescription || undefined,
+      }
+    });
   };
 
   const filteredWorkflows = workflows.filter((workflow) => {
@@ -158,16 +153,16 @@ export default function WorkflowList() {
               <Button
                 variant="outline"
                 onClick={() => setIsCreateDialogOpen(false)}
-                disabled={isCreating}
+                disabled={createWorkflowMutation.isPending}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleCreateWorkflow}
-                disabled={isCreating || !newWorkflowName.trim()}
+                disabled={createWorkflowMutation.isPending || !newWorkflowName.trim()}
                 className="bg-primary"
               >
-                {isCreating ? "Creating..." : "Create Workflow"}
+                {createWorkflowMutation.isPending ? "Creating..." : "Create Workflow"}
               </Button>
             </DialogFooter>
           </DialogContent>

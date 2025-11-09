@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,11 @@ import {
   Plus,
   Loader2,
 } from "lucide-react";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+import {
+  useListWorkflows,
+  useListWorkflowRevisions,
+  useGetToolRegistry,
+} from "@/lib/api/generated";
 import {
   WorkflowWithSteps,
   WorkflowRevision,
@@ -48,10 +52,6 @@ import { formatDistanceToNow } from "date-fns";
 export default function WorkflowDetails() {
   const { workflowId } = useParams<{ workflowId: string }>();
   const navigate = useNavigate();
-  const [workflow, setWorkflow] = useState<WorkflowWithSteps | null>(null);
-  const [revisions, setRevisions] = useState<WorkflowRevision[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [toolRegistry, setToolRegistry] = useState<ToolRegistry[]>([]);
   const [isStepEditorOpen, setIsStepEditorOpen] = useState(false);
   const [selectedStep, setSelectedStep] = useState<WorkflowStep | null>(null);
   const [allowedTools, setAllowedTools] = useState<string[]>([]);
@@ -59,6 +59,44 @@ export default function WorkflowDetails() {
   const [isSavingStep, setIsSavingStep] = useState(false);
   const [stepError, setStepError] = useState<string | null>(null);
   const [customToolName, setCustomToolName] = useState("");
+
+  // Fetch workflows list and filter by ID
+  const { data: workflowsList, isLoading: isLoadingWorkflows } = useListWorkflows();
+
+  // Fetch revisions for this workflow
+  const { data: revisionsData, isLoading: isLoadingRevisions } = useListWorkflowRevisions(
+    workflowId!,
+    {
+      query: {
+        enabled: !!workflowId,
+      },
+    }
+  );
+
+  // Fetch tool registry
+  const { data: toolRegistryData } = useGetToolRegistry();
+
+  // Compute derived values
+  const isLoading = isLoadingWorkflows || isLoadingRevisions;
+
+  const workflow = useMemo(() => {
+    if (!workflowsList || !workflowId) return null;
+    const found = workflowsList.find((w) => w.id === workflowId);
+    if (!found) return null;
+    return normalizeWorkflow(found);
+  }, [workflowsList, workflowId]);
+
+  const revisions = useMemo(() => {
+    if (!revisionsData || !workflowId) return [];
+    return normalizeRevisionList(revisionsData, workflowId);
+  }, [revisionsData, workflowId]);
+
+  const toolRegistry = useMemo(() => {
+    if (!toolRegistryData) return [];
+    return Array.isArray(toolRegistryData)
+      ? toolRegistryData
+      : (toolRegistryData?.tools ?? []);
+  }, [toolRegistryData]);
 
   const toolOptions = useMemo(
     () =>
@@ -68,57 +106,6 @@ export default function WorkflowDetails() {
         .sort((a, b) => a.localeCompare(b)),
     [toolRegistry],
   );
-
-  const fetchWorkflow = useCallback(async () => {
-    if (!workflowId) return;
-
-    setIsLoading(true);
-    try {
-      const [workflowData, revisionsData] = await Promise.all([
-        apiClient.getWorkflow(workflowId),
-        apiClient.getWorkflowRevisions(workflowId),
-      ]);
-      const normalizedWorkflow = normalizeWorkflow(workflowData);
-      const normalizedRevisions = normalizeRevisionList(
-        revisionsData,
-        workflowId,
-      );
-      setWorkflow(normalizedWorkflow);
-      setRevisions(normalizedRevisions);
-    } catch (error) {
-      toast.error("Failed to load workflow details");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [workflowId]);
-
-  useEffect(() => {
-    void fetchWorkflow();
-  }, [fetchWorkflow]);
-
-  useEffect(() => {
-    let mounted = true;
-    const loadTools = async () => {
-      try {
-        const response = await apiClient.getToolRegistry();
-        const tools = Array.isArray(response)
-          ? response
-          : (response?.tools ?? []);
-        if (mounted) {
-          setToolRegistry(tools);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    void loadTools();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const handleEditStep = (step: WorkflowStep) => {
     const uniqueTools = Array.from(
@@ -174,57 +161,12 @@ export default function WorkflowDetails() {
   };
 
   const handleSaveStep = async () => {
-    if (!workflowId || !selectedStep) {
-      return;
-    }
-
-    let parsedConfig: Record<string, unknown> | null = {};
-
-    try {
-      const trimmed = stepConfigText.trim();
-      if (!trimmed || trimmed === "{}") {
-        parsedConfig = {};
-      } else {
-        const candidate = JSON.parse(trimmed);
-        if (
-          !candidate ||
-          typeof candidate !== "object" ||
-          Array.isArray(candidate)
-        ) {
-          throw new Error("Step configuration must be a JSON object");
-        }
-        parsedConfig = candidate as Record<string, unknown>;
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Invalid step configuration";
-      setStepError(message);
-      return;
-    }
-
-    const payloadAllowedTools = allowedTools
-      .map((tool) => tool.trim())
-      .filter((tool) => tool.length > 0);
-
-    setIsSavingStep(true);
-    setStepError(null);
-    try {
-      await apiClient.updateWorkflowStep(workflowId, selectedStep.id, {
-        allowed_tools: payloadAllowedTools,
-        step_config: parsedConfig,
-      });
-      toast.success("Step updated successfully");
-      closeStepEditor();
-      void fetchWorkflow();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to update step";
-      setStepError(message);
-      toast.error("Failed to update step");
-      console.error(error);
-    } finally {
-      setIsSavingStep(false);
-    }
+    // Note: The backend doesn't support updating individual steps.
+    // Steps are immutable - you must create a new revision to modify them.
+    toast.error(
+      "Steps cannot be edited directly. Create a new revision to modify workflow steps."
+    );
+    closeStepEditor();
   };
 
   if (isLoading) {

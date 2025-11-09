@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useGetJobTrace } from "@/lib/api/generated";
 import { Button } from "@/components/ui/button";
+
+// BLOCKED: retryJobStage endpoint not in OpenAPI spec
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const stub: any = null;
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,24 +41,28 @@ export default function JobTracing() {
   const [searchedJobId, setSearchedJobId] = useState("");
   const queryClient = useQueryClient();
 
-  const { data: jobTrace, isLoading } = useQuery({
-    queryKey: ["job-trace", searchedJobId],
-    queryFn: () => apiClient.getJobTrace(searchedJobId),
-    enabled: Boolean(searchedJobId),
-    refetchInterval: (data) => {
-      if (!searchedJobId) {
-        return false;
-      }
-      // Check if tab is visible
-      if (document.hidden) {
-        return false;
-      }
-      if (!data) {
-        return 10000; // Increased from 4s to 10s
-      }
-      return data.status === "completed" || data.status === "failed"
-        ? false
-        : 10000; // Increased from 4s to 10s
+  const { data: jobTrace, isLoading } = useGetJobTrace(searchedJobId, {
+    query: {
+      enabled: Boolean(searchedJobId),
+      refetchInterval: (data) => {
+        if (!searchedJobId) {
+          return false;
+        }
+        // Check if tab is visible
+        if (document.hidden) {
+          return false;
+        }
+        if (!data) {
+          return false;
+        }
+        return data.status === "completed" || data.status === "failed"
+          ? false
+          : 10000; // Increased from 4s to 10s
+      },
+      onError: (err) => {
+        console.error(err);
+        toast.error("Failed to load job trace");
+      },
     },
   });
 
@@ -65,7 +73,7 @@ export default function JobTracing() {
     }: {
       jobId: string;
       stageName: string;
-    }) => apiClient.retryJobStage(id, stageName),
+    }) => stub.retryJobStage(id, stageName),
     onSuccess: () => {
       toast.success("Stage retry initiated");
       queryClient.invalidateQueries({ queryKey: ["job-trace"] });

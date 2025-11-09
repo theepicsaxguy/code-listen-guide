@@ -17,7 +17,6 @@ import {
  DropdownMenuItem,
  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-// Replaced legacy apiClient calls with generated React Query hooks
 // from '@/lib/api/generated'.
 // Pagination + search now driven by query key params.
 // Status updates use useUpdateUserStatus mutation and refetch upon success.

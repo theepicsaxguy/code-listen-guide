@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { FileCode2, Loader2, CheckCircle, XCircle, Settings } from "lucide-react";
 import { toast } from "sonner";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+import { useParseRepository } from "@/lib/api/generated";
+import { toast } from "sonner";
 
 interface ParseResult {
  repository_url: string;
@@ -31,17 +32,28 @@ export default function chonkieTest() {
  const [includePatterns, setIncludePatterns] = useState("");
  const [excludePatterns, setExcludePatterns] = useState("");
 
- const [isLoading, setIsLoading] = useState(false);
  const [result, setResult] = useState<ParseResult | null>(null);
  const [error, setError] = useState<string | null>(null);
 
- const handleParse = async () => {
- setIsLoading(true);
+ const parseMutation = useParseRepository({
+ mutation: {
+ onSuccess: (data) => {
+ setResult(data as any);
+ setError(null);
+ toast.success("Repository parsed successfully!");
+ },
+ onError: (err: any) => {
+ setError(err.message || "Failed to parse repository");
+ toast.error(err.message || "Failed to parse repository");
+ },
+ },
+ });
+
+ const handleParse = () => {
  setError(null);
  setResult(null);
-
- try {
- const data = await apiClient.parseRepository({
+ parseMutation.mutate({
+ data: {
  repo_url: repoUrl,
  git_ref: gitRef,
  max_file_size_kb: maxFileSizeKb,
@@ -50,16 +62,8 @@ export default function chonkieTest() {
  enable_table_extraction: enableTableExtraction,
  include_patterns: includePatterns ? includePatterns.split(",").map((p) => p.trim()) : null,
  exclude_patterns: excludePatterns ? excludePatterns.split(",").map((p) => p.trim()) : null,
+ },
  });
-
- setResult(data);
- toast.success("Repository parsed successfully!");
- } catch (err: any) {
- setError(err.message || "Failed to parse repository");
- toast.error(err.message || "Failed to parse repository");
- } finally {
- setIsLoading(false);
- }
  };
 
  return (

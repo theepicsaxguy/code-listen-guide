@@ -10,7 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
 import {
   AgentAclMetric,
   BlockedCallMetric,
@@ -18,6 +17,10 @@ import {
   QuotaUsageMetric,
 } from "@/types/admin";
 import { useMemo } from "react";
+
+// BLOCKED: getPolicyQuotaMetrics endpoint not in OpenAPI spec
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const stub: any = null;
 
 const formatPercent = (used: number, limit: number) => {
   if (!limit) {
@@ -47,7 +50,7 @@ const summarizePayload = (payload?: string) => {
 const PolicyQuotaDashboard = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["policy-metrics"],
-    queryFn: () => apiClient.getPolicyQuotaMetrics(),
+    queryFn: () => stub.getPolicyQuotaMetrics(),
   });
 
   const metrics: PolicyQuotaMetrics | null = data ?? null;

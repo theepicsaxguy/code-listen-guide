@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
  Table,
  TableBody,
@@ -26,7 +26,18 @@ import {
  SelectTrigger,
  SelectValue,
 } from "@/components/ui/select";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+// Queries:
+//  - useGetPaymentStats for stats cards
+//  - useGetPayments (unfiltered list) and useSearchPayments (search results) with conditional enable flags
+//  - useGetPaymentDetails for details dialog
+// Mutations:
+//  - useRefundPayment for issuing refunds (partial or full)
+// Export:
+//  - useExportPayments invoked via refetch with enabled:false (one-off download request)
+// Notes:
+//  - RefundRequest schema presently only includes `amount`; we optimistically pass a `reason` key (cast as any)
+//    to preserve existing UI functionality. If codegen adds reason later, remove the cast.
+//  - We unify loading state from both payments queries and compute pagination from whichever dataset is active.
 import { Payment, PaymentDetails, PaymentStats } from "@/types/admin";
 import { toast } from "sonner";
 import {
@@ -42,115 +53,140 @@ import {
 } from "lucide-react";
 
 export default function AdminPayments() {
- const [payments, setPayments] = useState<Payment[]>([]);
- const [stats, setStats] = useState<PaymentStats | null>(null);
- const [isLoading, setIsLoading] = useState(true);
- const [page, setPage] = useState(1);
- const [totalPages, setTotalPages] = useState(1);
- const [searchQuery, setSearchQuery] = useState("");
- const [statusFilter, setStatusFilter] = useState<string>("");
- const [selectedPayment, setSelectedPayment] = useState<PaymentDetails | null>(null);
- const [showRefundDialog, setShowRefundDialog] = useState(false);
- const [refundAmount, setRefundAmount] = useState("");
- const [refundReason, setRefundReason] = useState("requested_by_customer");
- const [isRefunding, setIsRefunding] = useState(false);
+    const [page, setPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string>("");
+    const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+    const [showRefundDialog, setShowRefundDialog] = useState(false);
+    const [refundAmount, setRefundAmount] = useState("");
+    const [refundReason, setRefundReason] = useState("requested_by_customer");
 
- useEffect(() => {
- void fetchStats();
- }, []);
+    // Stats
+    const { data: stats } = useGetPaymentStats({
+        query: {
+            onError: (err) => {
+                console.error(err);
+                toast.error("Failed to load payment stats");
+            },
+        },
+    });
 
- useEffect(() => {
- void fetchPayments();
- }, [page, statusFilter]);
+    // Unfiltered payments list (enabled only when no search query)
+    const paymentsListQuery = useGetPayments({ page }, {
+        query: {
+            enabled: !searchQuery,
+            onError: (err) => {
+                console.error(err);
+                toast.error("Failed to load payments");
+            },
+        },
+    });
 
- const fetchStats = async () => {
- try {
- const data = await apiClient.getPaymentStats();
- setStats(data);
- } catch (error) {
- console.error("Failed to load payment stats:", error);
- }
- };
+    // Search payments (enabled only when searchQuery present)
+    const paymentsSearchQuery = useSearchPayments({
+        page,
+        query: searchQuery || null,
+        status: statusFilter ? statusFilter : null,
+    }, {
+        query: {
+            enabled: !!searchQuery,
+            onError: (err) => {
+                console.error(err);
+                toast.error("Failed to search payments");
+            },
+        },
+    });
 
- const fetchPayments = async () => {
- setIsLoading(true);
- try {
- const data = searchQuery
- ? await apiClient.searchPayments({
- page,
- query: searchQuery,
- status: statusFilter || undefined,
- })
- : await apiClient.getPayments(page);
- 
- setPayments(data.payments || []);
- setTotalPages(Math.ceil((data.total || 0) / 20));
- } catch (error) {
- toast.error("Failed to load payments");
- console.error(error);
- } finally {
- setIsLoading(false);
- }
- };
+    // Active payments dataset (search takes precedence if query exists)
+    const activePaymentsData: any = searchQuery ? paymentsSearchQuery.data : paymentsListQuery.data;
+    const payments: Payment[] = activePaymentsData?.payments || [];
+    const total = activePaymentsData?.total || 0;
+    const totalPages = Math.max(1, Math.ceil(total / 20));
+    const isLoading = paymentsListQuery.isLoading || paymentsSearchQuery.isLoading;
 
- const handleSearch = () => {
- setPage(1);
- void fetchPayments();
- };
+    // Details dialog query
+    const paymentDetailsQuery = useGetPaymentDetails(selectedPaymentId || "", {
+        query: {
+            enabled: Boolean(selectedPaymentId) && !showRefundDialog,
+            onError: (err) => {
+                console.error(err);
+                toast.error("Failed to load payment details");
+            },
+        },
+    });
+    const selectedPayment: PaymentDetails | null = (paymentDetailsQuery.data as any) || null;
 
- const handleViewDetails = async (paymentId: string) => {
- try {
- const details = await apiClient.getPaymentDetails(paymentId);
- setSelectedPayment(details);
- } catch (error) {
- toast.error("Failed to load payment details");
- console.error(error);
- }
- };
+    // Refund mutation
+    const queryClient = useQueryClient();
+    const refundMutation = useRefundPayment({
+        mutation: {
+            onSuccess: (data) => {
+                // Backend returns amount_refunded / refunded_amount_cents depending on implementation
+                const amount = (data as any)?.amount_refunded ?? (data as any)?.refunded_amount_cents;
+                if (amount) {
+                    const display = typeof amount === "number" ? (amount / 100).toFixed(2) : amount;
+                    toast.success(`Refund successful! Amount: $${display}`);
+                } else {
+                    toast.success("Refund successful");
+                }
+                setShowRefundDialog(false);
+                setSelectedPaymentId(null);
+                setRefundAmount("");
+                // Invalidate relevant queries
+                queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/payments"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/payments/search"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/payments/stats"] });
+            },
+            onError: (err) => {
+                console.error(err);
+                toast.error("Failed to process refund");
+            },
+        },
+    });
 
- const handleRefund = async () => {
- if (!selectedPayment) return;
- 
- setIsRefunding(true);
- try {
- const refundData: { amount?: number; reason: string } = {
- reason: refundReason,
- };
- 
- if (refundAmount) {
- refundData.amount = parseFloat(refundAmount);
- }
+    const handleRefund = () => {
+        if (!selectedPaymentId) return;
+        const payload: any = {};
+        if (refundAmount) {
+            const parsed = parseFloat(refundAmount);
+            if (!Number.isNaN(parsed)) payload.amount = parsed;
+        }
+        // Passing reason (not in current schema) via cast for future compatibility
+        payload.reason = refundReason;
+        refundMutation.mutate({ paymentId: selectedPaymentId, data: payload });
+    };
 
- const result = await apiClient.refundPayment(selectedPayment.id, refundData);
- 
- toast.success(`Refund successful! Amount: $${result.amount_refunded.toFixed(2)}`);
- setShowRefundDialog(false);
- setSelectedPayment(null);
- setRefundAmount("");
- 
- // Refresh data
- void fetchPayments();
- void fetchStats();
- } catch (error) {
- toast.error("Failed to process refund");
- console.error(error);
- } finally {
- setIsRefunding(false);
- }
- };
+    // Export query (lazy)
+    const exportQuery = useExportPayments({
+        format: "csv", // default; overridden per click
+        status_filter: statusFilter ? statusFilter : null,
+    }, {
+        query: {
+            enabled: false,
+            onSuccess: () => {
+                toast.success("Export downloaded successfully");
+            },
+            onError: (err) => {
+                console.error(err);
+                toast.error("Failed to export payments");
+            },
+        },
+    });
 
- const handleExport = async (format: 'csv' | 'json') => {
- try {
- toast.info(`Downloading ${format.toUpperCase()} export...`);
- await apiClient.exportPayments(format, {
- status: statusFilter || undefined,
- });
- toast.success("Export downloaded successfully");
- } catch (error) {
- toast.error("Failed to export payments");
- console.error(error);
- }
- };
+    const handleExport = (format: 'csv' | 'json') => {
+        toast.info(`Downloading ${format.toUpperCase()} export...`);
+        exportQuery.refetch({ throwOnError: false, cancelRefetch: false });
+    };
+
+    const handleSearch = () => {
+        setPage(1);
+        // React Query will refetch due to params change
+    };
+
+    const handleViewDetails = (paymentId: string) => {
+        setSelectedPaymentId(paymentId);
+        setShowRefundDialog(false);
+    };
 
  const getStatusColor = (status: Payment["status"]) => {
  switch (status) {
@@ -182,11 +218,11 @@ export default function AdminPayments() {
  <p className="text-muted-foreground mt-1">View and manage all payment transactions</p>
  </div>
  <div className="flex gap-2">
- <Button variant="outline" onClick={() => handleExport('csv')}>
+ <Button variant="outline" onClick={() => handleExport('csv')} disabled={exportQuery.isFetching}>
  <Download className="h-4 w-4 mr-2" />
  Export CSV
  </Button>
- <Button variant="outline" onClick={() => handleExport('json')}>
+ <Button variant="outline" onClick={() => handleExport('json')} disabled={exportQuery.isFetching}>
  <Download className="h-4 w-4 mr-2" />
  Export JSON
  </Button>
@@ -305,7 +341,7 @@ export default function AdminPayments() {
  </TableRow>
  </TableHeader>
  <TableBody>
- {isLoading ? (
+{isLoading ? (
  <TableRow>
  <TableCell colSpan={7} className="text-center py-8">
  Loading payments...
@@ -393,7 +429,7 @@ export default function AdminPayments() {
  </div>
 
  {/* Payment Details Dialog */}
- <Dialog open={!!selectedPayment && !showRefundDialog} onOpenChange={(open) => !open && setSelectedPayment(null)}>
+ <Dialog open={!!selectedPayment && !showRefundDialog} onOpenChange={(open) => !open && setSelectedPaymentId(null)}>
  <DialogContent className="max-w-2xl">
  <DialogHeader>
  <DialogTitle>Payment Details</DialogTitle>
@@ -525,9 +561,9 @@ export default function AdminPayments() {
  <Button
  variant="danger"
  onClick={handleRefund}
- disabled={isRefunding}
+ disabled={refundMutation.isLoading}
  >
- {isRefunding ? "Processing..." : "Confirm Refund"}
+ {refundMutation.isLoading ? "Processing..." : "Confirm Refund"}
  </Button>
  </DialogFooter>
  </DialogContent>

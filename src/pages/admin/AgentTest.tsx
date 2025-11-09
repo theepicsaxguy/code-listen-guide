@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Activity, Loader2, Settings, Play, Workflow, MessageSquare, Code2, Clock, CheckCircle2, XCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-// TODO: Replace apiClient calls with generated hooks from '@/lib/api/generated'
+import { useListAgents, useTestAgentApiV1AdminAgentTestAgentPost, useTestWorkflowApiV1AdminAgentTestWorkflowPost } from "@/lib/api/generated";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,6 @@ export default function AgentTest() {
  const [customInstructions, setCustomInstructions] = useState<string>("");
  const [chapterDataJson, setChapterDataJson] = useState<string>("{}");
  const [agentResult, setAgentResult] = useState<AgentTestResult | null>(null);
- const [isTestingAgent, setIsTestingAgent] = useState(false);
 
  // Workflow test state
  const [workflowType, setWorkflowType] = useState<"full" | "analysis_only" | "outline_only">("outline_only");
@@ -53,30 +52,21 @@ export default function AgentTest() {
  const [gitRef, setGitRef] = useState<string>("main");
  const [depthTier, setDepthTier] = useState<string>("standard");
  const [workflowResult, setWorkflowResult] = useState<WorkflowTestResult | null>(null);
- const [isTestingWorkflow, setIsTestingWorkflow] = useState(false);
-
- // Available agents
- const [availableAgents, setAvailableAgents] = useState<AgentInfo[]>([]);
- const [loadingAgents, setLoadingAgents] = useState(false);
 
  // UI state
  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["messages"]));
 
- useEffect(() => {
- loadAvailableAgents();
- }, []);
+ // Available agents query
+ const { data: agentsData, isLoading: loadingAgents } = useListAgents({
+   query: {
+     onError: (err: any) => {
+       console.error(err);
+       toast.error(err.message || "Failed to load agents");
+     }
+   }
+ });
 
- const loadAvailableAgents = async () => {
- setLoadingAgents(true);
- try {
- const response = await apiClient.listAvailableAgents();
- setAvailableAgents(response.agents);
- } catch (err: any) {
- toast.error(err.message || "Failed to load agents");
- } finally {
- setLoadingAgents(false);
- }
- };
+ const availableAgents: AgentInfo[] = agentsData?.agents || [];
 
  const selectedAgentInfo = useMemo(() => {
  return availableAgents.find((a) => a.name === selectedAgent);
@@ -92,75 +82,84 @@ export default function AgentTest() {
  setExpandedSections(newExpanded);
  };
 
- const handleTestAgent = async () => {
- if (!agentInput.trim()) {
- toast.error("Please provide an input message");
- return;
- }
-
- setIsTestingAgent(true);
- setAgentResult(null);
-
- try {
- let chapterData = undefined;
- if (selectedAgent === "script") {
- try {
- chapterData = JSON.parse(chapterDataJson);
- } catch {
- toast.error("Invalid chapter data JSON");
- setIsTestingAgent(false);
- return;
- }
- }
-
- const result = await apiClient.testAgent({
- agent_name: selectedAgent,
- input_message: agentInput,
- custom_instructions: customInstructions || undefined,
- chapter_data: chapterData,
+ const testAgentMutation = useTestAgentApiV1AdminAgentTestAgentPost({
+   mutation: {
+     onSuccess: (result: any) => {
+       setAgentResult(result);
+       if (result.error) {
+         toast.error(`Agent test failed: ${result.error}`);
+       } else {
+         toast.success(`Agent test completed in ${result.execution_time_seconds.toFixed(2)}s`);
+       }
+     },
+     onError: (err: any) => {
+       console.error(err);
+       toast.error(err.message || "Failed to test agent");
+     }
+   }
  });
 
- setAgentResult(result);
- if (result.error) {
- toast.error(`Agent test failed: ${result.error}`);
- } else {
- toast.success(`Agent test completed in ${result.execution_time_seconds.toFixed(2)}s`);
- }
- } catch (err: any) {
- toast.error(err.message || "Failed to test agent");
- } finally {
- setIsTestingAgent(false);
- }
+ const testWorkflowMutation = useTestWorkflowApiV1AdminAgentTestWorkflowPost({
+   mutation: {
+     onSuccess: (result: any) => {
+       setWorkflowResult(result);
+       if (result.error) {
+         toast.error(`Workflow test failed: ${result.error}`);
+       } else {
+         toast.success(`Workflow completed in ${result.execution_time_seconds.toFixed(2)}s`);
+       }
+     },
+     onError: (err: any) => {
+       console.error(err);
+       toast.error(err.message || "Failed to test workflow");
+     }
+   }
+ });
+
+ const handleTestAgent = () => {
+   if (!agentInput.trim()) {
+     toast.error("Please provide an input message");
+     return;
+   }
+
+   setAgentResult(null);
+
+   let chapterData = undefined;
+   if (selectedAgent === "script") {
+     try {
+       chapterData = JSON.parse(chapterDataJson);
+     } catch {
+       toast.error("Invalid chapter data JSON");
+       return;
+     }
+   }
+
+   testAgentMutation.mutate({
+     data: {
+       agent_name: selectedAgent,
+       input_message: agentInput,
+       custom_instructions: customInstructions || undefined,
+       chapter_data: chapterData,
+     }
+   });
  };
 
- const handleTestWorkflow = async () => {
- if (!repoUrl.trim()) {
- toast.error("Please provide a repository URL");
- return;
- }
+ const handleTestWorkflow = () => {
+   if (!repoUrl.trim()) {
+     toast.error("Please provide a repository URL");
+     return;
+   }
 
- setIsTestingWorkflow(true);
- setWorkflowResult(null);
+   setWorkflowResult(null);
 
- try {
- const result = await apiClient.testWorkflow({
- workflow_type: workflowType,
- repo_url: repoUrl,
- depth_tier: depthTier,
- git_ref: gitRef,
- });
-
- setWorkflowResult(result);
- if (result.error) {
- toast.error(`Workflow test failed: ${result.error}`);
- } else {
- toast.success(`Workflow completed in ${result.execution_time_seconds.toFixed(2)}s`);
- }
- } catch (err: any) {
- toast.error(err.message || "Failed to test workflow");
- } finally {
- setIsTestingWorkflow(false);
- }
+   testWorkflowMutation.mutate({
+     data: {
+       workflow_type: workflowType,
+       repo_url: repoUrl,
+       depth_tier: depthTier,
+       git_ref: gitRef,
+     }
+   });
  };
 
  const formatTimestamp = (timestamp: number) => {
@@ -291,10 +290,10 @@ export default function AgentTest() {
  {/* Test Button */}
  <Button 
  onClick={handleTestAgent} 
- disabled={isTestingAgent} 
+ disabled={testAgentMutation.isPending} 
  className="w-full bg-primary hover:opacity-90 text-primary-foreground rounded-card font-bold py-6 text-lg elevation-raised hover:elevation-overlay transition-all"
  >
- {isTestingAgent ? (
+ {testAgentMutation.isPending ? (
  <>
  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
  Testing Agent...

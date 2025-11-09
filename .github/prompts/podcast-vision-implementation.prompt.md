@@ -250,7 +250,8 @@ export default function CostEstimate() {
   
   const handleApprove = async () => {
     // Create job with user_approved_cost = true
-    const job = await apiClient.createJob({
+    const createJob = useCreateJobApiV1JobsPost();
+    const job = await createJob.mutateAsync({ data: {
       ...jobData,
       user_approved_cost: true,
       estimated_total_tokens: estimate.llm_tokens + estimate.tts_chars
@@ -587,7 +588,7 @@ export default function EpisodeOutlinePreview() {
   const { jobId } = useParams();
   const { data: episodes, isLoading } = useQuery({
     queryKey: ['episodes', jobId],
-    queryFn: () => apiClient.getJobEpisodes(jobId)
+    query: { enabled: !!jobId }
   });
   
   return (
@@ -1154,7 +1155,7 @@ Files to create:
 export default function Queue() {
   const { data: queueStatus } = useQuery({
     queryKey: ['queue'],
-    queryFn: () => apiClient.getQueueStatus(),
+    query: {}
     refetchInterval: 5000  // Poll every 5 seconds
   });
   
@@ -1456,39 +1457,24 @@ alembic upgrade head
 
 ---
 
-**Revised Pricing Tiers:**
+## Conclusion
 
-**Survey** - $19
-- 3-5 episodes
-- 15-25 min per episode
-- 1-2 hour total audio
-- High-level architectural overview
+This plan transforms the current audiobook system into the podcast generation platform envisioned in Goal.md. The 4-sprint roadmap (10 weeks) systematically addresses the 80% implementation gap through:
 
-**Standard** - $39
-- 6-10 episodes  
-- 20-30 min per episode
-- 2-5 hour total audio
-- Deep architectural + implementation coverage
+1. **User trust** (pre-agent preview, cost gates)
+2. **Smart planning** (relationship-based episodes)
+3. **Engaging output** (two-host dialogue)
+4. **Production polish** (queue system, mixed stacks)
 
-**Comprehensive** - $69
-- 10-15 episodes
-- 25-35 min per episode  
-- 4-9 hour total audio
-- Exhaustive analysis with patterns, edge cases, testing strategies
+The architecture shift from file-based chapters to thematic episodes is the core innovation that enables podcast-style narratives. The dual-voice synthesis brings the conversational format to life.
 
----
+All existing infrastructure (parse endpoint, chonkie pipeline, Agent Framework, database, frontend components) can be leveraged—we're redirecting, not rebuilding.
 
-**1. Episode Granularity**
-Variable length (15-35 min) based on architectural boundaries. Survey groups multiple modules per episode, Standard covers modules individually, Comprehensive dives into implementation patterns within modules. Natural breaks matter more than fixed duration.
+**Next Steps:**
+1. Review and approve this plan with stakeholders
+2. Answer open questions (especially pricing and episode granularity)
+3. Start Sprint 1 implementation immediately (no blockers)
+4. Set up project tracking (GitHub issues for each task)
+5. Schedule weekly demos to validate direction
 
-**2. Cost Estimation Accuracy**
-Fixed tier pricing ($19/$39/$69). Show preview: "This repo → 7 episodes estimated → Standard tier ($39)". If repo exceeds tier max (e.g., 12 episodes on Standard), prompt upgrade or let user exclude scope.
-
-**3. Scope Selection UX**
-Include all by default. For repos estimating above tier limits, require exclusions: "28 episodes detected → exclude test/ and docs/ folders to fit Standard tier, or upgrade to Comprehensive."
-
-**4. Dialogue Voice Selection**
-Hardcode: **Senior Architect** (big picture, tradeoffs, design philosophy) debates **Senior Fullstack Developer** (implementation reality, practical concerns, "but what about X?"). Different opinions create natural tension—makes technical content engaging.
-
-**5. Migration Strategy**
-Call them "episodes" throughout. If current code uses chapters, rename to episodes during migration. Episode = podcast episode = architectural segment. Clean terminology, no dual-mode.
+**Estimated Launch:** 10 weeks from today (mid-January 2026) with full podcast functionality.

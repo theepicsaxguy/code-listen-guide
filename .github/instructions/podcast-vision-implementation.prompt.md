@@ -250,7 +250,8 @@ export default function CostEstimate() {
   
   const handleApprove = async () => {
     // Create job with user_approved_cost = true
-    const job = await apiClient.createJob({
+    const createJob = useCreateJobApiV1JobsPost();
+    const job = await createJob.mutateAsync({ data: {
       ...jobData,
       user_approved_cost: true,
       estimated_total_tokens: estimate.llm_tokens + estimate.tts_chars
@@ -587,7 +588,7 @@ export default function EpisodeOutlinePreview() {
   const { jobId } = useParams();
   const { data: episodes, isLoading } = useQuery({
     queryKey: ['episodes', jobId],
-    queryFn: () => apiClient.getJobEpisodes(jobId)
+    query: { enabled: !!jobId }
   });
   
   return (
@@ -1154,7 +1155,7 @@ Files to create:
 export default function Queue() {
   const { data: queueStatus } = useQuery({
     queryKey: ['queue'],
-    queryFn: () => apiClient.getQueueStatus(),
+    query: {}
     refetchInterval: 5000  // Poll every 5 seconds
   });
   

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-// Replaced legacy apiClient calls with generated hooks from '@/lib/api/generated'
 import { useGetUserById, useGetUserJobs, useUpdateUserCredits } from "@/lib/api/generated";
 import type { AdminUser } from "@/types/admin";
 import { Button } from "@/components/ui/button";

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-// Replaced legacy apiClient calls with generated hooks
 import { 
   useGetSupportTickets,
   useGetSupportTicket,
