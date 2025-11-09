@@ -227,15 +227,18 @@ export default function AgentTest() {
  {selectedAgentInfo && (
  <div className="mt-3 p-4 bg-surface border border-accent/30 rounded-card transition-colors">
  <p className="text-sm text-foreground font-medium mb-3">{selectedAgentInfo.description}</p>
- {selectedAgentInfo.tools.length > 0 && (
+ {selectedAgentInfo.tools && selectedAgentInfo.tools.length > 0 && (
  <div className="flex flex-wrap gap-2">
  {selectedAgentInfo.tools.map((tool, idx) => {
  const variants = ['default', 'outline', 'secondary'] as const;
  const variant = variants[idx % variants.length];
+ // Handle both string and object tool formats
+ const toolName = typeof tool === 'string' ? tool : (tool?.name || tool?.id || 'Unknown Tool');
+ const toolKey = typeof tool === 'string' ? tool : (tool?.id || `tool-${idx}`);
  return (
- <Badge key={tool} variant={variant} className="text-xs font-semibold px-3 py-1 hover:scale-105 transition-transform cursor-pointer">
+ <Badge key={toolKey} variant={variant} className="text-xs font-semibold px-3 py-1 hover:scale-105 transition-transform cursor-pointer">
  <Code2 className="w-3 h-3 mr-1" />
- {tool}
+ {toolName}
  </Badge>
  );
  })}

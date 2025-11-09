@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -52,7 +52,15 @@ import { formatDistanceToNow } from "date-fns";
 export default function WorkflowDetails() {
   const { workflowId } = useParams<{ workflowId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isStepEditorOpen, setIsStepEditorOpen] = useState(false);
+
+  // Determine the mode based on the URL path
+  const mode = useMemo(() => {
+    if (location.pathname.endsWith('/edit')) return 'edit';
+    if (location.pathname.endsWith('/new-revision')) return 'new-revision';
+    return 'view';
+  }, [location.pathname]);
   const [selectedStep, setSelectedStep] = useState<WorkflowStep | null>(null);
   const [allowedTools, setAllowedTools] = useState<string[]>([]);
   const [stepConfigText, setStepConfigText] = useState("{}");
@@ -202,7 +210,40 @@ export default function WorkflowDetails() {
             <ArrowLeft className="h-4 w-4" />
             Back to Workflows
           </Button>
+          {mode !== 'view' && (
+            <Badge variant={mode === 'edit' ? 'default' : 'secondary'} className="text-sm">
+              {mode === 'edit' ? 'Edit Mode' : 'New Revision'}
+            </Badge>
+          )}
         </div>
+
+        {mode === 'edit' && (
+          <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-primary">Edit Mode</h3>
+                <p className="text-sm text-primary mt-1">
+                  This page is for editing workflow metadata. To modify steps, create a new revision instead.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mode === 'new-revision' && (
+          <div className="rounded-lg border border-accent/30 bg-accent/10 p-4">
+            <div className="flex items-start gap-3">
+              <Plus className="h-5 w-5 text-accent mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-accent">Create New Revision</h3>
+                <p className="text-sm text-accent mt-1">
+                  Create a new revision of this workflow with modified steps. The current published version will remain active until you publish the new revision.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-start justify-between">
           <div>

@@ -78,6 +78,7 @@ const AppRoutes = () => {
           <Route path="workflows" element={<WorkflowList />} />
           <Route path="workflows/:workflowId" element={<WorkflowDetails />} />
           <Route path="workflows/:workflowId/edit" element={<WorkflowDetails />} />
+          <Route path="workflows/:workflowId/new-revision" element={<WorkflowDetails />} />
           <Route path="support" element={<Support />} />
           <Route path="audit" element={<AdminAuditLogs />} />
           <Route path="settings" element={<AdminSettings />} />
