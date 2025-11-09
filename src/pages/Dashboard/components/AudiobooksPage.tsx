@@ -23,29 +23,6 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
 
  const { data: audiobooksData, isLoading } = useAudiobooks();
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="h-32" />
-          ))}
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Audiobooks</CardTitle>
-            <CardDescription>Loading your most recent jobs…</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-20" />
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
  const audiobooks = audiobooksData?.jobs || [];
 
  const filteredAudiobooks = useMemo(() => {
@@ -71,6 +48,29 @@ export const AudiobooksPage: React.FC<AudiobooksPageProps> = ({ onNavigateToAudi
  return 0;
  });
  }, [audiobooks, filterStatus, searchQuery, sortBy]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton key={index} className="h-32" />
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Audiobooks</CardTitle>
+            <CardDescription>Loading your most recent jobs…</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} className="h-20" />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

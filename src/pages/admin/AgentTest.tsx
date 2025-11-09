@@ -116,6 +116,8 @@ export default function AgentTest() {
    }
  });
 
+ const isTestingWorkflow = testWorkflowMutation.isPending;
+
  const handleTestAgent = () => {
    if (!agentInput.trim()) {
      toast.error("Please provide an input message");

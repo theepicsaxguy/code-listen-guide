@@ -193,39 +193,58 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
                   {(() => {
                     const rawLines = rawData.raw_content?.split('\n') || [];
                     const cleanedLines = file.content?.split('\n') || [];
+
+                    // Check if the contents are actually different
+                    if (rawData.raw_content === file.content) {
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p>No changes detected - raw and cleaned content are identical</p>
+                        </div>
+                      );
+                    }
+
                     const maxLines = Math.max(rawLines.length, cleanedLines.length);
-                    
-                    return Array.from({ length: Math.min(maxLines, 100) }).map((_, i) => {
-                      const rawLine = rawLines[i] || '';
-                      const cleanedLine = cleanedLines[i] || '';
-                      
+                    const diffLines = [];
+                    let lineNum = 0;
+
+                    for (let i = 0; i < Math.min(maxLines, 100); i++) {
+                      const rawLine = rawLines[i];
+                      const cleanedLine = cleanedLines[i];
+
+                      if (rawLine === undefined && cleanedLine === undefined) continue;
+
+                      lineNum++;
+
                       if (rawLine === cleanedLine) {
-                        return (
+                        diffLines.push(
                           <div key={i} className="text-muted-foreground">
-                            {i + 1}: {rawLine || '(empty)'}
+                            {lineNum}: {rawLine || '(empty)'}
                           </div>
                         );
-                      } else if (!cleanedLine) {
-                        return (
+                      } else if (cleanedLine === undefined) {
+                        diffLines.push(
                           <div key={i} className="rounded-sm bg-danger/10 px-2 py-1 text-danger">
-                            -{i + 1}: {rawLine}
+                            -{lineNum}: {rawLine}
                           </div>
                         );
-                      } else if (!rawLine) {
-                        return (
+                      } else if (rawLine === undefined) {
+                        diffLines.push(
                           <div key={i} className="rounded-sm bg-success/10 px-2 py-1 text-success">
-                            +{i + 1}: {cleanedLine}
+                            +{lineNum}: {cleanedLine}
                           </div>
                         );
                       } else {
-                        return (
+                        diffLines.push(
                           <div key={i} className="space-y-1 rounded-sm bg-warning/10 px-2 py-1">
-                            <div className="text-danger">-{i + 1}: {rawLine}</div>
-                            <div className="text-success">+{i + 1}: {cleanedLine}</div>
+                            <div className="text-danger">-{lineNum}: {rawLine}</div>
+                            <div className="text-success">+{lineNum}: {cleanedLine}</div>
                           </div>
                         );
                       }
-                    });
+                    }
+
+                    return diffLines;
                   })()}
                   {(() => {
                     const maxLines = Math.max(

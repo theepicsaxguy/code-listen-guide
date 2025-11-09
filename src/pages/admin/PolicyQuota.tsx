@@ -19,6 +19,7 @@ import {
 import { useMemo } from "react";
 
 // BLOCKED: getPolicyQuotaMetrics endpoint not in OpenAPI spec
+// TODO: Add this endpoint to the OpenAPI spec and regenerate the client
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stub: any = null;
 
@@ -50,7 +51,13 @@ const summarizePayload = (payload?: string) => {
 const PolicyQuotaDashboard = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["policy-metrics"],
-    queryFn: () => stub.getPolicyQuotaMetrics(),
+    queryFn: () => {
+      if (!stub) {
+        throw new Error("getPolicyQuotaMetrics endpoint not implemented. Please add this endpoint to the OpenAPI spec.");
+      }
+      return stub.getPolicyQuotaMetrics();
+    },
+    enabled: false, // Disable query until endpoint is implemented
   });
 
   const metrics: PolicyQuotaMetrics | null = data ?? null;
@@ -103,11 +110,20 @@ const PolicyQuotaDashboard = () => {
         </Card>
       )}
 
-      {error && !isLoading && (
-        <Card className="bg-card">
-          <CardContent className="py-10 text-center text-danger">
-            Failed to load policy metrics.{" "}
-            {error instanceof Error ? error.message : "Unknown error"}
+      {(error || !stub) && !isLoading && (
+        <Card className="bg-card border-accent/30">
+          <CardContent className="py-10 text-center">
+            <p className="text-muted-foreground text-lg mb-2">
+              Policy & Quota Metrics Endpoint Not Available
+            </p>
+            <p className="text-sm text-muted-foreground">
+              The getPolicyQuotaMetrics endpoint needs to be added to the OpenAPI specification.
+            </p>
+            {error && (
+              <p className="text-xs text-danger mt-4">
+                {error instanceof Error ? error.message : "Unknown error"}
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
