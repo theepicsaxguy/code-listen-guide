@@ -131,6 +131,22 @@ class chonkiePipeline:
                 }
                 chunk_details.append(chunk_info)
 
+            # Extract code enrichment data if enabled
+            functions = []
+            classes = []
+            imports = []
+            exports = []
+
+            language = "unknown"
+            if self.enable_code_enrichment and content_type == ContentType.CODE:
+                language = self._detect_language(file_path)
+                if language == "python":
+                    enrichment = self._enrich_python_code(content, str(file_path))
+                    functions = enrichment.get("functions", [])
+                    classes = enrichment.get("classes", [])
+                    imports = enrichment.get("imports", [])
+                    exports = enrichment.get("exports", [])
+
             # Extract structured data
             parsed_data = {
                 "file_path": str(file_path),
@@ -138,13 +154,22 @@ class chonkiePipeline:
                 "content": content,
                 "raw_content": content,  # For API compatibility
                 "chunks": chunk_details,
+                "functions": functions,
+                "classes": classes,
+                "imports": imports,
+                "exports": exports,
                 "metadata": {
                     "file_name": file_path.name,
                     "file_size": file_path.stat().st_size,
                     "file_type": file_path.suffix,
+                    "language": language,
                     "num_chunks": len(chunks),
                     "total_tokens": sum(c.get('token_count', 0) for c in chunk_details),
                     "avg_chunk_size": sum(c.get('token_count', 0) for c in chunk_details) / len(chunks) if chunks else 0,
+                    "function_count": len(functions),
+                    "class_count": len(classes),
+                    "import_count": len(imports),
+                    "line_count": len(content.split('\n')) if content else 0,
                 },
             }
 
@@ -281,9 +306,12 @@ class chonkiePipeline:
                 "parse_success_rate": (
                     parsed_count / total_files * 100 if total_files > 0 else 0
                 ),
+                "total_functions": dependency_graph.get("summary", {}).get("total_functions", 0),
+                "total_classes": dependency_graph.get("summary", {}).get("total_classes", 0),
+                "total_imports": dependency_graph.get("summary", {}).get("total_imports", 0),
+                "entry_points": entry_points,
             },
             "dependency_graph": dependency_graph,
-            "entry_points": entry_points,
         }
 
     async def clean_content(self, parsed_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -563,6 +591,205 @@ class chonkiePipeline:
                 formulas.append(item.text)
         return formulas
 
+    def _detect_language(self, file_path: Path) -> str:
+        """Detect programming language from file extension."""
+        suffix = file_path.suffix.lower()
+        language_map = {
+            ".py": "python",
+            ".js": "javascript",
+            ".jsx": "javascript",
+            ".ts": "typescript",
+            ".tsx": "typescript",
+            ".java": "java",
+            ".go": "go",
+            ".rs": "rust",
+            ".rb": "ruby",
+            ".php": "php",
+            ".cpp": "cpp",
+            ".cc": "cpp",
+            ".c": "c",
+            ".h": "c",
+            ".hpp": "cpp",
+            ".cs": "csharp",
+            ".swift": "swift",
+            ".sh": "shell",
+            ".bash": "shell",
+        }
+        return language_map.get(suffix, "unknown")
+
+    def _enrich_python_code(self, content: str, file_path: str) -> Dict[str, Any]:
+        """
+        Enrich Python code with AST-based analysis.
+
+        Extracts:
+        - Functions (name, line numbers, parameters, calls)
+        - Classes (name, methods, inheritance)
+        - Imports (modules, items, types)
+        - Exports (public functions/classes)
+        """
+        import ast
+
+        try:
+            tree = ast.parse(content)
+        except SyntaxError as e:
+            logger.warning(f"Failed to parse {file_path}: {e}")
+            return {"functions": [], "classes": [], "imports": [], "exports": []}
+
+        functions = []
+        classes = []
+        imports = []
+        exports = []
+
+        # Extract functions
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef):
+                func_info = {
+                    "name": node.name,
+                    "line_start": node.lineno,
+                    "line_end": node.end_lineno if hasattr(node, 'end_lineno') else node.lineno,
+                    "parameters": [arg.arg for arg in node.args.args],
+                    "is_async": isinstance(node, ast.AsyncFunctionDef),
+                    "is_private": node.name.startswith("_"),
+                    "decorators": [],
+                    "calls": [],
+                }
+
+                # Extract decorators
+                for decorator in node.decorator_list:
+                    if isinstance(decorator, ast.Name):
+                        func_info["decorators"].append(decorator.id)
+                    elif isinstance(decorator, ast.Call) and isinstance(decorator.func, ast.Name):
+                        func_info["decorators"].append(decorator.func.id)
+
+                # Extract function calls within this function
+                for child in ast.walk(node):
+                    if isinstance(child, ast.Call):
+                        if isinstance(child.func, ast.Name):
+                            func_info["calls"].append(child.func.id)
+                        elif isinstance(child.func, ast.Attribute):
+                            # Handle method calls like obj.method()
+                            if isinstance(child.func.value, ast.Name):
+                                func_info["calls"].append(f"{child.func.value.id}.{child.func.attr}")
+
+                # Extract docstring
+                docstring = ast.get_docstring(node)
+                if docstring:
+                    func_info["docstring"] = docstring[:200]  # Limit length
+
+                functions.append(func_info)
+
+                # Add to exports if public (not starting with _)
+                if not node.name.startswith("_"):
+                    exports.append({
+                        "name": node.name,
+                        "type": "function",
+                        "line": node.lineno
+                    })
+
+        # Extract classes
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                class_info = {
+                    "name": node.name,
+                    "line_start": node.lineno,
+                    "line_end": node.end_lineno if hasattr(node, 'end_lineno') else node.lineno,
+                    "methods": [],
+                    "inherits_from": [],
+                    "is_private": node.name.startswith("_"),
+                }
+
+                # Extract base classes
+                for base in node.bases:
+                    if isinstance(base, ast.Name):
+                        class_info["inherits_from"].append(base.id)
+                    elif isinstance(base, ast.Attribute):
+                        class_info["inherits_from"].append(base.attr)
+
+                # Extract methods
+                for item in node.body:
+                    if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        class_info["methods"].append(item.name)
+
+                # Extract docstring
+                docstring = ast.get_docstring(node)
+                if docstring:
+                    class_info["docstring"] = docstring[:200]
+
+                classes.append(class_info)
+
+                # Add to exports if public
+                if not node.name.startswith("_"):
+                    exports.append({
+                        "name": node.name,
+                        "type": "class",
+                        "line": node.lineno
+                    })
+
+        # Extract imports
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    imports.append({
+                        "module": alias.name,
+                        "type": self._classify_import(alias.name),
+                        "items": [alias.asname if alias.asname else alias.name],
+                        "line": node.lineno
+                    })
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    import_info = {
+                        "module": node.module,
+                        "type": self._classify_import(node.module),
+                        "items": [alias.name for alias in node.names],
+                        "line": node.lineno
+                    }
+
+                    # Try to resolve local imports
+                    if import_info["type"] == "local":
+                        import_info["resolved_path"] = self._resolve_python_import(
+                            node.module, file_path
+                        )
+
+                    imports.append(import_info)
+
+        return {
+            "functions": functions,
+            "classes": classes,
+            "imports": imports,
+            "exports": exports
+        }
+
+    def _classify_import(self, module_name: str) -> str:
+        """Classify import as standard library, third-party, or local."""
+        if module_name.startswith("."):
+            return "local"
+
+        # Common standard library modules
+        stdlib_modules = {
+            "os", "sys", "json", "ast", "logging", "pathlib", "re", "datetime",
+            "collections", "itertools", "functools", "typing", "enum", "abc",
+            "asyncio", "threading", "multiprocessing", "subprocess", "argparse",
+            "urllib", "http", "email", "unittest", "pytest"
+        }
+
+        base_module = module_name.split(".")[0]
+        if base_module in stdlib_modules:
+            return "standard_library"
+
+        return "third_party"
+
+    def _resolve_python_import(self, module_path: str, current_file: str) -> str:
+        """Attempt to resolve a relative Python import to an absolute path."""
+        # This is a simplified resolution - a full implementation would need
+        # to handle Python's import system more comprehensively
+        if module_path.startswith("."):
+            # Relative import
+            current_dir = Path(current_file).parent
+            parts = module_path.strip(".").split(".")
+            target_path = current_dir / "/".join(parts)
+            return f"{target_path}.py"
+        return module_path
+
     def _should_exclude(
         self, file_path: Path, repo_path: Path, patterns: List[str]
     ) -> bool:
@@ -586,30 +813,158 @@ class chonkiePipeline:
 
     def _build_dependency_graph(
         self, files: List[Dict[str, Any]]
-    ) -> Dict[str, List[str]]:
+    ) -> Dict[str, Any]:
         """
         Build dependency graph from parsed files.
 
-        Note: Currently returns empty graph. Future enhancement: parse imports/dependencies.
+        Returns a dictionary with:
+        - files: file-to-file dependencies
+        - functions: function call graph
         """
-        graph = {}
+        graph = {
+            "files": {},
+            "functions": {},
+            "summary": {
+                "total_files": len(files),
+                "total_functions": 0,
+                "total_classes": 0,
+                "total_imports": 0
+            }
+        }
+
+        # Build symbol table for function resolution
+        symbol_table = {}
+        for file_data in files:
+            file_path = file_data.get("file_path", "")
+
+            # Register functions
+            for func in file_data.get("functions", []):
+                func_key = f"{file_path}::{func['name']}"
+                symbol_table[func_key] = {
+                    "file": file_path,
+                    "type": "function",
+                    "data": func
+                }
+                graph["summary"]["total_functions"] += 1
+
+            # Register classes
+            for cls in file_data.get("classes", []):
+                cls_key = f"{file_path}::{cls['name']}"
+                symbol_table[cls_key] = {
+                    "file": file_path,
+                    "type": "class",
+                    "data": cls
+                }
+                graph["summary"]["total_classes"] += 1
+
+        # Build file dependencies
+        for file_data in files:
+            file_path = file_data.get("file_path", "")
+            imports = file_data.get("imports", [])
+
+            file_deps = {
+                "imports_from": [],
+                "imported_by": [],
+                "import_count": len(imports)
+            }
+
+            # Track which files this file imports from
+            for imp in imports:
+                if imp.get("type") == "local" and imp.get("resolved_path"):
+                    file_deps["imports_from"].append(imp["resolved_path"])
+
+            graph["files"][file_path] = file_deps
+            graph["summary"]["total_imports"] += len(imports)
+
+        # Build reverse relationships (imported_by)
+        for file_path, deps in graph["files"].items():
+            for imported_file in deps["imports_from"]:
+                if imported_file in graph["files"]:
+                    graph["files"][imported_file]["imported_by"].append(file_path)
+
+        # Build function call graph
+        for file_data in files:
+            file_path = file_data.get("file_path", "")
+
+            for func in file_data.get("functions", []):
+                func_key = f"{file_path}::{func['name']}"
+                graph["functions"][func_key] = {
+                    "file": file_path,
+                    "calls": [],
+                    "called_by": []
+                }
+
+                # Add direct function calls (within same file for now)
+                for call in func.get("calls", []):
+                    # Try to resolve to a full path
+                    if "::" not in call:
+                        # Check if it's in the same file
+                        same_file_key = f"{file_path}::{call}"
+                        if same_file_key in symbol_table:
+                            graph["functions"][func_key]["calls"].append(same_file_key)
+
+        # Build reverse call graph (called_by)
+        for func_key, func_data in graph["functions"].items():
+            for called_func in func_data["calls"]:
+                if called_func in graph["functions"]:
+                    graph["functions"][called_func]["called_by"].append(func_key)
+
         return graph
 
     def _identify_entry_points(
         self, files: List[Dict[str, Any]], repo_path: Path
-    ) -> List[str]:
+    ) -> List[Dict[str, Any]]:
         """Identify likely entry points in the codebase."""
         entry_points = []
 
         for file_data in files:
-            file_path = Path(file_data.get("file_path", ""))
-            name = file_path.name.lower()
+            file_path = file_data.get("file_path", "")
+            name = Path(file_path).name.lower()
+            content = file_data.get("content", "")
+            functions = file_data.get("functions", [])
 
-            # Common entry point patterns
-            if name in {"main.py", "app.py", "index.js", "index.ts", "server.py"}:
-                entry_points.append(str(file_path))
-            elif name == "__main__.py" or name.startswith("cli"):
-                entry_points.append(str(file_path))
+            reasons = []
+            is_entry = False
+
+            # Check for common entry point filenames
+            if name in {"main.py", "app.py", "index.js", "index.ts", "server.py", "__main__.py"}:
+                is_entry = True
+                reasons.append("entry_point_filename")
+
+            # Check for CLI patterns
+            if name.startswith("cli") or "command" in name:
+                is_entry = True
+                reasons.append("cli_pattern")
+
+            # Check for main function
+            for func in functions:
+                if func.get("name") in ["main", "__main__"]:
+                    is_entry = True
+                    reasons.append("has_main_function")
+
+            # Check for if __name__ == "__main__"
+            if '__name__ == "__main__"' in content or "__name__ == '__main__'" in content:
+                is_entry = True
+                reasons.append("has_main_guard")
+
+            # Check for API route decorators (Flask, FastAPI, etc.)
+            for func in functions:
+                decorators = func.get("decorators", [])
+                if any(dec in ["route", "app", "get", "post", "put", "delete", "api"] for dec in decorators):
+                    is_entry = True
+                    reasons.append("has_api_routes")
+                    break
+
+            # Check for test files
+            if "test" in name or any(func.get("name", "").startswith("test_") for func in functions):
+                is_entry = True
+                reasons.append("is_test_file")
+
+            if is_entry:
+                entry_points.append({
+                    "file": file_path,
+                    "reasons": reasons
+                })
 
         return entry_points
 
@@ -656,29 +1011,6 @@ class chonkiePipeline:
             cleaned["content"] = self._normalize_whitespace(cleaned["content"])
         return cleaned
 
-    def _detect_language(self, file_path: Path, content: str) -> List[str]:
-        """Detect programming languages used."""
-        languages = []
-        suffix = file_path.suffix.lower()
-
-        lang_map = {
-            ".py": "Python",
-            ".js": "JavaScript",
-            ".ts": "TypeScript",
-            ".tsx": "TypeScript",
-            ".jsx": "JavaScript",
-            ".java": "Java",
-            ".go": "Go",
-            ".rs": "Rust",
-            ".c": "C",
-            ".cpp": "C++",
-            ".cs": "C#",
-        }
-
-        if suffix in lang_map:
-            languages.append(lang_map[suffix])
-
-        return languages
 
     def _detect_frameworks(self, content: str) -> List[str]:
         """Detect frameworks/libraries used."""

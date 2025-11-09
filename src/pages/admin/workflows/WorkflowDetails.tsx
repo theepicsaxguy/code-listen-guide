@@ -30,7 +30,10 @@ import {
   useListWorkflows,
   useListWorkflowRevisions,
   useGetToolRegistry,
+  useListPlugins,
+  useListAgents,
 } from "@/lib/api/generated";
+import { WorkflowStepEditor } from "@/components/WorkflowStepEditor";
 import {
   WorkflowWithSteps,
   WorkflowRevision,
@@ -84,6 +87,10 @@ export default function WorkflowDetails() {
   // Fetch tool registry
   const { data: toolRegistryData } = useGetToolRegistry();
 
+  // Fetch plugins and agents for the editor
+  const { data: pluginsData } = useListPlugins();
+  const { data: agentsData } = useListAgents();
+
   // Compute derived values
   const isLoading = isLoadingWorkflows || isLoadingRevisions;
 
@@ -114,6 +121,19 @@ export default function WorkflowDetails() {
         .sort((a, b) => a.localeCompare(b)),
     [toolRegistry],
   );
+
+  const availablePlugins = useMemo(() => {
+    if (!pluginsData) return [];
+    return Array.isArray(pluginsData)
+      ? pluginsData.map(p => ({ id: p.id, name: p.name }))
+      : [];
+  }, [pluginsData]);
+
+  const availableAgents = useMemo(() => {
+    if (!agentsData) return [];
+    const agents = Array.isArray(agentsData) ? agentsData : (agentsData?.agents || []);
+    return agents.map(a => ({ name: a.name, description: a.description || '' }));
+  }, [agentsData]);
 
   const handleEditStep = (step: WorkflowStep) => {
     const uniqueTools = Array.from(
@@ -175,6 +195,17 @@ export default function WorkflowDetails() {
       "Steps cannot be edited directly. Create a new revision to modify workflow steps."
     );
     closeStepEditor();
+  };
+
+  const handleSaveWorkflow = async (steps: any[]) => {
+    // TODO: Implement save workflow via API
+    // This would either update the workflow (edit mode) or create a new revision (new-revision mode)
+    console.log("Saving workflow with steps:", steps);
+    toast.info("Workflow save functionality not yet implemented. This would save to the backend.");
+  };
+
+  const handleCancelEdit = () => {
+    navigate(`/admin/workflows/${workflowId}`);
   };
 
   if (isLoading) {
@@ -278,11 +309,24 @@ export default function WorkflowDetails() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="bg-surface border border-primary/20 rounded-lg p-6 shadow-lg">
-            <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-              Current Published Version
-            </h3>
+        {/* Show workflow editor for edit or new-revision modes */}
+        {(mode === 'edit' || mode === 'new-revision') ? (
+          <WorkflowStepEditor
+            workflowId={workflowId!}
+            workflowName={workflow.name}
+            initialSteps={workflow.current_revision?.steps || []}
+            availablePlugins={availablePlugins}
+            availableAgents={availableAgents}
+            onSave={handleSaveWorkflow}
+            onCancel={handleCancelEdit}
+          />
+        ) : (
+          <>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="bg-surface border border-primary/20 rounded-lg p-6 shadow-lg">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+                  Current Published Version
+                </h3>
             {workflow.current_revision ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -653,6 +697,9 @@ export default function WorkflowDetails() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </>
+        )}
+      </div>
     </>
   );
 }
