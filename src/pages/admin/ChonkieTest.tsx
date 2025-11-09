@@ -6,24 +6,33 @@ import { RepositoryBrowser, FileNode } from '@/components/RepositoryBrowser';
 import { FileCode2, Loader2, CheckCircle, XCircle, Settings, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { useParseRepository } from "@/lib/api/generated";
-import { toast } from "sonner";
 
+// Custom interface aligned with AdminFileViewer / RepositoryBrowser expectations
 interface ParseResult {
- repository_url: string;
- git_ref: string;
- commit_sha: string | null;
- modules: Record<string, any>;
- summary: {
- total_files: number;
- total_size_bytes: number;
- languages: string[];
- frameworks: string[];
- patterns: string[];
- entry_points: string[];
- parse_success_rate: number;
- warnings: string[];
- };
- execution_time_seconds: number;
+  repository_url: string;
+  git_ref: string;
+  commit_sha: string | null;
+  modules: Record<string, {
+    path: string;
+    language?: string | null;
+    content?: string;
+    raw_content?: string | null;
+    chunks?: unknown[] | null;
+    metadata?: Record<string, unknown>;
+    size_bytes?: number; // Not always present from backend – derived / optional
+    tags?: string[];     // For RepositoryBrowser compatibility
+  }>;
+  summary: {
+    total_files: number;
+    total_size_bytes: number;
+    languages: string[];
+    frameworks: string[];
+    patterns: string[];
+    entry_points: string[];
+    parse_success_rate: number;
+    warnings: string[];
+  };
+  execution_time_seconds: number;
 }
 
 export default function ChonkieTest() {
@@ -52,13 +61,14 @@ export default function ChonkieTest() {
  const parseMutation = useParseRepository({
  mutation: {
  onSuccess: (data) => {
- setResult(data as any);
+ setResult(data as ParseResult);
  setError(null);
  toast.success("Repository parsed successfully!");
  },
- onError: (err: any) => {
- setError(err.message || "Failed to parse repository");
- toast.error(err.message || "Failed to parse repository");
+ onError: (err: unknown) => {
+ const message = (err as Error)?.message || "Failed to parse repository";
+ setError(message);
+ toast.error(message);
  },
  },
  });
@@ -230,10 +240,10 @@ export default function ChonkieTest() {
  <div className="flex justify-end pt-4">
  <button
  onClick={handleParse}
- disabled={isLoading || !repoUrl}
+ disabled={parseMutation.isPending || !repoUrl}
  className="flex items-center gap-2 px-8 py-4 bg-primary hover:opacity-90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground font-semibold rounded-card transition-all elevation-raised hover:elevation-overlay hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:elevation-flat"
  >
- {isLoading ? (
+ {parseMutation.isPending ? (
  <>
  <Loader2 className="w-5 h-5 animate-spin" />
  Parsing...
@@ -251,7 +261,7 @@ export default function ChonkieTest() {
  {/* Error Display */}
  {error && (
         <div className="bg-danger/10 rounded-card p-4 flex items-start gap-3">
-          <XCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+          <XCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
  <div>
           <h3 className="text-danger font-semibold">Error</h3>
           <p className="text-danger/70 mt-1">{error}</p>

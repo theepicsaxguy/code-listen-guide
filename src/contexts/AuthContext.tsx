@@ -7,6 +7,7 @@ import {
   ReactNode,
 } from 'react';
 import { useLogin, useRegister, useRefreshToken, useGetMe, useLogout } from '@/lib/api/generated';
+import { setAccessToken, getAccessToken } from '@/lib/api/mutator';
 import { User } from '@/lib/types';
 import {
   getPasskeyAuthenticationOptions,
@@ -88,6 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const newTokens = await refreshMutation.mutateAsync();
         if (newTokens) {
+          if (newTokens.access_token) {
+            setAccessToken(newTokens.access_token);
+          }
           const userResult = await getMeQuery.refetch();
           if (userResult.data) {
             setUser(userResult.data as unknown as User);
@@ -109,27 +113,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [restoreSession]);
 
   const login = async (email: string, password: string) => {
-    await loginMutation.mutateAsync({
+    const tokenResp = await loginMutation.mutateAsync({
       data: {
         username: email, // OAuth2PasswordRequestForm uses 'username' field
         password: password,
       },
     });
-
-    // Get user data via generated hook after login
+    // Persist access token for Authorization header fallback (dev scenario)
+    if (tokenResp?.access_token) {
+      setAccessToken(tokenResp.access_token);
+    }
+    // Attempt immediate user fetch
     const userResult = await getMeQuery.refetch();
     if (userResult.data) {
       setUser(userResult.data as unknown as User);
-      // Check for passkeys and show prompt if needed
       await checkAndShowPasskeyPrompt();
     }
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const response = await registerMutation.mutateAsync({
+    await registerMutation.mutateAsync({
       data: { email, password, name },
     });
-    // Auto-login after registration
     await login(email, password);
   };
 
@@ -196,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      setAccessToken(null);
       setUser(null);
       setShowPasskeyPrompt(false);
     }
@@ -205,13 +211,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const refreshInterval = setInterval(async () => {
       try {
-        await refreshMutation.mutateAsync();
-        console.log('Token refreshed successfully');
+        const refreshed = await refreshMutation.mutateAsync();
+        if (refreshed?.access_token) {
+          setAccessToken(refreshed.access_token);
+        }
+        // Silently re-fetch user if we have an access token now
+        if (getAccessToken()) {
+          const userResult = await getMeQuery.refetch();
+          if (userResult.data) {
+            setUser(userResult.data as unknown as User);
+          }
+        }
       } catch (error) {
         console.error('Failed to refresh token:', error);
-        // Don't logout automatically - let the next request handle it
       }
-    }, 60 * 60 * 1000); // Check every hour
+    }, 60 * 60 * 1000); // hourly
 
     return () => clearInterval(refreshInterval);
   }, [refreshMutation, user]);

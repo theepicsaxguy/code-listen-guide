@@ -187,7 +187,7 @@ const PolicyQuotaDashboard = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[160px]">When</TableHead>
+                      <TableHead className="w-40">When</TableHead>
                       <TableHead>Agent</TableHead>
                       <TableHead>Tool</TableHead>
                       <TableHead>Policy</TableHead>

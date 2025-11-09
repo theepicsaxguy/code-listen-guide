@@ -21,6 +21,29 @@ const getBaseUrl = (): string => {
   return normalized;
 };
 
+// Simple token accessor so multiple modules can update without tight coupling.
+// We avoid importing React context inside this pure utility.
+// Token is intentionally kept in memory + localStorage for dev convenience.
+// NOTE: Storing JWTs in localStorage is less secure than httpOnly cookies;
+// this is a pragmatic workaround for cross-origin cookie issues in development.
+let inMemoryAccessToken: string | null = null;
+export const setAccessToken = (token: string | null) => {
+  inMemoryAccessToken = token;
+  if (token) {
+    try { localStorage.setItem('access_token', token); } catch { /* ignore */ }
+  } else {
+    try { localStorage.removeItem('access_token'); } catch { /* ignore */ }
+  }
+};
+export const getAccessToken = (): string | null => {
+  if (inMemoryAccessToken) return inMemoryAccessToken;
+  try {
+    const ls = localStorage.getItem('access_token');
+    if (ls) { inMemoryAccessToken = ls; }
+    return inMemoryAccessToken;
+  } catch { return null; }
+};
+
 export const customInstance = async <T>(
   config: RequestInit & { url: string },
   options?: RequestInit,
@@ -119,6 +142,12 @@ export const customInstance = async <T>(
     }
   }
   
+  // Inject Authorization header if access token present
+  const token = getAccessToken();
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
   // Make request
   const response = await fetch(url, {
     ...options,

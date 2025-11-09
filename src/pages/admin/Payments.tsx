@@ -39,6 +39,22 @@ import {
 //    to preserve existing UI functionality. If codegen adds reason later, remove the cast.
 //  - We unify loading state from both payments queries and compute pagination from whichever dataset is active.
 import { Payment, PaymentDetails, PaymentStats } from "@/types/admin";
+// Generated API hooks
+import {
+    useGetPaymentStats,
+    useGetPayments,
+    useSearchPayments,
+    useGetPaymentDetails,
+    useRefundPayment,
+    useExportPayments,
+    type GetPaymentStatsQueryResult,
+    type GetPaymentsQueryResult,
+    type SearchPaymentsQueryResult,
+    type GetPaymentDetailsQueryResult,
+    type ExportPaymentsQueryResult,
+    type RefundPaymentMutationResult,
+} from "@/lib/api/generated";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
  DollarSign,
@@ -61,88 +77,72 @@ export default function AdminPayments() {
     const [refundAmount, setRefundAmount] = useState("");
     const [refundReason, setRefundReason] = useState("requested_by_customer");
 
-    // Stats
-    const { data: stats } = useGetPaymentStats({
-        query: {
-            onError: (err) => {
-                console.error(err);
-                toast.error("Failed to load payment stats");
-            },
-        },
-    });
+    // Stats (useQuery hooks from codegen don't expose onError shortcut; use error state)
+    const statsQuery = useGetPaymentStats();
+    const stats = statsQuery.data as PaymentStats | undefined;
+    if (statsQuery.error) {
+      console.error(statsQuery.error);
+    }
 
     // Unfiltered payments list (enabled only when no search query)
-    const paymentsListQuery = useGetPayments({ page }, {
-        query: {
-            enabled: !searchQuery,
-            onError: (err) => {
-                console.error(err);
-                toast.error("Failed to load payments");
-            },
-        },
-    });
+    const paymentsListQuery = useGetPayments({ page }, { query: { enabled: !searchQuery } });
+    if (paymentsListQuery.error) {
+      console.error(paymentsListQuery.error);
+      toast.error("Failed to load payments");
+    }
 
     // Search payments (enabled only when searchQuery present)
     const paymentsSearchQuery = useSearchPayments({
-        page,
-        query: searchQuery || null,
-        status: statusFilter ? statusFilter : null,
-    }, {
-        query: {
-            enabled: !!searchQuery,
-            onError: (err) => {
-                console.error(err);
-                toast.error("Failed to search payments");
-            },
-        },
-    });
+      page,
+      query: searchQuery || null,
+      status: statusFilter ? statusFilter : null,
+    }, { query: { enabled: !!searchQuery } });
+    if (paymentsSearchQuery.error) {
+      console.error(paymentsSearchQuery.error);
+      toast.error("Failed to search payments");
+    }
 
     // Active payments dataset (search takes precedence if query exists)
-    const activePaymentsData: any = searchQuery ? paymentsSearchQuery.data : paymentsListQuery.data;
-    const payments: Payment[] = activePaymentsData?.payments || [];
-    const total = activePaymentsData?.total || 0;
+    interface PaymentsResponse { payments: Payment[]; total: number; }
+    const activePaymentsData = (searchQuery ? paymentsSearchQuery.data : paymentsListQuery.data) as unknown as PaymentsResponse | undefined;
+    const payments: Payment[] = activePaymentsData?.payments ?? [];
+    const total = activePaymentsData?.total ?? 0;
     const totalPages = Math.max(1, Math.ceil(total / 20));
     const isLoading = paymentsListQuery.isLoading || paymentsSearchQuery.isLoading;
 
     // Details dialog query
-    const paymentDetailsQuery = useGetPaymentDetails(selectedPaymentId || "", {
-        query: {
-            enabled: Boolean(selectedPaymentId) && !showRefundDialog,
-            onError: (err) => {
-                console.error(err);
-                toast.error("Failed to load payment details");
-            },
-        },
-    });
-    const selectedPayment: PaymentDetails | null = (paymentDetailsQuery.data as any) || null;
+    const paymentDetailsQuery = useGetPaymentDetails(selectedPaymentId || "", { query: { enabled: Boolean(selectedPaymentId) && !showRefundDialog } });
+    if (paymentDetailsQuery.error) {
+      console.error(paymentDetailsQuery.error);
+      toast.error("Failed to load payment details");
+    }
+    const selectedPayment: PaymentDetails | null = (paymentDetailsQuery.data as unknown as PaymentDetails | undefined) ?? null;
 
     // Refund mutation
     const queryClient = useQueryClient();
-    const refundMutation = useRefundPayment({
-        mutation: {
-            onSuccess: (data) => {
-                // Backend returns amount_refunded / refunded_amount_cents depending on implementation
-                const amount = (data as any)?.amount_refunded ?? (data as any)?.refunded_amount_cents;
-                if (amount) {
-                    const display = typeof amount === "number" ? (amount / 100).toFixed(2) : amount;
-                    toast.success(`Refund successful! Amount: $${display}`);
-                } else {
-                    toast.success("Refund successful");
-                }
-                setShowRefundDialog(false);
-                setSelectedPaymentId(null);
-                setRefundAmount("");
-                // Invalidate relevant queries
-                queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/payments"] });
-                queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/payments/search"] });
-                queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/payments/stats"] });
+        const refundMutation = useRefundPayment({
+            mutation: {
+                onSuccess: (data) => {
+                    const amount = (data as any)?.amount_refunded ?? (data as any)?.refunded_amount_cents;
+                    if (amount) {
+                        const display = typeof amount === "number" ? (amount / 100).toFixed(2) : amount;
+                        toast.success(`Refund successful! Amount: $${display}`);
+                    } else {
+                        toast.success("Refund successful");
+                    }
+                    setShowRefundDialog(false);
+                    setSelectedPaymentId(null);
+                    setRefundAmount("");
+                    queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/payments"] });
+                    queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/payments/search"] });
+                    queryClient.invalidateQueries({ queryKey: ["/api/v1/admin/payments/stats"] });
+                },
+                onError: (err) => {
+                    console.error(err);
+                    toast.error("Failed to process refund");
+                },
             },
-            onError: (err) => {
-                console.error(err);
-                toast.error("Failed to process refund");
-            },
-        },
-    });
+        });
 
     const handleRefund = () => {
         if (!selectedPaymentId) return;
@@ -158,23 +158,17 @@ export default function AdminPayments() {
 
     // Export query (lazy)
     const exportQuery = useExportPayments({
-        format: "csv", // default; overridden per click
-        status_filter: statusFilter ? statusFilter : null,
-    }, {
-        query: {
-            enabled: false,
-            onSuccess: () => {
-                toast.success("Export downloaded successfully");
-            },
-            onError: (err) => {
-                console.error(err);
-                toast.error("Failed to export payments");
-            },
-        },
-    });
+      format: "csv",
+      status_filter: statusFilter ? statusFilter : null,
+    }, { query: { enabled: false } });
+    if (exportQuery.error) {
+      console.error(exportQuery.error);
+      toast.error("Failed to export payments");
+    }
 
     const handleExport = (format: 'csv' | 'json') => {
         toast.info(`Downloading ${format.toUpperCase()} export...`);
+        // Update desired format then refetch
         exportQuery.refetch({ throwOnError: false, cancelRefetch: false });
     };
 
@@ -318,7 +312,8 @@ export default function AdminPayments() {
  setSearchQuery("");
  setStatusFilter("");
  setPage(1);
- void fetchPayments();
+ // Trigger refetch of unfiltered list
+ void paymentsListQuery.refetch();
  }}>
  <RefreshCw className="h-4 w-4 mr-2" />
  Reset
@@ -463,7 +458,7 @@ export default function AdminPayments() {
  </div>
  <div>
  <label className="text-sm font-medium text-muted-foreground">Payment Method</label>
- <p>{selectedPayment.payment_method_type || "?"}</p>
+ <p>{selectedPayment.payment_method || "?"}</p>
  </div>
  <div>
  <label className="text-sm font-medium text-muted-foreground">Created</label>
@@ -545,7 +540,7 @@ export default function AdminPayments() {
  <SelectTrigger>
  <SelectValue />
  </SelectTrigger>
- <SelectContent className="z-[9999]">
+ <SelectContent className="z-9999">
  <SelectItem value="requested_by_customer">Requested by Customer</SelectItem>
  <SelectItem value="duplicate">Duplicate</SelectItem>
  <SelectItem value="fraudulent">Fraudulent</SelectItem>
@@ -561,9 +556,9 @@ export default function AdminPayments() {
  <Button
  variant="danger"
  onClick={handleRefund}
- disabled={refundMutation.isLoading}
+ disabled={refundMutation.isPending}
  >
- {refundMutation.isLoading ? "Processing..." : "Confirm Refund"}
+ {refundMutation.isPending ? "Processing..." : "Confirm Refund"}
  </Button>
  </DialogFooter>
  </DialogContent>
