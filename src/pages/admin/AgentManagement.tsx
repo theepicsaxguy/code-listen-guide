@@ -407,7 +407,7 @@ function AgentForm({
           <SelectTrigger>
             <SelectValue placeholder="Select a plugin to add" />
           </SelectTrigger>
-          <SelectContent className="z-[100]">
+          <SelectContent>
             {plugins
               ?.filter((plugin) => Boolean(plugin.id))
               .map((plugin) => (

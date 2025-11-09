@@ -66,7 +66,7 @@ export default function AgentTest() {
    }
  });
 
- const availableAgents: AgentInfo[] = agentsData?.agents || [];
+ const availableAgents: AgentInfo[] = Array.isArray(agentsData) ? agentsData : (agentsData?.agents || []);
 
  const selectedAgentInfo = useMemo(() => {
  return availableAgents.find((a) => a.name === selectedAgent);
