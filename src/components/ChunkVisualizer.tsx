@@ -4,9 +4,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileNode } from './RepositoryBrowser';
 import { BarChart3, FileText, Hash, ArrowRight } from 'lucide-react';
 
+interface Chunk {
+  index: number;
+  token_count: number;
+  start_index: number;
+  end_index: number;
+  text: string;
+}
+
 export interface ChunkVisualizerProps {
   file: FileNode;
-  rawData: any;
+  rawData: {
+    chunks?: Chunk[];
+    [key: string]: unknown;
+  };
 }
 
 export function ChunkVisualizer({ file, rawData }: ChunkVisualizerProps) {
@@ -26,10 +37,10 @@ export function ChunkVisualizer({ file, rawData }: ChunkVisualizerProps) {
     );
   }
 
-  const totalTokens = chunks.reduce((sum: number, chunk: any) => sum + (chunk.token_count || 0), 0);
+  const totalTokens = chunks.reduce((sum: number, chunk: Chunk) => sum + (chunk.token_count || 0), 0);
   const avgTokensPerChunk = totalTokens / chunks.length;
-  const maxTokens = Math.max(...chunks.map((c: any) => c.token_count || 0));
-  const minTokens = Math.min(...chunks.map((c: any) => c.token_count || 0));
+  const maxTokens = Math.max(...chunks.map((c: Chunk) => c.token_count || 0));
+  const minTokens = Math.min(...chunks.map((c: Chunk) => c.token_count || 0));
 
   return (
     <div className="space-y-6">
@@ -87,7 +98,7 @@ export function ChunkVisualizer({ file, rawData }: ChunkVisualizerProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {chunks.map((chunk: any, index: number) => {
+            {chunks.map((chunk: Chunk, index: number) => {
               const percentage = (chunk.token_count / maxTokens) * 100;
               return (
                 <div key={index} className="space-y-1">
@@ -126,7 +137,7 @@ export function ChunkVisualizer({ file, rawData }: ChunkVisualizerProps) {
         <CardContent>
           <ScrollArea className="h-[37.5rem] w-full">
             <div className="space-y-6">
-              {chunks.map((chunk: any, index: number) => (
+              {chunks.map((chunk: Chunk, index: number) => (
                 <div key={index} className="border rounded-card p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

@@ -11,41 +11,31 @@ export function useSafeParams<T extends Record<string, string>>(
   params: Partial<T>,
   required: (keyof T)[]
 ): { params: T | null; isValid: boolean; missing: string[] } {
-  const [result, setResult] = useState<{ params: T | null; isValid: boolean; missing: string[] }>({
-    params: null,
-    isValid: false,
-    missing: [],
-  });
+  // Compute validation during render instead of in effect
+  const missing: string[] = [];
+  const validated: Record<string, string> = {};
 
-  useEffect(() => {
-    const missing: string[] = [];
-    const validated: Record<string, string> = {};
-
-    for (const key of required) {
-      const value = params[key];
-      if (!value || typeof value !== 'string' || value.trim() === '') {
-        missing.push(String(key));
-      } else {
-        validated[String(key)] = value;
-      }
+  for (const key of required) {
+    const value = params[key];
+    if (!value || typeof value !== 'string' || value.trim() === '') {
+      missing.push(String(key));
+    } else {
+      validated[String(key)] = value;
     }
+  }
 
-    setResult({
-      params: missing.length === 0 ? (validated as T) : null,
-      isValid: missing.length === 0,
-      missing,
-    });
-  }, [params, required]);
-
-  return result;
+  return {
+    params: missing.length === 0 ? (validated as T) : null,
+    isValid: missing.length === 0,
+    missing,
+  };
 }
 
 /**
  * Hook for safe component mounting detection (prevents state updates on unmounted components)
  */
-export function useMounted(): () => boolean {
+export function useMounted(): React.MutableRefObject<boolean> {
   const mountedRef = useRef(false);
-  const isMounted = useRef(() => mountedRef.current);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -54,24 +44,24 @@ export function useMounted(): () => boolean {
     };
   }, []);
 
-  return isMounted.current;
+  return mountedRef;
 }
 
 /**
  * Safe async effect that won't update state if component is unmounted
  */
 export function useSafeAsyncEffect(
-  effect: (isMounted: () => boolean) => Promise<void> | void,
+  effect: (isMounted: React.MutableRefObject<boolean>) => Promise<void> | void,
   deps: React.DependencyList
 ): void {
-  const isMounted = useMounted();
+  const isMountedRef = useMounted();
 
   useEffect(() => {
     const runEffect = async () => {
       try {
-        await effect(isMounted);
+        await effect(isMountedRef);
       } catch (error) {
-        if (isMounted()) {
+        if (isMountedRef.current) {
           console.error('Async effect error:', error);
         }
       }

@@ -35,8 +35,8 @@ export function PasskeySetupPrompt({ open, onOpenChange }: PasskeySetupPromptPro
     setIsRegistering(true);
     try {
       // Generate a simple device name
-      const deviceName = (navigator as any).userAgentData?.platform || 
-                         navigator.platform || 
+      const deviceName = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ||
+                         navigator.platform ||
                          'Device';
       const passkeyName = `${deviceName} - ${new Date().toLocaleDateString()}`;
       await registerPasskey(passkeyName);

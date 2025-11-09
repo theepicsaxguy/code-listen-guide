@@ -16,7 +16,12 @@ import {
 
 export interface AdminFileViewerProps {
   file: FileNode;
-  rawData: any; // Full response data from parse endpoint
+  rawData: {
+    raw_content?: string;
+    content?: string;
+    chunks?: unknown[];
+    [key: string]: unknown;
+  }; // Full response data from parse endpoint
 }
 
 export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {

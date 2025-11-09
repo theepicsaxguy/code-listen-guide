@@ -249,6 +249,8 @@ export interface PolicyQuotaMetrics {
   quotas: QuotaUsageMetric[];
   blocked_calls: BlockedCallMetric[];
   agent_acls: AgentAclMetric[];
+}
+
 export interface StageReplayResponse {
   success: boolean;
   job_id: string;

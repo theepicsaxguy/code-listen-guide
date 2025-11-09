@@ -8,7 +8,10 @@ import { ChevronRight, ChevronDown, File, Folder, FolderOpen, X } from 'lucide-r
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface FileTreeSelectorProps {
-  modules: Record<string, any>;
+  modules: Record<string, {
+    language?: string;
+    [key: string]: unknown;
+  }>;
   selectedFiles: string[];
   excludedPatterns: string[];
   onSelectionChange: (files: string[]) => void;
@@ -20,7 +23,10 @@ interface TreeNode {
   path: string;
   isDirectory: boolean;
   children?: TreeNode[];
-  metadata?: any;
+  metadata?: {
+    language?: string;
+    [key: string]: unknown;
+  };
 }
 
 export function FileTreeSelector({

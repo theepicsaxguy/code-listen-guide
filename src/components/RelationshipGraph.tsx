@@ -3,9 +3,20 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Network, File, Package, GitBranch } from 'lucide-react';
 
+interface ModuleMetadata {
+  tags?: string[];
+  [key: string]: unknown;
+}
+
 export interface RelationshipGraphProps {
-  modules: Record<string, any>;
-  summary: any;
+  modules: Record<string, {
+    metadata?: ModuleMetadata;
+    [key: string]: unknown;
+  }>;
+  summary: {
+    entry_points?: string[];
+    [key: string]: unknown;
+  };
 }
 
 export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) {
@@ -25,7 +36,7 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
 
   // Group files by framework
   const filesByFramework: Record<string, string[]> = {};
-  Object.entries(modules).forEach(([path, file]: [string, any]) => {
+  Object.entries(modules).forEach(([path, file]) => {
     file.metadata?.tags?.forEach((tag: string) => {
       if (tag.startsWith('framework:')) {
         const framework = tag.split(':')[1];
@@ -39,7 +50,7 @@ export function RelationshipGraph({ modules, summary }: RelationshipGraphProps) 
 
   // Group files by pattern
   const filesByPattern: Record<string, string[]> = {};
-  Object.entries(modules).forEach(([path, file]: [string, any]) => {
+  Object.entries(modules).forEach(([path, file]) => {
     file.metadata?.tags?.forEach((tag: string) => {
       if (tag.startsWith('pattern:')) {
         const pattern = tag.split(':')[1];

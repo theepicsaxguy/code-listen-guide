@@ -47,16 +47,17 @@ const CountUp = ({ end, duration = 2000 }: { end: number; duration?: number }) =
       { threshold: 0.3 }
     );
 
-    if (countRef.current) {
-      observer.observe(countRef.current);
+    const currentRef = countRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
     }
 
     return () => {
-      if (countRef.current) {
-        observer.unobserve(countRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
-  }, []);
+  }, [isVisible]);
 
   useEffect(() => {
     if (!isVisible) return;
