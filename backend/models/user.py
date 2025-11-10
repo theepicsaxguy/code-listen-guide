@@ -8,7 +8,7 @@ Provides:
 - Stripe customer integration
 """
 
-from sqlalchemy import Column, String, Integer, DateTime, Boolean
+from sqlalchemy import Column, String, Integer, DateTime, Boolean, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -32,6 +32,7 @@ class User(Base):
         subscription_tier: Subscription level (free, professional, team, enterprise)
         subscription_status: Subscription state (active, canceled, past_due)
         credits_remaining: Available credits for pay-per-use features
+        settings: User preferences and configuration (JSON)
         created_at: Account creation timestamp
         updated_at: Last update timestamp
     """
@@ -60,6 +61,9 @@ class User(Base):
 
     # Credits
     credits_remaining = Column(Integer, default=0)
+
+    # User Settings/Preferences
+    settings = Column(JSON, nullable=True)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

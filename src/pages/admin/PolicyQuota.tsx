@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -17,11 +16,7 @@ import {
   QuotaUsageMetric,
 } from "@/types/admin";
 import { useMemo } from "react";
-
-// BLOCKED: getPolicyQuotaMetrics endpoint not in OpenAPI spec
-// TODO: Add this endpoint to the OpenAPI spec and regenerate the client
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const stub: any = null;
+import { useGetPolicyQuotaMetrics } from "@/lib/api/generated";
 
 const formatPercent = (used: number, limit: number) => {
   if (!limit) {
@@ -49,16 +44,7 @@ const summarizePayload = (payload?: string) => {
 };
 
 const PolicyQuotaDashboard = () => {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["policy-metrics"],
-    queryFn: () => {
-      if (!stub) {
-        throw new Error("getPolicyQuotaMetrics endpoint not implemented. Please add this endpoint to the OpenAPI spec.");
-      }
-      return stub.getPolicyQuotaMetrics();
-    },
-    enabled: false, // Disable query until endpoint is implemented
-  });
+  const { data, isLoading, error } = useGetPolicyQuotaMetrics();
 
   const metrics: PolicyQuotaMetrics | null = data ?? null;
   const quotas: QuotaUsageMetric[] = metrics?.quotas ?? [];
@@ -110,20 +96,15 @@ const PolicyQuotaDashboard = () => {
         </Card>
       )}
 
-      {(error || !stub) && !isLoading && (
+      {error && !isLoading && (
         <Card className="bg-card border-accent/30">
           <CardContent className="py-10 text-center">
             <p className="text-muted-foreground text-lg mb-2">
-              Policy & Quota Metrics Endpoint Not Available
+              Failed to Load Policy & Quota Metrics
             </p>
-            <p className="text-sm text-muted-foreground">
-              The getPolicyQuotaMetrics endpoint needs to be added to the OpenAPI specification.
+            <p className="text-xs text-danger mt-4">
+              {error instanceof Error ? error.message : "Unknown error"}
             </p>
-            {error && (
-              <p className="text-xs text-danger mt-4">
-                {error instanceof Error ? error.message : "Unknown error"}
-              </p>
-            )}
           </CardContent>
         </Card>
       )}

@@ -13,7 +13,7 @@ password strength, and proper data sanitization.
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
@@ -79,6 +79,7 @@ class UserResponse(BaseModel):
     subscription_tier: str
     subscription_status: str = "active"
     credits_remaining: int
+    settings: Optional[Dict[str, Any]] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -185,5 +186,39 @@ class PasskeyResponse(BaseModel):
     last_used_at: Optional[datetime]
     created_at: datetime
     is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserSettingsUpdate(BaseModel):
+    """Schema for updating user settings/preferences."""
+
+    settings: Dict[str, Any] = Field(
+        ...,
+        description="User settings as a JSON object",
+        examples=[
+            {
+                "theme": "dark",
+                "notifications_enabled": True,
+                "language": "en",
+                "timezone": "UTC"
+            }
+        ]
+    )
+
+    @field_validator("settings")
+    @classmethod
+    def validate_settings(cls, value: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate settings object is not empty."""
+        if not value:
+            raise ValueError("Settings cannot be empty")
+        return value
+
+
+class UserSettingsResponse(BaseModel):
+    """Response schema for user settings."""
+
+    settings: Optional[Dict[str, Any]] = None
+    message: str = "Settings updated successfully"
 
     model_config = ConfigDict(from_attributes=True)

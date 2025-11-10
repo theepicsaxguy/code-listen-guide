@@ -14,6 +14,7 @@ from backend.api.dependencies import require_admin
 from backend.api.schemas.workflow import (
     RevisionValidationResult,
     WorkflowDefinitionCreate,
+    WorkflowDefinitionUpdate,
     WorkflowDefinitionOut,
     WorkflowRevisionCreate,
     WorkflowRevisionOut,
@@ -126,6 +127,54 @@ async def create_workflow(
     db.add(definition)
     db.commit()
     db.refresh(definition)
+    return _definition_to_out(definition)
+
+
+@router.patch("/{workflow_id}", operation_id="updateWorkflowDefinition", response_model=WorkflowDefinitionOut)
+async def update_workflow_definition(
+    workflow_id: UUID,
+    payload: WorkflowDefinitionUpdate,
+    db: Session = Depends(get_db),
+    _current_admin=Depends(require_admin),
+):
+    """
+    Update workflow definition metadata (name, description).
+
+    This endpoint updates the workflow definition itself, not its revisions or steps.
+    To modify steps, create a new revision instead.
+    """
+    definition = db.get(WorkflowDefinition, workflow_id)
+    if definition is None:
+        raise HTTPException(status_code=404, detail="Workflow definition not found")
+
+    # Check for name conflicts if name is being updated
+    if payload.name is not None and payload.name != definition.name:
+        existing = (
+            db.query(WorkflowDefinition)
+            .filter(
+                func.lower(WorkflowDefinition.name) == payload.name.lower(),
+                WorkflowDefinition.id != workflow_id
+            )
+            .first()
+        )
+        if existing:
+            raise HTTPException(status_code=409, detail="Workflow with that name already exists")
+        definition.name = payload.name
+
+    if payload.description is not None:
+        definition.description = payload.description
+
+    db.commit()
+    db.refresh(definition)
+
+    # Reload with current_revision relationship
+    definition = (
+        db.query(WorkflowDefinition)
+        .options(selectinload(WorkflowDefinition.current_revision))
+        .filter(WorkflowDefinition.id == workflow_id)
+        .one()
+    )
+
     return _definition_to_out(definition)
 
 

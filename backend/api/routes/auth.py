@@ -21,6 +21,8 @@ from backend.api.schemas.user import (
     UserCreate,
     UserResponse,
     TokenResponse,
+    UserSettingsUpdate,
+    UserSettingsResponse,
 )
 from backend.db.session import get_db
 from backend.models.user import User
@@ -337,3 +339,43 @@ async def refresh_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
+
+
+@router.patch("/settings", operation_id="updateUserSettings", response_model=UserSettingsResponse)
+async def update_user_settings(
+    request: Request,
+    settings_data: UserSettingsUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Update user settings/preferences.
+
+    Updates the user's settings JSON object with new preferences.
+    This endpoint merges the new settings with existing ones.
+
+    Args:
+        settings_data: UserSettingsUpdate containing the settings to update
+        current_user: Authenticated user from JWT token
+        db: Database session
+
+    Returns:
+        UserSettingsResponse with updated settings and success message
+
+    Raises:
+        HTTPException: 400 if settings validation fails
+    """
+    # Merge new settings with existing settings
+    existing_settings = current_user.settings or {}
+    updated_settings = {**existing_settings, **settings_data.settings}
+
+    # Update user settings
+    current_user.settings = updated_settings
+
+    db.commit()
+    db.refresh(current_user)
+
+    return UserSettingsResponse(
+        settings=current_user.settings,
+        message="Settings updated successfully"
+    )

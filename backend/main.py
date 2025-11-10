@@ -41,6 +41,7 @@ if __name__ == "__main__":
 from backend.api.dependencies import limiter
 from backend.api.routes import auth, jobs, outlines, payments, player, admin, parse, agents_admin, episodes, passkeys
 from backend.api.routes.admin_workflows import router as admin_workflows_router
+from backend.api.routes.policy_quota import router as policy_quota_router
 from backend.api.routes.admin_routes.agent_test import router as agent_test_router
 from backend.api.routes.admin_plugins import (
     router as admin_plugins_router,
@@ -266,6 +267,7 @@ app.include_router(outlines.router)
 app.include_router(payments.router)
 app.include_router(player.router)
 app.include_router(admin_workflows_router)
+app.include_router(policy_quota_router)
 app.include_router(admin.router)
 app.include_router(agents_admin.router)
 app.include_router(admin_agents_crud_router)

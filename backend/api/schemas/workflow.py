@@ -14,6 +14,11 @@ class WorkflowDefinitionCreate(BaseModel):
     description: Optional[str] = None
 
 
+class WorkflowDefinitionUpdate(BaseModel):
+    name: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = None
+
+
 class WorkflowDefinitionOut(BaseModel):
     id: UUID
     name: str

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 import { useUser } from '../hooks';
 import { PlanBadge } from './PlanBadge';
+import { useUpdateUserSettings } from '@/lib/api/generated';
+import { toast } from 'sonner';
 
 export const SettingsPage: React.FC = () => {
  const { data: user } = useUser();
@@ -11,17 +13,40 @@ export const SettingsPage: React.FC = () => {
  const [processingNotifications, setProcessingNotifications] = useState(true);
  const [saved, setSaved] = useState(false);
 
+ const updateSettings = useUpdateUserSettings();
+
  useEffect(() => {
  if (user) {
- setName(user.name);
+ setName(user.name || '');
  setEmail(user.email);
+ // Load settings from user.settings if available
+ if (user.settings) {
+ setEmailNotifications(user.settings.emailNotifications ?? true);
+ setProcessingNotifications(user.settings.processingNotifications ?? true);
+ }
  }
  }, [user]);
 
- const handleSave = () => {
- // TODO: Implement API call to update user settings
+ const handleSave = async () => {
+ try {
+ await updateSettings.mutateAsync({
+ data: {
+ settings: {
+ emailNotifications,
+ processingNotifications,
+ // Store other user preferences here as needed
+ name,
+ }
+ }
+ });
+
  setSaved(true);
+ toast.success('Settings saved successfully!');
  setTimeout(() => setSaved(false), 2000);
+ } catch (error) {
+ toast.error('Failed to save settings. Please try again.');
+ console.error('Failed to save settings:', error);
+ }
  };
 
  if (!user) {
@@ -128,9 +153,15 @@ export const SettingsPage: React.FC = () => {
  <div className="flex justify-end">
  <button
  onClick={handleSave}
- className="px-8 py-3 bg-primary hover:opacity-90 text-primary-foreground rounded-lg font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
+ disabled={updateSettings.isPending}
+ className="px-8 py-3 bg-primary hover:opacity-90 text-primary-foreground rounded-lg font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
  >
- {saved ? (
+ {updateSettings.isPending ? (
+ <>
+ <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+ Saving...
+ </>
+ ) : saved ? (
  <>
  <Check size={18} />
  Saved!

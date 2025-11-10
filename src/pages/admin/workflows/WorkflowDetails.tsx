@@ -32,6 +32,8 @@ import {
   useGetToolRegistry,
   useListPlugins,
   useListAgents,
+  useUpdateWorkflowDefinition,
+  useCreateWorkflowRevision,
 } from "@/lib/api/generated";
 import { WorkflowStepEditor } from "@/components/WorkflowStepEditor";
 import {
@@ -90,6 +92,10 @@ export default function WorkflowDetails() {
   // Fetch plugins and agents for the editor
   const { data: pluginsData } = useListPlugins();
   const { data: agentsData } = useListAgents();
+
+  // Mutations for saving
+  const updateWorkflowMutation = useUpdateWorkflowDefinition();
+  const createRevisionMutation = useCreateWorkflowRevision();
 
   // Compute derived values
   const isLoading = isLoadingWorkflows || isLoadingRevisions;
@@ -198,10 +204,46 @@ export default function WorkflowDetails() {
   };
 
   const handleSaveWorkflow = async (steps: any[]) => {
-    // TODO: Implement save workflow via API
-    // This would either update the workflow (edit mode) or create a new revision (new-revision mode)
-    console.log("Saving workflow with steps:", steps);
-    toast.info("Workflow save functionality not yet implemented. This would save to the backend.");
+    if (!workflowId) {
+      toast.error("No workflow ID found");
+      return;
+    }
+
+    try {
+      if (mode === 'new-revision') {
+        // Create a new revision with the provided steps
+        await createRevisionMutation.mutateAsync({
+          workflowId,
+          data: {
+            steps: steps.map((step, index) => ({
+              step_order: index,
+              step_name: step.step_name || `Step ${index + 1}`,
+              agent_id: step.agent_id || null,
+              execution_mode: step.execution_mode || 'sequential',
+              input_mapping: step.input_mapping || null,
+              output_mapping: step.output_mapping || null,
+              checkpoint_enabled: step.checkpoint_enabled ?? true,
+              retry_policy: step.retry_policy || null,
+              step_config: step.step_config || null,
+            })),
+            revision_metadata: {},
+            publish: false, // Don't auto-publish, let user publish manually
+          },
+        });
+        toast.success("New revision created successfully");
+        navigate(`/admin/workflows/${workflowId}`);
+      } else if (mode === 'edit') {
+        // In edit mode, we only update workflow metadata (name, description)
+        // Steps cannot be edited - user must create a new revision
+        toast.info("To modify steps, please create a new revision instead");
+        navigate(`/admin/workflows/${workflowId}`);
+      }
+    } catch (error: any) {
+      console.error("Failed to save workflow:", error);
+      const errorMessage = error?.response?.data?.detail || error?.message || "Failed to save workflow";
+      toast.error(errorMessage);
+      throw error; // Re-throw so the editor can handle it
+    }
   };
 
   const handleCancelEdit = () => {
@@ -583,6 +625,8 @@ export default function WorkflowDetails() {
             </Table>
           )}
         </div>
+        </>
+      )}
       </div>
 
       <Dialog
@@ -697,9 +741,6 @@ export default function WorkflowDetails() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </>
-        )}
-      </div>
     </>
   );
 }
