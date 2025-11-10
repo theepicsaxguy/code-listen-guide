@@ -42,7 +42,6 @@ for p in (str(BACKEND_ROOT), str(PROJECT_ROOT)):
 os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("API_BASE_URL", "http://testserver/api/v1")
 os.environ.setdefault("JWT_SECRET", "test-secret")
-os.environ.setdefault("ANTHROPIC_API_KEY", "test-anthropic-key")
 os.environ.setdefault("STRIPE_SECRET_KEY", "sk_test_123")
 os.environ.setdefault("STRIPE_WEBHOOK_SECRET", "whsec_test_123")
 os.environ.setdefault("STRIPE_PUBLISHABLE_KEY", "pk_test_123")
@@ -165,11 +164,8 @@ agent_framework_module.TextContent = _StubTextContent
 agent_framework_module.Role = _StubRole
 agent_framework_openai = ModuleType("agent_framework.openai")
 agent_framework_openai.OpenAIResponsesClient = MagicMock()
-agent_framework_anthropic = ModuleType("agent_framework.anthropic")
-agent_framework_anthropic.AnthropicClaudeClient = MagicMock()
 sys.modules.setdefault("agent_framework", agent_framework_module)
 sys.modules.setdefault("agent_framework.openai", agent_framework_openai)
-sys.modules.setdefault("agent_framework.anthropic", agent_framework_anthropic)
 
 stripe_module = MagicMock()
 sys.modules.setdefault("stripe", stripe_module)
@@ -223,20 +219,6 @@ def mock_openai_responses_client():
         return_value=MagicMock(
             choices=[MagicMock(message=MagicMock(content="Test response"))],
             usage=MagicMock(total_tokens=100, prompt_tokens=50, completion_tokens=50),
-        )
-    )
-    return client
-
-
-@pytest.fixture
-def mock_anthropic_client():
-    """Mock Anthropic Claude client."""
-    client = MagicMock()
-    client.messages = MagicMock()
-    client.messages.create = AsyncMock(
-        return_value=MagicMock(
-            content=[MagicMock(text="Test Claude response")],
-            usage=MagicMock(input_tokens=50, output_tokens=50),
         )
     )
     return client

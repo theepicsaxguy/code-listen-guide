@@ -28,7 +28,6 @@ class Settings(BaseSettings):
     database_url: str = Field(..., min_length=1, alias="DATABASE_URL")
     checkpoint_database_url: str = Field(..., min_length=1, alias="CHECKPOINT_DATABASE_URL")
 
-    anthropic_api_key: str = Field(..., min_length=1)
     openai_api_key: Optional[str] = Field(default=None)
     openai_responses_model: str = Field(default="gpt-4o-mini")
     openai_base_url: Optional[str] = Field(default=None)

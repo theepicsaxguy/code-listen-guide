@@ -83,7 +83,6 @@ DATABASE_URL=postgresql://audiobook:audiobook_dev_password@postgres:5432/audiobo
 CHECKPOINT_DATABASE_URL=postgresql://audiobook:audiobook_dev_password@postgres:5432/audiobook
 API_BASE_URL=http://localhost:8080/api/v1
 JWT_SECRET=development-secret
-ANTHROPIC_API_KEY=dev-anthropic-key
 OPENAI_RESPONSES_MODEL=gpt-4o-mini
 STRIPE_SECRET_KEY=sk_test_placeholder
 STRIPE_WEBHOOK_SECRET=whsec_placeholder
@@ -179,7 +178,7 @@ docker compose logs backend
 ```
 
 Most common issues:
-- Missing required API keys (OPENAI_API_KEY or ANTHROPIC_API_KEY)
+- Missing required API keys (OPENAI_API_KEY)
 - Invalid DATABASE_URL
 - Missing secret keys (JWT_SECRET, STRIPE_SECRET_KEY)
 

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Activity, Loader2, Settings, Play, Workflow, MessageSquare, Code2, Clock, CheckCircle2, XCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { useListAgents, useTestAgentApiV1AdminAgentTestAgentPost, useTestWorkflowApiV1AdminAgentTestWorkflowPost } from "@/lib/api/generated";
+import { useListAgents, useListWorkflows, useTestAgentApiV1AdminAgentTestAgentPost, useTestWorkflowApiV1AdminAgentTestWorkflowPost } from "@/lib/api/generated";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,8 @@ export default function AgentTest() {
  const [agentResult, setAgentResult] = useState<AgentTestResult | null>(null);
 
  // Workflow test state
+ const [workflowMode, setWorkflowMode] = useState<"database" | "legacy">("database");
+ const [selectedWorkflow, setSelectedWorkflow] = useState<string>("");
  const [workflowType, setWorkflowType] = useState<"full" | "analysis_only" | "outline_only">("outline_only");
  const [repoUrl, setRepoUrl] = useState<string>("https://github.com/microsoft/agent-framework");
  const [gitRef, setGitRef] = useState<string>("main");
@@ -67,6 +69,18 @@ export default function AgentTest() {
  });
 
  const availableAgents: AgentInfo[] = Array.isArray(agentsData) ? agentsData : (agentsData?.agents || []);
+
+ // Available workflows query
+ const { data: workflowsData, isLoading: loadingWorkflows } = useListWorkflows({
+   query: {
+     onError: (err: any) => {
+       console.error(err);
+       toast.error(err.message || "Failed to load workflows");
+     }
+   }
+ });
+
+ const availableWorkflows = Array.isArray(workflowsData) ? workflowsData : (workflowsData?.workflows || []);
 
  const selectedAgentInfo = useMemo(() => {
  return availableAgents.find((a) => a.name === selectedAgent);
@@ -152,10 +166,16 @@ export default function AgentTest() {
      return;
    }
 
+   if (workflowMode === "database" && !selectedWorkflow) {
+     toast.error("Please select a workflow from the database");
+     return;
+   }
+
    setWorkflowResult(null);
 
    testWorkflowMutation.mutate({
      data: {
+       workflow_name: workflowMode === "database" ? selectedWorkflow : undefined,
        workflow_type: workflowType,
        repo_url: repoUrl,
        depth_tier: depthTier,
@@ -496,9 +516,61 @@ export default function AgentTest() {
  <CardDescription className="text-base mt-2">Test complete or partial workflows</CardDescription>
  </CardHeader>
  <CardContent className="space-y-6">
- {/* Workflow Type */}
+ {/* Workflow Mode */}
  <div>
- <Label htmlFor="workflow-type">Workflow Type</Label>
+ <Label htmlFor="workflow-mode">Workflow Source</Label>
+ <Select value={workflowMode} onValueChange={(v: any) => setWorkflowMode(v)}>
+ <SelectTrigger id="workflow-mode">
+ <SelectValue />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="database">Database Workflows</SelectItem>
+ <SelectItem value="legacy">Legacy Hardcoded</SelectItem>
+ </SelectContent>
+ </Select>
+ <p className="text-xs text-muted-foreground mt-1">
+ {workflowMode === "database"
+   ? "Select a workflow from the database (workflow_definitions table)"
+   : "Use legacy hardcoded workflow types (analysis_only, outline_only, full)"}
+ </p>
+ </div>
+
+ {/* Database Workflow Selection */}
+ {workflowMode === "database" && (
+ <div>
+ <Label htmlFor="workflow-select">Select Workflow</Label>
+ <Select value={selectedWorkflow} onValueChange={setSelectedWorkflow}>
+ <SelectTrigger id="workflow-select">
+ <SelectValue placeholder="Choose a workflow..." />
+ </SelectTrigger>
+ <SelectContent>
+ {availableWorkflows.length === 0 ? (
+   <SelectItem value="none" disabled>
+     {loadingWorkflows ? "Loading workflows..." : "No workflows found"}
+   </SelectItem>
+ ) : (
+   availableWorkflows.map((workflow: any) => (
+     <SelectItem key={workflow.id} value={workflow.name}>
+       {workflow.name} (v{workflow.current_version || "?"}, {workflow.step_count} steps)
+     </SelectItem>
+   ))
+ )}
+ </SelectContent>
+ </Select>
+ {selectedWorkflow && availableWorkflows.find((w: any) => w.name === selectedWorkflow) && (
+   <div className="mt-3 p-4 bg-surface border border-accent/30 rounded-card">
+     <p className="text-sm text-foreground">
+       {availableWorkflows.find((w: any) => w.name === selectedWorkflow)?.description || "No description"}
+     </p>
+   </div>
+ )}
+ </div>
+ )}
+
+ {/* Legacy Workflow Type */}
+ {workflowMode === "legacy" && (
+ <div>
+ <Label htmlFor="workflow-type">Workflow Type (Legacy)</Label>
  <Select value={workflowType} onValueChange={(v: any) => setWorkflowType(v)}>
  <SelectTrigger id="workflow-type">
  <SelectValue />
@@ -510,6 +582,7 @@ export default function AgentTest() {
  </SelectContent>
  </Select>
  </div>
+ )}
 
  {/* Repository URL */}
  <div>

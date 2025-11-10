@@ -142,7 +142,6 @@ pip install opentelemetry-api opentelemetry-sdk opentelemetry-instrumentation-fa
 ```
 OPENAI_API_KEY=sk-openai-xxxxx
 OPENAI_RESPONSES_MODEL=gpt-4o-mini
-ANTHROPIC_API_KEY=sk-ant-xxxxx
 
 DATABASE_URL=postgresql://user:password@localhost:5432/audiobook
 CHECKPOINT_DATABASE_URL=postgresql://user:password@localhost:5432/audiobook

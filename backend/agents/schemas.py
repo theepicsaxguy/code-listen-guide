@@ -144,6 +144,29 @@ class AudioAgentResponse(BaseModel):
         return json_schema
 
 
+class EpisodeAgentResponse(BaseModel):
+    """Episode planning payload returned by the episode agent."""
+
+    title: str = Field(default="")
+    narrative_theme: str = Field(default="")
+    conversation_hooks: List[str] = Field(default_factory=list)
+    learning_objectives: List[str] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="allow")
+    
+    @classmethod
+    def __get_pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> Dict[str, Any]:
+        """Override JSON schema generation to enforce additionalProperties: false for OpenAI structured outputs."""
+        json_schema = handler(core_schema)
+        # Recursively set additionalProperties: false for all object schemas
+        if isinstance(json_schema, dict):
+            # Ensure root schema has type: "object" if it has properties
+            if "properties" in json_schema and json_schema.get("type") != "object":
+                json_schema["type"] = "object"
+            _set_additional_properties_false(json_schema)
+        return json_schema
+
+
 def _set_additional_properties_false(schema: Dict[str, Any]) -> None:
     """Recursively set additionalProperties: false for all object schemas."""
     # Set additionalProperties: false for objects (either explicit type or implicit via properties)

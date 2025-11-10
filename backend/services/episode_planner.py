@@ -1,7 +1,7 @@
 """LLM-based episode planning service.
 
 Generates semantic episode metadata (titles, themes, hooks, objectives) from
-dependency clusters using Anthropic Claude API.
+dependency clusters using Microsoft Agent Framework.
 """
 
 from __future__ import annotations
@@ -10,13 +10,11 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-try:
-    from anthropic import AsyncAnthropic
-except ImportError:
-    AsyncAnthropic = None  # type: ignore
-
+from backend.agents.episode_agent import create_episode_agent
+from backend.agents import build_responses_client_options
 from backend.config import get_settings
 from backend.services.dependency_analyzer import ClusterPlan
+from agent_framework.openai import OpenAIResponsesClient
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +59,19 @@ Guidelines:
 
 
 class EpisodePlanner:
-    """Generates semantic episode metadata using LLM."""
+    """Generates semantic episode metadata using Microsoft Agent Framework."""
 
-    def __init__(self, api_key: Optional[str] = None) -> None:
-        """Initialize planner with Anthropic API key."""
-        if AsyncAnthropic is None:
-            raise ImportError("anthropic package not installed")
-        self.client = AsyncAnthropic(api_key=api_key) if api_key else None
+    def __init__(self) -> None:
+        """Initialize planner with agent framework."""
+        self.client = None
+
+    async def _get_agent(self):
+        """Get or create the episode planning agent."""
+        if self.client is None:
+            settings = get_settings()
+            client = OpenAIResponsesClient(**build_responses_client_options(settings))
+            self.client = await create_episode_agent(client)
+        return self.client
 
     async def plan_episode(
         self,
@@ -87,64 +91,36 @@ class EpisodePlanner:
         Returns:
             Dictionary with title, narrative_theme, conversation_hooks, learning_objectives
         """
-        if not self.client:
-            # Fallback to placeholder metadata
-            return self._generate_placeholder(cluster, architectural_layer)
-
-        # Build input context
-        file_list = sorted(cluster.files)
-        cluster_deps = self._extract_cluster_dependencies(cluster.files, dependency_graph)
-        repo_info = repo_context or {}
-
-        prompt = EPISODE_PLANNING_PROMPT.format(
-            file_list=", ".join(file_list[:20]),  # Limit to avoid token bloat
-            architectural_layer=architectural_layer or "Uncategorized",
-            dependency_info=json.dumps(cluster_deps, indent=2)[:500],
-            repo_context=json.dumps(repo_info, indent=2)[:300],
-        )
-
         try:
-            message = await self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=1024,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
+            agent = await self._get_agent()
+            
+            # Build input context
+            file_list = sorted(cluster.files)
+            cluster_deps = self._extract_cluster_dependencies(cluster.files, dependency_graph)
+            repo_info = repo_context or {}
+
+            prompt = EPISODE_PLANNING_PROMPT.format(
+                file_list=", ".join(file_list[:20]),  # Limit to avoid token bloat
+                architectural_layer=architectural_layer or "Uncategorized",
+                dependency_info=json.dumps(cluster_deps, indent=2)[:500],
+                repo_context=json.dumps(repo_info, indent=2)[:300],
             )
 
-            # Extract JSON from response
-            content_text = ""
-            if message.content:
-                for block in message.content:
-                    if hasattr(block, "text"):
-                        content_text += block.text
-                    elif isinstance(block, dict) and "text" in block:
-                        content_text += block["text"]
+            result = await agent.run(prompt)
+            
+            # The agent framework should return structured data
+            if hasattr(result, 'result') and result.result:
+                response_data = result.result
+                return {
+                    "title": response_data.get("title", self._default_title(cluster)),
+                    "narrative_theme": response_data.get("narrative_theme", "Technical deep dive"),
+                    "conversation_hooks": response_data.get("conversation_hooks", ["Explore key concepts"]),
+                    "learning_objectives": response_data.get("learning_objectives", ["Understand system design"]),
+                }
+            else:
+                logger.warning("Agent returned no result, using placeholder")
+                return self._generate_placeholder(cluster, architectural_layer)
 
-            # Parse JSON (may be wrapped in markdown code blocks)
-            content_text = content_text.strip()
-            if content_text.startswith("```"):
-                # Extract JSON from code block
-                lines = content_text.split("\n")
-                json_lines = [line for line in lines if not line.strip().startswith("```")]
-                content_text = "\n".join(json_lines)
-
-            parsed = json.loads(content_text)
-
-            # Validate structure
-            return {
-                "title": parsed.get("title", self._default_title(cluster)),
-                "narrative_theme": parsed.get("narrative_theme", "Technical deep dive"),
-                "conversation_hooks": parsed.get("conversation_hooks", ["Explore key concepts"]),
-                "learning_objectives": parsed.get("learning_objectives", ["Understand system design"]),
-            }
-
-        except json.JSONDecodeError as e:
-            logger.warning("Failed to parse LLM response as JSON, using placeholder", exc_info=e)
-            return self._generate_placeholder(cluster, architectural_layer)
         except Exception as e:
             logger.error("Episode planning failed", exc_info=e, extra={"cluster_size": len(cluster.files)})
             return self._generate_placeholder(cluster, architectural_layer)
@@ -212,8 +188,7 @@ async def plan_episodes_from_clusters(
     Returns:
         List of episode plan dictionaries
     """
-    settings = get_settings()
-    planner = EpisodePlanner(api_key=settings.anthropic_api_key)
+    planner = EpisodePlanner()
 
     plans = []
     for cluster in clusters:

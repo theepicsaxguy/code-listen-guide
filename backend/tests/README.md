@@ -191,7 +191,6 @@ Some tests require environment variables. Create a `.env.test` file:
 ```bash
 # Testing environment variables
 DATABASE_URL=sqlite:///:memory:
-ANTHROPIC_API_KEY=test-key
 STRIPE_SECRET_KEY=sk_test_...
 AWS_ACCESS_KEY_ID=test
 AWS_SECRET_ACCESS_KEY=test

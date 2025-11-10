@@ -13,7 +13,6 @@ from fastapi.testclient import TestClient
 REQUIRED_ENV = {
     "DATABASE_URL": "sqlite:///./test_auth.db",
     "CHECKPOINT_DATABASE_URL": "sqlite:///./test_checkpoint.db",
-    "ANTHROPIC_API_KEY": "test-anthropic",
     "STRIPE_SECRET_KEY": "sk_test_dummy",
     "STRIPE_WEBHOOK_SECRET": "whsec_test_dummy",
     "STRIPE_PUBLISHABLE_KEY": "pk_test_dummy",
