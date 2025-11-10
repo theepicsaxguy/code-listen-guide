@@ -24,6 +24,13 @@ except ImportError:
     HAS_CHONKIE = False
     logger.warning("chonkie not available. Install with: pip install chonkie")
 
+try:
+    from backend.services.code_analyzer import CodeAnalyzer
+    HAS_CODE_ANALYZER = True
+except ImportError:
+    HAS_CODE_ANALYZER = False
+    logger.warning("CodeAnalyzer not available. Install tree-sitter for rich metadata extraction.")
+
 
 class ContentType(str, Enum):
     """Types of content that can be parsed."""
@@ -82,6 +89,15 @@ class chonkiePipeline:
         self.enable_table_extraction = enable_table_extraction
         self.artifacts_path = artifacts_path
 
+        # Initialize code analyzer for rich metadata extraction
+        self.code_analyzer = None
+        if HAS_CODE_ANALYZER and enable_code_enrichment:
+            try:
+                self.code_analyzer = CodeAnalyzer()
+                logger.info("CodeAnalyzer initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize CodeAnalyzer: {e}")
+
         # Initialize converter with options
         self._init_converter()
 
@@ -136,11 +152,41 @@ class chonkiePipeline:
             classes = []
             imports = []
             exports = []
+            call_graph = {}
+            code_metrics = {}
+            documentation = {}
+            dependencies = {}
+            code_metadata = {}
 
             language = "unknown"
             if self.enable_code_enrichment and content_type == ContentType.CODE:
                 language = self._detect_language(file_path)
-                if language == "python":
+
+                # Use CodeAnalyzer for comprehensive metadata extraction
+                if self.code_analyzer:
+                    try:
+                        analysis = self.code_analyzer.analyze_file(file_path, content)
+                        functions = analysis.get("functions", [])
+                        classes = analysis.get("classes", [])
+                        imports = analysis.get("imports", [])
+                        exports = analysis.get("exports", [])
+                        call_graph = analysis.get("call_graph", {})
+                        code_metrics = analysis.get("metrics", {})
+                        documentation = analysis.get("documentation", {})
+                        dependencies = analysis.get("dependencies", {})
+                        code_metadata = analysis.get("metadata", {})
+                        language = analysis.get("language", language)
+                    except Exception as e:
+                        logger.warning(f"CodeAnalyzer failed for {file_path}: {e}")
+                        # Fallback to basic Python enrichment
+                        if language == "python":
+                            enrichment = self._enrich_python_code(content, str(file_path))
+                            functions = enrichment.get("functions", [])
+                            classes = enrichment.get("classes", [])
+                            imports = enrichment.get("imports", [])
+                            exports = enrichment.get("exports", [])
+                elif language == "python":
+                    # Fallback to basic Python enrichment if CodeAnalyzer not available
                     enrichment = self._enrich_python_code(content, str(file_path))
                     functions = enrichment.get("functions", [])
                     classes = enrichment.get("classes", [])
@@ -158,18 +204,33 @@ class chonkiePipeline:
                 "classes": classes,
                 "imports": imports,
                 "exports": exports,
+                "call_graph": call_graph,
+                "dependencies": dependencies,
+                "documentation": documentation,
                 "metadata": {
+                    # Basic file info
                     "file_name": file_path.name,
                     "file_size": file_path.stat().st_size,
+                    "file_size_mb": round(file_path.stat().st_size / (1024 * 1024), 3),
                     "file_type": file_path.suffix,
                     "language": language,
+
+                    # Chunking info
                     "num_chunks": len(chunks),
                     "total_tokens": sum(c.get('token_count', 0) for c in chunk_details),
                     "avg_chunk_size": sum(c.get('token_count', 0) for c in chunk_details) / len(chunks) if chunks else 0,
+
+                    # Code structure counts
                     "function_count": len(functions),
                     "class_count": len(classes),
                     "import_count": len(imports),
-                    "line_count": len(content.split('\n')) if content else 0,
+                    "export_count": len(exports) if isinstance(exports, list) else 0,
+
+                    # Code metrics (from CodeAnalyzer)
+                    **code_metrics,
+
+                    # Additional metadata from CodeAnalyzer
+                    **code_metadata,
                 },
             }
 
@@ -321,9 +382,12 @@ class chonkiePipeline:
         Operations:
         - Remove redundant whitespace
         - Normalize code formatting
+        - Remove comments (optional, for LLM processing)
+        - Remove debug/console statements
         - Filter out generated/minified code
         - Remove binary content
         - Standardize line endings
+        - Normalize indentation
 
         Args:
             parsed_data: Data from parse_file or parse_codebase
@@ -336,19 +400,56 @@ class chonkiePipeline:
         # Clean content text
         if "content" in cleaned and cleaned["content"]:
             content = cleaned["content"]
+            content_type = cleaned.get("content_type", ContentType.UNKNOWN)
 
-            # Normalize whitespace
-            content = self._normalize_whitespace(content)
-
-            # Remove excessive blank lines
-            content = self._remove_excessive_blank_lines(content)
-
-            # Filter out potential minified code
+            # Filter out potential minified code early
             if self._is_likely_minified(content):
+                if "metadata" not in cleaned:
+                    cleaned["metadata"] = {}
                 cleaned["metadata"]["is_minified"] = True
                 cleaned["content"] = "[Minified content - skipped for readability]"
-            else:
-                cleaned["content"] = content
+                cleaned["metadata"]["cleaned_reason"] = "minified"
+                return cleaned
+
+            # Apply cleaning steps
+            original_lines = len(content.split('\n'))
+
+            # Step 1: Normalize whitespace
+            content = self._normalize_whitespace(content)
+
+            # Step 2: Remove excessive blank lines
+            content = self._remove_excessive_blank_lines(content)
+
+            # Step 3: Remove trailing whitespace
+            content = self._remove_trailing_whitespace(content)
+
+            # Step 4: For code files, apply code-specific cleaning
+            if content_type == ContentType.CODE:
+                language = cleaned.get("metadata", {}).get("language", "unknown")
+
+                # Remove comments (makes diff more meaningful)
+                content = self._remove_comments(content, language)
+
+                # Remove debug/console statements
+                content = self._remove_debug_statements(content, language)
+
+                # Remove empty functions/classes
+                content = self._remove_empty_blocks(content, language)
+
+            # Step 5: Normalize line endings
+            content = content.replace('\r\n', '\n').replace('\r', '\n')
+
+            # Track cleaning stats
+            cleaned_lines = len(content.split('\n'))
+            if "metadata" not in cleaned:
+                cleaned["metadata"] = {}
+
+            cleaned["metadata"]["original_lines"] = original_lines
+            cleaned["metadata"]["cleaned_lines"] = cleaned_lines
+            cleaned["metadata"]["lines_removed"] = original_lines - cleaned_lines
+            cleaned["metadata"]["cleaning_applied"] = True
+
+            cleaned["content"] = content
 
         # Clean code blocks
         if "code_blocks" in cleaned:
@@ -973,10 +1074,157 @@ class chonkiePipeline:
         """Normalize whitespace in content."""
         import re
 
-        # Replace multiple spaces with single space (except at line start)
+        # Replace tabs with spaces
+        content = content.replace('\t', '    ')
+
+        # Replace multiple spaces with single space (except at line start for indentation)
         lines = content.split("\n")
-        normalized = [re.sub(r"(?<!^)  +", " ", line) for line in lines]
+        normalized = []
+        for line in lines:
+            # Preserve leading spaces (indentation), normalize rest
+            stripped = line.lstrip()
+            if stripped:
+                leading_spaces = len(line) - len(stripped)
+                # Normalize the non-indentation part
+                normalized_line = ' ' * leading_spaces + re.sub(r'  +', ' ', stripped)
+                normalized.append(normalized_line)
+            else:
+                normalized.append(line)
+
         return "\n".join(normalized)
+
+    def _remove_trailing_whitespace(self, content: str) -> str:
+        """Remove trailing whitespace from all lines."""
+        lines = content.split("\n")
+        return "\n".join(line.rstrip() for line in lines)
+
+    def _remove_comments(self, content: str, language: str) -> str:
+        """Remove comments from code."""
+        import re
+
+        lines = content.split('\n')
+        cleaned_lines = []
+
+        # Language-specific comment patterns
+        if language in ['python']:
+            for line in lines:
+                # Remove inline comments but preserve docstrings
+                if '"""' in line or "'''" in line:
+                    cleaned_lines.append(line)  # Keep docstrings
+                elif '#' in line:
+                    # Check if # is inside a string
+                    if line.strip().startswith('#'):
+                        continue  # Skip full-line comments
+                    else:
+                        # Remove inline comments
+                        cleaned_lines.append(line.split('#')[0].rstrip())
+                else:
+                    cleaned_lines.append(line)
+
+        elif language in ['javascript', 'typescript', 'tsx', 'java', 'cpp', 'csharp', 'go', 'rust']:
+            in_block_comment = False
+            for line in lines:
+                # Handle block comments /* */
+                if '/*' in line:
+                    in_block_comment = True
+                    # Remove everything after /*
+                    line = line.split('/*')[0]
+
+                if in_block_comment:
+                    if '*/' in line:
+                        in_block_comment = False
+                        # Take everything after */
+                        line = line.split('*/', 1)[1] if '*/' in line else ''
+                    else:
+                        continue  # Skip lines inside block comments
+
+                # Handle single-line comments //
+                if '//' in line:
+                    if line.strip().startswith('//'):
+                        continue  # Skip full-line comments
+                    else:
+                        # Remove inline comments
+                        line = line.split('//')[0].rstrip()
+
+                if line.strip():  # Only add non-empty lines
+                    cleaned_lines.append(line)
+
+        else:
+            return content  # Return original if language not supported
+
+        return '\n'.join(cleaned_lines)
+
+    def _remove_debug_statements(self, content: str, language: str) -> str:
+        """Remove console.log, print, debugger statements."""
+        import re
+
+        lines = content.split('\n')
+        cleaned_lines = []
+
+        debug_patterns = {
+            'python': [
+                r'^\s*print\s*\(',
+                r'^\s*pprint\s*\(',
+                r'^\s*logger\.debug\s*\(',
+            ],
+            'javascript': [
+                r'^\s*console\.log\s*\(',
+                r'^\s*console\.debug\s*\(',
+                r'^\s*console\.info\s*\(',
+                r'^\s*debugger\s*;',
+            ],
+            'typescript': [
+                r'^\s*console\.log\s*\(',
+                r'^\s*console\.debug\s*\(',
+                r'^\s*console\.info\s*\(',
+                r'^\s*debugger\s*;',
+            ],
+        }
+
+        patterns = debug_patterns.get(language, [])
+
+        for line in lines:
+            is_debug = False
+            for pattern in patterns:
+                if re.match(pattern, line):
+                    is_debug = True
+                    break
+
+            if not is_debug:
+                cleaned_lines.append(line)
+
+        return '\n'.join(cleaned_lines)
+
+    def _remove_empty_blocks(self, content: str, language: str) -> str:
+        """Remove empty functions, classes, etc."""
+        import re
+
+        # This is a simplified version - could be enhanced with tree-sitter
+        lines = content.split('\n')
+        cleaned_lines = []
+
+        # Simple heuristic: remove function/class definitions followed immediately by 'pass' or empty
+        if language == 'python':
+            skip_next = False
+            for i, line in enumerate(lines):
+                if skip_next:
+                    skip_next = False
+                    continue
+
+                # Check if this is a def/class line followed by just 'pass'
+                if line.strip().startswith(('def ', 'class ')) and i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    if next_line == 'pass' and (i + 2 >= len(lines) or not lines[i + 2].strip().startswith(' ')):
+                        # Skip this def/class and the pass line
+                        skip_next = True
+                        continue
+
+                cleaned_lines.append(line)
+
+        else:
+            return content  # Return original for non-Python
+
+        return '\n'.join(cleaned_lines)
 
     def _remove_excessive_blank_lines(self, content: str) -> str:
         """Remove excessive blank lines (more than 2 consecutive)."""
