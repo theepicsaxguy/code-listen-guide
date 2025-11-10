@@ -241,13 +241,10 @@ async def parse_repository(
             if "entry_point" in tags or "purpose:entry_point" in tags:
                 entry_points.append(file_path)
 
-            # Extract chunk metadata from file_data metadata
+            # Extract ALL metadata from file_data
             file_metadata = file_data.get("metadata", {})
-            num_chunks = file_metadata.get("num_chunks")
-            total_tokens = file_metadata.get("total_tokens")
-            avg_chunk_size = file_metadata.get("avg_chunk_size")
 
-            # Build metadata
+            # Build metadata with ALL fields from CodeAnalyzer
             metadata = FileMetadata(
                 path=file_path,
                 language=language,
@@ -256,9 +253,35 @@ async def parse_repository(
                 summary=file_summary,
                 complexity=complexity,
                 visibility=visibility,
-                num_chunks=num_chunks,
-                total_tokens=total_tokens,
-                avg_chunk_size=avg_chunk_size,
+                # Chunking metadata
+                num_chunks=file_metadata.get("num_chunks"),
+                total_tokens=file_metadata.get("total_tokens"),
+                avg_chunk_size=file_metadata.get("avg_chunk_size"),
+                # Rich metadata from CodeAnalyzer
+                file_size_mb=file_metadata.get("file_size_mb"),
+                function_count=file_metadata.get("function_count") or file_metadata.get("total_functions"),
+                class_count=file_metadata.get("class_count") or file_metadata.get("total_classes"),
+                import_count=file_metadata.get("import_count") or file_metadata.get("total_imports"),
+                export_count=file_metadata.get("export_count") or file_metadata.get("total_exports"),
+                # Code metrics
+                total_lines=file_metadata.get("total_lines"),
+                code_lines=file_metadata.get("code_lines"),
+                comment_lines=file_metadata.get("comment_lines"),
+                blank_lines=file_metadata.get("blank_lines"),
+                cyclomatic_complexity=file_metadata.get("cyclomatic_complexity"),
+                cognitive_complexity=file_metadata.get("cognitive_complexity"),
+                maintainability_index=file_metadata.get("maintainability_index"),
+                comment_ratio=file_metadata.get("comment_ratio"),
+                # Additional metadata
+                has_tests=file_metadata.get("has_tests"),
+                entry_point=file_metadata.get("entry_point"),
+                framework=file_metadata.get("framework"),
+                patterns=file_metadata.get("patterns"),
+                # Cleaning metadata
+                original_lines=file_metadata.get("original_lines"),
+                cleaned_lines=file_metadata.get("cleaned_lines"),
+                lines_removed=file_metadata.get("lines_removed"),
+                cleaning_applied=file_metadata.get("cleaning_applied"),
             )
 
             # Build parsed file

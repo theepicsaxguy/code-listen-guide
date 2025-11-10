@@ -85,6 +85,35 @@ class FileMetadata(BaseModel):
         None, description="Average chunk size in tokens"
     )
 
+    # Rich metadata from CodeAnalyzer
+    file_size_mb: Optional[float] = Field(None, description="File size in MB")
+    function_count: Optional[int] = Field(None, description="Number of functions")
+    class_count: Optional[int] = Field(None, description="Number of classes")
+    import_count: Optional[int] = Field(None, description="Number of imports")
+    export_count: Optional[int] = Field(None, description="Number of exports")
+
+    # Code metrics
+    total_lines: Optional[int] = Field(None, description="Total lines including blanks")
+    code_lines: Optional[int] = Field(None, description="Lines of code")
+    comment_lines: Optional[int] = Field(None, description="Lines of comments")
+    blank_lines: Optional[int] = Field(None, description="Blank lines")
+    cyclomatic_complexity: Optional[int] = Field(None, description="Cyclomatic complexity")
+    cognitive_complexity: Optional[int] = Field(None, description="Cognitive complexity")
+    maintainability_index: Optional[float] = Field(None, description="Maintainability index (0-171)")
+    comment_ratio: Optional[float] = Field(None, description="Ratio of comment lines to total lines")
+
+    # Additional metadata
+    has_tests: Optional[bool] = Field(None, description="Whether file contains tests")
+    entry_point: Optional[bool] = Field(None, description="Whether file is an entry point")
+    framework: Optional[str] = Field(None, description="Detected framework")
+    patterns: Optional[List[str]] = Field(None, description="Detected design patterns")
+
+    # Cleaning metadata
+    original_lines: Optional[int] = Field(None, description="Lines before cleaning")
+    cleaned_lines: Optional[int] = Field(None, description="Lines after cleaning")
+    lines_removed: Optional[int] = Field(None, description="Lines removed during cleaning")
+    cleaning_applied: Optional[bool] = Field(None, description="Whether cleaning was applied")
+
 
 class ChunkDetail(BaseModel):
     """Details about a specific chunk of text."""

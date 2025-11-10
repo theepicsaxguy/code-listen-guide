@@ -301,48 +301,244 @@ export function AdminFileViewer({ file, rawData }: AdminFileViewerProps) {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg">
-                <div>
-                  <label className="text-sm font-semibold">File Size</label>
-                  <p className="text-2xl font-bold mt-1">
-                    {formatBytes(file.size_bytes)}
-                  </p>
+              {/* Basic File Metrics */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <BarChart className="h-4 w-4" />
+                  File Metrics
+                </h3>
+                <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg">
+                  <div>
+                    <label className="text-sm font-semibold">File Size</label>
+                    <p className="text-2xl font-bold mt-1">
+                      {file.file_size_mb !== undefined && file.file_size_mb !== null
+                        ? `${file.file_size_mb.toFixed(2)} MB`
+                        : formatBytes(file.size_bytes)}
+                    </p>
+                  </div>
+
+                  {file.language && (
+                    <div>
+                      <label className="text-sm font-semibold">Detected Language</label>
+                      <p className="text-lg font-bold mt-1">
+                        {file.language}
+                      </p>
+                    </div>
+                  )}
+
+                  {file.num_chunks !== undefined && file.num_chunks !== null && (
+                    <div>
+                      <label className="text-sm font-semibold">Chunks Created</label>
+                      <p className="text-2xl font-bold mt-1">
+                        {file.num_chunks}
+                      </p>
+                    </div>
+                  )}
+
+                  {file.total_tokens !== undefined && file.total_tokens !== null && (
+                    <div>
+                      <label className="text-sm font-semibold">Total Tokens</label>
+                      <p className="text-2xl font-bold mt-1">
+                        {file.total_tokens.toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+
+                  {file.num_chunks && file.total_tokens && (
+                    <div>
+                      <label className="text-sm font-semibold">Avg Tokens/Chunk</label>
+                      <p className="text-2xl font-bold mt-1">
+                        {Math.round(file.total_tokens / file.num_chunks)}
+                      </p>
+                    </div>
+                  )}
                 </div>
-
-                {file.num_chunks !== undefined && (
-                  <div>
-                    <label className="text-sm font-semibold">Chunks Created</label>
-                    <p className="text-2xl font-bold mt-1">
-                      {file.num_chunks}
-                    </p>
-                  </div>
-                )}
-
-                {file.total_tokens !== undefined && (
-                  <div>
-                    <label className="text-sm font-semibold">Total Tokens</label>
-                    <p className="text-2xl font-bold mt-1">
-                      {file.total_tokens.toLocaleString()}
-                    </p>
-                  </div>
-                )}
-
-                {file.num_chunks && file.total_tokens && (
-                  <div>
-                    <label className="text-sm font-semibold">Avg Tokens/Chunk</label>
-                    <p className="text-2xl font-bold mt-1">
-                      {Math.round(file.total_tokens / file.num_chunks)}
-                    </p>
-                  </div>
-                )}
               </div>
 
-              {file.language && (
-                <div>
-                  <label className="text-sm font-semibold">Detected Language</label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {file.language}
-                  </p>
+              {/* Code Structure */}
+              {(file.function_count !== undefined || file.class_count !== undefined ||
+                file.import_count !== undefined || file.export_count !== undefined) && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Braces className="h-4 w-4" />
+                    Code Structure
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 border rounded-lg">
+                    {file.function_count !== undefined && file.function_count !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Functions</label>
+                        <p className="text-xl font-bold mt-1">{file.function_count}</p>
+                      </div>
+                    )}
+
+                    {file.class_count !== undefined && file.class_count !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Classes</label>
+                        <p className="text-xl font-bold mt-1">{file.class_count}</p>
+                      </div>
+                    )}
+
+                    {file.import_count !== undefined && file.import_count !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Imports</label>
+                        <p className="text-xl font-bold mt-1">{file.import_count}</p>
+                      </div>
+                    )}
+
+                    {file.export_count !== undefined && file.export_count !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Exports</label>
+                        <p className="text-xl font-bold mt-1">{file.export_count}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Line Metrics */}
+              {(file.total_lines !== undefined || file.code_lines !== undefined ||
+                file.comment_lines !== undefined || file.blank_lines !== undefined) && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold">Line Statistics</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 border rounded-lg">
+                    {file.total_lines !== undefined && file.total_lines !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Total Lines</label>
+                        <p className="text-xl font-bold mt-1">{file.total_lines.toLocaleString()}</p>
+                      </div>
+                    )}
+
+                    {file.code_lines !== undefined && file.code_lines !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Code Lines</label>
+                        <p className="text-xl font-bold mt-1">{file.code_lines.toLocaleString()}</p>
+                      </div>
+                    )}
+
+                    {file.comment_lines !== undefined && file.comment_lines !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Comment Lines</label>
+                        <p className="text-xl font-bold mt-1">{file.comment_lines.toLocaleString()}</p>
+                      </div>
+                    )}
+
+                    {file.blank_lines !== undefined && file.blank_lines !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Blank Lines</label>
+                        <p className="text-xl font-bold mt-1">{file.blank_lines.toLocaleString()}</p>
+                      </div>
+                    )}
+
+                    {file.comment_ratio !== undefined && file.comment_ratio !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Comment Ratio</label>
+                        <p className="text-xl font-bold mt-1">{(file.comment_ratio * 100).toFixed(1)}%</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Complexity Metrics */}
+              {(file.cyclomatic_complexity !== undefined || file.cognitive_complexity !== undefined ||
+                file.maintainability_index !== undefined) && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold">Complexity Metrics</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 border rounded-lg">
+                    {file.cyclomatic_complexity !== undefined && file.cyclomatic_complexity !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Cyclomatic</label>
+                        <p className="text-xl font-bold mt-1">{file.cyclomatic_complexity}</p>
+                      </div>
+                    )}
+
+                    {file.cognitive_complexity !== undefined && file.cognitive_complexity !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Cognitive</label>
+                        <p className="text-xl font-bold mt-1">{file.cognitive_complexity}</p>
+                      </div>
+                    )}
+
+                    {file.maintainability_index !== undefined && file.maintainability_index !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Maintainability (0-171)</label>
+                        <p className="text-xl font-bold mt-1">{file.maintainability_index.toFixed(1)}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Cleaning Statistics */}
+              {(file.original_lines !== undefined || file.cleaned_lines !== undefined ||
+                file.lines_removed !== undefined) && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold">Cleaning Statistics</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 border rounded-lg">
+                    {file.original_lines !== undefined && file.original_lines !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Original Lines</label>
+                        <p className="text-xl font-bold mt-1">{file.original_lines.toLocaleString()}</p>
+                      </div>
+                    )}
+
+                    {file.cleaned_lines !== undefined && file.cleaned_lines !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Cleaned Lines</label>
+                        <p className="text-xl font-bold mt-1">{file.cleaned_lines.toLocaleString()}</p>
+                      </div>
+                    )}
+
+                    {file.lines_removed !== undefined && file.lines_removed !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Lines Removed</label>
+                        <p className="text-xl font-bold mt-1 text-danger">{file.lines_removed.toLocaleString()}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Metadata */}
+              {(file.framework !== undefined || file.patterns !== undefined ||
+                file.has_tests !== undefined || file.entry_point !== undefined) && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold">Additional Information</h3>
+                  <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg">
+                    {file.framework !== undefined && file.framework !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Framework</label>
+                        <Badge variant="outline" className="mt-1">{file.framework}</Badge>
+                      </div>
+                    )}
+
+                    {file.patterns !== undefined && file.patterns !== null && file.patterns.length > 0 && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Patterns</label>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {file.patterns.map((pattern: string, i: number) => (
+                            <Badge key={i} variant="secondary" className="text-xs">{pattern}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {file.has_tests !== undefined && file.has_tests !== null && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Has Tests</label>
+                        <Badge variant={file.has_tests ? "success" : "secondary"} className="mt-1">
+                          {file.has_tests ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {file.entry_point !== undefined && file.entry_point !== null && file.entry_point && (
+                      <div>
+                        <label className="text-sm text-muted-foreground">Entry Point</label>
+                        <Badge variant="primary" className="mt-1">Yes</Badge>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
