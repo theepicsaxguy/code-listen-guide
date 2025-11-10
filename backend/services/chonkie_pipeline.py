@@ -383,8 +383,9 @@ class chonkiePipeline:
         content = tagged.get("content", "")
 
         # Language detection
-        languages = self._detect_language(file_path, content)
-        tags.extend([f"language:{lang}" for lang in languages])
+        language = self._detect_language(file_path)
+        if language != "unknown":
+            tags.append(f"language:{language}")
 
         # Framework detection
         frameworks = self._detect_frameworks(content)
@@ -407,9 +408,9 @@ class chonkiePipeline:
         tags.append(f"purpose:{purpose}")
 
         tagged["tags"] = tags
-        
+
         # Also store individual fields for easier access
-        tagged["language"] = languages[0] if languages else None
+        tagged["language"] = language if language != "unknown" else None
         tagged["summary"] = f"{purpose.capitalize()} file"
         tagged["complexity"] = complexity
         tagged["visibility"] = visibility
