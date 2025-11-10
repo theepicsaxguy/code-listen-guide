@@ -5,12 +5,18 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any, Awaitable
+import threading
+from typing import Any, Awaitable, Dict, Optional
 
 from opentelemetry import trace
 
 tracer = trace.get_tracer(__name__)
 logger = logging.getLogger(__name__)
+
+# Global registry to track active workflows
+# Key: job_id (str), Value: AudiobookWorkflow instance
+_active_workflows: Dict[str, Any] = {}
+_workflows_lock = threading.Lock()
 
 
 def _run_coroutine(coro: Awaitable[Any]) -> None:
@@ -34,7 +40,17 @@ async def _start_audiobook_workflow(
                 "Skipping workflow start for job %s: %s", job_id, exc
             )
             return
-        await workflow.execute()
+        
+        # Register workflow in active registry
+        with _workflows_lock:
+            _active_workflows[job_id] = workflow
+        
+        try:
+            await workflow.execute()
+        finally:
+            # Unregister workflow when done
+            with _workflows_lock:
+                _active_workflows.pop(job_id, None)
 
 
 def start_audiobook_workflow(job_id: str, repo_url: str, depth_tier: str) -> None:
@@ -60,14 +76,24 @@ async def _resume_audiobook_workflow(job_id: str) -> None:
                 "Skipping workflow resume for job %s: %s", job_id, exc
             )
             return
-        outline_record = _load_outline(job_id)
-        if outline_record is None:
-            await workflow.execute()
-            return
-        outline_payload: Any = outline_record.outline_data
-        if isinstance(outline_payload, str):
-            outline_payload = json.loads(outline_payload)
-        await workflow.continue_after_approval(outline_payload)
+        
+        # Register workflow in active registry
+        with _workflows_lock:
+            _active_workflows[job_id] = workflow
+        
+        try:
+            outline_record = _load_outline(job_id)
+            if outline_record is None:
+                await workflow.execute()
+                return
+            outline_payload: Any = outline_record.outline_data
+            if isinstance(outline_payload, str):
+                outline_payload = json.loads(outline_payload)
+            await workflow.continue_after_approval(outline_payload)
+        finally:
+            # Unregister workflow when done
+            with _workflows_lock:
+                _active_workflows.pop(job_id, None)
 
 
 def resume_audiobook_workflow(job_id: str) -> None:
@@ -92,3 +118,29 @@ def _load_outline(job_id: str):
     from backend.tools.db_tools import load_approved_outline
 
     return load_approved_outline(job_id)
+
+
+def cancel_workflow(job_id: str) -> bool:
+    """
+    Cancel an active workflow if it exists.
+    
+    Args:
+        job_id: The job ID to cancel
+        
+    Returns:
+        True if workflow was found and cancelled, False otherwise
+    """
+    with _workflows_lock:
+        workflow = _active_workflows.get(job_id)
+        
+    if workflow is None:
+        logger.info(f"No active workflow found for job {job_id}")
+        return False
+    
+    try:
+        workflow.cancel()
+        logger.info(f"Successfully cancelled workflow for job {job_id}")
+        return True
+    except Exception as exc:
+        logger.error(f"Error cancelling workflow for job {job_id}: {exc}", exc_info=True)
+        return False
