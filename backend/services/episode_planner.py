@@ -10,11 +10,12 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
+from agent_framework.openai import OpenAIResponsesClient
+
 from backend.agents.episode_agent import create_episode_agent
 from backend.agents import build_responses_client_options
 from backend.config import get_settings
 from backend.services.dependency_analyzer import ClusterPlan
-from agent_framework.openai import OpenAIResponsesClient
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,8 @@ INPUT:
 OUTPUT JSON format:
 {{
   "title": "Engaging Episode Title Here",
-  "narrative_theme": "This episode explores how [concept] works in the codebase, focusing on [specifics]",
+  "narrative_theme": "This episode explores how [concept] works in the codebase, "
+  "focusing on [specifics]",
   "conversation_hooks": [
     "Why did the team choose [approach]?",
     "What are the trade-offs between [options]?",
@@ -109,8 +111,14 @@ class EpisodePlanner:
             result = await agent.run(prompt)
             
             # The agent framework should return structured data
-            if hasattr(result, 'result') and result.result:
+            if result and hasattr(result, 'data'):
+                response_data = result.data
+            elif hasattr(result, 'result'):
                 response_data = result.result
+            else:
+                response_data = result
+            
+            if response_data:
                 return {
                     "title": response_data.get("title", self._default_title(cluster)),
                     "narrative_theme": response_data.get("narrative_theme", "Technical deep dive"),
@@ -121,13 +129,17 @@ class EpisodePlanner:
                 logger.warning("Agent returned no result, using placeholder")
                 return self._generate_placeholder(cluster, architectural_layer)
 
-        except Exception as e:
-            logger.error("Episode planning failed", exc_info=e, extra={"cluster_size": len(cluster.files)})
+        except (ValueError, RuntimeError, ConnectionError) as e:
+            logger.error(
+                "Episode planning failed",
+                exc_info=e,
+                extra={"cluster_size": len(cluster.files)}
+            )
             return self._generate_placeholder(cluster, architectural_layer)
 
     def _extract_cluster_dependencies(
         self, cluster_files: set[str], full_graph: Dict[str, List[str]]
-    ) -> Dict[str, List[str]]:
+    ) -> Dict[str, Dict[str, List[str]]]:
         """Extract dependency relationships within and entering the cluster."""
         cluster_set = set(cluster_files)
         internal = {}
@@ -152,7 +164,8 @@ class EpisodePlanner:
         file_count = len(cluster.files)
         return {
             "title": f"{layer_name}: {file_count} Related Files",
-            "narrative_theme": f"Exploration of {layer_name.lower()} components and their interactions",
+            "narrative_theme": f"Exploration of {layer_name.lower()} components and their "
+            "interactions",
             "conversation_hooks": [
                 "What is the purpose of this module?",
                 "How do these files work together?",

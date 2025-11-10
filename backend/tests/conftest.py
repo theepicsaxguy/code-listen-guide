@@ -1,17 +1,35 @@
-"""Pytest configuration for backend tests.
-
-Responsibilities:
- - Provision a test database (SQLite file) isolated per test run.
- - Apply Alembic migrations up to current head so all tables (including episodes) exist.
- - Provide a SQLAlchemy Session fixture for tests.
-
-Permanent migration resolution:
- Running migrations in tests ensures schema drift does not silently break episode
- tests and validates future migrations against real upgrade path instead of
- metadata.create_all shortcuts.
-"""
-
 from __future__ import annotations
+
+import asyncio
+import json
+import os
+import sqlite3
+import sys
+import tempfile
+import uuid
+from pathlib import Path
+from typing import Any, Dict, Generator
+from types import ModuleType
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from alembic import command
+from alembic.config import Config
+from fastapi.testclient import TestClient
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.orm import Session
+
+from backend.db.session import SessionLocal, get_db
+from backend.db.base import Base
+from backend.utils.auth import (
+    create_access_token,
+    create_refresh_token,
+    get_password_hash,
+)
+from backend.config import get_settings
+from backend.models.episode import Episode
+
 
 import os
 import sys
@@ -53,7 +71,11 @@ os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 
 from backend.db.session import SessionLocal, get_db  # noqa: E402
 from backend.db.base import Base  # noqa: E402
-from backend.utils.auth import create_access_token, create_refresh_token, get_password_hash  # noqa: E402
+from backend.utils.auth import (
+    create_access_token,
+    create_refresh_token,
+    get_password_hash,
+)  # noqa: E402
 from backend.config import get_settings  # noqa: E402
 from backend.models.episode import Episode  # Ensure model imported so Alembic/metadata aware
 

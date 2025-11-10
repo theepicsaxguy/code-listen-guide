@@ -116,7 +116,8 @@ class ScriptAgentResponse(BaseModel):
 
     @model_validator(mode="after")
     def _trim_script(self) -> "ScriptAgentResponse":
-        object.__setattr__(self, "script", self.script.strip())
+        if isinstance(self.script, str):
+            object.__setattr__(self, "script", self.script.strip())
         return self
 
 
