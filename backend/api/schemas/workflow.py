@@ -33,6 +33,7 @@ class WorkflowStepCreate(BaseModel):
     step_order: int
     step_name: str = Field(..., max_length=255)
     agent_id: Optional[UUID] = None
+    plugin_id: Optional[UUID] = None
     execution_mode: str
     input_mapping: Optional[Dict[str, Any]] = None
     output_mapping: Optional[Dict[str, Any]] = None
@@ -53,6 +54,7 @@ class WorkflowStepOut(BaseModel):
     step_name: str
     execution_mode: str
     agent_id: Optional[UUID]
+    plugin_id: Optional[UUID]
     checkpoint_enabled: bool
     input_mapping: Optional[Dict[str, Any]]
     output_mapping: Optional[Dict[str, Any]]

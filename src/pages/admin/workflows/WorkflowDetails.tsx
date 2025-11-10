@@ -137,8 +137,8 @@ export default function WorkflowDetails() {
 
   const availableAgents = useMemo(() => {
     if (!agentsData) return [];
-    const agents = Array.isArray(agentsData) ? agentsData : (agentsData?.agents || []);
-    return agents.map(a => ({ name: a.name, description: a.description || '' }));
+    const agents = Array.isArray(agentsData) ? agentsData : ((agentsData as { agents?: unknown[] })?.agents || []);
+    return agents.map((a: { name: string; description?: string }) => ({ name: a.name, description: a.description || '' }));
   }, [agentsData]);
 
   const handleEditStep = (step: WorkflowStep) => {
@@ -203,7 +203,20 @@ export default function WorkflowDetails() {
     closeStepEditor();
   };
 
-  const handleSaveWorkflow = async (steps: any[]) => {
+  const handleSaveWorkflow = async (steps: {
+    step_name: string;
+    step_order: number;
+    agent_name?: string;
+    agent_id?: string | null;
+    plugin_id?: string | null;
+    execution_mode: 'sequential' | 'concurrent';
+    input_mapping?: Record<string, unknown> | null;
+    output_mapping?: Record<string, unknown> | null;
+    checkpoint_enabled?: boolean;
+    retry_policy?: { [key: string]: unknown } | null;
+    step_config?: Record<string, unknown> | null;
+    allowed_tools?: string[] | null;
+  }[]) => {
     if (!workflowId) {
       toast.error("No workflow ID found");
       return;
@@ -219,6 +232,7 @@ export default function WorkflowDetails() {
               step_order: index,
               step_name: step.step_name || `Step ${index + 1}`,
               agent_id: step.agent_id || null,
+              plugin_id: step.plugin_id || null,
               execution_mode: step.execution_mode || 'sequential',
               input_mapping: step.input_mapping || null,
               output_mapping: step.output_mapping || null,
@@ -238,9 +252,9 @@ export default function WorkflowDetails() {
         toast.info("To modify steps, please create a new revision instead");
         navigate(`/admin/workflows/${workflowId}`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to save workflow:", error);
-      const errorMessage = error?.response?.data?.detail || error?.message || "Failed to save workflow";
+      const errorMessage = error instanceof Error ? error.message : "Failed to save workflow";
       toast.error(errorMessage);
       throw error; // Re-throw so the editor can handle it
     }
@@ -596,7 +610,7 @@ export default function WorkflowDetails() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {revision.revision_metadata?.steps_count || 0} steps
+                          {Number(revision.revision_metadata?.steps_count) || 0} steps
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">

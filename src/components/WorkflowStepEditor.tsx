@@ -7,27 +7,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, GripVertical, Save, X } from "lucide-react";
+import { Plus, Trash2, GripVertical, Save, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { WorkflowStep } from "@/lib/types/workflow";
 
-interface WorkflowStep {
+interface EditableWorkflowStep {
   id?: string;
   step_name: string;
   step_order: number;
-  agent_name: string;
+  agent_name?: string;
+  agent_id?: string | null;
+  plugin_id?: string | null;
   system_prompt?: string;
-  allowed_tools: string[];
-  execution_mode: 'sequential' | 'parallel';
-  step_config?: Record<string, unknown>;
+  execution_mode: 'sequential' | 'concurrent';
+  input_mapping?: Record<string, unknown> | null;
+  output_mapping?: Record<string, unknown> | null;
+  checkpoint_enabled?: boolean;
+  retry_policy?: { [key: string]: unknown } | null;
+  step_config?: Record<string, unknown> | null;
+  allowed_tools?: string[] | null;
 }
 
 interface WorkflowStepEditorProps {
   workflowId: string;
   workflowName: string;
-  initialSteps?: WorkflowStep[];
+  initialSteps?: EditableWorkflowStep[];
   availablePlugins: Array<{ id: string; name: string }>;
   availableAgents: Array<{ name: string; description: string }>;
-  onSave: (steps: WorkflowStep[]) => Promise<void>;
+  onSave: (steps: EditableWorkflowStep[]) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -40,7 +47,7 @@ export function WorkflowStepEditor({
   onSave,
   onCancel
 }: WorkflowStepEditorProps) {
-  const [steps, setSteps] = useState<WorkflowStep[]>(
+  const [steps, setSteps] = useState<EditableWorkflowStep[]>(
     initialSteps.length > 0
       ? initialSteps
       : [{
@@ -48,21 +55,21 @@ export function WorkflowStepEditor({
           step_order: 0,
           agent_name: "",
           system_prompt: "",
-          allowed_tools: [],
           execution_mode: 'sequential',
+          checkpoint_enabled: true,
           step_config: {}
         }]
   );
   const [isSaving, setIsSaving] = useState(false);
 
   const addStep = () => {
-    const newStep: WorkflowStep = {
+    const newStep: EditableWorkflowStep = {
       step_name: `Step ${steps.length + 1}`,
       step_order: steps.length,
       agent_name: "",
       system_prompt: "",
-      allowed_tools: [],
       execution_mode: 'sequential',
+      checkpoint_enabled: true,
       step_config: {}
     };
     setSteps([...steps, newStep]);
@@ -86,7 +93,7 @@ export function WorkflowStepEditor({
     setSteps(newSteps);
   };
 
-  const updateStep = (index: number, field: keyof WorkflowStep, value: any) => {
+  const updateStep = (index: number, field: keyof EditableWorkflowStep, value: unknown) => {
     const newSteps = [...steps];
     newSteps[index] = { ...newSteps[index], [field]: value };
     setSteps(newSteps);
@@ -125,10 +132,10 @@ export function WorkflowStepEditor({
   };
 
   const handleSave = async () => {
-    // Validation
+    // Validation: each step must have either an agent or a plugin
     for (const step of steps) {
-      if (!step.agent_name) {
-        toast.error(`Please select an agent for ${step.step_name}`);
+      if (!step.agent_id && !step.plugin_id) {
+        toast.error(`Please select an agent or plugin for ${step.step_name}`);
         return;
       }
     }
@@ -200,18 +207,19 @@ export function WorkflowStepEditor({
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Agent Selection */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Agent and Plugin Selection */}
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label>Agent</Label>
+                    <Label>Agent (Optional)</Label>
                     <Select
-                      value={step.agent_name}
-                      onValueChange={(value) => updateStep(index, 'agent_name', value)}
+                      value={step.agent_id || "none"}
+                      onValueChange={(value) => updateStep(index, 'agent_id', value === "none" ? null : value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select agent" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
                         {availableAgents.map((agent) => (
                           <SelectItem key={agent.name} value={agent.name}>
                             {agent.name}
@@ -222,17 +230,37 @@ export function WorkflowStepEditor({
                   </div>
 
                   <div>
+                    <Label>Plugin (Optional)</Label>
+                    <Select
+                      value={step.plugin_id || "none"}
+                      onValueChange={(value) => updateStep(index, 'plugin_id', value === "none" ? null : value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select plugin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {availablePlugins.map((plugin) => (
+                          <SelectItem key={plugin.id} value={plugin.id}>
+                            {plugin.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
                     <Label>Execution Mode</Label>
                     <Select
                       value={step.execution_mode}
-                      onValueChange={(value: any) => updateStep(index, 'execution_mode', value)}
+                      onValueChange={(value: 'sequential' | 'concurrent') => updateStep(index, 'execution_mode', value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="sequential">Sequential</SelectItem>
-                        <SelectItem value="parallel">Parallel</SelectItem>
+                        <SelectItem value="concurrent">Concurrent</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

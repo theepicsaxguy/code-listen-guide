@@ -52,7 +52,8 @@ export interface WorkflowStep {
   step_name: string;
   agent_id: string | null;
   agent_name?: string | null;
-  execution_mode: "sequential" | "concurrent" | "conditional";
+  plugin_id?: string | null;
+  execution_mode: "sequential" | "concurrent";
   input_mapping?: Record<string, unknown> | null;
   output_mapping?: Record<string, unknown> | null;
   checkpoint_enabled: boolean;
@@ -108,7 +109,7 @@ export interface ValidationResult {
 export interface UpdateWorkflowStepRequest {
   step_name?: string;
   agent_id?: string | null;
-  execution_mode?: "sequential" | "concurrent" | "conditional";
+  execution_mode?: "sequential" | "concurrent";
   input_mapping?: Record<string, unknown> | null;
   output_mapping?: Record<string, unknown> | null;
   checkpoint_enabled?: boolean;

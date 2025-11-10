@@ -52,6 +52,7 @@ def _revision_to_out(revision: WorkflowRevision) -> WorkflowRevisionOut:
             step_name=step.step_name,
             execution_mode=step.execution_mode,
             agent_id=step.agent_id,
+            plugin_id=step.plugin_id,
             checkpoint_enabled=bool(step.checkpoint_enabled),
             input_mapping=step.input_mapping,
             output_mapping=step.output_mapping,
@@ -89,8 +90,9 @@ def _validate_revision(revision: WorkflowRevision) -> RevisionValidationResult:
     for step in ordered:
         if step.execution_mode not in {"sequential", "concurrent", "conditional"}:
             errors.append(f"Unsupported execution_mode '{step.execution_mode}'")
-        if step.agent_id is None and step.execution_mode != "conditional":
-            errors.append(f"Step '{step.step_name}' requires an agent")
+        # A step must have either an agent_id OR plugin_id (or both), unless it's conditional
+        if step.agent_id is None and step.plugin_id is None and step.execution_mode != "conditional":
+            errors.append(f"Step '{step.step_name}' requires either an agent or a plugin")
 
     return RevisionValidationResult(is_valid=not errors, errors=errors)
 
@@ -213,11 +215,15 @@ async def create_revision(
     if not payload.steps:
         raise HTTPException(status_code=400, detail="Revisions require at least one step")
 
+    # Validate that agents and plugins exist
     for step in payload.steps:
-        if step.agent_id is None:
-            continue
-        if db.get(AgentRegistry, step.agent_id) is None:
-            raise HTTPException(status_code=400, detail=f"Agent {step.agent_id} not found")
+        if step.agent_id is not None:
+            if db.get(AgentRegistry, step.agent_id) is None:
+                raise HTTPException(status_code=400, detail=f"Agent {step.agent_id} not found")
+        if step.plugin_id is not None:
+            from backend.models.tool_registry import ToolRegistry
+            if db.get(ToolRegistry, step.plugin_id) is None:
+                raise HTTPException(status_code=400, detail=f"Plugin {step.plugin_id} not found")
 
     latest_version: Optional[int] = (
         db.query(func.max(WorkflowRevision.version))
@@ -241,6 +247,7 @@ async def create_revision(
             step_order=step_payload.step_order,
             step_name=step_payload.step_name,
             agent_id=step_payload.agent_id,
+            plugin_id=step_payload.plugin_id,
             execution_mode=step_payload.execution_mode,
             input_mapping=step_payload.input_mapping,
             output_mapping=step_payload.output_mapping,

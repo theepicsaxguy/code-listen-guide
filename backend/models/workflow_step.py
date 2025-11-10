@@ -18,6 +18,7 @@ class WorkflowStep(Base):
     step_order = Column(Integer, nullable=False)
     step_name = Column(String(255), nullable=False)
     agent_id = Column(UUID(as_uuid=True), ForeignKey("agents_registry.id"))
+    plugin_id = Column(UUID(as_uuid=True), ForeignKey("tools_registry.id"))
     execution_mode = Column(String(50), nullable=False)
     input_mapping = Column(JSON)
     output_mapping = Column(JSON)
@@ -32,4 +33,7 @@ class WorkflowStep(Base):
     agent = relationship(
         "AgentRegistry",
         back_populates="steps",
+    )
+    plugin = relationship(
+        "ToolRegistry",
     )
