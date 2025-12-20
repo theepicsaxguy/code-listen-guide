@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.19
 
-ARG PYTHON_IMAGE=python:3.14.0-slim@sha256:9813eecff3a08a6ac88aea5b43663c82a931fd9557f6aceaa847f0d8ce738978
+ARG PYTHON_IMAGE=python:3.14.0-slim@sha256:0aecac02dc3d4c5dbb024b753af084cafe41f5416e02193f1ce345d671ec966e
 ARG NODE_IMAGE=node:24.11.0-bookworm-slim@sha256:76d0ed0ed93bed4f4376211e9d8fddac4d8b3fbdb54cc45955696001a3c91152
 ARG NPM_VERSION=10.9.2
 ARG VITE_API_BASE_PATH=/api/v1
