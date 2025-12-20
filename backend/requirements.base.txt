@@ -18,7 +18,7 @@ anthropic==0.72.0
 
 # Configuration & Validation (REQUIRED)
 python-dotenv==1.2.1
-pydantic[email]==2.12.4
+pydantic[email]==2.12.5
 pydantic-settings==2.11.0
 
 # Utilities (REQUIRED)
