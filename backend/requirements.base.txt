@@ -48,7 +48,7 @@ opentelemetry-instrumentation-fastapi==0.59b0
 # opentelemetry-util-http==0.59b0
 
 # Payment Processing
-stripe==13.2.0
+stripe==14.1.0
 
 # Cloud Storage
 boto3==1.42.14
