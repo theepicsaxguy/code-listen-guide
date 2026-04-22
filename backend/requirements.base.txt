@@ -17,7 +17,7 @@ agent-framework-core==1.0.0b251218
 anthropic==0.72.0
 
 # Configuration & Validation (REQUIRED)
-python-dotenv==1.2.1
+python-dotenv==1.2.2
 pydantic[email]==2.12.5
 pydantic-settings==2.11.0
 
