@@ -14,7 +14,7 @@ psycopg2-binary==2.9.11
 agent-framework-core==1.0.0b251218
 
 # LLM APIs (REQUIRED)
-anthropic==0.72.0
+anthropic==0.125.0
 
 # Configuration & Validation (REQUIRED)
 python-dotenv==1.2.1
