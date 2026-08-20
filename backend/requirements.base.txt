@@ -37,7 +37,7 @@ argon2-cffi==25.1.0
 webauthn==2.7.0
 
 # Real-time Updates (WebSocket - optional for MVP)
-redis==7.1.0
+redis==8.1.0
 
 # Observability (optional for production monitoring only)
 opentelemetry-instrumentation-fastapi==0.59b0
