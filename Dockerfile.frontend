@@ -1,5 +1,5 @@
 ARG VITE_API_BASE_PATH=/api/v1
-ARG NODE_IMAGE=node:24.11.0-bookworm-slim@sha256:76d0ed0ed93bed4f4376211e9d8fddac4d8b3fbdb54cc45955696001a3c91152
+ARG NODE_IMAGE=node:24.21.0-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
 ARG NPM_VERSION=10.9.2
 
 # =============================================================================
