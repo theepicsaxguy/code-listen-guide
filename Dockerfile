@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.19
 
 ARG PYTHON_IMAGE=python:3.14.0-slim@sha256:9813eecff3a08a6ac88aea5b43663c82a931fd9557f6aceaa847f0d8ce738978
-ARG NODE_IMAGE=node:24.11.0-bookworm-slim@sha256:76d0ed0ed93bed4f4376211e9d8fddac4d8b3fbdb54cc45955696001a3c91152
+ARG NODE_IMAGE=node:24.21.0-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20
 ARG NPM_VERSION=10.9.2
 ARG VITE_API_BASE_PATH=/api/v1
 ARG DEBIAN_RELEASE=trixie
